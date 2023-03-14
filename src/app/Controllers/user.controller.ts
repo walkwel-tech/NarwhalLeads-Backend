@@ -1,0 +1,619 @@
+import { Request, Response } from "express";
+import { hashSync, genSaltSync } from "bcryptjs";
+import { User } from "../Models/User";
+import { validate } from "class-validator";
+import { ValidationErrorResponse } from "../../types/ValidationErrorResponse";
+import { RolesEnum } from "../../types/RolesEnum";
+import { RegisterInput } from "../Inputs/Register.input";
+import { CardDetails } from "../Models/CardDetails";
+import { managePayments } from "../../utils/payment";
+import { Transaction } from "../Models/Transaction";
+import { Invoice } from "../Models/Invoice";
+import { generatePDF } from "../../utils/XeroApiIntegration/generatePDF";
+import { refreshToken } from "../../utils/XeroApiIntegration/createContact";
+import { transactionTitle } from "../../utils/Enums/transaction.title.enum";
+import { BusinessDetails } from "../Models/BusinessDetails";
+import { sort } from "../../utils/Enums/sorting.enum";
+import { UserLeadsDetails } from "../Models/UserLeadsDetails";
+
+const LIMIT = 10;
+
+export class UsersControllers {
+  static create = async (req: Request, res: Response): Promise<Response> => {
+    const input = req.body;
+    const registerInput = new RegisterInput();
+
+    registerInput.firstName = input.firstName;
+    registerInput.lastName = input.lastName;
+    registerInput.email = input.email;
+    registerInput.password = input.password;
+
+    const errors = await validate(registerInput);
+
+    if (errors.length) {
+      const errorsInfo: ValidationErrorResponse[] = errors.map((error) => ({
+        property: error.property,
+        constraints: error.constraints,
+      }));
+
+      return res
+        .status(400)
+        .json({ error: { message: "VALIDATIONS_ERROR", info: errorsInfo } });
+    }
+    try {
+      const user = await User.findOne({
+        $or: [
+          { email: input.email },
+          { salesPhoneNumber: input.salesPhoneNumber },
+        ],
+      });
+      if (!user) {
+        const salt = genSaltSync(10);
+        const hashPassword = hashSync(input.password, salt);
+        let dataToSave: any = {
+          firstName: input.firstName,
+          lastName: input.lastName,
+          email: input.email,
+          password: hashPassword,
+          role: RolesEnum.USER,
+          salesPhoneNumber: input.salesPhoneNumber,
+          country: input.country,
+          address: input.address,
+          city: input.city,
+          postCode: input.postCode,
+          companyName: input.companyName,
+          companyUSPs: input.companyUSPs,
+          isActive: true, //need to delete
+          isVerified: true, //need to delete
+        };
+
+        const userData = await User.create(dataToSave);
+        return res.json({
+          data: {
+            user: {
+              _id: userData.id,
+              firstName: userData.firstName,
+              lastName: userData.lastName,
+              email: userData.email,
+              role: userData.role,
+            },
+          },
+        });
+      } else {
+        return res.status(400).json({
+          data: {
+            message: "User already exists with same email or phone number.",
+          },
+        });
+      }
+    } catch (error) {
+      return res
+        .status(500)
+        .json({ error: { message: "Something went wrong." } });
+    }
+  };
+
+  static index = async (_req: any, res: Response): Promise<Response> => {
+    try {
+      let sortingOrder = _req.query.sortingOrder || sort.DESC;
+      let isArchived = _req.query.isArchived || "false";
+      let isActive = _req.query.isActive || "true";
+      if (sortingOrder == sort.ASC) {
+        sortingOrder = 1;
+      } else {
+        sortingOrder = -1;
+      }
+      if (isArchived === "undefined" || isArchived === "null") {
+        isArchived = "false";
+      }
+
+      if (isActive === "undefined" || isActive === "null") {
+        isActive = "true";
+      }
+      const perPage =
+        _req.query && _req.query.perPage > 0
+          ? parseInt(_req.query.perPage)
+          : LIMIT;
+      let skip =
+        (_req.query && _req.query.page > 0
+          ? parseInt(_req.query.page) - 1
+          : 0) * perPage;
+
+      let dataToFind: any = {
+        role: { $nin: [RolesEnum.ADMIN, RolesEnum.INVITED] },
+        // role:{$ne: RolesEnum.INVITED },
+        isDeleted: false,
+        isArchived: JSON.parse(isArchived?.toLowerCase()),
+        // isActive: JSON.parse(isActive?.toLowerCase()),
+      };
+      if (_req.query.search) {
+        dataToFind = {
+          ...dataToFind,
+          $or: [
+            //$options : 'i' used for case insensitivity search
+            { email: { $regex: _req.query.search, $options: "i" } },
+            { firstName: { $regex: _req.query.search, $options: "i" } },
+            { lastName: { $regex: _req.query.search, $options: "i" } },
+            { buyerId: { $regex: _req.query.search, $options: "i" } },
+            {
+              "businessDetailsId.businessName": {
+                $regex: _req.query.search,
+                $options: "i",
+              },
+            },
+          ],
+        };
+        skip = 0;
+      }
+
+      const [query]: any = await User.aggregate([
+        {
+          $facet: {
+            results: [
+              {
+                $lookup: {
+                  from: "businessdetails",
+                  localField: "businessDetailsId",
+                  foreignField: "_id",
+                  as: "businessDetailsId",
+                },
+              },
+              {
+                $lookup: {
+                  from: "userleadsdetails",
+                  localField: "userLeadsDetailsId",
+                  foreignField: "_id",
+                  as: "userLeadsDetailsId",
+                },
+              },
+              { $match: dataToFind },
+
+              //@ts-ignore
+              { $sort: { createdAt: sortingOrder } },
+              {
+                $project: {
+                  verifiedAt: 0,
+                  isVerified: 0,
+                  // isActive: 0,
+                  activatedAt: 0,
+                  isDeleted: 0,
+                  deletedAt: 0,
+                  __v: 0,
+                  isRyftCustomer: 0,
+                  isLeadbyteCustomer: 0,
+                  signUpFlowStatus: 0,
+                  invitedById: 0,
+                  // isArchived:0,
+                  createdAt: 0,
+                  updatedAt: 0,
+                  "businessDetailsId._id": 0,
+                  "businessDetailsId.isDeleted": 0,
+                  "businessDetailsId.deletedAt": 0,
+                  "businessDetailsId.createdAt": 0,
+                  "businessDetailsId.updatedAt": 0,
+                  "businessDetailsId.__v": 0,
+                  "userLeadsDetailsId._id": 0,
+                  "userLeadsDetailsId.isDeleted": 0,
+                  "userLeadsDetailsId.deletedAt": 0,
+                  "userLeadsDetailsId.createdAt": 0,
+                  "userLeadsDetailsId.updatedAt": 0,
+                  "userLeadsDetailsId.__v": 0,
+                  "userLeadsDetailsId.userId": 0,
+                },
+              },
+              { $skip: skip },
+              { $limit: perPage },
+              // { $sort: { firstName: 1 } },
+            ],
+            userCount: [{ $match: dataToFind }, { $count: "count" }],
+          },
+        },
+      ]);
+      query.results.map((item: any) => {
+        let businessDetailsId = Object.assign({}, item["businessDetailsId"][0]);
+        let userLeadsDetailsId = Object.assign(
+          {},
+          item["userLeadsDetailsId"][0]
+        );
+        item.userLeadsDetailsId = userLeadsDetailsId;
+        item.businessDetailsId = businessDetailsId;
+      });
+
+      const userCount = query.userCount[0]?.count || 0;
+      const totalPages = Math.ceil(userCount / perPage);
+      query.results.forEach((element: { password: any }) => {
+        delete element.password;
+      });
+      return res.json({
+        data: query.results,
+        meta: {
+          perPage: perPage,
+          page: _req.query.page || 1,
+          pages: totalPages,
+          total: userCount,
+        },
+      });
+    } catch (err) {
+      return res
+        .status(500)
+        .json({ error: { message: "Something went wrong." } });
+    }
+  };
+
+  static show = async (req: Request, res: Response): Promise<Response> => {
+    const { id } = req.params;
+
+    try {
+      const user = await User.findById(
+        id,
+        "-password -__v -verifiedAt -isVerified  -isActive -activatedAt -isDeleted -deletedAt -isRyftCustomer -isLeadbyteCustomer -signUpFlowStatus -invitedById -isArchived -createdAt -updatedAt"
+      )
+        .populate("businessDetailsId")
+        .populate("userLeadsDetailsId");
+      if (user) {
+        //@ts-ignore
+        user.businessDetailsId?.businessOpeningHours = JSON.parse(
+          //@ts-ignore
+          user?.businessDetailsId?.businessOpeningHours
+        );
+        return res.json({ data: user });
+      }
+
+      return res.status(404).json({ error: { message: "User not found." } });
+    } catch (err) {
+      return res
+        .status(500)
+        .json({ error: { message: "Something went wrong." } });
+    }
+  };
+
+  static indexName = async (req: Request, res: Response): Promise<Response> => {
+    try {
+      const user = await User.find(
+        { role: { $nin: [RolesEnum.ADMIN, RolesEnum.INVITED] } },
+        "firstName lastName email buyerId"
+      );
+
+      if (user) {
+        return res.json({ data: user });
+      }
+
+      return res.status(404).json({ error: { message: "User not found." } });
+    } catch (err) {
+      return res
+        .status(500)
+        .json({ error: { message: "Something went wrong." } });
+    }
+  };
+
+  static update = async (req: Request, res: Response): Promise<any> => {
+    const { id } = req.params;
+    const input = req.body;
+    if (input.password) {
+      // @ts-ignore
+      delete input.password;
+    }
+    // @ts-ignore
+    if (input.credits && req?.user.role == RolesEnum.USER) {
+      // @ts-ignore
+      delete input.credits;
+    }
+    // @ts-ignore
+    if (input.email && req.user?.role == RolesEnum.USER) {
+      // @ts-ignore
+
+      delete input.email;
+    }
+
+    try {
+      const checkUser = await User.findById(id);
+      if (!checkUser) {
+        return res
+          .status(404)
+          .json({ error: { message: "User to update does not exists." } });
+      }
+
+      const cardExist = await CardDetails.findOne({
+        userId: checkUser?._id,
+        isDefault: true,
+      });
+
+      if (
+        !cardExist &&
+        input.credits &&
+        //@ts-ignore
+        (req?.user.role == RolesEnum.USER || req?.user.role == RolesEnum.ADMIN)
+      ) {
+        return res
+          .status(400)
+          .json({ error: { message: "Card Details not found" } });
+      }
+      if (input.businessName) {
+        await BusinessDetails.findByIdAndUpdate(
+          checkUser?.businessDetailsId,
+          { businessName: input.businessName },
+
+          { new: true }
+        );
+      }
+      if (input.businessAddress) {
+        await BusinessDetails.findByIdAndUpdate(
+          checkUser?.businessDetailsId,
+          { businessAddress: input.businessAddress },
+
+          { new: true }
+        );
+      }
+      if (input.businessCity) {
+        await BusinessDetails.findByIdAndUpdate(
+          checkUser?.businessDetailsId,
+          { businessCity: input.businessCity },
+
+          { new: true }
+        );
+      }
+      if (input.businessCountry) {
+        await BusinessDetails.findByIdAndUpdate(
+          checkUser?.businessDetailsId,
+          { businessCountry: input.businessCountry },
+
+          { new: true }
+        );
+      }
+      if (input.businessPostCode) {
+        await BusinessDetails.findByIdAndUpdate(
+          checkUser?.businessDetailsId,
+          { businessPostCode: input.businessPostCode },
+
+          { new: true }
+        );
+      }
+      if (input.businessIndustry) {
+        await BusinessDetails.findByIdAndUpdate(
+          checkUser?.businessDetailsId,
+          { businessIndustry: input.businessIndustry },
+
+          { new: true }
+        );
+      }
+      if (input.businessOpeningHours) {
+        await BusinessDetails.findByIdAndUpdate(
+          checkUser?.businessDetailsId,
+          { businessOpeningHours: input.businessOpeningHours },
+
+          { new: true }
+        );
+      }
+      if (input.total) {
+        await UserLeadsDetails.findByIdAndUpdate(
+          checkUser?.userLeadsDetailsId,
+          { total: input.total },
+
+          { new: true }
+        );
+      }
+      if (input.weekly) {
+        await UserLeadsDetails.findByIdAndUpdate(
+          checkUser?.userLeadsDetailsId,
+          { weekly: input.weekly },
+
+          { new: true }
+        );
+      }
+      if (input.monthly) {
+        await UserLeadsDetails.findByIdAndUpdate(
+          checkUser?.userLeadsDetailsId,
+          { monthly: input.monthly },
+
+          { new: true }
+        );
+      }
+      if (input.leadSchedule) {
+        await UserLeadsDetails.findByIdAndUpdate(
+          checkUser?.userLeadsDetailsId,
+          { leadSchedule: input.leadSchedule },
+
+          { new: true }
+        );
+      }
+      if (input.postCodeTargettingList) {
+        await UserLeadsDetails.findByIdAndUpdate(
+          checkUser?.userLeadsDetailsId,
+          { postCodeTargettingList: input.postCodeTargettingList },
+
+          { new: true }
+        );
+      }
+      if (input.leadAlertsFrequency) {
+        await UserLeadsDetails.findByIdAndUpdate(
+          checkUser?.userLeadsDetailsId,
+          { leadAlertsFrequency: input.leadAlertsFrequency },
+
+          { new: true }
+        );
+      }
+      // @ts-ignore
+      if (input.credits && req?.user.role == RolesEnum.ADMIN) {
+        const params: any = {
+          fixedAmount: input.credits,
+          email: checkUser?.email,
+          cardNumber: cardExist?.cardNumber,
+          expiryMonth: cardExist?.expiryMonth,
+          expiryYear: cardExist?.expiryYear,
+          cvc: cardExist?.cvc,
+          buyerId: checkUser?.buyerId,
+        };
+        managePayments(params)
+          .then(async (res) => {
+            if (!checkUser.xeroContactId) {
+              console.log("xeroContact ID not found. Failed to generate pdf.");
+            }
+            const dataToSave: any = {
+              userId: checkUser?.id,
+              cardId: cardExist?.id,
+              amount: input.credits,
+              title: transactionTitle.CREDITS_ADDED,
+              isCredited: true,
+              status: "success",
+            };
+
+            const transaction = await Transaction.create(dataToSave);
+            if (checkUser?.xeroContactId) {
+              generatePDF(
+                checkUser?.xeroContactId,
+                transactionTitle.CREDITS_ADDED,
+                //@ts-ignore
+                input?.credits
+              )
+                .then(async (res: any) => {
+                  const dataToSaveInInvoice: any = {
+                    userId: checkUser?.id,
+                    transactionId: transaction.id,
+                    price: input.credits,
+                    invoiceId: res.data.Invoices[0].InvoiceID,
+                  };
+                  await Invoice.create(dataToSaveInInvoice);
+                  console.log("PDF generated");
+                })
+                .catch(async (err) => {
+                  refreshToken().then(async (res) => {
+                    generatePDF(
+                      checkUser?.xeroContactId,
+                      transactionTitle.CREDITS_ADDED,
+                      //@ts-ignore
+                      input.credits
+                    ).then(async (res: any) => {
+                      const dataToSaveInInvoice: any = {
+                        userId: checkUser?.id,
+                        transactionId: transaction.id,
+                        price: input.credits,
+                        invoiceId: res.data.Invoices[0].InvoiceID,
+                      };
+                      await Invoice.create(dataToSaveInInvoice);
+                      console.log("PDF generated");
+                    });
+                  });
+                });
+            }
+
+            console.log("payment success!!!!!!!!!!!!!");
+
+            await User.findByIdAndUpdate(
+              id,
+              {
+                ...input,
+                credits: checkUser.credits + input.credits,
+                // image: (req.file || {}).filename ? `${FileEnum.PROFILEIMAGE}${req?.file?.filename}` : checkUser.image,
+              },
+              {
+                new: true,
+              }
+            );
+          })
+          .catch(async (err) => {
+            // send_email_for_failed_autocharge(i.email, subject, text);
+            const dataToSave: any = {
+              userId: checkUser?.id,
+              cardId: cardExist?.id,
+              amount: input.credits,
+              title: transactionTitle.CREDITS_ADDED,
+              isCredited: true,
+              status: "error",
+            };
+            await Transaction.create(dataToSave);
+            console.log("error in payment Api", err);
+          });
+      } else {
+        const user = await User.findByIdAndUpdate(
+          id,
+          {
+            ...input,
+            // image: (req.file || {}).filename ? `${FileEnum.PROFILEIMAGE}${req?.file?.filename}` : checkUser.image,
+          },
+          {
+            new: true,
+          }
+        );
+
+        if (!user) {
+          return res
+            .status(400)
+            .json({ error: { message: "User to update does not exists." } });
+        }
+        const result = await User.findById(id, "-password -__v");
+
+        return res.json({ data: result });
+      }
+      async function response() {
+        const result = await User.findById(id, "-password -__v");
+
+        return res.json({ data: result });
+      }
+      setTimeout(response, 6000);
+    } catch (err) {
+      return res
+        .status(500)
+        .json({ error: { message: "Something went wrong." } });
+    }
+  };
+
+  static destroy = async (req: Request, res: Response): Promise<Response> => {
+    const { id } = req.params;
+    const userExist = await User.findById(id);
+    if (userExist?.isDeleted) {
+      return res
+        .status(400)
+        .json({ error: { message: "User has been already deleted." } });
+    }
+
+    try {
+      const user = await User.findByIdAndUpdate(id, {
+        isDeleted: true,
+        deletedAt: new Date(),
+      });
+
+      if (!user) {
+        return res
+          .status(400)
+          .json({ error: { message: "User to delete does not exists." } });
+      }
+
+      return res.json({ message: "User deleted successfully." });
+    } catch (err) {
+      return res
+        .status(500)
+        .json({ error: { message: "Something went wrong." } });
+    }
+  };
+
+  static reOrderIndex = async (req: Request, res: Response): Promise<any> => {
+    const input = req.body;
+    try {
+      input.forEach(async (i: { _id: any; rowIndex: any }) => {
+        await User.findByIdAndUpdate(
+          { _id: i._id },
+          { rowIndex: i.rowIndex },
+          { new: true }
+        );
+      });
+      return res.json({ data: { message: "user list re-ordered!" } });
+    } catch {
+      return res
+        .status(500)
+        .json({ error: { message: "Something went wrong." } });
+    }
+  };
+
+  static invoices = async (req: Request, res: Response): Promise<any> => {
+    const user = req.user;
+    try {
+      //@ts-ignore
+      const invoices = await Invoice.find({ userId: user.id });
+      return res.json({ data: invoices });
+    } catch {
+      return res
+        .status(500)
+        .json({ error: { message: "Something went wrong." } });
+    }
+  };
+}
