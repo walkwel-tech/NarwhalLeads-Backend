@@ -1,10 +1,11 @@
 import {sign} from 'jsonwebtoken';
 
 import {UserInterface} from '../types/UserInterface';
-// const TOKEN_EXPIRES_IN="8h"
+const TOKEN_EXPIRES_IN="8h"
+// const TOKEN_EXPIRES_IN=10
 export function generateToken(data: any): string {
-    return sign(data, process.env.APP_SECRET as string);
-    // return sign(data, process.env.APP_SECRET as string, {expiresIn:TOKEN_EXPIRES_IN} )// in seconds)
+    // return sign(data, process.env.APP_SECRET as string);
+    return sign(data, process.env.APP_SECRET as string, {expiresIn:TOKEN_EXPIRES_IN} )// in seconds)
 }
 
 export function generateAuthToken(user: UserInterface): string {

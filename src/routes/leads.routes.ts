@@ -3,6 +3,16 @@ import { Router } from 'express';
 import { LeadsController } from '../app/Controllers';
 import { Auth, OnlyAdmins } from '../app/Middlewares';
 
+export const ipFilterError = (err:any, req:any, res:any, next:any) => {
+    if (err) {
+      return res
+      .status(403)
+      .json({ error: { message: 'Access denied: Your IP address is not allowed to access this API' } });
+    } else {
+      next()
+    }
+}
+
 const leads: Router = Router();
 leads.get('/generatepdf/:invoiceID',Auth, LeadsController.generateInvoicePdf);
 leads.post('/leads-Preference', Auth,LeadsController.createPreference);
@@ -15,12 +25,12 @@ leads.patch('/re-order',Auth,LeadsController.reOrderIndex)
 leads.patch('/:id',Auth,LeadsController.update)
 leads.get('/',Auth,LeadsController.show),
 leads.get('/reported-leads',Auth,LeadsController.showReportedLeads),
-leads.get('/showMyLeads',Auth,LeadsController.showMyLeads),
-leads.get('/showAllLeadsForAdmin',OnlyAdmins,LeadsController.showAllLeadsForAdmin),
+leads.get('/export-csv-file-user-leads',Auth,LeadsController.export_csv_file_user_leads),
+leads.get('/export-csv-file-admin-leads',OnlyAdmins,LeadsController.export_csv_file_admin_leads),
 leads.get('/allLeads/:id',OnlyAdmins,LeadsController.showAllLeadsToAdminByUserId)
 leads.get('/allLeads',OnlyAdmins,LeadsController.showAllLeadsToAdmin)
 leads.get('/:id',Auth,LeadsController.leadById)
-leads.post('/:id', LeadsController.create);
+leads.post('/:id',LeadsController.create);
 
 
 

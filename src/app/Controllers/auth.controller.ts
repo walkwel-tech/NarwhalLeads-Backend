@@ -17,7 +17,6 @@ import { send_email_forget_password } from "../Middlewares/mail";
 import { ForgetPassword } from "../Models/ForgetPassword";
 import { forgetPasswordInput } from "../Inputs/forgetPasswordInput";
 import { AdminSettings } from "../Models/AdminSettings";
-// import { createCustomersOnRyftAndLeadByte } from "../../utils/createCustomer";
 import { BusinessDetails } from "../Models/BusinessDetails";
 import { AccessToken } from "../Models/AccessToken";
 import {
@@ -27,6 +26,7 @@ import {
 import { signUpFlowEnums } from "../../utils/Enums/signupFlow.enum";
 import { FreeCreditsLink } from "../Models/freeCreditsLink";
 import { paymentMethodEnum } from "../../utils/Enums/payment.method.enum";
+const fs = require("fs");
 
 class AuthController {
   static regsiter = async (req: Request, res: Response): Promise<any> => {
@@ -53,9 +53,6 @@ class AuthController {
     try {
       if (input.code) {
         const checkCode = await FreeCreditsLink.findOne({ code: input.code });
-        // if (checkCode?.isUsed) {
-        //   return res.status(400).json({ data: { message: "Link Already Used!" } });
-        // }
         if (checkCode?.isDisabled) {
           return res.status(400).json({ data: { message: "Link Expired!" } });
         }
@@ -63,7 +60,7 @@ class AuthController {
           return res.status(400).json({ data: { message: "Link Invalid!" } });
         }
       }
-      
+
       const user = await User.findOne({ email: input.email });
       if (!user) {
         const salt = genSaltSync(10);
@@ -71,7 +68,7 @@ class AuthController {
         const showUsers: any = await User.findOne()
           .sort({ rowIndex: -1 })
           .limit(1);
-        const createdUser=await User.create({
+        const createdUser = await User.create({
           firstName: input.firstName,
           lastName: input.lastName,
           email: input.email,
@@ -84,20 +81,21 @@ class AuthController {
           autoCharge: true,
           rowIndex: showUsers.rowIndex + 1,
           signUpFlowStatus: signUpFlowEnums.BUSINESS_DETAILS_LEFT,
-          paymentMethod:paymentMethodEnum.MANUALLY_ADD_CREDITS_METHOD
+          paymentMethod: paymentMethodEnum.MANUALLY_ADD_CREDITS_METHOD,
         });
-      if (input.code) {
-        const checkCode:any = await FreeCreditsLink.findOne({ code: input.code });
+        if (input.code) {
+          const checkCode: any = await FreeCreditsLink.findOne({
+            code: input.code,
+          });
           const dataToSave: any = {
             isUsed: true,
-            $push: {user: {userId: createdUser.id}},
+            $push: { user: { userId: createdUser.id } },
             usedAt: new Date(),
-            useCounts:checkCode?.useCounts+1
+            useCounts: checkCode?.useCounts + 1,
           };
-          console.log("🚀 dataToSave", dataToSave)
-         await FreeCreditsLink.findByIdAndUpdate(checkCode?.id, dataToSave);
-        
-      }
+          console.log("🚀 dataToSave", dataToSave);
+          await FreeCreditsLink.findByIdAndUpdate(checkCode?.id, dataToSave);
+        }
 
         passport.authenticate(
           "local",
@@ -163,7 +161,6 @@ class AuthController {
           .status(400)
           .json({ data: { message: "User already exists with same email." } });
       }
-
     } catch (error) {
       console.log(error);
       return res
@@ -171,7 +168,7 @@ class AuthController {
         .json({ error: { message: "Something went wrong." } });
     }
   };
-  
+
   static auth = async (req: Request, res: Response): Promise<any> => {
     const user: any = req.user;
     try {
@@ -213,12 +210,11 @@ class AuthController {
       "local",
       { session: false },
       async (err: any, user: UserInterface, message: Object) => {
-        
         if (!user) {
           if (err) {
             return res.status(400).json({ error: err });
           }
-          return res.status(401).json({ error: message});
+          return res.status(401).json({ error: message });
         } else if (!user.isActive) {
           return res.status(401).json({
             error: { message: "User not active.Please contact admin." },
@@ -236,6 +232,9 @@ class AuthController {
         }
         const token = generateAuthToken(user);
         const business = await BusinessDetails.findById(user.businessDetailsId);
+        const promoLink: any = await FreeCreditsLink.findOne({
+          user: { $elemMatch: { userId: user._id } },
+        });
         return res.json({
           data: {
             _id: user._id,
@@ -246,6 +245,8 @@ class AuthController {
             credits: user.credits,
             businessName: business?.businessName,
             signUpFlowStatus: user.signUpFlowStatus,
+            topUpAmount: promoLink?.topUpAmount || null,
+            freeCredits: promoLink?.freeCredits || null,
             token,
           },
         });
@@ -412,10 +413,7 @@ class AuthController {
         password: text,
       };
       console.log("FORGET PASSWORD", text);
-      send_email_forget_password(
-        input.email,
-        message
-      );
+      send_email_forget_password(input.email, message);
       await ForgetPassword.create({
         userId: user.id,
         email: input.email,
@@ -428,6 +426,225 @@ class AuthController {
       return res
         .status(400)
         .json({ data: { message: "User does not exist." } });
+    }
+  };
+
+  // static showMapFile_old = async (req: Request, res: Response): Promise<any> => {
+  //   try {
+  //     fs.readFile(
+  //       `${process.cwd()}/public/map/uk.topo.json`,
+  //       "utf8",
+  //       (err: any, data: any) => {
+  //         if (err) {
+  //           console.error(err);
+  //           return;
+  //         }
+  //         data = JSON.parse(data);
+  //         fs.readFile(
+  //           `${process.cwd()}/public/map/uk_ares_with_names.json`,
+  //           "utf8",
+  //           (err: any, data2: any) => {
+  //             if (err) {
+  //               console.error(err);
+  //               return;
+  //             }
+  //             data2 = JSON.parse(data2);
+  //             data.objects.GBR_adm2.geometries.map((j: any) => {
+  //               data2.map((i: any) => {
+  //                 Object.assign(j.properties, {
+  //                   LABEL:j.properties?.HASC_2.split(".")[1]
+  //                 });
+  //                 if (
+  //                   i["County"] == j.properties?.NAME_2
+  //                 ) {
+  //                   Object.assign(j.properties, {
+  //                     POSTAL_CODES: i["PostcodeDistrict"]
+  //                   });
+  //                 }
+  //               });
+  //             });
+  //             return res.json({ data: data });
+  //           }
+  //         );
+  //       }
+  //     );
+  //   } catch (err) {
+  //     return res
+  //       .status(500)
+  //       .json({ error: { message: "Something went wrong." } });
+  //   }
+  // };
+
+  static showMapFile = async (req: Request, res: Response): Promise<any> => {
+    try {
+      fs.readFile(
+        `${process.cwd()}/public/map/uk.topo.json`,
+        "utf8",
+        (err: any, data: any) => {
+          if (err) {
+            console.error(err);
+            return;
+          }
+          data = JSON.parse(data);
+          fs.readFile(
+            `${process.cwd()}/public/map/data_uk_latest.json`,
+            "utf8",
+            (err: any, data2: any) => {
+              if (err) {
+                console.error(err);
+                return;
+              }
+              data2 = JSON.parse(data2);
+              // return res.json(data2);
+              const object1 = data2;
+
+              const object2: any = [];
+
+              object1.forEach((obj:any) => {
+                const districtsArray = obj.PostcodeDistrict.split(",");
+                districtsArray.sort(
+                  (a:any, b:any) =>
+                    parseInt(a.match(/\d+/g)[0]) - parseInt(b.match(/\d+/g)[0])
+                );
+                const sortedDistrictsString = districtsArray.join(",");
+                const newObject = {
+                  Postcode: obj.Postcode,
+                  PostcodeDistrict: sortedDistrictsString,
+                };
+                object2.push(newObject);
+              });
+              data.objects.Areas.geometries?.map((j: any) => {
+                object2.map((i: any) => {
+                  Object.assign(j.properties, {
+                    LABEL: j.properties?.name,
+                  });
+                  if (i["Postcode"] == j.properties?.name) {
+                    Object.assign(j.properties, {
+                      POSTAL_CODES: i["PostcodeDistrict"].split(","),
+                    });
+                  }
+                });
+              });
+              return res.json({ data: data });
+            }
+          );
+        }
+      );
+    } catch (err) {
+      return res
+        .status(500)
+        .json({ error: { message: "Something went wrong." } });
+    }
+  };
+
+  // static showMapFileForLabel = async (req: Request, res: Response): Promise<any> => {
+  //   try {
+  //     let a:any=[]
+  //     fs.readFile(
+  //       `${process.cwd()}/public/map/uk.topo.json`,
+  //       "utf8",
+  //       (err: any, data: any) => {
+  //         if (err) {
+  //           console.error(err);
+  //           return;
+  //         }
+  //         data = JSON.parse(data);
+  //         fs.readFile(
+  //           `${process.cwd()}/public/map/data.json`,
+  //           "utf8",
+  //           (err: any, data2: any) => {
+  //             if (err) {
+  //               console.error(err);
+  //               return;
+  //             }
+  //             data2 = JSON.parse(data2);
+  //             data.objects.GBR_adm2.geometries.map((j: any) => {
+  //               data2.map((i: any) => {
+  //                 if (
+  //                   i["Postcode Area"] == j.properties?.HASC_2.split(".")[1]
+  //                 ) {
+  //                   const obj={}
+  //                   Object.assign(obj, {
+  //                     Id: j.properties?.ID_2,
+  //                   });
+  //                   a.push(obj)
+  //                 }
+  //               });
+  //             });
+  //             return res.json({ data: a });
+  //           }
+  //         );
+  //       }
+  //     );
+  //   } catch (err) {
+  //     return res
+  //       .status(500)
+  //       .json({ error: { message: "Something went wrong." } });
+  //   }
+  // };
+
+  static showMapFileForIreland = async (
+    req: Request,
+    res: Response
+  ): Promise<any> => {
+    try {
+      fs.readFile(
+        `${process.cwd()}/public/map/ireland.topo.json`,
+        "utf8",
+        (err: any, data: any) => {
+          if (err) {
+            console.error(err);
+            return;
+          }
+          data = JSON.parse(data);
+          fs.readFile(
+            `${process.cwd()}/public/map/data_uk_latest.json`,
+            "utf8",
+            (err: any, data2: any) => {
+              if (err) {
+                console.error(err);
+                return;
+              }
+              data2 = JSON.parse(data2);
+              const object1 = data2;
+
+              const object2:any = [];
+
+              object1.forEach((obj:any) => {
+                const districtsArray = obj.PostcodeDistrict.split(",");
+                districtsArray.sort(
+                  (a:any, b:any) =>
+                    parseInt(a.match(/\d+/g)[0]) - parseInt(b.match(/\d+/g)[0])
+                );
+                const sortedDistrictsString = districtsArray.join(",");
+                const newObject = {
+                  Postcode: obj.Postcode,
+                  PostcodeDistrict: sortedDistrictsString,
+                };
+                object2.push(newObject);
+              });
+              data.objects.IRL_adm1.geometries.map((j: any) => {
+                object2.map((i: any) => {
+                  Object.assign(j.properties, {
+                    LABEL: j.properties?.HASC_1.split(".")[1],
+                    name: j.properties?.HASC_1.split(".")[1],
+                  });
+                  if (i["Postcode"] == j.properties?.HASC_1.split(".")[1]) {
+                    Object.assign(j.properties, {
+                      POSTAL_CODES: i["PostcodeDistrict"].split(",")
+                    });
+                  }
+                });
+              });
+              return res.json({ data: data });
+            }
+          );
+        }
+      );
+    } catch (err) {
+      return res
+        .status(500)
+        .json({ error: { message: "Something went wrong." } });
     }
   };
 }

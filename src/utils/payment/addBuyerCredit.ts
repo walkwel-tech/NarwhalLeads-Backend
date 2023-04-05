@@ -22,8 +22,15 @@ export const addCreditsToBuyer = (params: PaymentInput) => {
           await User.findByIdAndUpdate(buyerIdUser?.id, {
             credits: buyerIdUser?.credits + params.fixedAmount+params.freeCredits,
           });
+          await User.findByIdAndUpdate({invitedById:buyerIdUser?.id}, {
+            credits: buyerIdUser?.credits + params.fixedAmount+params.freeCredits,
+          });
+        
         } else {
           await User.findByIdAndUpdate(buyerIdUser?.id, {
+            credits: params.fixedAmount+params.freeCredits,
+          });
+          await User.findByIdAndUpdate({invitedById:buyerIdUser?.id}, {
             credits: params.fixedAmount+params.freeCredits,
           });
         }

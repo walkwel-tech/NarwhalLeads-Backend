@@ -5,6 +5,7 @@ import { send_email_to_invited_user } from "../Middlewares/mail";
 import { LeadTablePreference } from "../Models/LeadTablePreference";
 import { User } from "../Models/User";
 
+const LIMIT = 10;
 export class invitedUsersController {
   static create = async (_req: Request, res: Response) => {
     const input = _req.body;
@@ -47,8 +48,8 @@ export class invitedUsersController {
           .sort({ rowIndex: -1 })
           .limit(1);
         const dataToSave = {
-          firstName: " ",
-          lastName: " ",
+          firstName: input.firstName,
+          lastName:input.lastName,
           email: input.email,
           password: hashPassword,
           role: RolesEnum.INVITED,
@@ -60,6 +61,7 @@ export class invitedUsersController {
           isVerified: true,
           //@ts-ignore
           rowIndex: allInvites?.rowIndex + 1 || 0,
+          credits:user?.credits
         };
 
         const data = await User.create(dataToSave);
@@ -85,19 +87,44 @@ export class invitedUsersController {
 
   static show = async (_req: Request, res: Response) => {
     //@ts-ignore
-
     const user = _req.user?._id;
-    try {
-      const invitedUsers = await User.find({
+    //@ts-ignore
+    const perPage = _req.query && _req.query.perPage > 0 ? parseInt(_req.query.perPage) : LIMIT;
+          //@ts-ignore
+    let skip = (_req.query && _req.query.page > 0 ? parseInt(_req.query.page) - 1 : 0) * perPage;
+      let dataToFind: any = {
         invitedById: user,
+        role:RolesEnum.INVITED,
         isDeleted: false,
-      });
-
-      if (invitedUsers.length == 0) {
-        return res.status(400).json({ error: { message: "No Data Found" } });
-      } else {
-        return res.json({ data: invitedUsers });
+        // isActive: JSON.parse(isActive?.toLowerCase()),
+      };
+      if (_req.query.search) {
+        dataToFind = {
+          ...dataToFind,
+          $or: [
+            //$options : 'i' used for case insensitivity search
+            { email: { $regex: _req.query.search, $options: "i" } },
+            { firstName: { $regex: _req.query.search, $options: "i" } },
+            { lastName: { $regex: _req.query.search, $options: "i" } },
+            { buyerId: { $regex: _req.query.search, $options: "i" } },
+            {
+              "businessDetailsId.businessName": {
+                $regex: _req.query.search,
+                $options: "i",
+              },
+            },
+          ],
+        };
+        skip = 0;
       }
+    try {
+      const invitedUsers = await User.find(dataToFind).populate("invitedById").sort({createdAt:-1}).skip(skip).limit(perPage);
+
+      // if (invitedUsers.length == 0) {
+        // return res.json({ error: { message: "No Data Found" } });
+      // } else {
+        return res.json({ data: invitedUsers });
+      // }
     } catch (error) {
       return res
         .status(500)
@@ -122,6 +149,32 @@ export class invitedUsersController {
       } else {
         await User.findByIdAndUpdate(id, { isDeleted: true });
         return res.json({ data: { message: "User Deleted!" } });
+      }
+    } catch (error) {
+      return res
+        .status(500)
+        .json({ error: { message: "Something went wrong." } });
+    }
+  };
+
+  static update = async (_req: Request, res: Response) => {
+    //@ts-ignore
+    const id = _req.params.id;
+    //@ts-ignore
+    const user = _req.user?._id;
+    const input=_req.body
+    try {
+      const invitedUsers = await User.find({
+        invitedById: user,
+        _id: id,
+        isDeleted: false,
+      });
+
+      if (invitedUsers.length == 0) {
+        return res.status(400).json({ error: { message: "No User Found" } });
+      } else {
+        const user=await User.findByIdAndUpdate(id,input,{new:true});
+        return res.json({ data: user  });
       }
     } catch (error) {
       return res

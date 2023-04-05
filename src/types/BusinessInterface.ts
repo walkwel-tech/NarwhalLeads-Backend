@@ -5,6 +5,8 @@ export interface BusinessDetailsInterface extends Document {
   businessIndustry: string,
   businessName: string,
   businessLogo: string,
+  address1: string,
+  address2: string,
   businessSalesNumber: string,
   businessAddress: string,
   businessCity: string,

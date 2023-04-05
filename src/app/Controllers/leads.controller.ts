@@ -5,7 +5,6 @@ const fs = require("fs");
 import { RolesEnum } from "../../types/RolesEnum";
 import { leadsStatusEnums } from "../../utils/Enums/leads.status.enum";
 import { addCreditsToBuyer } from "../../utils/payment/addBuyerCredit";
-import { AdminSettings } from "../Models/AdminSettings";
 import { CardDetails } from "../Models/CardDetails";
 import { Leads } from "../Models/Leads";
 import { Transaction } from "../Models/Transaction";
@@ -25,24 +24,25 @@ import { transactionTitle } from "../../utils/Enums/transaction.title.enum";
 import { leadsAlertsEnums } from "../../utils/Enums/leads.Alerts.enum";
 import { preference } from "../../utils/constantFiles/leadPreferenecColumns";
 import { sort } from "../../utils/Enums/sorting.enum";
+import { send_lead_data_to_zap } from "../../utils/webhookUrls/send_data_zap";
+import { IP } from "../../utils/constantFiles/IP_Lists";
+
 const LIMIT = 10;
 
 export class LeadsController {
   static create = async (req: Request, res: Response) => {
+    //@ts-ignore
+    if (!IP.IP.includes(req?.headers["x-forwarded-for"])) {
+      return res
+        .status(403)
+        .json({
+          error: {
+            message:
+              "Access denied: Your IP address is not allowed to access this API",
+          },
+        });
+    }
     const bid = req.params.id;
-    const givenLeadByteKey = req.body.c1;
-    const adminSettings = await AdminSettings.findOne();
-    if (!givenLeadByteKey) {
-      return res
-        .status(401)
-        .json({ err: { message: "Please insert Leadbyte secret key" } });
-    }
-    if (adminSettings?.leadByteKey != givenLeadByteKey) {
-      return res
-        .status(401)
-        .json({ err: { message: "Incorrect Leadbyte secret key" } });
-    }
-
     const input = req.body;
     const user: any = await User.findOne({ buyerId: bid }).populate(
       "userLeadsDetailsId"
@@ -55,6 +55,7 @@ export class LeadsController {
     const checkPreferenceExists: any = await LeadTablePreference.findOne({
       userId: user._id,
     });
+    console.log("1",checkPreferenceExists)
     if (!checkPreferenceExists) {
       let array = preference;
 
@@ -112,6 +113,8 @@ export class LeadsController {
         });
       }
     });
+    console.log("2",checkPreferenceExists?.columns)
+
     const admin = await User.findOne({ role: RolesEnum.ADMIN });
     await LeadTablePreference.updateOne(
       { userId: admin?._id },
@@ -132,6 +135,16 @@ export class LeadsController {
       // @ts-ignore
       rowIndex: leads?.rowIndex + 1 || 0,
     });
+    console.log(user);
+    if (user?.userLeadsDetailsId?.sendDataToZapier) {
+      send_lead_data_to_zap(user.userLeadsDetailsId.zapierUrl, input)
+        .then((res) => {
+          console.log("data send to zapier", res);
+        })
+        .catch((err) => {
+          console.log("error during sending data to zapier", err);
+        });
+    }
     const cardDetails = await CardDetails.findOne({
       userId: user._id,
       isDefault: true,
@@ -140,7 +153,8 @@ export class LeadsController {
     if (cardDetails) {
       const credits = user?.credits;
       const leftCredits = credits - user?.leadCost;
-      await User.findByIdAndUpdate(user?.id, { credits: leftCredits });
+     const userf= await User.findByIdAndUpdate(user?.id, { credits: leftCredits });
+     await User.updateMany({invitedById:user?.id},{$set: { credits: userf?.credits }});
       const dataToSave: any = {
         userId: user.id,
         cardId: cardDetails?.id,
@@ -342,8 +356,6 @@ export class LeadsController {
           ...dataToFind,
           $or: [
             { "leads.county": { $regex: _req.query.search, $options: "i" } },
-            // { firstName: { $regex: _req.query.search } },
-            // { lastName: { $regex: _req.query.search } },
           ],
         };
         skip = 0;
@@ -740,6 +752,7 @@ export class LeadsController {
                   clientNotes3: 0,
                   bid: 0,
                   leadsCost: 0,
+                  sendDataToZapier: 0,
                 },
               },
             ],
@@ -812,20 +825,14 @@ export class LeadsController {
           ...dataToFind,
           $or: [
             { invalidLeadReason: { $regex: _req.query.search, $options: "i" } },
-            { leadRemarks: { $regex: _req.query.search, $options: "i" } },
-            { feedbackForNMG: { $regex: _req.query.search, $options: "i" } },
-            { clientNotes1: { $regex: _req.query.search, $options: "i" } },
-            { clientNotes2: { $regex: _req.query.search, $options: "i" } },
-            { clientNotes3: { $regex: _req.query.search, $options: "i" } },
+            { clientNotes: { $regex: _req.query.search, $options: "i" } },
             { bid: { $regex: _req.query.search, $options: "i" } },
             { status: { $regex: _req.query.search, $options: "i" } },
             { "leads.email": { $regex: _req.query.search, $options: "i" } },
-            { "leads.firstname": { $regex: _req.query.search, $options: "i" } },
-            { "leads.lastname": { $regex: _req.query.search, $options: "i" } },
-            { "leads.gender": { $regex: _req.query.search, $options: "i" } },
-            { "leads.dob": { $regex: _req.query.search, $options: "i" } },
-            { "leads.jobtitle": { $regex: _req.query.search, $options: "i" } },
-            { "leads.county": { $regex: _req.query.search, $options: "i" } },
+            { "leads.firstName": { $regex: _req.query.search, $options: "i" } },
+            { "leads.lastName": { $regex: _req.query.search, $options: "i" } },
+            { "leads.address": { $regex: _req.query.search, $options: "i" } },
+            { "leads.phone": { $regex: _req.query.search, $options: "i" } },
           ],
         };
         skip = 0;
@@ -1492,11 +1499,31 @@ export class LeadsController {
     }
   };
 
-  static showMyLeads = async (_req: any, res: Response) => {
+  static export_csv_file_user_leads = async (_req: any, res: Response) => {
+    let sortingOrder = _req.query.sortingOrder || sort.DESC;
     const userId = _req.user?.id;
     const status = _req.query.status;
+    if (sortingOrder == sort.ASC) {
+      sortingOrder = 1;
+    } else {
+      sortingOrder = -1;
+    }
     try {
-      let dataToFind: any = { status: { $nin: [leadsStatusEnums.ARCHIVED] } };
+      let dataToFind: any = {
+        $or: [
+          {
+            status: {
+              $in: [
+                leadsStatusEnums.REPORTED,
+                leadsStatusEnums.REPORT_ACCEPTED,
+                leadsStatusEnums.REPORT_REJECTED,
+                leadsStatusEnums.ARCHIVED,
+                leadsStatusEnums.VALID,
+              ],
+            },
+          },
+        ],
+      };
       const user = await User.findById(userId);
       if (user?.role == RolesEnum.INVITED) {
         const invitedBy = await User.findOne({ _id: user?.invitedById });
@@ -1507,6 +1534,17 @@ export class LeadsController {
       if (_req.query.search) {
         dataToFind = {
           ...dataToFind,
+          $or: [
+            { invalidLeadReason: { $regex: _req.query.search, $options: "i" } },
+            { clientNotes: { $regex: _req.query.search, $options: "i" } },
+            { bid: { $regex: _req.query.search, $options: "i" } },
+            { status: { $regex: _req.query.search, $options: "i" } },
+            { "leads.email": { $regex: _req.query.search, $options: "i" } },
+            { "leads.firstName": { $regex: _req.query.search, $options: "i" } },
+            { "leads.lastName": { $regex: _req.query.search, $options: "i" } },
+            { "leads.phone": { $regex: _req.query.search, $options: "i" } },
+            { "leads.address": { $regex: _req.query.search, $options: "i" } },
+          ],
         };
       }
       if (status) {
@@ -1517,6 +1555,7 @@ export class LeadsController {
           $facet: {
             results: [
               { $match: dataToFind },
+              { $sort: { createdAt: sortingOrder } },
               {
                 $project: {
                   rowIndex: 0,
@@ -1544,13 +1583,49 @@ export class LeadsController {
     }
   };
 
-  static showAllLeadsForAdmin = async (_req: any, res: Response) => {
+  static export_csv_file_admin_leads = async (_req: any, res: Response) => {
     const status = _req.query.status;
+    let id = _req.query.id;
+    let sortingOrder = _req.query.sortingOrder || sort.DESC;
+    if (sortingOrder == sort.ASC) {
+      sortingOrder = 1;
+    } else {
+      sortingOrder = -1;
+    }
     try {
-      let dataToFind: any = { status: { $nin: [leadsStatusEnums.ARCHIVED] } };
+      let dataToFind: any = {
+        $or: [
+          {
+            status: {
+              $in: [
+                leadsStatusEnums.REPORTED,
+                leadsStatusEnums.REPORT_ACCEPTED,
+                leadsStatusEnums.REPORT_REJECTED,
+                leadsStatusEnums.ARCHIVED,
+                leadsStatusEnums.VALID,
+              ],
+            },
+          },
+        ],
+      };
+      if (id) {
+        const user = await User.findById(id);
+        dataToFind.bid = user?.buyerId;
+      }
       if (_req.query.search) {
         dataToFind = {
           ...dataToFind,
+          $or: [
+            { invalidLeadReason: { $regex: _req.query.search, $options: "i" } },
+            { clientNotes: { $regex: _req.query.search, $options: "i" } },
+            { bid: { $regex: _req.query.search, $options: "i" } },
+            { status: { $regex: _req.query.search, $options: "i" } },
+            { "leads.email": { $regex: _req.query.search, $options: "i" } },
+            { "leads.firstName": { $regex: _req.query.search, $options: "i" } },
+            { "leads.lastName": { $regex: _req.query.search, $options: "i" } },
+            { "leads.phone": { $regex: _req.query.search, $options: "i" } },
+            { "leads.address": { $regex: _req.query.search, $options: "i" } },
+          ],
         };
       }
       if (status) {
@@ -1561,6 +1636,7 @@ export class LeadsController {
           $facet: {
             results: [
               { $match: dataToFind },
+              { $sort: { createdAt: sortingOrder } },
               {
                 $project: {
                   rowIndex: 0,
@@ -1587,8 +1663,8 @@ export class LeadsController {
     }
   };
 }
-function convertArray(arr:any) {
-  return arr.map((obj:any) => {
+function convertArray(arr: any) {
+  return arr.map((obj: any) => {
     const keys = Object.keys(obj);
     const newObj = {};
     keys.forEach((key) => {
@@ -1603,7 +1679,7 @@ function convertArray(arr:any) {
           });
         }
       } else {
-         //@ts-ignore
+        //@ts-ignore
         newObj[key] = obj[key];
       }
     });

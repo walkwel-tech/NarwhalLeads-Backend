@@ -20,7 +20,7 @@ import { signUpFlowEnums } from "../../utils/Enums/signupFlow.enum";
 import { FreeCreditsLink } from "../Models/freeCreditsLink";
 import { BusinessDetails } from "../Models/BusinessDetails";
 import { UserLeadsDetails } from "../Models/UserLeadsDetails";
-
+import { paymentMethodEnum } from "../../utils/Enums/payment.method.enum";
 
 export class CardDetailsControllers {
   static create = async (req: Request, res: Response): Promise<any> => {
@@ -55,7 +55,6 @@ export class CardDetailsControllers {
         .populate("userLeadsDetailsId");
       if (user) {
         //@ts-ignore
-
         user.businessDetailsId?.businessOpeningHours = JSON.parse(
           //@ts-ignore
           user?.businessDetailsId?.businessOpeningHours
@@ -63,9 +62,9 @@ export class CardDetailsControllers {
       }
 
       if (!user.isRyftCustomer || !user.isLeadbyteCustomer) {
-        await User.deleteOne({_id:input.userId})
-        await BusinessDetails.deleteOne({_id:user.businessDetailsId})
-        await UserLeadsDetails.deleteOne({_id:user.userLeadsDetailsId})
+        await User.deleteOne({ _id: input.userId });
+        await BusinessDetails.deleteOne({ _id: user.businessDetailsId });
+        await UserLeadsDetails.deleteOne({ _id: user.userLeadsDetailsId });
         return res.status(403).json({
           error: {
             message:
@@ -247,7 +246,7 @@ export class CardDetailsControllers {
         .json({ error: { message: "Something went wrong." } });
     }
   };
-  
+
   static toggleForCard = async (req: Request, res: Response): Promise<any> => {
     const userId = Object(req.user).id;
     const id = req.params.id;
@@ -406,8 +405,16 @@ export class CardDetailsControllers {
     //@ts-ignore
     const userId = req.user?.id;
     const input = req.body;
+    const promoLink: any = await FreeCreditsLink.findOne({
+      user: { $elemMatch: { userId: userId } },
+    });
     try {
       const user = await User.findById(userId);
+      if(user?.paymentMethod!=paymentMethodEnum.MANUALLY_ADD_CREDITS_METHOD){
+        return res
+        .status(400)
+        .json({ error: { message: "please select manual top-up payment method" } });
+      }
       const card = await CardDetails.findOne({
         userId: userId,
         isDefault: true,
@@ -421,7 +428,9 @@ export class CardDetailsControllers {
       if (input.amount < adminSettings?.minimumUserTopUpAmount) {
         return res.status(500).json({
           error: {
-            message: "Enter amount greater than " + adminSettings?.minimumUserTopUpAmount,
+            message:
+              "Enter amount greater than " +
+              adminSettings?.minimumUserTopUpAmount,
           },
         });
       }
@@ -443,6 +452,9 @@ export class CardDetailsControllers {
       } else {
         amount = adminSettings?.minimumUserTopUpAmount;
       }
+      if (input.amount >= promoLink?.topUpAmount) {
+        params.freeCredits = promoLink.freeCredits;
+      }
       managePayments(params)
         .then(async (_res) => {
           console.log("payment success!!");
@@ -454,7 +466,7 @@ export class CardDetailsControllers {
             status: "success",
             amount: input.amount || adminSettings?.minimumUserTopUpAmount,
           };
-          console.log(transactionData)
+          console.log(transactionData);
           const transaction = await Transaction.create(transactionData);
           if (!user?.xeroContactId) {
             console.log("xeroContact ID not found. Failed to generate pdf.");

@@ -26,22 +26,30 @@ const UserLeadsDetailsSchema = new Schema(
       type: Array,
       default: "",
     },
-    leadAlertsFrequency:{
+    leadAlertsFrequency: {
       type: String,
       default: "",
     },
+    zapierUrl: {
+      type: String,
+      default: "",
+    },
+    sendDataToZapier: { 
+      type: Boolean ,
+      default:true,
+    },
     postCodeTargettingList: {
-        type: String,
-        default: "",
-      },
-      isDeleted: {
-        type: Boolean,
-        default: false,
-      },
-      deletedAt: {
-        type: Date,
-        default: null,
-      },
+      type: Array,
+      default: "",
+    },
+    isDeleted: {
+      type: Boolean,
+      default: false,
+    },
+    deletedAt: {
+      type: Date,
+      default: null,
+    }
   },
 
   { timestamps: true }

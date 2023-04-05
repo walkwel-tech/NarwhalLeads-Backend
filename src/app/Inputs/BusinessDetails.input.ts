@@ -12,6 +12,12 @@ export class BusinessDetailsInput {
   @IsString({ message: "business Logo is required." })
 
   businessLogo: string;
+  @IsString({ message: "address1 is required." })
+
+  address1: string;
+  @IsString({ message: "address2 is required." })
+
+  address2: string;
 
   @IsString({ message: "business Sales-Number is required." })
 

@@ -21,6 +21,8 @@ export class BusinessDetailsController {
       //@ts-ignore
       (Business.businessLogo = req.file?.filename),
       (Business.businessSalesNumber = input.businessSalesNumber),
+      (Business.address1 = input.address1),
+      (Business.address2 = input.address2),
       (Business.businessAddress = input.businessAddress),
       (Business.businessCity = input.businessCity),
       (Business.businessCountry = input.businessCountry),
@@ -46,6 +48,8 @@ export class BusinessDetailsController {
         businessLogo: `${FileEnum.PROFILEIMAGE}${req?.file.filename}`,
         businessSalesNumber: input.businessSalesNumber,
         businessAddress: input.businessAddress,
+        address1: input.address1,
+        address2: input.address2,
         businessCity: input.businessCity,
         businessCountry: input.businessCountry,
         businessPostCode: input.businessPostCode,
@@ -117,6 +121,12 @@ export class BusinessDetailsController {
           businessAddress: input.businessAddress
             ? input.businessAddress
             : details.businessAddress,
+            address1: input.address1
+            ? input.address1
+            : details.address1,
+            address2: input.address2
+            ? input.address2
+            : details.address2,
           businessCity: input.businessCity
             ? input.businessCity
             : details.businessCity,

@@ -20,7 +20,8 @@ export const createContactOnXero = (name: string, token: string) => {
         resolve(data);
       })
       .catch(async (err) => {
-        reject(err);
+        // reject(err);
+        console.log(err)
       });
   });
 };

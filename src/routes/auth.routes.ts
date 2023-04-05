@@ -6,6 +6,9 @@ import { AuthController } from '../app/Controllers';
 import { Auth, OnlyAdmins } from '../app/Middlewares';
 
 const auth: Router = Router();
+auth.get('/map',AuthController.showMapFile)
+auth.get('/map/ireland',AuthController.showMapFileForIreland)
+// auth.get('/mapForLabel',AuthController.showMapFileForLabel)
 auth.get('/',Auth,AuthController.auth)
 auth.post('/register', AuthController.regsiter);
 auth.post('/activeUser/:id',OnlyAdmins, AuthController.activeUser);

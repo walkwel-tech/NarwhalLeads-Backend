@@ -10,13 +10,13 @@ export class UserLeadsController {
     const input = req.body;
     let dataToSave: any = {
       userId: input.userId,
-      total: input.total,
+      total: input?.total,
       daily: input.daily,
-      weekly: input.weekly,
-      monthly: input.monthly,
+      weekly: input?.weekly,
+      monthly: input?.monthly,
       leadSchedule: input.leadSchedule,
       postCodeTargettingList: input.postcodeTargettingList,
-      leadAlertsFrequency:leadsAlertsEnums.INSTANT
+      leadAlertsFrequency:leadsAlertsEnums.INSTANT,
     };
     try {
       const details = await UserLeadsDetails.create(dataToSave);
@@ -104,7 +104,8 @@ export class UserLeadsController {
     req: Request,
     res: Response
   ): Promise<any> => {
-    
+    console.log("hello")
+
     const  id  = req.params.id;
     const input = req.body;
     try {
@@ -114,7 +115,6 @@ export class UserLeadsController {
           .status(404)
           .json({ error: { message: "details does not exists." } });
       }
-
       const data = await UserLeadsDetails.findByIdAndUpdate(
         id,
         {...input

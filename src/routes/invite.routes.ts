@@ -7,5 +7,6 @@ const invites: Router = Router();
 invites.post('/',Auth, invitedUsersController.create);
 invites.get('/',Auth, invitedUsersController.show);
 invites.delete('/:id',Auth, invitedUsersController.delete);
+invites.patch('/:id',Auth, invitedUsersController.update);
 
 export default invites;

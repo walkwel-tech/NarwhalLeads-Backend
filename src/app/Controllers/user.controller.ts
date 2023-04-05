@@ -15,6 +15,9 @@ import { transactionTitle } from "../../utils/Enums/transaction.title.enum";
 import { BusinessDetails } from "../Models/BusinessDetails";
 import { sort } from "../../utils/Enums/sorting.enum";
 import { UserLeadsDetails } from "../Models/UserLeadsDetails";
+import mongoose from "mongoose";
+const ObjectId = mongoose.Types.ObjectId;
+
 
 const LIMIT = 10;
 
@@ -192,6 +195,7 @@ export class UsersControllers {
                   "businessDetailsId.createdAt": 0,
                   "businessDetailsId.updatedAt": 0,
                   "businessDetailsId.__v": 0,
+                  "userLeadsDetailsId.postCodeTargettingList": 0,
                   "userLeadsDetailsId._id": 0,
                   "userLeadsDetailsId.isDeleted": 0,
                   "userLeadsDetailsId.deletedAt": 0,
@@ -503,7 +507,6 @@ export class UsersControllers {
               {
                 ...input,
                 credits: checkUser.credits + input.credits,
-                // image: (req.file || {}).filename ? `${FileEnum.PROFILEIMAGE}${req?.file?.filename}` : checkUser.image,
               },
               {
                 new: true,
@@ -528,7 +531,6 @@ export class UsersControllers {
           id,
           {
             ...input,
-            // image: (req.file || {}).filename ? `${FileEnum.PROFILEIMAGE}${req?.file?.filename}` : checkUser.image,
           },
           {
             new: true,
@@ -616,4 +618,121 @@ export class UsersControllers {
         .json({ error: { message: "Something went wrong." } });
     }
   };
+
+  static showAllClientsForAdminExportFile = async (
+    _req: any,
+    res: Response
+  ) => {
+    const id = _req.query.id;
+    const status = _req.query.status;
+    let sortingOrder = _req.query.sortingOrder || sort.DESC;
+    if (sortingOrder == sort.ASC) {
+      sortingOrder = 1;
+    } else {
+      sortingOrder = -1;
+    }
+    try {
+      let dataToFind: any = {};
+      if (_req.query.search) {
+        dataToFind = {
+          ...dataToFind,
+        };
+      }
+      if (status) {
+        dataToFind.status = status;
+      }
+      if (id) {
+        dataToFind._id = new ObjectId(id);
+      }
+      const [query]: any = await User.aggregate([
+        {
+          $facet: {
+            results: [
+              {
+                $lookup: {
+                  from: "businessdetails",
+                  localField: "businessDetailsId",
+                  foreignField: "_id",
+                  as: "businessDetailsId",
+                },
+              },
+              {
+                $lookup: {
+                  from: "userleadsdetails",
+                  localField: "userLeadsDetailsId",
+                  foreignField: "_id",
+                  as: "userLeadsDetailsId",
+                },
+              },
+              { $match: dataToFind },
+              { $sort: { createdAt: sortingOrder } },
+              {
+                $project: {
+                  rowIndex: 0,
+                  __v: 0,
+                  updatedAt: 0,
+                  password: 0,
+                  "businessDetailsId.businessOpeningHours":0,
+                  "businessDetailsId.__v": 0,
+                  "businessDetailsId._id": 0,
+                  "businessDetailsId.updatedAt": 0,
+                  "userLeadsDetailsId.__v": 0,
+                  "userLeadsDetailsId._id": 0,
+                  "userLeadsDetailsId.updatedAt": 0,
+                  "userLeadsDetailsId.leadSchedule":0
+                },
+              },
+            ],
+            leadsCount: [{ $match: dataToFind }, { $count: "count" }],
+          },
+        },
+      ]);
+      query.results.map((item: any) => {
+        let businessDetailsId = Object.assign({}, item["businessDetailsId"][0]);
+        let userLeadsDetailsId = Object.assign(
+          {},
+          item["userLeadsDetailsId"][0]
+        );
+        // let businessOpeningHours=Object.assign({}, item["businessDetailsId"][0]?.businessOpeningHours)
+        item.userLeadsDetailsId = userLeadsDetailsId;
+        item.businessDetailsId = businessDetailsId;
+        // item.open = businessOpeningHours;
+      });
+
+      return res.json({
+        data: convertArray(query.results),
+      });
+    } catch (err) {
+      return res.status(500).json({
+        error: {
+          message: "something went wrong",
+          err,
+        },
+      });
+    }
+  };
+}
+
+function convertArray(arr: any) {
+  return arr.map((obj: any) => {
+    const keys = Object.keys(obj);
+    const newObj = {};
+    keys.forEach((key) => {
+      if (typeof obj[key] === "object") {
+        if (obj[key] == null) {
+          obj[key] == "null";
+        } else {
+          const subKeys = Object.keys(obj[key]);
+          subKeys.forEach((subKey) => {
+            //@ts-ignore
+            newObj[subKey] = obj[key][subKey];
+          });
+        }
+      } else {
+        //@ts-ignore
+        newObj[key] = obj[key];
+      }
+    });
+    return newObj;
+  });
 }

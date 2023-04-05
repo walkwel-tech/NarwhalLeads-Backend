@@ -8,8 +8,10 @@ export interface UserLeadsDetailsInterface extends Document {
   weekly: number;
   monthly: number;
   leadSchedule: [];
-  postCodeTargettingList:string;
+  postCodeTargettingList:[];
   leadAlertsFrequency:string;
+  zapierUrl:string;
+  sendDataToZapier:boolean;
   createdAt: Date;
   isDeleted:  boolean,
   deletedAt:  Date,

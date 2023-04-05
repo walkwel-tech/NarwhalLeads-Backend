@@ -36,6 +36,10 @@ const FreeCreditsLinkSchema = new Schema({
         type: Date,
         default: null
     },
+    topUpAmount: {
+        type: Number,
+        default: null
+    },
 
 }, {timestamps: true});
 

@@ -1,6 +1,5 @@
 import { Request, Response } from "express";
 import { FreeCreditsLink } from "../Models/freeCreditsLink";
-// import { User } from "../Models/User";
 
 let alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
 
@@ -19,6 +18,7 @@ export class freeCreditsLinkController {
       const dataToSave: any = {
         code: randomString(10),
         freeCredits: input.freeCredits,
+        topUpAmount:input.topUpAmount,
         maxUseCounts: input.maxUseCounts,
         useCounts: 0,
       };

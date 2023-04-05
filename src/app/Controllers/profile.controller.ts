@@ -128,7 +128,5 @@ export class ProfileController {
         .json({ error: { message: "Something went wrong." } });
     }
   };
-
-
 }
 

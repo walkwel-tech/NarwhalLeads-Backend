@@ -1,0 +1,1235 @@
+[
+  {
+    "Postal Code": "A42",
+    "County": "Garristown",
+    "Country": "Ireland",
+    "Province": "Leinster",
+    "City": "Garristown",
+    "Administrative Region": "Leinster",
+    "City Population": 433
+  },
+  {
+    "Postal Code": "A45",
+    "County": "Oldtown",
+    "Country": "Ireland",
+    "Province": "Leinster",
+    "City": "Oldtown, Dublin",
+    "Administrative Region": "Leinster",
+    "City Population": 455
+  },
+  {
+    "Postal Code": "A63",
+    "County": "Greystones",
+    "Country": "Ireland",
+    "Province": "Leinster",
+    "City": "Greystones",
+    "Administrative Region": "Leinster",
+    "City Population": 13492
+  },
+  {
+    "Postal Code": "A67",
+    "County": "Wicklow",
+    "Country": "Ireland",
+    "Province": "Leinster",
+    "City": "Wicklow",
+    "Administrative Region": "Leinster",
+    "City Population": 14048
+  },
+  {
+    "Postal Code": "A75",
+    "County": "Castleblayney",
+    "Country": "Ireland",
+    "Province": "Ulster",
+    "City": "Castleblayney",
+    "Administrative Region": "Ulster",
+    "City Population": 3006
+  },
+  {
+    "Postal Code": "A81",
+    "County": "Carrickmacross",
+    "Country": "Ireland",
+    "Province": "Ulster",
+    "City": "Carrickmacross",
+    "Administrative Region": "Ulster",
+    "City Population": 3995
+  },
+  {
+    "Postal Code": "A82",
+    "County": "Kells",
+    "Country": "Ireland",
+    "Province": "Leinster",
+    "City": "Kells, County Meath",
+    "Administrative Region": "Leinster",
+    "City Population": 4820
+  },
+  {
+    "Postal Code": "A83",
+    "County": "Enfield",
+    "Country": "Ireland",
+    "Province": "Leinster",
+    "City": "Enfield, County Meath",
+    "Administrative Region": "Leinster",
+    "City Population": 2929
+  },
+  {
+    "Postal Code": "A84",
+    "County": "Ashbourne",
+    "Country": "Ireland",
+    "Province": "Leinster",
+    "City": "Ashbourne, County Meath",
+    "Administrative Region": "Leinster",
+    "City Population": 11355
+  },
+  {
+    "Postal Code": "A85",
+    "County": "Dunshaughlin",
+    "Country": "Ireland",
+    "Province": "Leinster",
+    "City": "Dunshaughlin",
+    "Administrative Region": "Leinster",
+    "City Population": 3903
+  },
+  {
+    "Postal Code": "A86",
+    "County": "Dunboyne",
+    "Country": "Ireland",
+    "Province": "Leinster",
+    "City": "Dunboyne",
+    "Administrative Region": "Leinster",
+    "City Population": 6959
+  },
+  {
+    "Postal Code": "A91",
+    "County": "Dundalk",
+    "Country": "Ireland",
+    "Province": "Leinster",
+    "City": "Dundalk",
+    "Administrative Region": "Leinster",
+    "City Population": 33428
+  },
+  {
+    "Postal Code": "A92",
+    "County": "Drogheda",
+    "Country": "Ireland",
+    "Province": "Leinster",
+    "City": "Drogheda",
+    "Administrative Region": "Leinster",
+    "City Population": 33441
+  },
+  {
+    "Postal Code": "A94",
+    "County": "Blackrock",
+    "Country": "Ireland",
+    "Province": "Leinster",
+    "City": "Blackrock, Dublin",
+    "Administrative Region": "Leinster",
+    "City Population": 8821
+  },
+  {
+    "Postal Code": "A96",
+    "County": "Dun Laoghaire",
+    "Country": "Ireland",
+    "Province": "Leinster",
+    "City": "Dún Laoghaire",
+    "Administrative Region": "Leinster",
+    "City Population": 185400
+  },
+  {
+    "Postal Code": "A98",
+    "County": "Bray",
+    "Country": "Ireland",
+    "Province": "Leinster",
+    "City": "Bray",
+    "Administrative Region": "Leinster",
+    "City Population": 6477
+  },
+  {
+    "Postal Code": "C15",
+    "County": "Trim",
+    "Country": "Ireland",
+    "Province": "Leinster",
+    "City": "Trim, County Meath",
+    "Administrative Region": "Leinster",
+    "City Population": 1800
+  },
+  {
+    "Postal Code": "D01",
+    "County": "Dublin 1",
+    "Country": "Ireland",
+    "Province": "Leinster",
+    "City": "South Dublin",
+    "Administrative Region": "—",
+    "City Population": "—"
+  },
+  {
+    "Postal Code": "D02",
+    "County": "Dublin 2",
+    "Country": "Ireland",
+    "Province": "Leinster",
+    "City": "South Dublin",
+    "Administrative Region": "—",
+    "City Population": "—"
+  },
+  {
+    "Postal Code": "D03",
+    "County": "Dublin 3",
+    "Country": "Ireland",
+    "Province": "Leinster",
+    "City": "South Dublin",
+    "Administrative Region": "—",
+    "City Population": "—"
+  },
+  {
+    "Postal Code": "D04",
+    "County": "Dublin 4",
+    "Country": "Ireland",
+    "Province": "Leinster",
+    "City": "South Dublin",
+    "Administrative Region": "—",
+    "City Population": "—"
+  },
+  {
+    "Postal Code": "D05",
+    "County": "Dublin 5",
+    "Country": "Ireland",
+    "Province": "Leinster",
+    "City": "South Dublin",
+    "Administrative Region": "—",
+    "City Population": "—"
+  },
+  {
+    "Postal Code": "D06",
+    "County": "Dublin 6",
+    "Country": "Ireland",
+    "Province": "Leinster",
+    "City": "South Dublin",
+    "Administrative Region": "—",
+    "City Population": "—"
+  },
+  {
+    "Postal Code": "D07",
+    "County": "Dublin 7",
+    "Country": "Ireland",
+    "Province": "Leinster",
+    "City": "South Dublin",
+    "Administrative Region": "—",
+    "City Population": "—"
+  },
+  {
+    "Postal Code": "D08",
+    "County": "Dublin 8",
+    "Country": "Ireland",
+    "Province": "Leinster",
+    "City": "South Dublin",
+    "Administrative Region": "—",
+    "City Population": "—"
+  },
+  {
+    "Postal Code": "D09",
+    "County": "Dublin 9",
+    "Country": "Ireland",
+    "Province": "Leinster",
+    "City": "South Dublin",
+    "Administrative Region": "—",
+    "City Population": "—"
+  },
+  {
+    "Postal Code": "D10",
+    "County": "Dublin 10",
+    "Country": "Ireland",
+    "Province": "Leinster",
+    "City": "South Dublin",
+    "Administrative Region": "—",
+    "City Population": "—"
+  },
+  {
+    "Postal Code": "D11",
+    "County": "Dublin 11",
+    "Country": "Ireland",
+    "Province": "Leinster",
+    "City": "South Dublin",
+    "Administrative Region": "—",
+    "City Population": "—"
+  },
+  {
+    "Postal Code": "D12",
+    "County": "Dublin 12",
+    "Country": "Ireland",
+    "Province": "Leinster",
+    "City": "South Dublin",
+    "Administrative Region": "—",
+    "City Population": "—"
+  },
+  {
+    "Postal Code": "D13",
+    "County": "Dublin 13",
+    "Country": "Ireland",
+    "Province": "Leinster",
+    "City": "South Dublin",
+    "Administrative Region": "—",
+    "City Population": "—"
+  },
+  {
+    "Postal Code": "D14",
+    "County": "Dublin 14",
+    "Country": "Ireland",
+    "Province": "Leinster",
+    "City": "South Dublin",
+    "Administrative Region": "—",
+    "City Population": "—"
+  },
+  {
+    "Postal Code": "D15",
+    "County": "Dublin 15",
+    "Country": "Ireland",
+    "Province": "Leinster",
+    "City": "South Dublin",
+    "Administrative Region": "—",
+    "City Population": "—"
+  },
+  {
+    "Postal Code": "D16",
+    "County": "Dublin 16",
+    "Country": "Ireland",
+    "Province": "Leinster",
+    "City": "South Dublin",
+    "Administrative Region": "—",
+    "City Population": "—"
+  },
+  {
+    "Postal Code": "D17",
+    "County": "Dublin 17",
+    "Country": "Ireland",
+    "Province": "Leinster",
+    "City": "South Dublin",
+    "Administrative Region": "—",
+    "City Population": "—"
+  },
+  {
+    "Postal Code": "D18",
+    "County": "Dublin 18",
+    "Country": "Ireland",
+    "Province": "Leinster",
+    "City": "South Dublin",
+    "Administrative Region": "—",
+    "City Population": "—"
+  },
+  {
+    "Postal Code": "D20",
+    "County": "Dublin 20",
+    "Country": "Ireland",
+    "Province": "Leinster",
+    "City": "South Dublin",
+    "Administrative Region": "—",
+    "City Population": "—"
+  },
+  {
+    "Postal Code": "D22",
+    "County": "Dublin 22",
+    "Country": "Ireland",
+    "Province": "Leinster",
+    "City": "South Dublin",
+    "Administrative Region": "—",
+    "City Population": "—"
+  },
+  {
+    "Postal Code": "D24",
+    "County": "Dublin 24",
+    "Country": "Ireland",
+    "Province": "Leinster",
+    "City": "South Dublin",
+    "Administrative Region": "—",
+    "City Population": "—"
+  },
+  {
+    "Postal Code": "D6W",
+    "County": "Dublin 6W",
+    "Country": "Ireland",
+    "Province": "Leinster",
+    "City": "South Dublin",
+    "Administrative Region": "—",
+    "City Population": "—"
+  },
+  {
+    "Postal Code": "E21",
+    "County": "Cahir",
+    "Country": "Ireland",
+    "Province": "Munster",
+    "City": "Cahir",
+    "Administrative Region": "Munster",
+    "City Population": 3578
+  },
+  {
+    "Postal Code": "E25",
+    "County": "Cashel",
+    "Country": "Ireland",
+    "Province": "Munster",
+    "City": "Cashel, County Tipperary",
+    "Administrative Region": "Munster",
+    "City Population": 2798
+  },
+  {
+    "Postal Code": "E32",
+    "County": "Carrick on Suir",
+    "Country": "Ireland",
+    "Province": "Munster",
+    "City": "—",
+    "Administrative Region": "—",
+    "City Population": "—"
+  },
+  {
+    "Postal Code": "E34",
+    "County": "Tipperary",
+    "Country": "Ireland",
+    "Province": "Munster",
+    "City": "Tipperary",
+    "Administrative Region": "Munster",
+    "City Population": 4976
+  },
+  {
+    "Postal Code": "E41",
+    "County": "Thurles",
+    "Country": "Ireland",
+    "Province": "Munster",
+    "City": "Thurles",
+    "Administrative Region": "Munster",
+    "City Population": 7588
+  },
+  {
+    "Postal Code": "E45",
+    "County": "Nenagh",
+    "Country": "Ireland",
+    "Province": "Munster",
+    "City": "Nenagh",
+    "Administrative Region": "Munster",
+    "City Population": 5500
+  },
+  {
+    "Postal Code": "E53",
+    "County": "Roscrea",
+    "Country": "Ireland",
+    "Province": "Munster",
+    "City": "Roscrea",
+    "Administrative Region": "Munster",
+    "City Population": 5403
+  },
+  {
+    "Postal Code": "E91",
+    "County": "Clonmel",
+    "Country": "Ireland",
+    "Province": "Munster",
+    "City": "Clonmel",
+    "Administrative Region": "Munster",
+    "City Population": 17394
+  },
+  {
+    "Postal Code": "F12",
+    "County": "Knock",
+    "Country": "Ireland",
+    "Province": "Connacht",
+    "City": "Knock, County Mayo",
+    "Administrative Region": "Connacht",
+    "City Population": 811
+  },
+  {
+    "Postal Code": "F23",
+    "County": "Castlebar",
+    "Country": "Ireland",
+    "Province": "Connacht",
+    "City": "Castlebar",
+    "Administrative Region": "Connacht",
+    "City Population": 12874
+  },
+  {
+    "Postal Code": "F26",
+    "County": "Ballina",
+    "Country": "Ireland",
+    "Province": "Connacht",
+    "City": "Ballina, County Mayo",
+    "Administrative Region": "Connacht",
+    "City Population": 10087
+  },
+  {
+    "Postal Code": "F28",
+    "County": "Westport",
+    "Country": "Ireland",
+    "Province": "Connacht",
+    "City": "Westport, County Mayo",
+    "Administrative Region": "Connacht",
+    "City Population": 6200
+  },
+  {
+    "Postal Code": "F31",
+    "County": "Ballinrobe",
+    "Country": "Ireland",
+    "Province": "Connacht",
+    "City": "Ballinrobe",
+    "Administrative Region": "Connacht",
+    "City Population": 2704
+  },
+  {
+    "Postal Code": "F35",
+    "County": "Ballyhaunis",
+    "Country": "Ireland",
+    "Province": "Connacht",
+    "City": "Ballyhaunis",
+    "Administrative Region": "Connacht",
+    "City Population": 2312
+  },
+  {
+    "Postal Code": "F42",
+    "County": "Roscommon",
+    "Country": "Ireland",
+    "Province": "Connacht",
+    "City": "Roscommon",
+    "Administrative Region": "Connacht",
+    "City Population": 5693
+  },
+  {
+    "Postal Code": "F45",
+    "County": "Castlerea",
+    "Country": "Ireland",
+    "Province": "Connacht",
+    "City": "Castlerea",
+    "Administrative Region": "Connacht",
+    "City Population": 1985
+  },
+  {
+    "Postal Code": "F52",
+    "County": "Boyle",
+    "Country": "Ireland",
+    "Province": "Connacht",
+    "City": "Boyle, County Roscommon",
+    "Administrative Region": "Connacht",
+    "City Population": 2199
+  },
+  {
+    "Postal Code": "F56",
+    "County": "Ballymote",
+    "Country": "Ireland",
+    "Province": "Connacht",
+    "City": "Ballymote",
+    "Administrative Region": "Connacht",
+    "City Population": 1539
+  },
+  {
+    "Postal Code": "F91",
+    "County": "Sligo",
+    "Country": "Ireland",
+    "Province": "Connacht",
+    "City": "Sligo",
+    "Administrative Region": "Connacht",
+    "City Population": 20228
+  },
+  {
+    "Postal Code": "F92",
+    "County": "Letterkenny",
+    "Country": "Ireland",
+    "Province": "Ulster",
+    "City": "Letterkenny",
+    "Administrative Region": "Ulster",
+    "City Population": 16901
+  },
+  {
+    "Postal Code": "F93",
+    "County": "Lifford",
+    "Country": "Ireland",
+    "Province": "Ulster",
+    "City": "Lifford",
+    "Administrative Region": "Ulster",
+    "City Population": 1658
+  },
+  {
+    "Postal Code": "F94",
+    "County": "Bundoran",
+    "Country": "Ireland",
+    "Province": "Ulster",
+    "City": "Bundoran",
+    "Administrative Region": "Ulster",
+    "City Population": 1865
+  },
+  {
+    "Postal Code": "H12",
+    "County": "Cavan",
+    "Country": "Ireland",
+    "Province": "Ulster",
+    "City": "Cavan",
+    "Administrative Region": "Ulster",
+    "City Population": 6388
+  },
+  {
+    "Postal Code": "H14",
+    "County": "Belturbet",
+    "Country": "Ireland",
+    "Province": "Ulster",
+    "City": "Belturbet",
+    "Administrative Region": "Ulster",
+    "City Population": 1277
+  },
+  {
+    "Postal Code": "H16",
+    "County": "Cootehill",
+    "Country": "Ireland",
+    "Province": "Ulster",
+    "City": "Cootehill",
+    "Administrative Region": "Ulster",
+    "City Population": 1713
+  },
+  {
+    "Postal Code": "H18",
+    "County": "Monaghan",
+    "Country": "Ireland",
+    "Province": "Ulster",
+    "City": "Monaghan",
+    "Administrative Region": "Ulster",
+    "City Population": 5937
+  },
+  {
+    "Postal Code": "H23",
+    "County": "Clones",
+    "Country": "Ireland",
+    "Province": "Ulster",
+    "City": "Clones",
+    "Administrative Region": "Ulster",
+    "City Population": 1834
+  },
+  {
+    "Postal Code": "H53",
+    "County": "Ballinasloe",
+    "Country": "Ireland",
+    "Province": "Connacht",
+    "City": "Ballinasloe",
+    "Administrative Region": "Connacht",
+    "City Population": 6388
+  },
+  {
+    "Postal Code": "H54",
+    "County": "Tuam",
+    "Country": "Ireland",
+    "Province": "Connacht",
+    "City": "Tuam",
+    "Administrative Region": "Connacht",
+    "City Population": 6130
+  },
+  {
+    "Postal Code": "H62",
+    "County": "Loughrea",
+    "Country": "Ireland",
+    "Province": "Connacht",
+    "City": "Loughrea",
+    "Administrative Region": "Connacht",
+    "City Population": 5062
+  },
+  {
+    "Postal Code": "H65",
+    "County": "Athenry",
+    "Country": "Ireland",
+    "Province": "Connacht",
+    "City": "Athenry",
+    "Administrative Region": "Connacht",
+    "City Population": 3950
+  },
+  {
+    "Postal Code": "H71",
+    "County": "Clifden",
+    "Country": "Ireland",
+    "Province": "Connacht",
+    "City": "Clifden",
+    "Administrative Region": "Connacht",
+    "City Population": 2056
+  },
+  {
+    "Postal Code": "H91",
+    "County": "Galway",
+    "Country": "Ireland",
+    "Province": "Connacht",
+    "City": "Galway",
+    "Administrative Region": "Connacht",
+    "City Population": 70686
+  },
+  {
+    "Postal Code": "K32",
+    "County": "Balbriggan",
+    "Country": "Ireland",
+    "Province": "Leinster",
+    "City": "—",
+    "Administrative Region": "—",
+    "City Population": "—"
+  },
+  {
+    "Postal Code": "K34",
+    "County": "Skerries",
+    "Country": "Ireland",
+    "Province": "Leinster",
+    "City": "Loughshinny",
+    "Administrative Region": "Leinster",
+    "City Population": 670
+  },
+  {
+    "Postal Code": "K36",
+    "County": "Malahide",
+    "Country": "Ireland",
+    "Province": "Leinster",
+    "City": "Malahide",
+    "Administrative Region": "Leinster",
+    "City Population": 15846
+  },
+  {
+    "Postal Code": "K45",
+    "County": "Lusk",
+    "Country": "Ireland",
+    "Province": "Leinster",
+    "City": "Lusk, Dublin",
+    "Administrative Region": "Leinster",
+    "City Population": 7022
+  },
+  {
+    "Postal Code": "K56",
+    "County": "Rush",
+    "Country": "Ireland",
+    "Province": "Leinster",
+    "City": "Rush, Dublin",
+    "Administrative Region": "Leinster",
+    "City Population": 9231
+  },
+  {
+    "Postal Code": "K67",
+    "County": "Swords",
+    "Country": "Ireland",
+    "Province": "Leinster",
+    "City": "Swords, Dublin",
+    "Administrative Region": "Leinster",
+    "City Population": 36924
+  },
+  {
+    "Postal Code": "K78",
+    "County": "Lucan",
+    "Country": "Ireland",
+    "Province": "Leinster",
+    "City": "Lucan, Dublin",
+    "Administrative Region": "Leinster",
+    "City Population": 15269
+  },
+  {
+    "Postal Code": "N37",
+    "County": "Athlone",
+    "Country": "Ireland",
+    "Province": "Leinster",
+    "City": "Athlone",
+    "Administrative Region": "Leinster",
+    "City Population": 15951
+  },
+  {
+    "Postal Code": "N39",
+    "County": "Longford",
+    "Country": "Ireland",
+    "Province": "Leinster",
+    "City": "Longford",
+    "Administrative Region": "Leinster",
+    "City Population": 7787
+  },
+  {
+    "Postal Code": "N41",
+    "County": "Carrick On Shannon",
+    "Country": "Ireland",
+    "Province": "Connacht",
+    "City": "Carrick-on-Shannon",
+    "Administrative Region": "Connacht",
+    "City Population": 3980
+  },
+  {
+    "Postal Code": "N91",
+    "County": "Mullingar",
+    "Country": "Ireland",
+    "Province": "Leinster",
+    "City": "Mullingar",
+    "Administrative Region": "Leinster",
+    "City Population": 17262
+  },
+  {
+    "Postal Code": "P12",
+    "County": "Macroom",
+    "Country": "Ireland",
+    "Province": "Munster",
+    "City": "Macroom",
+    "Administrative Region": "Munster",
+    "City Population": 3169
+  },
+  {
+    "Postal Code": "P14",
+    "County": "Crookstown",
+    "Country": "Ireland",
+    "Province": "Leinster",
+    "City": "Crookstown",
+    "Administrative Region": "Leinster",
+    "City Population": "—"
+  },
+  {
+    "Postal Code": "P17",
+    "County": "Kinsale",
+    "Country": "Ireland",
+    "Province": "Munster",
+    "City": "Kinsale",
+    "Administrative Region": "Munster",
+    "City Population": 3843
+  },
+  {
+    "Postal Code": "P24",
+    "County": "Cobh",
+    "Country": "Ireland",
+    "Province": "Munster",
+    "City": "Cobh",
+    "Administrative Region": "Munster",
+    "City Population": 10501
+  },
+  {
+    "Postal Code": "P25",
+    "County": "Midleton",
+    "Country": "Ireland",
+    "Province": "Munster",
+    "City": "Midleton",
+    "Administrative Region": "Munster",
+    "City Population": 8891
+  },
+  {
+    "Postal Code": "P31",
+    "County": "Ballincollig",
+    "Country": "Ireland",
+    "Province": "Munster",
+    "City": "Ballincollig",
+    "Administrative Region": "Munster",
+    "City Population": "—"
+  },
+  {
+    "Postal Code": "P32",
+    "County": "Rylane",
+    "Country": "Ireland",
+    "Province": "Munster",
+    "City": "Rylane",
+    "Administrative Region": "Munster",
+    "City Population": "—"
+  },
+  {
+    "Postal Code": "P36",
+    "County": "Youghal",
+    "Country": "Ireland",
+    "Province": "Munster",
+    "City": "Youghal",
+    "Administrative Region": "Munster",
+    "City Population": 6868
+  },
+  {
+    "Postal Code": "P43",
+    "County": "Carrigaline",
+    "Country": "Ireland",
+    "Province": "Munster",
+    "City": "Carrigaline",
+    "Administrative Region": "Munster",
+    "City Population": 14775
+  },
+  {
+    "Postal Code": "P47",
+    "County": "Dunmanway",
+    "Country": "Ireland",
+    "Province": "Munster",
+    "City": "Dunmanway",
+    "Administrative Region": "Munster",
+    "City Population": 1585
+  },
+  {
+    "Postal Code": "P51",
+    "County": "Mallow",
+    "Country": "Ireland",
+    "Province": "Munster",
+    "City": "Mallow, County Cork",
+    "Administrative Region": "Munster",
+    "City Population": 9495
+  },
+  {
+    "Postal Code": "P56",
+    "County": "Charleville",
+    "Country": "Ireland",
+    "Province": "Munster",
+    "City": "Charleville, County Cork",
+    "Administrative Region": "Munster",
+    "City Population": 3672
+  },
+  {
+    "Postal Code": "P61",
+    "County": "Fermoy",
+    "Country": "Ireland",
+    "Province": "Munster",
+    "City": "Fermoy",
+    "Administrative Region": "Munster",
+    "City Population": 4933
+  },
+  {
+    "Postal Code": "P67",
+    "County": "Mitchelstown",
+    "Country": "Ireland",
+    "Province": "Munster",
+    "City": "Mitchelstown",
+    "Administrative Region": "Munster",
+    "City Population": 3677
+  },
+  {
+    "Postal Code": "P72",
+    "County": "Bandon",
+    "Country": "Ireland",
+    "Province": "Munster",
+    "City": "Bandon, County Cork",
+    "Administrative Region": "Munster",
+    "City Population": 5492
+  },
+  {
+    "Postal Code": "P75",
+    "County": "Bantry",
+    "Country": "Ireland",
+    "Province": "Munster",
+    "City": "Bantry",
+    "Administrative Region": "Munster",
+    "City Population": 3348
+  },
+  {
+    "Postal Code": "P81",
+    "County": "Skibbereen",
+    "Country": "Ireland",
+    "Province": "Munster",
+    "City": "Skibbereen",
+    "Administrative Region": "Munster",
+    "City Population": 2098
+  },
+  {
+    "Postal Code": "P85",
+    "County": "Clonakilty",
+    "Country": "Ireland",
+    "Province": "Munster",
+    "City": "Clonakilty",
+    "Administrative Region": "Munster",
+    "City Population": 4065
+  },
+  {
+    "Postal Code": "R14",
+    "County": "Athy",
+    "Country": "Ireland",
+    "Province": "Leinster",
+    "City": "Athy",
+    "Administrative Region": "Leinster",
+    "City Population": 12855
+  },
+  {
+    "Postal Code": "R21",
+    "County": "Bagenalstown",
+    "Country": "Ireland",
+    "Province": "Leinster",
+    "City": "Muine Bheag",
+    "Administrative Region": "Leinster",
+    "City Population": 3033
+  },
+  {
+    "Postal Code": "R32",
+    "County": "Portlaoise",
+    "Country": "Ireland",
+    "Province": "Leinster",
+    "City": "Port Laoise",
+    "Administrative Region": "Leinster",
+    "City Population": 13622
+  },
+  {
+    "Postal Code": "R35",
+    "County": "Tullamore",
+    "Country": "Ireland",
+    "Province": "Leinster",
+    "City": "Tullamore",
+    "Administrative Region": "Leinster",
+    "City Population": 11575
+  },
+  {
+    "Postal Code": "R42",
+    "County": "Birr",
+    "Country": "Ireland",
+    "Province": "Leinster",
+    "City": "Birr",
+    "Administrative Region": "Leinster",
+    "City Population": 4549
+  },
+  {
+    "Postal Code": "R45",
+    "County": "Edenderry",
+    "Country": "Ireland",
+    "Province": "Leinster",
+    "City": "Edenderry",
+    "Administrative Region": "Leinster",
+    "City Population": 4890
+  },
+  {
+    "Postal Code": "R51",
+    "County": "Kildare",
+    "Country": "Ireland",
+    "Province": "Leinster",
+    "City": "Kildare",
+    "Administrative Region": "Leinster",
+    "City Population": 8142
+  },
+  {
+    "Postal Code": "R56",
+    "County": "Curragh",
+    "Country": "Ireland",
+    "Province": "Leinster",
+    "City": "—",
+    "Administrative Region": "—",
+    "City Population": "—"
+  },
+  {
+    "Postal Code": "R93",
+    "County": "Carlow",
+    "Country": "Ireland",
+    "Province": "Leinster",
+    "City": "Carlow",
+    "Administrative Region": "Leinster",
+    "City Population": 20055
+  },
+  {
+    "Postal Code": "R95",
+    "County": "Kilkenny",
+    "Country": "Ireland",
+    "Province": "Leinster",
+    "City": "Kilkenny",
+    "Administrative Region": "Leinster",
+    "City Population": 21589
+  },
+  {
+    "Postal Code": "T12",
+    "County": "Cork city southside",
+    "Country": "Ireland",
+    "Province": "Munster",
+    "City": "Cork (city)",
+    "Administrative Region": "Munster",
+    "City Population": 190384
+  },
+  {
+    "Postal Code": "T23",
+    "County": "Cork city northside",
+    "Country": "Ireland",
+    "Province": "Munster",
+    "City": "Cork (city)",
+    "Administrative Region": "Munster",
+    "City Population": 190384
+  },
+  {
+    "Postal Code": "T34",
+    "County": "Carrignavar",
+    "Country": "Ireland",
+    "Province": "Munster",
+    "City": "Carrignavar",
+    "Administrative Region": "Munster",
+    "City Population": 499
+  },
+  {
+    "Postal Code": "T45",
+    "County": "Glanmire",
+    "Country": "Ireland",
+    "Province": "Munster",
+    "City": "Glanmire",
+    "Administrative Region": "Munster",
+    "City Population": "—"
+  },
+  {
+    "Postal Code": "T56",
+    "County": "Watergrasshill",
+    "Country": "Ireland",
+    "Province": "Munster",
+    "City": "Watergrasshill",
+    "Administrative Region": "Munster",
+    "City Population": 1161
+  },
+  {
+    "Postal Code": "V14",
+    "County": "Shannon",
+    "Country": "Ireland",
+    "Province": "Munster",
+    "City": "Shannon, County Clare",
+    "Administrative Region": "Munster",
+    "City Population": 9673
+  },
+  {
+    "Postal Code": "V15",
+    "County": "Kilrush",
+    "Country": "Ireland",
+    "Province": "Munster",
+    "City": "Kilrush",
+    "Administrative Region": "Munster",
+    "City Population": 2712
+  },
+  {
+    "Postal Code": "V23",
+    "County": "Caherciveen",
+    "Country": "Ireland",
+    "Province": "Munster",
+    "City": "—",
+    "Administrative Region": "—",
+    "City Population": "—"
+  },
+  {
+    "Postal Code": "V31",
+    "County": "Listowel",
+    "Country": "Ireland",
+    "Province": "Munster",
+    "City": "Listowel",
+    "Administrative Region": "Munster",
+    "City Population": 4143
+  },
+  {
+    "Postal Code": "V35",
+    "County": "Kilmallock",
+    "Country": "Ireland",
+    "Province": "Munster",
+    "City": "Kilmallock",
+    "Administrative Region": "Munster",
+    "City Population": 1635
+  },
+  {
+    "Postal Code": "V42",
+    "County": "Newcastle West",
+    "Country": "Ireland",
+    "Province": "Munster",
+    "City": "Newcastle West",
+    "Administrative Region": "Munster",
+    "City Population": 6327
+  },
+  {
+    "Postal Code": "V92",
+    "County": "Tralee",
+    "Country": "Ireland",
+    "Province": "Munster",
+    "City": "Tralee",
+    "Administrative Region": "Munster",
+    "City Population": 22941
+  },
+  {
+    "Postal Code": "V93",
+    "County": "Kenmare",
+    "Country": "Ireland",
+    "Province": "Munster",
+    "City": "Kenmare",
+    "Administrative Region": "Munster",
+    "City Population": 2175
+  },
+  {
+    "Postal Code": "V94",
+    "County": "Limerick",
+    "Country": "Ireland",
+    "Province": "Munster",
+    "City": "Limerick",
+    "Administrative Region": "Munster",
+    "City Population": 90054
+  },
+  {
+    "Postal Code": "V95",
+    "County": "Miltown Malbay",
+    "Country": "Ireland",
+    "Province": "Munster",
+    "City": "Milltown Malbay",
+    "Administrative Region": "Munster",
+    "City Population": 777
+  },
+  {
+    "Postal Code": "W12",
+    "County": "Newbridge",
+    "Country": "Ireland",
+    "Province": "Leinster",
+    "City": "Newbridge, County Kildare",
+    "Administrative Region": "Leinster",
+    "City Population": 18860
+  },
+  {
+    "Postal Code": "W23",
+    "County": "Maynooth",
+    "Country": "Ireland",
+    "Province": "Leinster",
+    "City": "Maynooth",
+    "Administrative Region": "Leinster",
+    "City Population": 12510
+  },
+  {
+    "Postal Code": "W34",
+    "County": "Monasterevin",
+    "Country": "Ireland",
+    "Province": "Leinster",
+    "City": "Monasterevin",
+    "Administrative Region": "Leinster",
+    "City Population": 3710
+  },
+  {
+    "Postal Code": "W91",
+    "County": "Naas",
+    "Country": "Ireland",
+    "Province": "Leinster",
+    "City": "Naas",
+    "Administrative Region": "Leinster",
+    "City Population": 20713
+  },
+  {
+    "Postal Code": "X42",
+    "County": "Kilmacthomas",
+    "Country": "Ireland",
+    "Province": "Munster",
+    "City": "Kilmacthomas",
+    "Administrative Region": "Munster",
+    "City Population": 871
+  },
+  {
+    "Postal Code": "X91",
+    "County": "Waterford",
+    "Country": "Ireland",
+    "Province": "Munster",
+    "City": "Waterford",
+    "Administrative Region": "Munster",
+    "City Population": 47904
+  },
+  {
+    "Postal Code": "Y14",
+    "County": "Arklow",
+    "Country": "Ireland",
+    "Province": "Leinster",
+    "City": "Arklow",
+    "Administrative Region": "Leinster",
+    "City Population": 11761
+  },
+  {
+    "Postal Code": "Y21",
+    "County": "Enniscorthy",
+    "Country": "Ireland",
+    "Province": "Leinster",
+    "City": "Enniscorthy",
+    "Administrative Region": "Leinster",
+    "City Population": 9709
+  },
+  {
+    "Postal Code": "Y25",
+    "County": "Gorey",
+    "Country": "Ireland",
+    "Province": "Leinster",
+    "City": "Gorey",
+    "Administrative Region": "Leinster",
+    "City Population": 6040
+  },
+  {
+    "Postal Code": "Y34",
+    "County": "New Ross",
+    "Country": "Ireland",
+    "Province": "Leinster",
+    "City": "New Ross",
+    "Administrative Region": "Leinster",
+    "City Population": 6695
+  },
+  {
+    "Postal Code": "Y35",
+    "County": "Wexford",
+    "Country": "Ireland",
+    "Province": "Leinster",
+    "City": "Loch Garman",
+    "Administrative Region": "Leinster",
+    "City Population": 19913
+  }
+]
