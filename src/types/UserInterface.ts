@@ -4,6 +4,7 @@ import { RolesEnum } from "./RolesEnum";
 
 export interface UserInterface extends Document {
   _id: Types.ObjectId;
+  businessIndustryId:Types.ObjectId;
   firstName: string;
   lastName: string;
   email: string;

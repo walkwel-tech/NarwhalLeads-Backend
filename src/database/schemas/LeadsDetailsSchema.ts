@@ -40,7 +40,6 @@ const UserLeadsDetailsSchema = new Schema(
     },
     postCodeTargettingList: {
       type: Array,
-      default: "",
     },
     isDeleted: {
       type: Boolean,

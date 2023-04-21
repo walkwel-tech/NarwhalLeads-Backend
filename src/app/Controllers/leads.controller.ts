@@ -26,6 +26,8 @@ import { preference } from "../../utils/constantFiles/leadPreferenecColumns";
 import { sort } from "../../utils/Enums/sorting.enum";
 import { send_lead_data_to_zap } from "../../utils/webhookUrls/send_data_zap";
 import { IP } from "../../utils/constantFiles/IP_Lists";
+import { BuisnessIndustries } from "../Models/BuisnessIndustries";
+import { CustomColumnNames } from "../Models/CustomColumns.leads";
 
 const LIMIT = 10;
 
@@ -33,35 +35,90 @@ export class LeadsController {
   static create = async (req: Request, res: Response) => {
     //@ts-ignore
     if (!IP.IP.includes(req?.headers["x-forwarded-for"])) {
-      return res
-        .status(403)
-        .json({
-          error: {
-            message:
-              "Access denied: Your IP address is not allowed to access this API",
-          },
-        });
+      return res.status(403).json({
+        error: {
+          message:
+            "Access denied: Your IP address is not allowed to access this API",
+        },
+      });
     }
     const bid = req.params.id;
     const input = req.body;
-    const user: any = await User.findOne({ buyerId: bid }).populate(
-      "userLeadsDetailsId"
-    );
+    const user: any = await User.findOne({ buyerId: bid })
+      .populate("userLeadsDetailsId")
+      .populate("businessDetailsId");
 
     const leads = await Leads.findOne({ bid: user?.buyerId })
       .sort({ rowIndex: -1 })
       .limit(1);
+    const industry = await BuisnessIndustries.findOne({
+      industry: user.businessDetailsId.businessIndustry,
+    });
+    const columns = await CustomColumnNames.findOne({
+      industryId: industry?._id,
+    });
+    const array: any = [];
+    columns?.columnsNames.map((i) => {
+      array.push(i["defaultColumn"]);
+    });
+    let arr: any = [];
+
+    Object.keys(input).map((j) => {
+      if (!array.includes(j)) {
+        let obj: any = {};
+        obj.defaultColumn = j;
+        obj.renamedColumn = "";
+        //@ts-ignore
+        columns?.columnsNames.push(obj);
+      } else {
+        columns?.columnsNames.map((i, idx) => {
+          //@ts-ignore
+          if (i?.defaultColumn == j && i?.renamedColumn!="") {
+            //@ts-ignore
+            input[i?.renamedColumn] = input[j];
+            delete input[j];
+          }
+        });
+      }
+    });
+    columns?.columnsNames.map((i, idx) => {
+      let obj: any = {};
+      //@ts-ignore
+      if (i.renamedColumn != "") {
+        //@ts-ignore
+        obj.name = i?.renamedColumn;
+        obj.isVisible = true;
+        obj.index = idx;
+        arr.push(obj);
+      } else {
+        //@ts-ignore
+        obj.name = i?.defaultColumn;
+        obj.isVisible = true;
+        obj.index = idx;
+        arr.push(obj);
+      }
+    });
+    await BuisnessIndustries.findByIdAndUpdate(
+      industry?.id,
+      { columns: arr },
+      { new: true }
+    );
+    await CustomColumnNames.findByIdAndUpdate(
+      columns?.id,
+      { columnsNames: columns?.columnsNames },
+      { new: true }
+    );
 
     const checkPreferenceExists: any = await LeadTablePreference.findOne({
       userId: user._id,
     });
-    console.log("1",checkPreferenceExists)
     if (!checkPreferenceExists) {
-      let array = preference;
-
+      let industry = await BuisnessIndustries.findOne({
+        industry: user.businessDetailsId.businessIndustry,
+      });
+      let array: any = industry?.columns;
       Object.keys(input).map((i: any) => {
         let obj: any = {};
-
         if (i != "c1") {
           (obj.name = i),
             (obj.isVisible = false),
@@ -113,8 +170,6 @@ export class LeadsController {
         });
       }
     });
-    console.log("2",checkPreferenceExists?.columns)
-
     const admin = await User.findOne({ role: RolesEnum.ADMIN });
     await LeadTablePreference.updateOne(
       { userId: admin?._id },
@@ -153,8 +208,13 @@ export class LeadsController {
     if (cardDetails) {
       const credits = user?.credits;
       const leftCredits = credits - user?.leadCost;
-     const userf= await User.findByIdAndUpdate(user?.id, { credits: leftCredits });
-     await User.updateMany({invitedById:user?.id},{$set: { credits: userf?.credits }});
+      const userf = await User.findByIdAndUpdate(user?.id, {
+        credits: leftCredits,
+      });
+      await User.updateMany(
+        { invitedById: user?.id },
+        { $set: { credits: userf?.credits } }
+      );
       const dataToSave: any = {
         userId: user.id,
         cardId: cardDetails?.id,
@@ -1330,7 +1390,7 @@ export class LeadsController {
       });
       //@ts-ignore
       function percentage(a, b) {
-        let result = Math.floor(((a - b) * 100) / a);
+        let result = Math.floor(((a - b) * 100) / a + b);
         //@ts-ignore
         if (result == "-Infinity") {
           result = -100;

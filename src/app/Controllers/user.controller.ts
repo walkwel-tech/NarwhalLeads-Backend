@@ -16,6 +16,7 @@ import { BusinessDetails } from "../Models/BusinessDetails";
 import { sort } from "../../utils/Enums/sorting.enum";
 import { UserLeadsDetails } from "../Models/UserLeadsDetails";
 import mongoose from "mongoose";
+import { paymentMethodEnum } from "../../utils/Enums/payment.method.enum";
 const ObjectId = mongoose.Types.ObjectId;
 
 
@@ -311,6 +312,12 @@ export class UsersControllers {
 
     try {
       const checkUser = await User.findById(id);
+      if(input.paymentMethod && checkUser?.paymentMethod==paymentMethodEnum.WEEKLY_PAYMENT_METHOD){
+        return res
+        .status(404)
+        .json({ error: { message: "You can not update payment method" } });
+
+      }
       if (!checkUser) {
         return res
           .status(404)

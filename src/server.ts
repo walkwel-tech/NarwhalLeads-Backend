@@ -1,6 +1,6 @@
 import express, {Application} from "express";
 import {Request, Response} from "express";
-import helmet from "helmet";
+// import helmet from "helmet";
 import passport from "passport";
 import cors from "cors";
 import {connectDatabase} from "./utils/dbConnection";
@@ -15,6 +15,7 @@ import {
     BusinessDetailsRoutes,
     userLeadsDetailsRoutes,
     invitedUserRoutes,
+    BusinessIndustriesRoutes
 
 } from "./routes";
 
@@ -52,10 +53,8 @@ export class Server {
         this.app.use(express.static(`${process.cwd()}${FileEnum.PUBLICDIR}`));
         this.app.use(express.json({limit: "50mb"}));
         this.app.use(express.urlencoded({limit: "50mb", extended: true}));
-        this.app.use(helmet());
+        // this.app.use(helmet());
         this.app.use(cors());
-      
-
        
     }
 
@@ -80,7 +79,7 @@ export class Server {
         this.app.use("/api/v1/invitedUsers",Auth,invitedUserRoutes)
         this.app.use("/api/v1/termsAndConditions",TermsAndConditionsRoutes)
         this.app.use("/api/v1/freeCredits",freeCreditsLinkRoutes)
-
+        this.app.use("/api/v1/businessIndustry",BusinessIndustriesRoutes)
 
 
 

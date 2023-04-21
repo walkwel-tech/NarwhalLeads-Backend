@@ -97,6 +97,11 @@ const UserSchema = new Schema(
       ref: "BusinessDetails",
       default: null,
     },
+    businessIndustryId:{
+      type: Types.ObjectId,
+      ref: "BuisnessIndustries",
+      default: null,
+    },
     userLeadsDetailsId: {
       type: Types.ObjectId,
       ref: "UserLeadsDetails",

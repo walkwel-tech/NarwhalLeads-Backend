@@ -8,7 +8,10 @@ import { createCustomersOnRyftAndLeadByte } from "../../utils/createCustomer";
 import { signUpFlowEnums } from "../../utils/Enums/signupFlow.enum";
 import { DeleteFile } from "../../utils/removeFile";
 import { BusinessDetailsInput } from "../Inputs/BusinessDetails.input";
+import { BuisnessIndustries } from "../Models/BuisnessIndustries";
 import { BusinessDetails } from "../Models/BusinessDetails";
+import { LeadTablePreference } from "../Models/LeadTablePreference";
+
 import { User } from "../Models/User";
 const ObjectId = mongoose.Types.ObjectId;
 
@@ -25,7 +28,7 @@ export class BusinessDetailsController {
       (Business.address2 = input.address2),
       (Business.businessAddress = input.businessAddress),
       (Business.businessCity = input.businessCity),
-      (Business.businessCountry = input.businessCountry),
+      // (Business.businessCountry = input.businessCountry),
       (Business.businessPostCode = input.businessPostCode),
       (Business.businessOpeningHours = input.businessOpeningHours);
     const errors = await validate(Business);
@@ -51,18 +54,24 @@ export class BusinessDetailsController {
         address1: input.address1,
         address2: input.address2,
         businessCity: input.businessCity,
-        businessCountry: input.businessCountry,
+        // businessCountry: input.businessCountry,
         businessPostCode: input.businessPostCode,
         businessOpeningHours: input.businessOpeningHours,
       };
       const userData = await BusinessDetails.create(dataToSave);
+      const industry=await BuisnessIndustries.findOne({industry:input.businessIndustry})
       await User.findByIdAndUpdate(input.userId, {
         businessDetailsId: new ObjectId(userData._id),
         signUpFlowStatus: signUpFlowEnums.LEADS_DETAILS_LEFT,
+        leadCost:industry?.leadCost,
+        businessIndustryId:industry?.id
+      });
+      await LeadTablePreference.create({
+        userId: input.userId,columns:industry?.columns
       });
       const user = await User.findById(input.userId);
       res.send({
-        data: userData,
+        data: userData,leadCost:user?.leadCost
       });
       const params: any = {
         email: user?.email,
@@ -75,7 +84,7 @@ export class BusinessDetailsController {
         towncity: input.businessCity,
         // county:Name of county,
         postcode: input.businessPostCode,
-        country_name: input.businessCountry,
+        // country_name: input.businessCountry,
         phone: input.businessSalesNumber,
         businessId:userData.id
       };

@@ -28,9 +28,9 @@ export class BusinessDetailsInput {
   @IsString({ message: "business City is required." })
 
   businessCity: string;
-  @IsString({ message: "business Country is required." })
+  // @IsString({ message: "business Country is required." })
 
-  businessCountry: string;
+  // businessCountry: string;
   @IsString({ message: "business PostCode is required." })
 
   businessPostCode: string;

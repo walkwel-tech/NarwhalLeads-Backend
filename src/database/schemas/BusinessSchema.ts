@@ -35,7 +35,7 @@ const BusinessDetailsSchema = new Schema(
     },
     businessCountry: {
       type: String,
-      required: true,
+      required: false,
     },
     businessPostCode: {
       type: String,

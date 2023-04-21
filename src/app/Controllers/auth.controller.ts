@@ -74,7 +74,7 @@ class AuthController {
           email: input.email,
           password: hashPassword,
           role: RolesEnum.USER,
-          leadCost: adminSettings?.defaultLeadAmount,
+          // leadCost: adminSettings?.defaultLeadAmount,
           autoChargeAmount: adminSettings?.amount,
           isActive: true, //need to delete
           isVerified: true, //need to delete

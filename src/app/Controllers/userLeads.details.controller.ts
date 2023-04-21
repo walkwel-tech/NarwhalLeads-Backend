@@ -15,7 +15,7 @@ export class UserLeadsController {
       weekly: input?.weekly,
       monthly: input?.monthly,
       leadSchedule: input.leadSchedule,
-      postCodeTargettingList: input.postcodeTargettingList,
+      postCodeTargettingList: input.postCodeTargettingList,
       leadAlertsFrequency:leadsAlertsEnums.INSTANT,
     };
     try {
