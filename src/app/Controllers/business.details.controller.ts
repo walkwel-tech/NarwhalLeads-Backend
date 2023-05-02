@@ -10,7 +10,6 @@ import { DeleteFile } from "../../utils/removeFile";
 import { BusinessDetailsInput } from "../Inputs/BusinessDetails.input";
 import { BuisnessIndustries } from "../Models/BuisnessIndustries";
 import { BusinessDetails } from "../Models/BusinessDetails";
-import { LeadTablePreference } from "../Models/LeadTablePreference";
 
 import { User } from "../Models/User";
 const ObjectId = mongoose.Types.ObjectId;
@@ -50,7 +49,7 @@ export class BusinessDetailsController {
         //@ts-ignore
         businessLogo: `${FileEnum.PROFILEIMAGE}${req?.file.filename}`,
         businessSalesNumber: input.businessSalesNumber,
-        businessAddress: input.businessAddress,
+        businessAddress:input.address1 +" "+ input.address2,
         address1: input.address1,
         address2: input.address2,
         businessCity: input.businessCity,
@@ -58,6 +57,7 @@ export class BusinessDetailsController {
         businessPostCode: input.businessPostCode,
         businessOpeningHours: input.businessOpeningHours,
       };
+      console.log(dataToSave)
       const userData = await BusinessDetails.create(dataToSave);
       const industry=await BuisnessIndustries.findOne({industry:input.businessIndustry})
       await User.findByIdAndUpdate(input.userId, {
@@ -65,9 +65,6 @@ export class BusinessDetailsController {
         signUpFlowStatus: signUpFlowEnums.LEADS_DETAILS_LEFT,
         leadCost:industry?.leadCost,
         businessIndustryId:industry?.id
-      });
-      await LeadTablePreference.create({
-        userId: input.userId,columns:industry?.columns
       });
       const user = await User.findById(input.userId);
       res.send({

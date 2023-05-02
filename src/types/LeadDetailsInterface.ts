@@ -15,4 +15,5 @@ export interface UserLeadsDetailsInterface extends Document {
   createdAt: Date;
   isDeleted:  boolean,
   deletedAt:  Date,
+  dailyLeadCost: number
 }

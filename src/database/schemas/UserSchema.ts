@@ -124,6 +124,10 @@ const UserSchema = new Schema(
       type: String,
       default: "",
     },
+    isLeadCostCheck:{
+      type: Boolean,
+      default: true,
+    }
   },
   { timestamps: true }
 );

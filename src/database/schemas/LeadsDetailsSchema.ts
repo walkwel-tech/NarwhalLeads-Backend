@@ -14,6 +14,10 @@ const UserLeadsDetailsSchema = new Schema(
       type: Number,
       default: 0,
     },
+    dailyLeadCost: {
+      type: Number,
+      default: 0,
+    },
     weekly: {
       type: Number,
       default: 0,

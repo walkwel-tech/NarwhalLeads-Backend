@@ -13,7 +13,6 @@ export class IndustryController {
       leadCost: input.leadCost,
       columns: order,
     };
-    console.log(order);
     let array: any = [];
     order.forEach((i) => {
       let obj: any = {};

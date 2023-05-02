@@ -21,6 +21,7 @@ import { User } from "../Models/User";
 import { UserLeadsDetails } from "../Models/UserLeadsDetails";
 import { refreshToken } from "../../utils/XeroApiIntegration/createContact";
 import { transactionTitle } from "../../utils/Enums/transaction.title.enum";
+import { BuisnessIndustries } from "../Models/BuisnessIndustries";
 
 const cron = require("node-cron");
 export const autoChargePayment = async () => {
@@ -135,6 +136,7 @@ export const weeklypayment = async () => {
     const user = await User.find({
       paymentMethod: paymentMethodEnum.WEEKLY_PAYMENT_METHOD,
     });
+    let leadcpl;
     if (!user || user?.length == 0) {
       console.log("no user found to make payment");
     } else {
@@ -161,10 +163,17 @@ export const weeklypayment = async () => {
         } else {
           const leadsDetails = await UserLeadsDetails.findOne({ userId: i.id });
           await AdminSettings.findOne();
+        if(i.isLeadCostCheck){
+          leadcpl=i.leadCost
+        }
+        else{
+          const industry= await BuisnessIndustries.findById(i.businessIndustryId)
+          leadcpl=industry?.leadCost
+        }
           //@ts-ignore
-          const amountToCharge = i?.leadCost * leads.length;
+          const amountToCharge = leadcpl * leads.length;
            //@ts-ignore
-          const addCredits = leadsDetails?.weekly * i?.leadCost;
+          const addCredits = leadsDetails?.weekly * leadcpl;
           const params: any = {
             fixedAmount: amountToCharge,
             email: i.email,

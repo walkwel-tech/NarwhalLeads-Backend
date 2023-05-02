@@ -8,6 +8,7 @@ import { UserLeadsDetails } from "../Models/UserLeadsDetails";
 export class UserLeadsController {
   static create = async (req: Request, res: Response) => {
     const input = req.body;
+    const user=await User.findById(input.userId)
     let dataToSave: any = {
       userId: input.userId,
       total: input?.total,
@@ -17,6 +18,8 @@ export class UserLeadsController {
       leadSchedule: input.leadSchedule,
       postCodeTargettingList: input.postCodeTargettingList,
       leadAlertsFrequency:leadsAlertsEnums.INSTANT,
+      //@ts-ignore
+      dailyLeadCost:(input.daily)*(user?.leadCost)
     };
     try {
       const details = await UserLeadsDetails.create(dataToSave);
@@ -110,6 +113,7 @@ export class UserLeadsController {
     const input = req.body;
     try {
       const details = await UserLeadsDetails.findById(id)
+      const user : any= await User.findById(details?.userId)
       if (!details) {
         return res
           .status(404)
@@ -123,6 +127,9 @@ export class UserLeadsController {
           new: true,
         }
       );
+      if(input.daily){
+        await UserLeadsDetails.findByIdAndUpdate(id,{dailyLeadCost:((user?.leadCost) * (input.daily))});
+      }
       if (data) {
         const updatedDetails = await UserLeadsDetails.findById(id);
         return res.json({

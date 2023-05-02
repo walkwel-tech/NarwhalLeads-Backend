@@ -15,6 +15,7 @@ export interface UserInterface extends Document {
   credits: number;
   autoChargeAmount:number;
   leadCost: string;
+  isLeadCostCheck:boolean;
   buyerId: string;
   signUpFlowStatus:string;
   xeroContactId: string;

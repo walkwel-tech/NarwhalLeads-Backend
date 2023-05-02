@@ -28,6 +28,7 @@ import { send_lead_data_to_zap } from "../../utils/webhookUrls/send_data_zap";
 import { IP } from "../../utils/constantFiles/IP_Lists";
 import { BuisnessIndustries } from "../Models/BuisnessIndustries";
 import { CustomColumnNames } from "../Models/CustomColumns.leads";
+// import { CustomColumnNames } from "../Models/CustomColumns.leads";
 
 const LIMIT = 10;
 
@@ -51,10 +52,13 @@ export class LeadsController {
     const leads = await Leads.findOne({ bid: user?.buyerId })
       .sort({ rowIndex: -1 })
       .limit(1);
-    const industry = await BuisnessIndustries.findOne({
-      industry: user.businessDetailsId.businessIndustry,
-    });
-    const columns = await CustomColumnNames.findOne({
+
+
+
+      const industry = await BuisnessIndustries.findOne({
+            industry: user.businessDetailsId.businessIndustry,
+          });
+     const columns = await CustomColumnNames.findOne({
       industryId: industry?._id,
     });
     const array: any = [];
@@ -108,25 +112,35 @@ export class LeadsController {
       { columnsNames: columns?.columnsNames },
       { new: true }
     );
-
     const checkPreferenceExists: any = await LeadTablePreference.findOne({
       userId: user._id,
     });
     if (!checkPreferenceExists) {
-      let industry = await BuisnessIndustries.findOne({
-        industry: user.businessDetailsId.businessIndustry,
+      const columnsNames = await CustomColumnNames.findOne({
+        industryId: user?.businessIndustryId,
       });
-      let array: any = industry?.columns;
+      let array: any = [];
       Object.keys(input).map((i: any) => {
+        // columnsNames?.columnsNames.map((j)=>{
         let obj: any = {};
         if (i != "c1") {
           (obj.name = i),
-            (obj.isVisible = false),
+            (obj.isVisible = true),
             (obj.index = array[array?.length - 1]?.index + 1 || 0);
+          columnsNames?.columnsNames.map((j:any) => {
+            if (j?.defaultColumn == i) {
+              if (j.renamedColumn?.length != 0) {
+                obj.newName = j.renamedColumn;
+              } 
+            }
+          });
           array.push(obj);
         }
       });
 
+
+
+      
       const dataToSaveInLeadsPreference: any = {
         userId: user.id,
         columns: array,
@@ -143,11 +157,18 @@ export class LeadsController {
           (resElement: any) => resElement.name === item
         );
         if (!existingElement && item != "c1") {
-          adminPref?.columns.push({
-            name: item,
-            isVisible: false,
-            index: adminPref?.columns.length,
+          let obj:any={}
+          obj.name=item,
+          obj.isVisible= false,
+          obj.index= adminPref?.columns.length,
+          columnsNames?.columnsNames.map((j:any) => {
+            if (j?.defaultColumn == item) {
+              if (j.renamedColumn?.length != 0) {
+                obj.newName = j.renamedColumn;
+              } 
+            }
           });
+          adminPref?.columns.push(obj);
         }
       });
       await LeadTablePreference.updateOne(
@@ -158,16 +179,26 @@ export class LeadsController {
       );
     }
     let key = Object.keys(input).map((i) => i);
+    const columnsNames = await CustomColumnNames.findOne({
+      industryId: user?.businessIndustryId,
+    });
     key.forEach((item, idx) => {
       const existingElement = checkPreferenceExists?.columns.find(
         (resElement: any) => resElement.name === item
       );
       if (!existingElement && item != "c1") {
-        checkPreferenceExists?.columns.push({
-          name: item,
-          isVisible: false,
-          index: checkPreferenceExists?.columns.length,
-        });
+        let obj:any={}
+          obj.name=item,
+          obj.isVisible= false,
+          obj.index= checkPreferenceExists?.columns.length,
+          columnsNames?.columnsNames.map((j:any) => {
+            if (j?.defaultColumn == item) {
+              if (j.renamedColumn?.length != 0) {
+                obj.newName = j.renamedColumn;
+              } 
+            }
+          })
+        checkPreferenceExists?.columns.push(obj);
       }
     });
     const admin = await User.findOne({ role: RolesEnum.ADMIN });
@@ -190,7 +221,7 @@ export class LeadsController {
       // @ts-ignore
       rowIndex: leads?.rowIndex + 1 || 0,
     });
-    console.log(user);
+
     if (user?.userLeadsDetailsId?.sendDataToZapier) {
       send_lead_data_to_zap(user.userLeadsDetailsId.zapierUrl, input)
         .then((res) => {
@@ -200,6 +231,7 @@ export class LeadsController {
           console.log("error during sending data to zapier", err);
         });
     }
+    let leadcpl;
     const cardDetails = await CardDetails.findOne({
       userId: user._id,
       isDefault: true,
@@ -207,7 +239,17 @@ export class LeadsController {
     });
     if (cardDetails) {
       const credits = user?.credits;
-      const leftCredits = credits - user?.leadCost;
+      let leftCredits;
+      if (user.isLeadCostCheck) {
+        leadcpl = user.leadCost;
+        leftCredits = credits - user?.leadCost;
+      } else {
+        const industry: any = await BuisnessIndustries.findById(
+          user.businessIndustryId
+        );
+        leftCredits = credits - industry?.leadCost;
+        leadcpl = industry?.leadCost;
+      }
       const userf = await User.findByIdAndUpdate(user?.id, {
         credits: leftCredits,
       });
@@ -220,7 +262,7 @@ export class LeadsController {
         cardId: cardDetails?.id,
         isDebited: true,
         title: transactionTitle.NEW_LEAD,
-        amount: user.leadCost,
+        amount: leadcpl,
         status: "success",
       };
       await Transaction.create(dataToSave);
@@ -243,14 +285,14 @@ export class LeadsController {
       });
       const message: any = {
         bid: bid,
-        leadCost: user.leadCost,
+        leadCost: leadcpl,
         firstName: user.firstName,
         cardNumber: cardDetails?.cardNumber?.substr(-4),
         message: arr,
       };
       send_email_for_new_lead(user.email, message);
       const messageToAdmin: any = {
-        leadsCost: user.leadCost,
+        leadsCost: leadcpl,
         email: user.email,
         cardNumber: cardDetails?.cardNumber?.substr(-4),
       };
@@ -259,6 +301,243 @@ export class LeadsController {
 
     return res.json({ data: leadsSave });
   };
+  // static create = async (req: Request, res: Response) => {
+  //   //@ts-ignore
+  //   if (!IP.IP.includes(req?.headers["x-forwarded-for"])) {
+  //     return res.status(403).json({
+  //       error: {
+  //         message:
+  //           "Access denied: Your IP address is not allowed to access this API",
+  //       },
+  //     });
+  //   }
+  //   const bid = req.params.id;
+  //   const input = req.body;
+  //   const user: any = await User.findOne({ buyerId: bid })
+  //     .populate("userLeadsDetailsId")
+  //     .populate("businessDetailsId");
+
+  //   const leads = await Leads.findOne({ bid: user?.buyerId })
+  //     .sort({ rowIndex: -1 })
+  //     .limit(1);
+  //   // const industry = await BuisnessIndustries.findOne({
+  //   //   industry: user.businessDetailsId.businessIndustry,
+  //   // });
+  //   // const columns = await CustomColumnNames.findOne({
+  //   //   industryId: industry?._id,
+  //   // });
+  //   // const array: any = [];
+  //   // columns?.columnsNames.map((i) => {
+  //   //   array.push(i["defaultColumn"]);
+  //   // });
+  //   // let arr: any = [];
+
+  //   // Object.keys(input).map((j) => {
+  //   //   if (!array.includes(j)) {
+  //   //     let obj: any = {};
+  //   //     obj.defaultColumn = j;
+  //   //     obj.renamedColumn = "";
+  //   //     //@ts-ignore
+  //   //     columns?.columnsNames.push(obj);
+  //   //   } else {
+  //   //     columns?.columnsNames.map((i, idx) => {
+  //   //       //@ts-ignore
+  //   //       if (i?.defaultColumn == j && i?.renamedColumn!="") {
+  //   //         //@ts-ignore
+  //   //         input[i?.renamedColumn] = input[j];
+  //   //         delete input[j];
+  //   //       }
+  //   //     });
+  //   //   }
+  //   // });
+  //   // columns?.columnsNames.map((i, idx) => {
+  //   //   let obj: any = {};
+  //   //   //@ts-ignore
+  //   //   if (i.renamedColumn != "") {
+  //   //     //@ts-ignore
+  //   //     obj.name = i?.renamedColumn;
+  //   //     obj.isVisible = true;
+  //   //     obj.index = idx;
+  //   //     arr.push(obj);
+  //   //   } else {
+  //   //     //@ts-ignore
+  //   //     obj.name = i?.defaultColumn;
+  //   //     obj.isVisible = true;
+  //   //     obj.index = idx;
+  //   //     arr.push(obj);
+  //   //   }
+  //   // });
+  //   // await BuisnessIndustries.findByIdAndUpdate(
+  //   //   industry?.id,
+  //   //   { columns: arr },
+  //   //   { new: true }
+  //   // );
+  //   // await CustomColumnNames.findByIdAndUpdate(
+  //   //   columns?.id,
+  //   //   { columnsNames: columns?.columnsNames },
+  //   //   { new: true }
+  //   // );
+
+  //   const checkPreferenceExists: any = await LeadTablePreference.findOne({
+  //     userId: user._id,
+  //   });
+  //   if (!checkPreferenceExists) {
+  //     // let industry = await BuisnessIndustries.findOne({
+  //     //   industry: user.businessDetailsId.businessIndustry,
+  //     // });
+  //     let array: any = []
+  //     Object.keys(input).map((i: any) => {
+  //       let obj: any = {};
+  //       if (i != "c1") {
+  //         (obj.name = i),
+  //           (obj.isVisible = false),
+  //           (obj.index = array[array?.length - 1]?.index + 1 || 0);
+  //         array.push(obj);
+  //       }
+  //     });
+
+  //     const dataToSaveInLeadsPreference: any = {
+  //       userId: user.id,
+  //       columns: array,
+  //     };
+
+  //     await LeadTablePreference.create(dataToSaveInLeadsPreference);
+  //     const admin = await User.findOne({ role: RolesEnum.ADMIN });
+  //     const adminPref: any = await LeadTablePreference.findOne({
+  //       userId: admin?._id,
+  //     });
+  //     let key = Object.keys(input).map((i) => i);
+  //     key.forEach((item, idx) => {
+  //       const existingElement = adminPref?.columns.find(
+  //         (resElement: any) => resElement.name === item
+  //       );
+  //       if (!existingElement && item != "c1") {
+  //         adminPref?.columns.push({
+  //           name: item,
+  //           isVisible: false,
+  //           index: adminPref?.columns.length,
+  //         });
+  //       }
+  //     });
+  //     await LeadTablePreference.updateOne(
+  //       { userId: admin?._id },
+  //       {
+  //         columns: adminPref?.columns,
+  //       }
+  //     );
+  //   }
+  //   let key = Object.keys(input).map((i) => i);
+  //   key.forEach((item, idx) => {
+  //     const existingElement = checkPreferenceExists?.columns.find(
+  //       (resElement: any) => resElement.name === item
+  //     );
+  //     if (!existingElement && item != "c1") {
+  //       checkPreferenceExists?.columns.push({
+  //         name: item,
+  //         isVisible: false,
+  //         index: checkPreferenceExists?.columns.length,
+  //       });
+  //     }
+  //   });
+  //   const admin = await User.findOne({ role: RolesEnum.ADMIN });
+  //   await LeadTablePreference.updateOne(
+  //     { userId: admin?._id },
+  //     {
+  //       columns: checkPreferenceExists?.columns,
+  //     }
+  //   );
+
+  //   await LeadTablePreference.findByIdAndUpdate(checkPreferenceExists?.id, {
+  //     columns: checkPreferenceExists?.columns,
+  //   });
+
+  //   const leadsSave = await Leads.create({
+  //     bid: bid,
+  //     leadsCost: user.leadCost,
+  //     leads: input,
+  //     status: leadsStatusEnums.VALID,
+  //     // @ts-ignore
+  //     rowIndex: leads?.rowIndex + 1 || 0,
+  //   });
+  //   console.log(user);
+  //   if (user?.userLeadsDetailsId?.sendDataToZapier) {
+  //     send_lead_data_to_zap(user.userLeadsDetailsId.zapierUrl, input)
+  //       .then((res) => {
+  //         console.log("data send to zapier", res);
+  //       })
+  //       .catch((err) => {
+  //         console.log("error during sending data to zapier", err);
+  //       });
+  //   }
+  //   let leadcpl;
+  //   const cardDetails = await CardDetails.findOne({
+  //     userId: user._id,
+  //     isDefault: true,
+  //     isDeleted: false,
+  //   });
+  //   if (cardDetails) {
+  //     const credits = user?.credits;
+  //     let leftCredits;
+  //     if(user.isLeadCostCheck){
+  //       leadcpl=user.leadCost
+  //       leftCredits = credits - user?.leadCost;
+  //     }
+  //     else{
+  //       const industry:any=await BuisnessIndustries.findById(user.businessIndustryId)
+  //       leftCredits=credits - industry?.leadCost
+  //       leadcpl=industry?.leadCost
+  //     }
+  //     const userf = await User.findByIdAndUpdate(user?.id, {
+  //       credits: leftCredits,
+  //     });
+  //     await User.updateMany(
+  //       { invitedById: user?.id },
+  //       { $set: { credits: userf?.credits } }
+  //     );
+  //     const dataToSave: any = {
+  //       userId: user.id,
+  //       cardId: cardDetails?.id,
+  //       isDebited: true,
+  //       title: transactionTitle.NEW_LEAD,
+  //       amount: leadcpl,
+  //       status: "success",
+  //     };
+  //     await Transaction.create(dataToSave);
+  //   } else {
+  //     return res
+  //       .status(404)
+  //       .json({ error: { message: "Card details not found" } });
+  //   }
+  //   if (
+  //     user.userLeadsDetailsId?.leadAlertsFrequency == leadsAlertsEnums.INSTANT
+  //   ) {
+  //     let arr: any = [];
+  //     Object.keys(input).forEach((i) => {
+  //       if (i != "c1") {
+  //         let obj: any = {};
+  //         obj.keys = i;
+  //         obj.values = input[i];
+  //         arr.push(obj);
+  //       }
+  //     });
+  //     const message: any = {
+  //       bid: bid,
+  //       leadCost: leadcpl,
+  //       firstName: user.firstName,
+  //       cardNumber: cardDetails?.cardNumber?.substr(-4),
+  //       message: arr,
+  //     };
+  //     send_email_for_new_lead(user.email, message);
+  //     const messageToAdmin: any = {
+  //       leadsCost: leadcpl,
+  //       email: user.email,
+  //       cardNumber: cardDetails?.cardNumber?.substr(-4),
+  //     };
+  //     send_email_for_new_lead_to_admin(messageToAdmin);
+  //   }
+
+  //   return res.json({ data: leadsSave });
+  // };
 
   static update = async (req: Request, res: Response): Promise<any> => {
     const leadId = req.params.id;
@@ -1203,6 +1482,28 @@ export class LeadsController {
     const userId = req.user?._id;
     try {
       const Preference = await LeadTablePreference.findOne({ userId: userId });
+      const user = await User.findById(userId);
+      const columnsOfIndustry = await CustomColumnNames.findOne({
+        industryId: user?.businessIndustryId,
+      });
+      columnsOfIndustry?.columnsNames.map((i: any) => {
+        Preference?.columns.map((j: any) => {
+          if (i?.defaultColumn == j?.name && i.renamedColumn.length != 0) {
+            //@ts-ignore
+            j.newName = i?.renamedColumn;
+          }
+         else if (i?.defaultColumn == j?.name && i.renamedColumn.length === 0) {
+            //@ts-ignore
+            j.newName =j.name
+          }
+        });
+      });
+      Preference?.columns.map((i:any)=>{
+        if(!i?.newName){
+          i.newName=i.name
+        }
+      })
+
       if (Preference) {
         return res.json({ data: Preference });
       }
