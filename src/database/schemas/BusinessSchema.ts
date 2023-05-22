@@ -4,11 +4,11 @@ const BusinessDetailsSchema = new Schema(
   {
     businessIndustry: {
       type: String,
-      required: true,
+      required: false,
     },
     businessName: {
       type: String,
-      required: true,
+      required: false,
     },
     businessLogo: {
       type: String,
@@ -27,11 +27,11 @@ const BusinessDetailsSchema = new Schema(
     },
     businessAddress: {
       type: String,
-      required: true,
+      required: false,
     },
     businessCity: {
       type: String,
-      required: true,
+      required: false,
     },
     businessCountry: {
       type: String,
@@ -39,11 +39,11 @@ const BusinessDetailsSchema = new Schema(
     },
     businessPostCode: {
       type: String,
-      required: true,
+      required: false,
     },
     businessOpeningHours: {
       type: Array,
-      required: true,
+      required: false,
     },
     isDeleted: {
       type: Boolean,

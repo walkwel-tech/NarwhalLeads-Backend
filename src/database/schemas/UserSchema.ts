@@ -62,9 +62,6 @@ const UserSchema = new Schema(
       default: 0,
       required: false,
     },
-    signUpFlowStatus:{
-      type:String
-    },
     autoChargeAmount: {
       type: Number,
       required: false,
@@ -127,6 +124,9 @@ const UserSchema = new Schema(
     isLeadCostCheck:{
       type: Boolean,
       default: true,
+    },
+    onBoarding:{
+      type:Array,
     }
   },
   { timestamps: true }
