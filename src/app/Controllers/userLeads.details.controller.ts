@@ -1,83 +1,31 @@
-import { validate } from "class-validator";
 import { Request, Response } from "express";
 import { RolesEnum } from "../../types/RolesEnum";
-import { ValidationErrorResponse } from "../../types/ValidationErrorResponse";
-import { ONBOARDING_KEYS } from "../../utils/constantFiles/OnBoarding.keys";
 import { leadsAlertsEnums } from "../../utils/Enums/leads.Alerts.enum";
-import { UserLeadDetailsInput } from "../Inputs/user.leadDetails.input";
+import { signUpFlowEnums } from "../../utils/Enums/signupFlow.enum";
 import { User } from "../Models/User";
 import { UserLeadsDetails } from "../Models/UserLeadsDetails";
 
 export class UserLeadsController {
   static create = async (req: Request, res: Response) => {
     const input = req.body;
-    const leadDetailsInput = new UserLeadDetailsInput();
-    (leadDetailsInput.daily = input.daily),
-    (leadDetailsInput.leadSchedule = input.leadSchedule),
-    (leadDetailsInput.postCodeTargettingList = input.postCodeTargettingList);
-    const errors = await validate(leadDetailsInput)
-    const { onBoarding }: any = await User.findById(input.userId);
-    let object = onBoarding || [];
-    let array:any=[]
-    if (errors.length) {
-      const errorsInfo: ValidationErrorResponse[] = errors.map((error) => ({
-        property: error.property,
-        constraints: error.constraints,
-      }));
-      errorsInfo.map((i) => {
-    
-        array.push(i.property)
-       
-      });
-     const existLead=object.find((item:any) => item.key === ONBOARDING_KEYS.LEAD_DETAILS)
-     if(existLead){
-      existLead.pendingFields=array
-      object = object.map((obj:any) => (obj.key === existLead.key ? existLead : obj));
-      // object.push(existLead)
-     }
-     else{
-       const mock={
-        key:ONBOARDING_KEYS.LEAD_DETAILS,
-        pendingFields:array,
-        dependencies:["businessIndustry"]
-      }
-      object.push(mock)
-     }
-     
-    }
-    await User.findByIdAndUpdate(input.userId,{onBoarding:object})
-
-    const leadDetails = object.find((item:any) => item.key === ONBOARDING_KEYS.LEAD_DETAILS);
-    // Find the businessDetails objectect
-    const businessDetails = object.find((item:any) => item.key === ONBOARDING_KEYS.BUSINESS_DETAILS);
-    
-    // if (leadDetails && businessDetails) {
-      const leadDependencyFields = leadDetails?.dependencies || [];
-      const businessPendingFields = businessDetails?.pendingFields || [];
-      const valuesPresent = leadDependencyFields.every((field:any) => businessPendingFields.includes(field));
-      if(valuesPresent){
-        return res
-        .status(400)
-        .json({ error: { message: `${leadDependencyFields} is required to fill the daily LeadCost` } });      }
-    // } 
-    const user = await User.findById(input.userId);
-   
+    const user=await User.findById(input.userId)
     let dataToSave: any = {
       userId: input.userId,
       total: input?.total,
-      daily: input?.daily,
+      daily: input.daily,
       weekly: input?.weekly,
       monthly: input?.monthly,
-      leadSchedule: input?.leadSchedule,
-      postCodeTargettingList: input?.postCodeTargettingList,
-      leadAlertsFrequency: leadsAlertsEnums.INSTANT,
+      leadSchedule: input.leadSchedule,
+      postCodeTargettingList: input.postCodeTargettingList,
+      leadAlertsFrequency:leadsAlertsEnums.INSTANT,
       //@ts-ignore
-      dailyLeadCost: input.daily * user?.leadCost,
+      dailyLeadCost:(input.daily)*(user?.leadCost)
     };
     try {
       const details = await UserLeadsDetails.create(dataToSave);
       await User.findByIdAndUpdate(input.userId, {
         userLeadsDetailsId: details._id,
+        signUpFlowStatus:signUpFlowEnums.CARD_DETAILS_LEFT
       });
       return res.json({ data: details });
     } catch (error) {
@@ -88,33 +36,24 @@ export class UserLeadsController {
   };
 
   static showById = async (req: Request, res: Response): Promise<any> => {
-    const currentUser = req.user;
+    const currentUser=req.user
     const Id = req.params.id;
     try {
-      //@ts-ignore
-      if (Id != currentUser?.userLeadsDetailsId) {
+           //@ts-ignore
+      if(Id!=currentUser?.userLeadsDetailsId){
         return res
-          .status(403)
-          .json({
-            error: { message: "You dont't have access to this resource.!" },
-          });
+        .status(403)
+        .json({ error: { message: "You dont't have access to this resource.!" } });
       }
       const data = await UserLeadsDetails.find({
         _id: Id,
         isDeleted: false,
       });
-      if (      //@ts-ignore
-
-        currentUser?.role == RolesEnum.INVITED &&
-              //@ts-ignore
-
-        currentUser?.userLeadsDetailsId != Id
-      ) {
+           //@ts-ignore
+      if(currentUser?.role==RolesEnum.INVITED && currentUser?.userLeadsDetailsId!=Id){
         return res
-          .status(403)
-          .json({
-            error: { message: "You dont't have access to this resource.!" },
-          });
+        .status(403)
+        .json({ error: { message: "You dont't have access to this resource.!" } });
       }
       return res.json({ data: data });
     } catch (err) {
@@ -168,13 +107,13 @@ export class UserLeadsController {
     req: Request,
     res: Response
   ): Promise<any> => {
-    console.log("hello");
+    console.log("hello")
 
-    const id = req.params.id;
+    const  id  = req.params.id;
     const input = req.body;
     try {
-      const details = await UserLeadsDetails.findById(id);
-      const user: any = await User.findById(details?.userId);
+      const details = await UserLeadsDetails.findById(id)
+      const user : any= await User.findById(details?.userId)
       if (!details) {
         return res
           .status(404)
@@ -182,15 +121,14 @@ export class UserLeadsController {
       }
       const data = await UserLeadsDetails.findByIdAndUpdate(
         id,
-        { ...input },
+        {...input
+        },
         {
           new: true,
         }
       );
-      if (input.daily) {
-        await UserLeadsDetails.findByIdAndUpdate(id, {
-          dailyLeadCost: user?.leadCost * input.daily,
-        });
+      if(input.daily){
+        await UserLeadsDetails.findByIdAndUpdate(id,{dailyLeadCost:((user?.leadCost) * (input.daily))});
       }
       if (data) {
         const updatedDetails = await UserLeadsDetails.findById(id);

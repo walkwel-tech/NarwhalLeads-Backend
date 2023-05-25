@@ -1,7 +1,7 @@
-import { IsInt, IsString } from "class-validator";
+import { IsString } from "class-validator";
 
 export class PaymentInput {
-  @IsInt({ message: "fixedAmount is required." })
+  @IsString({ message: "fixedAmount is required." })
   fixedAmount:  number
   
   @IsString({ message: "email is required." })
@@ -22,7 +22,7 @@ export class PaymentInput {
   @IsString({ message: "buyerId is required." })
 
   buyerId:string
-  @IsInt({ message: "freeCredits is required." })
+  @IsString({ message: "freeCredits is required." })
   // @ts-ignore
   freeCredits:  number
 

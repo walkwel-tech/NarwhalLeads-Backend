@@ -17,6 +17,7 @@ export interface UserInterface extends Document {
   leadCost: string;
   isLeadCostCheck:boolean;
   buyerId: string;
+  signUpFlowStatus:string;
   xeroContactId: string;
   isVerified: boolean;
   verifiedAt: Date;
@@ -29,5 +30,4 @@ export interface UserInterface extends Document {
   userNotes:string;
   businessDetailsId: Types.ObjectId;
   userLeadsDetailsId: Types.ObjectId;
-  onBoarding:[];
 }

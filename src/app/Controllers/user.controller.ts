@@ -19,6 +19,7 @@ import mongoose from "mongoose";
 import { paymentMethodEnum } from "../../utils/Enums/payment.method.enum";
 const ObjectId = mongoose.Types.ObjectId;
 
+
 const LIMIT = 10;
 
 export class UsersControllers {
@@ -248,70 +249,22 @@ export class UsersControllers {
     const { id } = req.params;
 
     try {
-      const [query]: any = await User.aggregate([
-        {
-          $facet: {
-            results: [
-              {
-                $lookup: {
-                  from: "businessdetails",
-                  localField: "businessDetailsId",
-                  foreignField: "_id",
-                  as: "businessDetailsId",
-                },
-              },
-              {
-                $lookup: {
-                  from: "userleadsdetails",
-                  localField: "userLeadsDetailsId",
-                  foreignField: "_id",
-                  as: "userLeadsDetailsId",
-                },
-              },
-              {
-                $lookup: {
-                  from: "carddetails",
-                  localField: "_id",
-                  foreignField: "userId",
-                  as: "cardDetailsId",
-                },
-              },
-              { $match: { _id: new ObjectId(id) } },
-            ],
-          },
-        },
-      ]);
-
-      if (query.results[0]?.businessDetailsId?.length>0) {
+      const user = await User.findById(
+        id,
+        "-password -__v -verifiedAt -isVerified  -isActive -activatedAt -isDeleted -deletedAt -isRyftCustomer -isLeadbyteCustomer -signUpFlowStatus -invitedById -isArchived -createdAt -updatedAt"
+      )
+        .populate("businessDetailsId")
+        .populate("userLeadsDetailsId");
+      if (user) {
         //@ts-ignore
-        query.results[0]?.businessDetailsId[0]?.businessOpeningHours = JSON.parse(
+        user.businessDetailsId?.businessOpeningHours = JSON.parse(
           //@ts-ignore
-          query.results[0]?.businessDetailsId[0]?.businessOpeningHours
+          user?.businessDetailsId?.businessOpeningHours
         );
-       
+        return res.json({ data: user });
       }
-      query.results.map((item: any) => {
-        let businessDetailsId = Object.assign({}, item["businessDetailsId"][0]);
-        let cardDetailsId = Object.assign({}, item["cardDetailsId"][0]);
-        let userLeadsDetailsId = Object.assign(
-          {},
-          item["userLeadsDetailsId"][0]
-        );
-        item.userLeadsDetailsId = userLeadsDetailsId;
-        item.businessDetailsId = businessDetailsId;
-        item.cardDetailsId = cardDetailsId;
-      });
 
-      // const user = await User.findById(
-      //   id,
-      //   "-password -__v -verifiedAt -isVerified  -isActive -activatedAt -isDeleted -deletedAt -isRyftCustomer -isLeadbyteCustomer -signUpFlowStatus -invitedById -isArchived -createdAt -updatedAt"
-      // )
-      //   .populate("businessDetailsId")
-      //   .populate("userLeadsDetailsId");
-      // console.log("query",query,query.results[0]?.businessDetailsId==null)
-      
-      return res.json({ data: query.results[0] });
-      // return res.status(404).json({ error: { message: "User not found." } });
+      return res.status(404).json({ error: { message: "User not found." } });
     } catch (err) {
       return res
         .status(500)
@@ -359,13 +312,11 @@ export class UsersControllers {
 
     try {
       const checkUser = await User.findById(id);
-      if (
-        input.paymentMethod &&
-        checkUser?.paymentMethod == paymentMethodEnum.WEEKLY_PAYMENT_METHOD
-      ) {
+      if(input.paymentMethod && checkUser?.paymentMethod==paymentMethodEnum.WEEKLY_PAYMENT_METHOD){
         return res
-          .status(404)
-          .json({ error: { message: "You can not update payment method" } });
+        .status(404)
+        .json({ error: { message: "You can not update payment method" } });
+
       }
       if (!checkUser) {
         return res
@@ -728,14 +679,14 @@ export class UsersControllers {
                   __v: 0,
                   updatedAt: 0,
                   password: 0,
-                  "businessDetailsId.businessOpeningHours": 0,
+                  "businessDetailsId.businessOpeningHours":0,
                   "businessDetailsId.__v": 0,
                   "businessDetailsId._id": 0,
                   "businessDetailsId.updatedAt": 0,
                   "userLeadsDetailsId.__v": 0,
                   "userLeadsDetailsId._id": 0,
                   "userLeadsDetailsId.updatedAt": 0,
-                  "userLeadsDetailsId.leadSchedule": 0,
+                  "userLeadsDetailsId.leadSchedule":0
                 },
               },
             ],

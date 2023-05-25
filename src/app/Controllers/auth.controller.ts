@@ -13,7 +13,7 @@ import { LoginInput } from "../Inputs/Login.input";
 import { generateAuthToken } from "../../utils/jwt";
 import { RolesEnum } from "../../types/RolesEnum";
 import { CheckUserInput } from "../Inputs/checkUser.input";
-import { send_email_forget_password, send_email_for_registration } from "../Middlewares/mail";
+import { send_email_forget_password } from "../Middlewares/mail";
 import { ForgetPassword } from "../Models/ForgetPassword";
 import { forgetPasswordInput } from "../Inputs/forgetPasswordInput";
 import { AdminSettings } from "../Models/AdminSettings";
@@ -23,6 +23,7 @@ import {
   createContactOnXero,
   refreshToken,
 } from "../../utils/XeroApiIntegration/createContact";
+import { signUpFlowEnums } from "../../utils/Enums/signupFlow.enum";
 import { FreeCreditsLink } from "../Models/freeCreditsLink";
 import { paymentMethodEnum } from "../../utils/Enums/payment.method.enum";
 const fs = require("fs");
@@ -38,18 +39,13 @@ class AuthController {
     registerInput.email = input.email;
     registerInput.password = input.password;
     const errors = await validate(registerInput);
-    // let Object: any = {
-    //   register: [],
-    // };
     const adminSettings = await AdminSettings.findOne();
     if (errors.length) {
       const errorsInfo: ValidationErrorResponse[] = errors.map((error) => ({
         property: error.property,
         constraints: error.constraints,
       }));
-      // errorsInfo.map((i) => {
-      //   Object.register.push(i.property);
-      // });
+
       return res
         .status(400)
         .json({ error: { message: "VALIDATIONS_ERROR", info: errorsInfo } });
@@ -84,6 +80,7 @@ class AuthController {
           isVerified: true, //need to delete
           autoCharge: true,
           rowIndex: showUsers?.rowIndex + 1 || 0,
+          signUpFlowStatus: signUpFlowEnums.BUSINESS_DETAILS_LEFT,
           paymentMethod: paymentMethodEnum.MANUALLY_ADD_CREDITS_METHOD,
         });
         if (input.code) {
@@ -99,7 +96,6 @@ class AuthController {
           console.log("🚀 dataToSave", dataToSave);
           await FreeCreditsLink.findByIdAndUpdate(checkCode?.id, dataToSave);
         }
-        send_email_for_registration(input.email, input.firstName);
 
         passport.authenticate(
           "local",
@@ -123,7 +119,6 @@ class AuthController {
                 .status(401)
                 .json({ data: "User is deleted.Please contact admin" });
             }
-            const token = generateAuthToken(user);
             res.send({
               message: "successfully registered",
               data: {
@@ -133,11 +128,8 @@ class AuthController {
                 email: user.email,
                 role: user.role,
                 credits: adminSettings?.amount,
-                token
               },
             });
-           
-
           }
         )(req, res);
         const token: any = await AccessToken.findOne();
@@ -252,6 +244,7 @@ class AuthController {
             role: user.role,
             credits: user.credits,
             businessName: business?.businessName,
+            signUpFlowStatus: user.signUpFlowStatus,
             topUpAmount: promoLink?.topUpAmount || null,
             freeCredits: promoLink?.freeCredits || null,
             token,
@@ -436,6 +429,51 @@ class AuthController {
     }
   };
 
+  // static showMapFile_old = async (req: Request, res: Response): Promise<any> => {
+  //   try {
+  //     fs.readFile(
+  //       `${process.cwd()}/public/map/uk.topo.json`,
+  //       "utf8",
+  //       (err: any, data: any) => {
+  //         if (err) {
+  //           console.error(err);
+  //           return;
+  //         }
+  //         data = JSON.parse(data);
+  //         fs.readFile(
+  //           `${process.cwd()}/public/map/uk_ares_with_names.json`,
+  //           "utf8",
+  //           (err: any, data2: any) => {
+  //             if (err) {
+  //               console.error(err);
+  //               return;
+  //             }
+  //             data2 = JSON.parse(data2);
+  //             data.objects.GBR_adm2.geometries.map((j: any) => {
+  //               data2.map((i: any) => {
+  //                 Object.assign(j.properties, {
+  //                   LABEL:j.properties?.HASC_2.split(".")[1]
+  //                 });
+  //                 if (
+  //                   i["County"] == j.properties?.NAME_2
+  //                 ) {
+  //                   Object.assign(j.properties, {
+  //                     POSTAL_CODES: i["PostcodeDistrict"]
+  //                   });
+  //                 }
+  //               });
+  //             });
+  //             return res.json({ data: data });
+  //           }
+  //         );
+  //       }
+  //     );
+  //   } catch (err) {
+  //     return res
+  //       .status(500)
+  //       .json({ error: { message: "Something went wrong." } });
+  //   }
+  // };
 
   static showMapFile = async (req: Request, res: Response): Promise<any> => {
     try {
@@ -462,10 +500,10 @@ class AuthController {
 
               const object2: any = [];
 
-              object1.forEach((obj: any) => {
+              object1.forEach((obj:any) => {
                 const districtsArray = obj.PostcodeDistrict.split(",");
                 districtsArray.sort(
-                  (a: any, b: any) =>
+                  (a:any, b:any) =>
                     parseInt(a.match(/\d+/g)[0]) - parseInt(b.match(/\d+/g)[0])
                 );
                 const sortedDistrictsString = districtsArray.join(",");
@@ -570,12 +608,12 @@ class AuthController {
               data2 = JSON.parse(data2);
               const object1 = data2;
 
-              const object2: any = [];
+              const object2:any = [];
 
-              object1.forEach((obj: any) => {
+              object1.forEach((obj:any) => {
                 const districtsArray = obj.PostcodeDistrict.split(",");
                 districtsArray.sort(
-                  (a: any, b: any) =>
+                  (a:any, b:any) =>
                     parseInt(a.match(/\d+/g)[0]) - parseInt(b.match(/\d+/g)[0])
                 );
                 const sortedDistrictsString = districtsArray.join(",");
@@ -593,7 +631,7 @@ class AuthController {
                   });
                   if (i["Postcode"] == j.properties?.HASC_1.split(".")[1]) {
                     Object.assign(j.properties, {
-                      POSTAL_CODES: i["PostcodeDistrict"].split(","),
+                      POSTAL_CODES: i["PostcodeDistrict"].split(",")
                     });
                   }
                 });

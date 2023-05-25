@@ -17,7 +17,7 @@ export function send_email_forget_password(send_to: any, message: any) {
       },
     },
     // html: "<strong>and easy to do anywhere, even with Node.js</strong>",
-    templateId: "d-3175762a4b534d82968a264a356a921b",
+    templateId: "d-0ce278b4315c4ea489c2da94fd5c6e43",
     dynamic_template_data: { name: message.name, password: message.password },
   };
 
@@ -334,46 +334,3 @@ export function send_email_for_lead_status(send_to: string, message: any) {
       console.error(error);
     });
 }
-
-export function send_email_for_updated_details(message: any) {
-  const msg = {
-    to: "leads@nmg.group", // Change to your recipient
-    // to:"radhika.walkweltech@gmail.com",
-    from: process.env.VERIFIED_SENDER_ON_SENDGRID,
-    // Change to your verified sender
-    trackingSettings: {
-      clickTracking: {
-        enable: false,
-        enableText: false,
-      },
-      openTracking: {
-        enable: false,
-      },
-    },
-    // html: "<strong>and easy to do anywhere, even with Node.js</strong>",
-    templateId: "d-9ad5f523728b41948852f5201ce92a5d",
-    dynamic_template_data: {
-      email: message.email,
-      firstName: message.firstName,
-      lastName: message.lastName,
-      businessIndustry: message.businessIndustry,
-      businessName: message.businessName,
-      businessLogo: message.businessLogo,
-      businessSalesNumber: message.businessSalesNumber,
-      businessAddress: message.businessAddress,
-      businessCity: message.businessCity,
-      businessCountry: message.businessCountry,
-      businessPostCode: message.businessPostCode,
-      businessOpeningHours: message.businessOpeningHours,
-    },
-  };
-  sgMail
-    .send(msg)
-    .then(() => {
-      console.log("Email sent");
-    })
-    .catch((error: any) => {
-      console.error(error);
-    });
-}
-
