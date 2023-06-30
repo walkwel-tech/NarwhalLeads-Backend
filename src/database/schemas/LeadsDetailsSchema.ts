@@ -40,7 +40,7 @@ const UserLeadsDetailsSchema = new Schema(
     },
     sendDataToZapier: { 
       type: Boolean ,
-      default:true,
+      default:false,
     },
     postCodeTargettingList: {
       type: Array,

@@ -15,9 +15,9 @@ export function generateAuthToken(user: UserInterface): string {
         lastName: user.lastName,
         email: user.email,
         role: user.role,
-        isActive: user.isActive,
-        isVerified: user.isVerified,
-        isDeleted: user.isDeleted,
+        // isActive: user.isActive,
+        // isVerified: user.isVerified,
+        // isDeleted: user.isDeleted,
         date:new Date()
     };
     return generateToken(data);

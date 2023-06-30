@@ -12,28 +12,27 @@ export const addCreditsToBuyer = (params: PaymentInput) => {
       },
       data: {
         BID: params.buyerId,
-        amount: params.fixedAmount+params?.freeCredits,
+        amount: params.fixedAmount + (params?.freeCredits || 0),
       },
     };
     axios(config)
       .then(async (response) => {
-        const buyerIdUser = await User.findOne({ buyerId: params.buyerId });
-        if (buyerIdUser?.credits) {
-          await User.findByIdAndUpdate(buyerIdUser?.id, {
-            credits: buyerIdUser?.credits + params.fixedAmount+params.freeCredits,
+        const buyerIdUser:any = await User.findOne({ buyerId: params.buyerId });
+          let updatedCredits:any;
+          if(params?.freeCredits){
+            updatedCredits=buyerIdUser?.credits + params?.fixedAmount+params?.freeCredits
+          }
+          else{
+            updatedCredits=buyerIdUser?.credits + params?.fixedAmount
+          }
+          await User.findByIdAndUpdate(buyerIdUser.id, {
+            credits: updatedCredits,
           });
+
           await User.updateMany({invitedById:buyerIdUser?.id}, {$set:{
-            credits: buyerIdUser?.credits + params.fixedAmount+params.freeCredits,
+            credits: updatedCredits,
           }});
-        
-        } else {
-          await User.findByIdAndUpdate(buyerIdUser?.id, {
-            credits: params.fixedAmount+params.freeCredits,
-          });
-          await User.updateMany({invitedById:buyerIdUser?.id}, {$set:{
-            credits: params.fixedAmount+params.freeCredits,
-          }});
-        }
+
         resolve(response);
       })
       .catch(function (error) {

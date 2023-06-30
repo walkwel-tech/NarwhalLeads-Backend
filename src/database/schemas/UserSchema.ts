@@ -34,12 +34,16 @@ const UserSchema = new Schema(
       default: 10,
       required: false,
     },
+    phoneNumber: {
+      type: String,
+      default: null,
+    },
     isRyftCustomer: {
       type: Boolean,
       default: false,
       required: false,
     },
-    isArchived:{
+    isArchived: {
       type: Boolean,
       default: false,
       required: false,
@@ -61,9 +65,6 @@ const UserSchema = new Schema(
       type: Number,
       default: 0,
       required: false,
-    },
-    signUpFlowStatus:{
-      type:String
     },
     autoChargeAmount: {
       type: Number,
@@ -97,7 +98,7 @@ const UserSchema = new Schema(
       ref: "BusinessDetails",
       default: null,
     },
-    businessIndustryId:{
+    businessIndustryId: {
       type: Types.ObjectId,
       ref: "BuisnessIndustries",
       default: null,
@@ -124,10 +125,20 @@ const UserSchema = new Schema(
       type: String,
       default: "",
     },
-    isLeadCostCheck:{
+    isLeadCostCheck: {
       type: Boolean,
       default: true,
-    }
+    },
+    onBoarding: {
+      type: Array,
+    },
+    registrationMailSentToAdmin: {
+      type: Boolean,
+      default: false,
+    },
+    ryftClientId: {
+      type: String,
+    },
   },
   { timestamps: true }
 );

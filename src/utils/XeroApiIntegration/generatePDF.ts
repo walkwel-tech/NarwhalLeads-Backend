@@ -16,7 +16,6 @@ export const generatePDF = (ContactID:string,desc:string,amount:number) => {
               Quantity: 1,
               UnitAmount: amount,
               AccountCode: "200",
-              TaxType: "NONE",
               LineAmount: amount,
             },
           ],

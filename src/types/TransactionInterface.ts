@@ -10,6 +10,9 @@ export interface TransactionInterface extends Document {
   title: string;
   isDebited: boolean;
   isCredited: boolean;
+  invoiceId:string;
   createdAt: Date;
+  paymentSessionId:string;
+  creditsLeft:number
 
 }

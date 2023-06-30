@@ -39,7 +39,7 @@ export class invitedUsersController {
           email: input.email,
           password: text,
           //@ts-ignore
-          businessName: user?.businessDetailsId?.businessName,
+          name: user?.firstName + " "+user?.lastName,
         };
         send_email_to_invited_user(input.email, credentials);
         const hashPassword = hashSync(text, salt);

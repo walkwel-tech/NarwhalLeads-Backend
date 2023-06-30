@@ -10,6 +10,8 @@ export class RegisterInput {
   @IsEmail({}, { message: "Email should be valid." })
   email: string;
 
+  // @IsString( { message: "phoneNumber should be valid." })
+  // phoneNumber: string;
 
   @IsString({ message: "password is required." })
   password: string;

@@ -19,7 +19,8 @@ export const createCustomerOnRyft = (params: CreateCustomerInput) => {
     };
     axios(config)
       .then(async (response) => {
-        await User.findByIdAndUpdate(params.userId, { isRyftCustomer: true });
+        console.log("ress",response.data.id)
+        await User.findByIdAndUpdate(params.userId, { isRyftCustomer: true,ryftClientId:response.data.id });
         resolve(response);
       })
       .catch((err) => {

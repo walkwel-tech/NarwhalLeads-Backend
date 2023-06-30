@@ -21,6 +21,10 @@ const TransactionSchema = new Schema(
         //Enum:['','']
         required:true
       },
+      invoiceId:{
+        type: String,
+        default: null,
+      },
       status:{
         type:String,
         //Enum:['','']
@@ -40,6 +44,9 @@ const TransactionSchema = new Schema(
         type: Date,
         default: null,
       },
+      creditsLeft:{
+        type:Number,
+      }
     },
     { timestamps: true }
   );

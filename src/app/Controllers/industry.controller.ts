@@ -37,7 +37,6 @@ export class IndustryController {
 
   static update = async (req: Request, res: Response) => {
     const input = req.body;
-
     try {
       const updatedData = await BuisnessIndustries.findByIdAndUpdate(
         req.params.id,
@@ -46,16 +45,20 @@ export class IndustryController {
         },
         { new: true }
       );
+      if (updatedData === null) {
+        return res
+          .status(404)
+          .json({ error: { message: "Business Industry not found." } });
+      }
       updatedData?.columns.sort((a: any, b: any) => a.index - b.index);
-      console.log({
-        "businessDetailsId.businessIndustry": `"${updatedData?.industry}"`,
-      });
+
       if (input.leadCost) {
         await User.updateMany(
           { businessIndustryId: updatedData?.id },
           { leadCost: input.leadCost }
         );
       }
+
       return res.json({ data: updatedData });
     } catch (error) {
       return res

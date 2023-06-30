@@ -10,6 +10,13 @@ const BuisnessIndustriesSchema = new Schema({
     columns:{
         type: Array,
     },
+    columnsNames:{
+        type: Array,
+    },
+    isActive:{
+        type:Boolean,
+        default:true
+    }
     
 }, {timestamps: true});
 export {BuisnessIndustriesSchema};

@@ -27,6 +27,7 @@ import { autoUpdateTasks } from "./app/AutoUpdateTasks";
 import path from "path";
 import TermsAndConditionsRoutes from "./routes/termsAndConditions.routes";
 import freeCreditsLinkRoutes from "./routes/FreeCreditsLink.routes";
+// import {  dataCleaning } from "./dataCleaning";
 
 
 export class Server {
@@ -104,5 +105,6 @@ export class Server {
             console.log(`:rocket: HTTP Server started at port ${this.port}`);
         });
         autoUpdateTasks()
+        // dataCleaning()
     }
 }

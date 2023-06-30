@@ -17,8 +17,9 @@ import { sort } from "../../utils/Enums/sorting.enum";
 import { UserLeadsDetails } from "../Models/UserLeadsDetails";
 import mongoose from "mongoose";
 import { paymentMethodEnum } from "../../utils/Enums/payment.method.enum";
+import { send_email_for_updated_details } from "../Middlewares/mail";
+import { openingHoursFormatting } from "../../utils/Functions/openingHoursManipulation";
 const ObjectId = mongoose.Types.ObjectId;
-
 
 const LIMIT = 10;
 
@@ -190,6 +191,7 @@ export class UsersControllers {
                   // isArchived:0,
                   createdAt: 0,
                   updatedAt: 0,
+                  password:0,
                   "businessDetailsId._id": 0,
                   "businessDetailsId.isDeleted": 0,
                   "businessDetailsId.deletedAt": 0,
@@ -247,24 +249,71 @@ export class UsersControllers {
 
   static show = async (req: Request, res: Response): Promise<Response> => {
     const { id } = req.params;
-
     try {
-      const user = await User.findById(
-        id,
-        "-password -__v -verifiedAt -isVerified  -isActive -activatedAt -isDeleted -deletedAt -isRyftCustomer -isLeadbyteCustomer -signUpFlowStatus -invitedById -isArchived -createdAt -updatedAt"
-      )
-        .populate("businessDetailsId")
-        .populate("userLeadsDetailsId");
-      if (user) {
-        //@ts-ignore
-        user.businessDetailsId?.businessOpeningHours = JSON.parse(
-          //@ts-ignore
-          user?.businessDetailsId?.businessOpeningHours
-        );
-        return res.json({ data: user });
-      }
+      const [query]: any = await User.aggregate([
+        {
+          $facet: {
+            results: [
+              {
+                $lookup: {
+                  from: "businessdetails",
+                  localField: "businessDetailsId",
+                  foreignField: "_id",
+                  as: "businessDetailsId",
+                },
+              },
+              {
+                $lookup: {
+                  from: "userleadsdetails",
+                  localField: "userLeadsDetailsId",
+                  foreignField: "_id",
+                  as: "userLeadsDetailsId",
+                },
+              },
+              {
+                $lookup: {
+                  from: "carddetails",
+                  localField: "_id",
+                  foreignField: "userId",
+                  as: "cardDetailsId",
+                },
+              },
+              { $match: { _id: new ObjectId(id) } },
+            ],
+          },
+        },
+      ]);
 
-      return res.status(404).json({ error: { message: "User not found." } });
+      // if (query.results[0]?.businessDetailsId?.length>0) {
+      //   //@ts-ignore
+      //   query.results[0]?.businessDetailsId[0]?.businessOpeningHours = JSON.parse(
+      //     //@ts-ignore
+      //     query.results[0]?.businessDetailsId[0]?.businessOpeningHours
+      //   );
+      // }
+      query.results.map((item: any) => {
+        delete item.password
+        let businessDetailsId = Object.assign({}, item["businessDetailsId"][0]);
+        let cardDetailsId = Object.assign({}, item["cardDetailsId"][0]);
+        let userLeadsDetailsId = Object.assign(
+          {},
+          item["userLeadsDetailsId"][0]
+        );
+        item.userLeadsDetailsId = userLeadsDetailsId;
+        item.businessDetailsId = businessDetailsId;
+        item.cardDetailsId = cardDetailsId;
+      });
+
+      // const user = await User.findById(
+      //   id,
+      //   "-password -__v -verifiedAt -isVerified  -isActive -activatedAt -isDeleted -deletedAt -isRyftCustomer -isLeadbyteCustomer -signUpFlowStatus -invitedById -isArchived -createdAt -updatedAt"
+      // )
+      //   .populate("businessDetailsId")
+      //   .populate("userLeadsDetailsId");
+      // console.log("query",query,query.results[0]?.businessDetailsId==null)
+      
+      return res.json({ data: query.results[0] });
+      // return res.status(404).json({ error: { message: "User not found." } });
     } catch (err) {
       return res
         .status(500)
@@ -312,11 +361,23 @@ export class UsersControllers {
 
     try {
       const checkUser = await User.findById(id);
-      if(input.paymentMethod && checkUser?.paymentMethod==paymentMethodEnum.WEEKLY_PAYMENT_METHOD){
+      if (
+        input.paymentMethod===paymentMethodEnum.WEEKLY_PAYMENT_METHOD &&
+        // checkUser?.paymentMethod == paymentMethodEnum.WEEKLY_PAYMENT_METHOD
+        //@ts-ignore
+        req.user?.role===RolesEnum.USER
+      ) {
         return res
-        .status(404)
-        .json({ error: { message: "You can not update payment method" } });
-
+          .status(403)
+          .json({ error: { message: "Please contact admin to request for weekly payment method" } });
+      }
+      if (
+        input.paymentMethod &&
+        checkUser?.paymentMethod == paymentMethodEnum.WEEKLY_PAYMENT_METHOD
+      ) {
+        return res
+          .status(403)
+          .json({ error: { message: "Please contact admin to change payment method" } });
       }
       if (!checkUser) {
         return res
@@ -336,7 +397,7 @@ export class UsersControllers {
         (req?.user.role == RolesEnum.USER || req?.user.role == RolesEnum.ADMIN)
       ) {
         return res
-          .status(400)
+          .status(404)
           .json({ error: { message: "Card Details not found" } });
       }
       if (input.businessName) {
@@ -443,6 +504,31 @@ export class UsersControllers {
           { new: true }
         );
       }
+      const buinessData=await BusinessDetails.findOne(checkUser.businessDetailsId)
+      const leadData=await UserLeadsDetails.findOne(checkUser.userLeadsDetailsId)
+      const formattedOpeningHours=openingHoursFormatting(buinessData?.businessOpeningHours)
+      const formattedLeadSchedule=openingHoursFormatting(leadData?.leadSchedule)
+      const message={
+        firstName:checkUser?.firstName,
+        lastName:checkUser?.lastName,
+        businessName:buinessData?.businessName,
+        phone:buinessData?.businessSalesNumber,
+        email:checkUser?.email,
+        industry:buinessData?.businessIndustry,
+        address:buinessData?.address1 + " "+ buinessData?.address2,
+        city:buinessData?.businessCity,
+        country:buinessData?.businessCountry,
+        openingHours:formattedOpeningHours,
+        totalLeads:leadData?.total,
+        monthlyLeads:leadData?.monthly,
+        weeklyLeads:leadData?.weekly,
+        dailyLeads:leadData?.daily,
+        leadsHours:formattedLeadSchedule,
+        area:leadData?.postCodeTargettingList
+
+
+      }
+      send_email_for_updated_details(message)
       // @ts-ignore
       if (input.credits && req?.user.role == RolesEnum.ADMIN) {
         const params: any = {
@@ -466,6 +552,8 @@ export class UsersControllers {
               title: transactionTitle.CREDITS_ADDED,
               isCredited: true,
               status: "success",
+              creditsLeft:checkUser?.credits + input.credits
+
             };
 
             const transaction = await Transaction.create(dataToSave);
@@ -484,6 +572,8 @@ export class UsersControllers {
                     invoiceId: res.data.Invoices[0].InvoiceID,
                   };
                   await Invoice.create(dataToSaveInInvoice);
+                  await Transaction.findByIdAndUpdate(transaction.id,{invoiceId:res.data.Invoices[0].InvoiceID,})
+
                   console.log("PDF generated");
                 })
                 .catch(async (err) => {
@@ -501,6 +591,8 @@ export class UsersControllers {
                         invoiceId: res.data.Invoices[0].InvoiceID,
                       };
                       await Invoice.create(dataToSaveInInvoice);
+                      await Transaction.findByIdAndUpdate(transaction.id,{invoiceId:res.data.Invoices[0].InvoiceID,})
+
                       console.log("PDF generated");
                     });
                   });
@@ -529,6 +621,8 @@ export class UsersControllers {
               title: transactionTitle.CREDITS_ADDED,
               isCredited: true,
               status: "error",
+              creditsLeft:checkUser?.credits
+
             };
             await Transaction.create(dataToSave);
             console.log("error in payment Api", err);
@@ -546,7 +640,7 @@ export class UsersControllers {
 
         if (!user) {
           return res
-            .status(400)
+            .status(404)
             .json({ error: { message: "User to update does not exists." } });
         }
         const result = await User.findById(id, "-password -__v");
@@ -679,14 +773,15 @@ export class UsersControllers {
                   __v: 0,
                   updatedAt: 0,
                   password: 0,
-                  "businessDetailsId.businessOpeningHours":0,
+                  onBoarding:0,
+                  "businessDetailsId.businessOpeningHours": 0,
                   "businessDetailsId.__v": 0,
                   "businessDetailsId._id": 0,
                   "businessDetailsId.updatedAt": 0,
                   "userLeadsDetailsId.__v": 0,
                   "userLeadsDetailsId._id": 0,
                   "userLeadsDetailsId.updatedAt": 0,
-                  "userLeadsDetailsId.leadSchedule":0
+                  "userLeadsDetailsId.leadSchedule": 0,
                 },
               },
             ],
@@ -705,9 +800,9 @@ export class UsersControllers {
         item.businessDetailsId = businessDetailsId;
         // item.open = businessOpeningHours;
       });
-
+const arr=convertArray(query.results)
       return res.json({
-        data: convertArray(query.results),
+        data: arr,
       });
     } catch (err) {
       return res.status(500).json({

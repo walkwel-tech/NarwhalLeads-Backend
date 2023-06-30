@@ -6,8 +6,10 @@ import { AdminSettings } from "../Models/AdminSettings";
 import { CardDetails } from "../Models/CardDetails";
 import { User } from "../Models/User";
 import { Transaction } from "../Models/Transaction";
-import { managePayments } from "../../utils/payment";
-import { PaymentInput } from "../Inputs/Payment.input";
+import {
+  managePayments,
+  managePaymentsByPaymentMethods,
+} from "../../utils/payment";
 import {
   send_email_for_registration,
   send_email_for_new_registration,
@@ -16,15 +18,27 @@ import { generatePDF } from "../../utils/XeroApiIntegration/generatePDF";
 import { Invoice } from "../Models/Invoice";
 import { refreshToken } from "../../utils/XeroApiIntegration/createContact";
 import { transactionTitle } from "../../utils/Enums/transaction.title.enum";
-import { signUpFlowEnums } from "../../utils/Enums/signupFlow.enum";
 import { FreeCreditsLink } from "../Models/freeCreditsLink";
-import { BusinessDetails } from "../Models/BusinessDetails";
-import { UserLeadsDetails } from "../Models/UserLeadsDetails";
+// import { BusinessDetails } from "../Models/BusinessDetails";
+// import { UserLeadsDetails } from "../Models/UserLeadsDetails";
 import { paymentMethodEnum } from "../../utils/Enums/payment.method.enum";
+import { ONBOARDING_KEYS } from "../../utils/constantFiles/OnBoarding.keys";
+import { checkOnbOardingComplete } from "../../utils/Functions/Onboarding_complete";
+import { UserLeadsDetails } from "../Models/UserLeadsDetails";
+import { BusinessDetails } from "../Models/BusinessDetails";
+import { openingHoursFormatting } from "../../utils/Functions/openingHoursManipulation";
+import { RyftPaymentMethods } from "../Models/RyftPaymentMethods";
 
 export class CardDetailsControllers {
   static create = async (req: Request, res: Response): Promise<any> => {
     const input = req.body;
+    if (!input.userId) {
+      return res
+        .status(400)
+        .json({ error: { message: "User Id is required" } });
+    }
+    let formattedOpeningHours;
+    let formattedLeadSchedule;
     try {
       const fixAmount: any = await AdminSettings.findOne();
       if (input.amount == null) {
@@ -39,11 +53,47 @@ export class CardDetailsControllers {
         });
       }
 
+      const { onBoarding }: any = await User.findById(input.userId);
+      let object = onBoarding || [];
+      let arr: any = [];
+      let existLead = object.find(
+        (item: any) => item.key === ONBOARDING_KEYS?.CARD_DETAILS
+      );
+
+      if (existLead) {
+        existLead.pendingFields = arr;
+        const existBusinessDetails = object.find(
+          (item: any) => item.key === ONBOARDING_KEYS.BUSINESS_DETAILS
+        );
+
+        object = object.map((obj: any) =>
+          obj.key === existLead.key
+            ? (existLead = {
+                key: ONBOARDING_KEYS.CARD_DETAILS,
+                pendingFields: arr,
+                dependencies: existBusinessDetails?.pendingFields,
+              })
+            : obj
+        );
+      } else {
+        const existBusinessDetails = object.find(
+          (item: any) => item.key === ONBOARDING_KEYS?.BUSINESS_DETAILS
+        );
+
+        const mock = {
+          key: ONBOARDING_KEYS.CARD_DETAILS,
+          pendingFields: arr,
+          dependencies: existBusinessDetails?.pendingFields,
+        };
+        object.push(mock);
+      }
+      await User.findByIdAndUpdate(input.userId, { onBoarding: object });
+
       let dataToSave: any = {
         userId: input.userId,
         cardHolderName: input.cardHolderName,
         //to trim the space between card number, will replace first space in string to ""
-        cardNumber: input.cardNumber.replace(/ +/g, ""),
+        cardNumber: input.cardNumber,
         expiryMonth: input.expiryMonth,
         expiryYear: input.expiryYear,
         cvc: input.cvc,
@@ -53,37 +103,7 @@ export class CardDetailsControllers {
       const user: any = await User.findById(input.userId)
         .populate("businessDetailsId")
         .populate("userLeadsDetailsId");
-      if (user) {
-        //@ts-ignore
-        user.businessDetailsId?.businessOpeningHours = JSON.parse(
-          //@ts-ignore
-          user?.businessDetailsId?.businessOpeningHours
-        );
-      }
-
-      if (!user.isRyftCustomer || !user.isLeadbyteCustomer) {
-        await User.deleteOne({ _id: input.userId });
-        await BusinessDetails.deleteOne({ _id: user.businessDetailsId });
-        await UserLeadsDetails.deleteOne({ _id: user.userLeadsDetailsId });
-        return res.status(403).json({
-          error: {
-            message:
-              "Email already exist on RYFT portal, kindly register with another Email!",
-          },
-        });
-      }
       const userData = await CardDetails.create(dataToSave);
-      if (user.businessDetailsId && user.userLeadsDetailsId) {
-        await User.findByIdAndUpdate(input.userId, {
-          signUpFlowStatus: signUpFlowEnums.ALL_DONE,
-        });
-      } else {
-        return res.status(403).json({
-          error: {
-            message: "You have not fill Business or Leads Details",
-          },
-        });
-      }
 
       send_email_for_registration(user.email, user.firstName);
       let array: any = [];
@@ -96,25 +116,47 @@ export class CardDetailsControllers {
           array.push(obj);
         }
       });
-      const emailToNarwhal = {
-        email: user.email,
-        firstName: user.firstName,
-        lastName: user.lastName,
-        businessIndustry: user?.businessDetailsId.businessIndustry,
-        businessName: user?.businessDetailsId.businessName,
-        businessLogo: user?.businessDetailsId.businessLogo,
-        businessSalesNumber: user?.businessDetailsId.businessSalesNumber,
-        businessAddress: user?.businessDetailsId.businessAddress,
-        businessCity: user?.businessDetailsId.businessCity,
-        businessCountry: user?.businessDetailsId.businessCountry,
-        businessPostCode: user?.businessDetailsId.businessPostCode,
-        businessOpeningHours: JSON.stringify(
-          //@ts-ignore
-          array
-        ),
-      };
+      if (checkOnbOardingComplete(user) && !user.registrationMailSentToAdmin) {
+        const leadData = await UserLeadsDetails.findOne({ userId: user?._id });
+        const businessDeatilsData = await BusinessDetails.findById(
+          user?.businessDetailsId
+        );
+        if (businessDeatilsData) {
+          formattedOpeningHours = openingHoursFormatting(
+            businessDeatilsData?.businessOpeningHours
+          );
+        }
+        if (leadData) {
+          formattedLeadSchedule = openingHoursFormatting(
+            leadData?.leadSchedule
+          );
+        }
 
-      send_email_for_new_registration(emailToNarwhal);
+        const message = {
+          firstName: user?.firstName,
+          lastName: user?.lastName,
+          businessName: businessDeatilsData?.businessName,
+          phone: businessDeatilsData?.businessSalesNumber,
+          email: user?.email,
+          industry: businessDeatilsData?.businessIndustry,
+          address:
+            businessDeatilsData?.address1 + " " + businessDeatilsData?.address2,
+          city: businessDeatilsData?.businessCity,
+          country: businessDeatilsData?.businessCountry,
+          openingHours: formattedOpeningHours,
+          totalLeads: leadData?.total,
+          monthlyLeads: leadData?.monthly,
+          weeklyLeads: leadData?.weekly,
+          dailyLeads: leadData?.daily,
+          leadsHours: formattedLeadSchedule,
+          area: leadData?.postCodeTargettingList,
+        };
+        send_email_for_new_registration(message);
+        await User.findByIdAndUpdate(user.id, {
+          registrationMailSentToAdmin: true,
+        });
+      }
+
       res.send({
         data: {
           _id: userData.id,
@@ -126,90 +168,10 @@ export class CardDetailsControllers {
           userId: userData.userId,
         },
       });
-      let params: PaymentInput = {
-        fixedAmount: input.amount,
-        email: user.email,
-        cardNumber: input.cardNumber.replace(/ +/g, ""),
-        expiryMonth: input.expiryMonth,
-        expiryYear: input.expiryYear,
-        cvc: input.cvc,
-        buyerId: user.buyerId,
-        freeCredits: 0,
-      };
-      if (input.code) {
-        const checkCode = await FreeCreditsLink.findOne({ code: input.code });
-        //@ts-ignore
-        params?.freeCredits = checkCode?.freeCredits;
-      }
-      managePayments(params)
-        .then(async (res) => {
-          console.log("payment success!!");
-          const transactionData: any = {
-            userId: input.userId,
-            cardId: userData.id,
-            isCredited: true,
-            status: "success",
-            title: transactionTitle.CREDITS_ADDED,
-            amount: input.amount,
-          };
-          const transaction = await Transaction.create(transactionData);
-          if (!user.xeroContactId) {
-            console.log("xeroContact ID not found. Failed to generate pdf.");
-          } else {
-            generatePDF(
-              user.xeroContactId,
-              transactionTitle.CREDITS_ADDED,
-              input.amount
-            )
-              .then(async (res: any) => {
-                const dataToSaveInInvoice: any = {
-                  userId: input.userId,
-                  transactionId: transaction.id,
-                  price: input.amount,
-                  invoiceId: res.data.Invoices[0].InvoiceID,
-                };
-                await Invoice.create(dataToSaveInInvoice);
-                console.log("PDF generated");
-              })
-              .catch((error) => {
-                console.log("error");
-                refreshToken().then((res) => {
-                  generatePDF(
-                    user.xeroContactId,
-                    transactionTitle.CREDITS_ADDED,
-                    input.amount
-                  ).then(async (res: any) => {
-                    const dataToSaveInInvoice: any = {
-                      userId: input.userId,
-                      transactionId: transaction.id,
-                      price: input.amount,
-                      invoiceId: res.data.Invoices[0].InvoiceID,
-                    };
-                    await Invoice.create(dataToSaveInInvoice);
-                    console.log("PDF generated");
-                  });
-                });
-              });
-          }
-
-          // await User.findByIdAndUpdate(input.userId,{delivery:deliveryEnums.ACTIVE});
-        })
-        .catch(async (err) => {
-          console.log("error in payment Api", err);
-          const transactionData: any = {
-            userId: input.userId,
-            cardId: userData.id,
-            isCredited: true,
-            title: transactionTitle.CREDITS_ADDED,
-            amount: input.amount,
-            status: "error",
-          };
-          await Transaction.create(transactionData);
-        });
     } catch (error) {
       return res
         .status(500)
-        .json({ error: { message: "Something went wrong." } });
+        .json({ error: { message: "Something went wrong.", error } });
     }
   };
 
@@ -221,7 +183,9 @@ export class CardDetailsControllers {
         userId: user,
         cardHolderName: input.cardHolderName,
         //to trim the space between card number
-        cardNumber: input.cardNumber.replace(/ +/g, ""),
+        cardNumber: input.cardNumber,
+        // cardNumber:input.cardNumber,
+
         expiryMonth: input.expiryMonth,
         expiryYear: input.expiryYear,
         cvc: input.cvc,
@@ -410,10 +374,21 @@ export class CardDetailsControllers {
     });
     try {
       const user = await User.findById(userId);
-      if(user?.paymentMethod!=paymentMethodEnum.MANUALLY_ADD_CREDITS_METHOD){
-        return res
-        .status(400)
-        .json({ error: { message: "please select manual top-up payment method" } });
+      //@ts-ignore
+      if (!user.isRyftCustomer || !user.isLeadbyteCustomer) {
+        return res.status(403).json({
+          error: {
+            message:
+              "Please complete business details and card details to top up",
+          },
+        });
+      }
+      if (
+        user?.paymentMethod != paymentMethodEnum.MANUALLY_ADD_CREDITS_METHOD
+      ) {
+        return res.status(400).json({
+          error: { message: "please select manual top-up payment method" },
+        });
       }
       const card = await CardDetails.findOne({
         userId: userId,
@@ -434,7 +409,7 @@ export class CardDetailsControllers {
           },
         });
       }
-      const params: PaymentInput = {
+      const params: any = {
         fixedAmount: input?.amount || adminSettings?.minimumUserTopUpAmount,
         //@ts-ignore
         email: user?.email,
@@ -445,6 +420,8 @@ export class CardDetailsControllers {
         //@ts-ignore
         buyerId: user?.buyerId,
         freeCredits: 0,
+        clientId: user?.ryftClientId,
+        cardId: card.id,
       };
       let amount: number;
       if (input.amount) {
@@ -455,73 +432,179 @@ export class CardDetailsControllers {
       if (input.amount >= promoLink?.topUpAmount) {
         params.freeCredits = promoLink.freeCredits;
       }
-      managePayments(params)
-        .then(async (_res) => {
-          console.log("payment success!!");
-          const transactionData: any = {
-            userId: userId,
-            cardId: card.id,
-            isCredited: true,
-            title: transactionTitle.CREDITS_ADDED,
-            status: "success",
-            amount: input.amount || adminSettings?.minimumUserTopUpAmount,
-          };
-          console.log(transactionData);
-          const transaction = await Transaction.create(transactionData);
-          if (!user?.xeroContactId) {
-            console.log("xeroContact ID not found. Failed to generate pdf.");
-          } else {
-            generatePDF(
-              user?.xeroContactId,
-              transactionTitle.CREDITS_ADDED,
-              amount
-            )
-              .then(async (_res: any) => {
-                const dataToSaveInInvoice: any = {
-                  userId: userId,
-                  transactionId: transaction.id,
-                  price: amount,
-                  invoiceId: _res.data.Invoices[0].InvoiceID,
-                };
-                await Invoice.create(dataToSaveInInvoice);
-                console.log("PDF generated");
-              })
-              .catch(async (error) => {
-                refreshToken().then(async (_res) => {
-                  generatePDF(
-                    user?.xeroContactId,
-                    transactionTitle.CREDITS_ADDED,
-                    amount
-                  ).then(async (_res: any) => {
-                    const dataToSaveInInvoice: any = {
-                      userId: userId,
-                      transactionId: transaction.id,
-                      price: amount,
-                      invoiceId: _res.data.Invoices[0].InvoiceID,
-                    };
-                    await Invoice.create(dataToSaveInInvoice);
-                    console.log("PDF generated");
+      const paymentMethodsExists = await RyftPaymentMethods.findOne({
+        cardId: card.id,
+      });
+      if (!paymentMethodsExists) {
+        managePayments(params)
+          .then(async (_res) => {
+            console.log("payment success!!");
+            const transactionData: any = {
+              userId: userId,
+              cardId: card.id,
+              isCredited: true,
+              title: transactionTitle.CREDITS_ADDED,
+              status: "success",
+              amount: input.amount || adminSettings?.minimumUserTopUpAmount,
+              creditsLeft:
+                user.credits +
+                (input.amount || adminSettings?.minimumUserTopUpAmount),
+            };
+            console.log(transactionData);
+            const transaction = await Transaction.create(transactionData);
+            if (!user?.xeroContactId) {
+              console.log("xeroContact ID not found. Failed to generate pdf.");
+            } else {
+              generatePDF(
+                user?.xeroContactId,
+                transactionTitle.CREDITS_ADDED,
+                amount
+              )
+                .then(async (_res: any) => {
+                  const dataToSaveInInvoice: any = {
+                    userId: userId,
+                    transactionId: transaction.id,
+                    price: amount,
+                    invoiceId: _res.data.Invoices[0].InvoiceID,
+                  };
+                  await Invoice.create(dataToSaveInInvoice);
+                  await Transaction.findByIdAndUpdate(transaction.id, {
+                    invoiceId: _res.data.Invoices[0].InvoiceID,
+                  });
+                  console.log("PDF generated");
+                })
+                .catch(async (error) => {
+                  refreshToken().then(async (_res) => {
+                    generatePDF(
+                      user?.xeroContactId,
+                      transactionTitle.CREDITS_ADDED,
+                      amount
+                    ).then(async (_res: any) => {
+                      const dataToSaveInInvoice: any = {
+                        userId: userId,
+                        transactionId: transaction.id,
+                        price: amount,
+                        invoiceId: _res.data.Invoices[0].InvoiceID,
+                      };
+                      await Invoice.create(dataToSaveInInvoice);
+                      await Transaction.findByIdAndUpdate(transaction.id, {
+                        invoiceId: _res.data.Invoices[0].InvoiceID,
+                      });
+                      console.log("PDF generated");
+                    });
                   });
                 });
-              });
-          }
-        })
-        .catch(async (err) => {
-          console.log("error in payment Api", err);
-          const transactionData: any = {
-            userId: userId,
-            cardId: card.id,
-            isCredited: true,
-            title: transactionTitle.CREDITS_ADDED,
-            status: "error",
-            amount: input.amount || adminSettings?.minimumUserTopUpAmount,
-          };
-          await Transaction.create(transactionData);
-        });
+            }
+          })
+          .catch(async (err) => {
+            console.log("error in payment Api", err);
+            const transactionData: any = {
+              userId: userId,
+              cardId: card.id,
+              isCredited: true,
+              title: transactionTitle.CREDITS_ADDED,
+              status: "error",
+              amount: input.amount || adminSettings?.minimumUserTopUpAmount,
+              creditsLeft: user.credits,
+            };
+            await Transaction.create(transactionData);
+          });
+      } else {
+    
+        params.paymentId =
+            //@ts-ignore
+          paymentMethodsExists.paymentMethod?.tokenizedDetails?.id;
+        console.log(params);
+        managePaymentsByPaymentMethods(params)
+          .then(async (_res) => {
+            console.log("payment success!!");
+            const transactionData: any = {
+              userId: userId,
+              cardId: card.id,
+              isCredited: true,
+              title: transactionTitle.CREDITS_ADDED,
+              status: "success",
+              amount: input.amount || adminSettings?.minimumUserTopUpAmount,
+              creditsLeft:
+                user.credits +
+                (input.amount || adminSettings?.minimumUserTopUpAmount),
+            };
+            console.log(transactionData);
+            const transaction = await Transaction.create(transactionData);
+            if (!user?.xeroContactId) {
+              console.log("xeroContact ID not found. Failed to generate pdf.");
+            } else {
+              generatePDF(
+                user?.xeroContactId,
+                transactionTitle.CREDITS_ADDED,
+                amount
+              )
+                .then(async (_res: any) => {
+                  const dataToSaveInInvoice: any = {
+                    userId: userId,
+                    transactionId: transaction.id,
+                    price: amount,
+                    invoiceId: _res.data.Invoices[0].InvoiceID,
+                  };
+                  await Invoice.create(dataToSaveInInvoice);
+                  await Transaction.findByIdAndUpdate(transaction.id, {
+                    invoiceId: _res.data.Invoices[0].InvoiceID,
+                  });
+
+                  console.log("PDF generated");
+                })
+                .catch(async (error) => {
+                  refreshToken().then(async (_res) => {
+                    generatePDF(
+                      user?.xeroContactId,
+                      transactionTitle.CREDITS_ADDED,
+                      amount
+                    ).then(async (_res: any) => {
+                      const dataToSaveInInvoice: any = {
+                        userId: userId,
+                        transactionId: transaction.id,
+                        price: amount,
+                        invoiceId: _res.data.Invoices[0].InvoiceID,
+                      };
+                      await Invoice.create(dataToSaveInInvoice);
+                      await Transaction.findByIdAndUpdate(transaction.id, {
+                        invoiceId: _res.data.Invoices[0].InvoiceID,
+                      });
+
+                      console.log("PDF generated");
+                    });
+                  });
+                });
+            }
+          })
+          .catch(async (err) => {
+            console.log("error in payment Api", err);
+            const transactionData: any = {
+              userId: userId,
+              cardId: card.id,
+              isCredited: true,
+              title: transactionTitle.CREDITS_ADDED,
+              status: "error",
+              amount: input.amount || adminSettings?.minimumUserTopUpAmount,
+              creditsLeft: user.credits,
+            };
+            await Transaction.create(transactionData);
+          });
+      }
+
       async function response() {
         const result = await User.findById(userId, "-password -__v");
-
-        return res.json({ data: result });
+        if (result?.credits === user?.credits) {
+          return res
+            .status(400)
+            .json({
+              error: {
+                message: "Error in Payment. Please try againafter some time",
+              },
+            });
+        } else {
+          return res.json({ data: result });
+        }
       }
       setTimeout(response, 6000);
     } catch (err) {
