@@ -599,7 +599,7 @@ export class CardDetailsControllers {
             .status(400)
             .json({
               error: {
-                message: "Error in Payment. Please try againafter some time",
+                message: "Error occur in your payment. Please try again after some time",
               },
             });
         } else {

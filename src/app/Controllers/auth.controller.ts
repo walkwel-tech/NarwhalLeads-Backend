@@ -172,6 +172,7 @@ class AuthController {
           })
           .catch((err) => {
             refreshToken().then(async (res: any) => {
+              console.log("Token updated while creating customer!!!")
               createContactOnXero(fullName, res.data.access_token).then(
                 async (res: any) => {
                   await User.findOneAndUpdate(
@@ -181,8 +182,10 @@ class AuthController {
                   console.log("success in creating contact");
                 }
               );
+            }).catch((err)=>{
+                          console.log("error in creating contact on xero",err.response.data);
+
             });
-            console.log("error in creating contact on xero");
           });
       } else {
         return res

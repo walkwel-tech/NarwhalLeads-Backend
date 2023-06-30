@@ -24,7 +24,7 @@ export const createCustomerOnRyft = (params: CreateCustomerInput) => {
         resolve(response);
       })
       .catch((err) => {
-        reject(err);
+        reject(err.response?.data);
       });
   });
 };

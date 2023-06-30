@@ -46,7 +46,7 @@ const token=await AccessToken.findOne()
       })
       .catch(function (error:any) {
         // reject(error)
-        console.log(error)
+        console.log(error.response?.data)
       });
   });
 };

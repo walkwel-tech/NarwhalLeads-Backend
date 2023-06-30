@@ -21,7 +21,7 @@ export const createContactOnXero = (name: string, token: string) => {
       })
       .catch(async (err) => {
         // reject(err);
-        console.log(err)
+        console.log(err.response?.data)
       });
   });
 };
@@ -53,7 +53,7 @@ export const refreshToken = () => {
         resolve(data);
       })
       .catch((err) => {
-        console.log("error", err);
+        console.log("error", err.response?.data);
         // reject(err)
       });
   });

@@ -36,7 +36,7 @@ export const addCreditsToBuyer = (params: PaymentInput) => {
         resolve(response);
       })
       .catch(function (error) {
-        reject(error);
+        reject(error.response?.data);
       });
   });
 };

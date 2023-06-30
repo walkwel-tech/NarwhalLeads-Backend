@@ -11,15 +11,15 @@ export const managePayments = (params: PaymentInput) => {
               addCreditsToBuyer(params).then((res)=>{
                   resolve(res)
               }).catch((err)=>{
-                  reject(err)
+                  reject(err.response?.data)
               })
             })
             .catch((err) => {
-              reject(err);
+              reject(err.response?.data);
             });
         })
         .catch((err) => {
-          reject(err);
+          reject(err.response?.data);
         });
     });
   };
@@ -37,20 +37,20 @@ export const managePayments = (params: PaymentInput) => {
 
                   resolve(res)
               }).catch((err)=>{
-                  reject(err)
+                  reject(err.response?.data)
               })
             })          
             .catch((err) => {
-              reject(err);
+              reject(err.response?.data);
             });
           })
           .catch((err)=>{
-            reject(err)
+            reject(err.response?.data)
           })
         
         })
         .catch((err) => {
-          reject(err);
+          reject(err.response?.data);
         });
     });
   };
@@ -65,11 +65,11 @@ export const managePayments = (params: PaymentInput) => {
               resolve(data)
             })
             .catch((err) => {
-              reject(err);
+              reject(err.response?.data);
             });
         })
         .catch((err) => {
-          reject(err);
+          reject(err.response?.data);
         });
     });
   };
@@ -85,16 +85,16 @@ export const managePayments = (params: PaymentInput) => {
                 refundPayment(data?.data).then((res:any)=>{
                   resolve(res)
                 })
-                .catch((err)=>{reject(err)})
+                .catch((err)=>{reject(err.response?.data)})
               }, 300000);
              
             })
             .catch((err) => {
-              reject(err);
+              reject(err.response?.data);
             });
         })
         .catch((err) => {
-          reject(err);
+          reject(err.response?.data);
         });
     });
   };

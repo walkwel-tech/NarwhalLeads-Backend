@@ -34,7 +34,7 @@ export const createCustomerOnLeadByte = (params: CreateCustomerInput) => {
       })
       .catch((err) => {
 
-        reject(err);
+        reject(err.response?.data);
       });
   });
 };
