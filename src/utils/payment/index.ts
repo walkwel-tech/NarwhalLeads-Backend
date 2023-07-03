@@ -1,3 +1,4 @@
+import axios from "axios";
 import { PaymentInput } from "../../app/Inputs/Payment.input";
 import { addCreditsToBuyer } from "./addBuyerCredit";
 import { attemptToPayment, attemptToPaymentBy_PaymentMethods, createSession, customerPaymentMethods, refundPayment } from "./createPaymentToRYFT";
@@ -24,11 +25,36 @@ export const managePayments = (params: PaymentInput) => {
     });
   };
 
+export const fetchPaymentSessionById = (id:string)=>{
+  return new Promise((resolve, reject) => {
+    const config = {
+      method: "GET",
+      url: `https://api.ryftpay.com/v1/payment-sessions/${id}`,
+      headers: {
+        // Account: process.env.ACCOUNT_ID,
+        "Content-Type": "application/json",
+        Accept: "application/json",
+        Authorization: process.env.RYFT_SECRET_KEY,
+      },
+    };
+    axios(config)
+      .then((response) => {
+        resolve(response.data);
+      })
+      .catch((err) => {
+        // reject(err);
+        console.log("Create session error", err.response.data);
+      });
+  });
+}
+
 
   export const  managePaymentsByPaymentMethods = (params:any) => {
     return new Promise((resolve, reject) => {
       createSession(params)
         .then((res: any) => {
+        
+          
           customerPaymentMethods(res).then((response:any)=>{
               attemptToPaymentBy_PaymentMethods(response,res.data.clientSecret)
             .then((data) => {

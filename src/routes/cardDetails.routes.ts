@@ -1,6 +1,6 @@
-import {Router} from "express";
+import { Router } from "express";
 
-import {CardDetailsControllers} from "../app/Controllers/cardDetails.controller";
+import { CardDetailsControllers } from "../app/Controllers/cardDetails.controller";
 import { Auth } from "../app/Middlewares";
 
 

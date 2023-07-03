@@ -4,10 +4,10 @@ import mongoose from "mongoose";
 import { FileEnum } from "../../types/FileEnum";
 import { RolesEnum } from "../../types/RolesEnum";
 import { ValidationErrorResponse } from "../../types/ValidationErrorResponse";
-import { ONBOARDING_KEYS } from "../../utils/constantFiles/OnBoarding.keys";
-import { createCustomersOnRyftAndLeadByte } from "../../utils/createCustomer";
 import { checkOnbOardingComplete } from "../../utils/Functions/Onboarding_complete";
 import { openingHoursFormatting } from "../../utils/Functions/openingHoursManipulation";
+import { ONBOARDING_KEYS } from "../../utils/constantFiles/OnBoarding.keys";
+import { createCustomersOnRyftAndLeadByte } from "../../utils/createCustomer";
 import { DeleteFile } from "../../utils/removeFile";
 import { BusinessDetailsInput } from "../Inputs/BusinessDetails.input";
 import {
@@ -17,6 +17,7 @@ import {
 import { BuisnessIndustries } from "../Models/BuisnessIndustries";
 import { BusinessDetails } from "../Models/BusinessDetails";
 
+import { addUserXeroId } from "../../utils/XeroApiIntegration/createContact";
 import { User } from "../Models/User";
 import { UserLeadsDetails } from "../Models/UserLeadsDetails";
 const ObjectId = mongoose.Types.ObjectId;
@@ -24,6 +25,7 @@ const ObjectId = mongoose.Types.ObjectId;
 export class BusinessDetailsController {
   static create = async (req: Request, res: Response): Promise<any> => {
     const input = req.body;
+    
     if(!input.userId){
       return res
       .status(400)
@@ -135,6 +137,9 @@ export class BusinessDetailsController {
         businessIndustryId: industry?.id,
       });
       const user: any = await User.findById(input.userId);
+      if(!user?.xeroContactId){
+        await addUserXeroId(input.userId)
+      }
       console.log("--->>",user)
       if (checkOnbOardingComplete(user) && !user.registrationMailSentToAdmin) {
         console.log("--->>222",user)
@@ -201,6 +206,7 @@ export class BusinessDetailsController {
         createCustomersOnRyftAndLeadByte(params)
           .then(() => {
             console.log("Customer created!!!!");
+            
           })
           .catch((ERR) => {
             console.log("ERROR while creating customer");

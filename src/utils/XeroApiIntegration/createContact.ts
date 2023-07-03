@@ -1,5 +1,6 @@
 import axios from "axios";
 import { AccessToken } from "../../app/Models/AccessToken";
+import { User } from "../../app/Models/User";
 let FormData = require("form-data");
 const POST = "post";
 export const createContactOnXero = (name: string, token: string) => {
@@ -17,14 +18,31 @@ export const createContactOnXero = (name: string, token: string) => {
     };
     axios(config)
       .then((data) => {
+        
         resolve(data);
       })
       .catch(async (err) => {
         // reject(err);
-        console.log(err.response?.data)
+        console.log('Xero Error',err.response)
       });
   });
 };
+
+export const addUserXeroId = async (userId:string)=>{
+  let user = User.findById(userId);
+  let token: any = await AccessToken.findOne();
+    const fullName = user.firstName + " " + user.lastName;
+    await refreshToken()
+    token = await AccessToken.findOne();
+    const res = await createContactOnXero(fullName, token?.access_token)
+    await User.findOneAndUpdate(
+      { _id: userId },
+      { $set: { xeroContactId: res.data.Contacts[0].ContactID } }
+    );
+    user = await User.findById(userId);
+    
+    return user;
+}
 
 export const refreshToken = () => {
   return new Promise(async (resolve, reject) => {

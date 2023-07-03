@@ -1,37 +1,39 @@
 import { validate } from "class-validator";
 import { Request, Response } from "express";
 import { ValidationErrorResponse } from "../../types/ValidationErrorResponse";
-import { UpdateCardInput } from "../Inputs/UpdateCard.input";
-import { AdminSettings } from "../Models/AdminSettings";
-import { CardDetails } from "../Models/CardDetails";
-import { User } from "../Models/User";
-import { Transaction } from "../Models/Transaction";
+import { transactionTitle } from "../../utils/Enums/transaction.title.enum";
+import { addUserXeroId, refreshToken } from "../../utils/XeroApiIntegration/createContact";
+import { generatePDF } from "../../utils/XeroApiIntegration/generatePDF";
 import {
   managePayments,
-  managePaymentsByPaymentMethods,
+  managePaymentsByPaymentMethods
 } from "../../utils/payment";
+import { UpdateCardInput } from "../Inputs/UpdateCard.input";
 import {
-  send_email_for_registration,
   send_email_for_new_registration,
+  send_email_for_registration,
 } from "../Middlewares/mail";
-import { generatePDF } from "../../utils/XeroApiIntegration/generatePDF";
+import { AdminSettings } from "../Models/AdminSettings";
+import { CardDetails } from "../Models/CardDetails";
 import { Invoice } from "../Models/Invoice";
-import { refreshToken } from "../../utils/XeroApiIntegration/createContact";
-import { transactionTitle } from "../../utils/Enums/transaction.title.enum";
+import { Transaction } from "../Models/Transaction";
+import { User } from "../Models/User";
 import { FreeCreditsLink } from "../Models/freeCreditsLink";
 // import { BusinessDetails } from "../Models/BusinessDetails";
 // import { UserLeadsDetails } from "../Models/UserLeadsDetails";
 import { paymentMethodEnum } from "../../utils/Enums/payment.method.enum";
-import { ONBOARDING_KEYS } from "../../utils/constantFiles/OnBoarding.keys";
 import { checkOnbOardingComplete } from "../../utils/Functions/Onboarding_complete";
-import { UserLeadsDetails } from "../Models/UserLeadsDetails";
-import { BusinessDetails } from "../Models/BusinessDetails";
 import { openingHoursFormatting } from "../../utils/Functions/openingHoursManipulation";
+import { ONBOARDING_KEYS } from "../../utils/constantFiles/OnBoarding.keys";
+import { BusinessDetails } from "../Models/BusinessDetails";
 import { RyftPaymentMethods } from "../Models/RyftPaymentMethods";
+import { UserLeadsDetails } from "../Models/UserLeadsDetails";
 
 export class CardDetailsControllers {
   static create = async (req: Request, res: Response): Promise<any> => {
     const input = req.body;
+    console.log('input',input);
+    
     if (!input.userId) {
       return res
         .status(400)
@@ -372,8 +374,9 @@ export class CardDetailsControllers {
     const promoLink: any = await FreeCreditsLink.findOne({
       user: { $elemMatch: { userId: userId } },
     });
+    let user = await User.findById(userId);
+    
     try {
-      const user = await User.findById(userId);
       //@ts-ignore
       if (!user.isRyftCustomer || !user.isLeadbyteCustomer) {
         return res.status(403).json({
@@ -383,6 +386,12 @@ export class CardDetailsControllers {
           },
         });
       }
+      
+
+      if(!user?.xeroContactId){
+        user = await addUserXeroId(userId)
+      }
+   
       if (
         user?.paymentMethod != paymentMethodEnum.MANUALLY_ADD_CREDITS_METHOD
       ) {
@@ -435,6 +444,7 @@ export class CardDetailsControllers {
       const paymentMethodsExists = await RyftPaymentMethods.findOne({
         cardId: card.id,
       });
+      
       if (!paymentMethodsExists) {
         managePayments(params)
           .then(async (_res) => {

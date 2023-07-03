@@ -7,15 +7,19 @@ import { User } from "../../app/Models/User";
 const POST = "post";
 export const createSession = (params: any) => {
   return new Promise((resolve, reject) => {
-    const data = JSON.stringify({
+    let body = {
       amount: params.fixedAmount,
       currency: process.env.CURRENCY,
       customerEmail: params.email,
       customerDetails: {
-        id: params.clientId,
+        id: params.clientId || null
       },
       returnUrl: process.env.RETURN_URL,
-    });
+    }
+     
+    const data = JSON.stringify(body);
+   
+    
     const config = {
       method: POST,
       url: process.env.CREATE_SESSION_URL,
@@ -37,6 +41,30 @@ export const createSession = (params: any) => {
       });
   });
 };
+
+export const deleteCustomerById = (customerId: any) => {
+  // 
+  return new Promise((resolve, reject) => {
+    const config = {
+      method: "DELETE",
+      url: `https://api.ryftpay.com/v1/customers/${customerId}`,
+      headers: {
+        // Account: process.env.ACCOUNT_ID,
+        "Content-Type": "application/json",
+        Accept: "application/json",
+        Authorization: process.env.RYFT_SECRET_KEY,
+      },
+    };
+    axios(config)
+      .then((response) => {
+        resolve(response);
+      })
+      .catch((err) => {
+        // reject(err);
+        console.log("Create session error", err.response.data);
+      });
+  });
+}
 
 export const attemptToPayment = (response: any, params: any) => {
   return new Promise((resolve, reject) => {

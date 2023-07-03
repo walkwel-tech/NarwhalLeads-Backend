@@ -19,11 +19,13 @@ export const createCustomerOnRyft = (params: CreateCustomerInput) => {
     };
     axios(config)
       .then(async (response) => {
-        console.log("ress",response.data.id)
+        console.log("ryft customer ress",response.data.id)
         await User.findByIdAndUpdate(params.userId, { isRyftCustomer: true,ryftClientId:response.data.id });
         resolve(response);
       })
       .catch((err) => {
+        console.log('RYFT ERROR',err.response?.data);
+        
         reject(err.response?.data);
       });
   });
