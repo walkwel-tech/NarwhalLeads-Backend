@@ -3,6 +3,7 @@ import { CardDetails } from "../../app/Models/CardDetails";
 // import { PaymentInput } from "../../app/Inputs/Payment.input";
 import { RyftPaymentMethods } from "../../app/Models/RyftPaymentMethods";
 import { User } from "../../app/Models/User";
+import { PAYMENT_STATUS } from "../Enums/payment.status";
 
 const POST = "post";
 export const createSession = (params: any) => {
@@ -36,8 +37,8 @@ export const createSession = (params: any) => {
         resolve(response);
       })
       .catch((err) => {
-        // reject(err);
-        console.log("Create session error", err.response.data);
+        reject(err);
+        // console.log("Create session error", err.response.data);
       });
   });
 };
@@ -60,8 +61,8 @@ export const deleteCustomerById = (customerId: any) => {
         resolve(response);
       })
       .catch((err) => {
-        // reject(err);
-        console.log("Create session error", err.response.data);
+        reject(err);
+        // console.log("Create session error", err.response.data);
       });
   });
 }
@@ -93,22 +94,27 @@ export const attemptToPayment = (response: any, params: any) => {
     };
     axios(config)
       .then(async function (res) {
-        const user: any = await User.findOne({ email: params.email });
-        await RyftPaymentMethods.create({
-          userId: user.id,
-          ryftClientId: user.ryftClientId,
-          cardId: params.cardId,
-          paymentMethod: res.data.paymentMethod,
-        });
-        const card = await CardDetails.findById(params.cardId);
-        await CardDetails.findByIdAndUpdate(params.cardId, {
-          cardNumber: "000000000000" + card?.cardNumber.slice(-4),
-        });
-        resolve(res);
+        if (res.data.status === PAYMENT_STATUS.PENDING_ACTION) {
+          const user: any = await User.findOne({ email: params.email });
+          await RyftPaymentMethods.create({
+            userId: user.id,
+            ryftClientId: user.ryftClientId,
+            cardId: params.cardId,
+            paymentMethod: res.data.paymentMethod,
+          });
+          const card = await CardDetails.findById(params.cardId);
+          await CardDetails.findByIdAndUpdate(params.cardId, {
+            cardNumber: "000000000000" + card?.cardNumber.slice(-4),
+          });
+          resolve(res);
+        } else {
+          console.log("Exception Occur")
+          throw new Error("Payment Pending");
+        }
       })
       .catch(function (error) {
-        // reject(error);
-        console.log("attempt payment error", error.response.data);
+        reject(error);
+        // console.log("attempt payment error", error.response.data);
       });
   });
 };
@@ -131,8 +137,8 @@ export const customerPaymentMethods = (response: any) => {
         resolve(res);
       })
       .catch(function (error) {
-        // reject(error);
-        console.log("payment methpods error", error.response.data);
+        reject(error);
+        // console.log("payment methpods error", error.response.data);
       });
   });
 };
@@ -161,14 +167,19 @@ export const attemptToPaymentBy_PaymentMethods = (
     };
     axios(config)
       .then(async function (res) {
-        resolve(res);
+        if (res.data.status === PAYMENT_STATUS.APPROVED) {
+          resolve(res);
+        } else {
+          console.log("Exception Occur")
+          throw new Error("payment pending");
+        }
       })
       .catch(function (error) {
-        // reject(error);
-        console.log(
-          "attempt payment by payment methods error",
-          error.response.data
-        );
+        reject(error);
+        // console.log(
+        //   "attempt payment by payment methods error",
+        //   error.response.data
+        // );
       });
   });
 };
@@ -195,8 +206,8 @@ export const refundPayment = (params: any) => {
         resolve(res);
       })
       .catch(function (error) {
-        // reject(error);
-        console.log(error?.response?.data);
+        reject(error);
+        // console.log(error?.response?.data);
       });
   });
 };
@@ -219,8 +230,8 @@ export const getPaymentMethodByPaymentSessionID = (
         resolve(response.data);
       })
       .catch(function (error) {
-        console.log(error);
-        reject(error.response.data)
+        // console.log(error);
+        reject(error)
       });
   })
 

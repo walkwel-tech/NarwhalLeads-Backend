@@ -13,9 +13,9 @@ export class BusinessDetailsInput {
   businessName: string;
  
   // @IsNotEmpty()
-  @IsString({ message: "business Logo is required." })
+  // @IsString({ message: "business Logo is required." })
 
-  businessLogo: string;
+  // businessLogo: string;
 
    
   @IsNotEmpty()

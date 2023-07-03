@@ -1,26 +1,28 @@
 import axios from "axios";
 import { CreateCustomerInput } from "../../app/Inputs/createCustomerOnRyft&Lead.inputs";
 import { User } from "../../app/Models/User";
+let FormData = require("form-data");
+
 const POST = "post";
 export const createCustomerOnLeadByte = (params: CreateCustomerInput) => {
+
   return new Promise((resolve, reject) => {
+    let data = new FormData();
+    data.append("street1", params.street1);
+    data.append("street2", params?.street2);
+    data.append("towncity", params.towncity);
+    // data.append('county', params?.county);
+    data.append("postcode", params.postcode);
+    // data.append('country_name', params.country_name);
+    data.append("phone",params.phone);
+    data.append("company", params?.company);
     const configLead = {
       method: POST,
       url: process.env.CREATE_CUSTOMER_ON_LEAD_BYTE_URL,
       headers: {
         X_KEY: process.env.LEAD_BYTE_API_KEY,
       },
-      data: {
-        company: params.company,
-        street1: params.street1,
-        street2: params.street2,
-        towncity: params.towncity,
-        // county:Name of county,
-        postcode: params.postcode,
-        country_name: params.country_name,
-        phone: params.phone,
-        
-      },
+      data: data
     };
     axios(configLead)
       .then(async (response) => {

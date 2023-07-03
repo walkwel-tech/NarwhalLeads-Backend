@@ -31,14 +31,17 @@ export const createContactOnXero = (name: string, token: string) => {
 export const addUserXeroId = async (userId:string)=>{
   let user = User.findById(userId);
   let token: any = await AccessToken.findOne();
-    const fullName = user.firstName + " " + user.lastName;
+  //@ts-ignore
+    const fullName = user?.firstName + " " + user?.lastName;
     await refreshToken()
     token = await AccessToken.findOne();
     const res = await createContactOnXero(fullName, token?.access_token)
     await User.findOneAndUpdate(
       { _id: userId },
-      { $set: { xeroContactId: res.data.Contacts[0].ContactID } }
+      //@ts-ignore
+      { $set: { xeroContactId: res?.data?.Contacts[0]?.ContactID } }
     );
+    //@ts-ignore
     user = await User.findById(userId);
     
     return user;
