@@ -10,6 +10,8 @@ env:
   SV_KEY_PASS: ${{ secrets.SV_KEY_PASS }}
   SV_IP_ADDRESS: ${{ secrets.SV_IP_ADDRESS }}
   SV_USER: ${{ secrets.SV_USER }}
+  BUILD_DIR_PATH: ${{ vars.BUILD_DIR_PATH }}
+  BUILD_DIR_NAME: ${{ vars.BUILD_DIR_NAME }}
   CI: false
 
 jobs:
@@ -37,7 +39,7 @@ jobs:
         run: npm run build
 
       - name: Package Build
-        run: zip -r build.zip build/
+        run: zip -r ${{ env.BUILD_DIR_NAME }}.zip ${{ env.BUILD_DIR_NAME }}
 
       - name: Send Build to Server
         uses: appleboy/scp-action@master
@@ -59,4 +61,4 @@ jobs:
           passphrase: ${{ env.SV_KEY_PASS }}
           script: |
             cd ${{ env.BUILD_DIR_PATH }}
-            unzip build.zip
+            unzip ${{ env.BUILD_DIR_NAME }}.zip
