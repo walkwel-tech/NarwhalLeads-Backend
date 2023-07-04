@@ -39,7 +39,8 @@ jobs:
         run: npm run build
 
       - name: Package Build
-        run: zip -r ${{ env.BUILD_DIR_NAME }}.zip ${{ env.BUILD_DIR_NAME }}
+        run: zip -r dist.zip 'dist/'
+        # run: zip -r ${{ env.BUILD_DIR_NAME }}.zip ${{ env.BUILD_DIR_NAME }}
 
       - name: Send Build to Server
         uses: appleboy/scp-action@master
@@ -60,5 +61,7 @@ jobs:
           key: ${{ env.SSH_PRIVATE_KEY }}
           passphrase: ${{ env.SV_KEY_PASS }}
           script: |
-            cd ${{ env.BUILD_DIR_PATH }}
-            unzip ${{ env.BUILD_DIR_NAME }}.zip
+            cd '~/code/narwhal_leads_test/'
+            unzip dist.zip
+            # cd ${{ env.BUILD_DIR_PATH }}
+            # unzip ${{ env.BUILD_DIR_NAME }}.zip
