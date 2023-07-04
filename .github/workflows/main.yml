@@ -60,7 +60,7 @@ jobs:
           passphrase: ${{ env.SV_KEY_PASS }}
           script: |
             cd ${{ env.BUILD_DIR_PATH }}
-            unzip dist.zip
+            unzip -o dist.zip
             pm2 restart 1
             rm dist.zip
             rm -rf 'NarwhalLeads-Backend'
