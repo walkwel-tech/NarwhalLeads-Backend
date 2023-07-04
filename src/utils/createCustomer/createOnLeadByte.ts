@@ -16,6 +16,7 @@ export const createCustomerOnLeadByte = (params: CreateCustomerInput) => {
     data.append('country_name', 'United Kingdom');
     data.append("phone",params.phone);
     data.append("company", params?.company);
+    data.append("external_ref", params?.company);
     const configLead = {
       method: POST,
       url: process.env.CREATE_CUSTOMER_ON_LEAD_BYTE_URL,

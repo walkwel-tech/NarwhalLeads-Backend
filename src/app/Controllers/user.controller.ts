@@ -504,6 +504,20 @@ export class UsersControllers {
           { new: true }
         );
       }
+      if(input.zapierUrl){
+        await UserLeadsDetails.findByIdAndUpdate(
+          checkUser?.userLeadsDetailsId,
+          { zapierUrl: input.zapierUrl },
+
+          { new: true }
+        );      }
+        if(input.daily){
+          await UserLeadsDetails.findByIdAndUpdate(
+            checkUser?.userLeadsDetailsId,
+            { daily: input.daily },
+  
+            { new: true }
+          );      }
       const buinessData=await BusinessDetails.findOne(checkUser.businessDetailsId)
       const leadData=await UserLeadsDetails.findOne(checkUser.userLeadsDetailsId)
       const formattedOpeningHours=openingHoursFormatting(buinessData?.businessOpeningHours)
