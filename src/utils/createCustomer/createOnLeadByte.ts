@@ -13,7 +13,7 @@ export const createCustomerOnLeadByte = (params: CreateCustomerInput) => {
     data.append("towncity", params.towncity);
     // data.append('county', params?.county);
     data.append("postcode", params.postcode);
-    // data.append('country_name', params.country_name);
+    data.append('country_name', 'United Kingdom');
     data.append("phone",params.phone);
     data.append("company", params?.company);
     const configLead = {

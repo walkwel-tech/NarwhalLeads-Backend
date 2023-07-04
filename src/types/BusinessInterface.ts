@@ -3,6 +3,7 @@ import { Document, Types } from "mongoose";
 export interface BusinessDetailsInterface extends Document {
   _id: Types.ObjectId;
   businessIndustry: string,
+  businessDescription:string,
   businessName: string,
   businessLogo: string,
   address1: string,

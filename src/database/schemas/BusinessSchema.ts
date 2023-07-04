@@ -6,6 +6,10 @@ const BusinessDetailsSchema = new Schema(
       type: String,
       required: false,
     },
+    businessDescription:{
+      type:String,
+      required:false
+    },
     businessName: {
       type: String,
       required: false,

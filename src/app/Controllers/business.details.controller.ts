@@ -25,15 +25,14 @@ const ObjectId = mongoose.Types.ObjectId;
 export class BusinessDetailsController {
   static create = async (req: Request, res: Response): Promise<any> => {
     const input = req.body;
-    
-    if(!input.userId){
+
+    if (!input.userId) {
       return res
-      .status(400)
-      .json({ error: { message: "User Id is required" } });
+        .status(400)
+        .json({ error: { message: "User Id is required" } });
     }
     let formattedOpeningHours;
     let formattedLeadSchedule;
-
     const Business = new BusinessDetailsInput();
     (Business.businessIndustry = input.businessIndustry),
       (Business.businessName = input.businessName),
@@ -45,7 +44,7 @@ export class BusinessDetailsController {
       (Business.businessCity = input.businessCity),
       // (Business.businessCountry = input.businessCountry),
       (Business.businessPostCode = input.businessPostCode);
-    (Business.businessOpeningHours = JSON.parse(input.businessOpeningHours));
+    Business.businessOpeningHours = JSON.parse(input.businessOpeningHours);
     const errors = await validate(Business);
     // get onboarding value of user
     const { onBoarding }: any = await User.findById(input.userId);
@@ -112,7 +111,7 @@ export class BusinessDetailsController {
         userId: input?.userId,
         businessIndustry: Business?.businessIndustry,
         businessName: Business?.businessName,
-
+        businessDescription: input?.businessDescription,
         // businessLogo: `${FileEnum.PROFILEIMAGE}${req?.file.filename}`,
         businessSalesNumber: Business?.businessSalesNumber,
         businessAddress: Business?.address1 + " " + input?.address2,
@@ -128,6 +127,7 @@ export class BusinessDetailsController {
         dataToSave.businessLogo = `${FileEnum.PROFILEIMAGE}${req?.file.filename}`;
       }
       const userData = await BusinessDetails.create(dataToSave);
+
       const industry = await BuisnessIndustries.findOne({
         industry: input?.businessIndustry,
       });
@@ -137,13 +137,15 @@ export class BusinessDetailsController {
         businessIndustryId: industry?.id,
       });
       const user: any = await User.findById(input.userId);
-      if(!user?.xeroContactId){
-        await addUserXeroId(input.userId)
+      if (!user?.xeroContactId) {
+        try {
+          await addUserXeroId(input.userId);
+        } catch (error) {
+          console.log("ERROR WHILE CREATING CUSTOMER!!");
+        }
       }
-      console.log("--->>",user)
-      if (checkOnbOardingComplete(user) && !user.registrationMailSentToAdmin) {
-        console.log("--->>222",user)
 
+      if (checkOnbOardingComplete(user) && !user.registrationMailSentToAdmin) {
         const leadData = await UserLeadsDetails.findOne({
           userId: userData?._id,
         });
@@ -201,12 +203,11 @@ export class BusinessDetailsController {
       const paramsObj = Object.values(params).some(
         (value: any) => value === undefined
       );
-      console.log("param",paramsObj,params)
+      console.log("param", paramsObj, params);
       if (!paramsObj) {
         createCustomersOnRyftAndLeadByte(params)
           .then(() => {
             console.log("Customer created!!!!");
-            
           })
           .catch((ERR) => {
             console.log("ERROR while creating customer");
@@ -225,7 +226,7 @@ export class BusinessDetailsController {
   ): Promise<any> => {
     const { id } = req.params;
     const input = req.body;
-    let formattedOpeningHours ;
+    let formattedOpeningHours;
     let formattedLeadSchedule;
     try {
       const details = await BusinessDetails.findOne({ _id: new ObjectId(id) });
@@ -233,6 +234,18 @@ export class BusinessDetailsController {
         return res
           .status(404)
           .json({ error: { message: "details does not exists." } });
+      }
+      let userData = await User.findOne({ businessDetailsId: id });
+
+      if (input.businessIndustry) {
+        const industry = await BuisnessIndustries.findOne({
+          industry: input.businessIndustry,
+        });
+        userData = await User.findByIdAndUpdate(
+          userData?.id,
+          { leadCost: industry?.leadCost },
+          { new: true }
+        );
       }
       const data = await BusinessDetails.findByIdAndUpdate(
         id,
@@ -249,6 +262,9 @@ export class BusinessDetailsController {
           businessAddress: input.businessAddress
             ? input.businessAddress
             : details.businessAddress,
+          businessDescription: input.businessDescription
+            ? input.businessDescription
+            : details.businessDescription,
           address1: input.address1 ? input.address1 : details.address1,
           address2: input.address2 ? input.address2 : details.address2,
           businessCity: input.businessCity
@@ -275,19 +291,18 @@ export class BusinessDetailsController {
 
       if (data) {
         const updatedDetails = await BusinessDetails.findById(id);
-        const userData = await User.findOne({ businessDetailsId: id });
         const leadData = await UserLeadsDetails.findOne({
           userId: userData?._id,
         });
-         formattedOpeningHours = openingHoursFormatting(
+        formattedOpeningHours = openingHoursFormatting(
           updatedDetails?.businessOpeningHours
         );
-        if(leadData){
+        if (leadData) {
           formattedLeadSchedule = openingHoursFormatting(
-          leadData?.leadSchedule
-        );
+            leadData?.leadSchedule
+          );
         }
-         
+
         const message = {
           firstName: userData?.firstName,
           lastName: userData?.lastName,
@@ -314,6 +329,7 @@ export class BusinessDetailsController {
           data: {
             message: "businessDetails updated successfully.",
             data: updatedDetails,
+            leadCost: userData?.leadCost,
           },
         });
       } else {

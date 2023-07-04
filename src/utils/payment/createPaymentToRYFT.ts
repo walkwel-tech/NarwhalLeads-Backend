@@ -15,6 +15,7 @@ export const createSession = (params: any) => {
       customerDetails: {
         id: params.clientId || null
       },
+      captureFlow: "Automatic",
       returnUrl: process.env.RETURN_URL,
     }
      
@@ -94,7 +95,7 @@ export const attemptToPayment = (response: any, params: any) => {
     };
     axios(config)
       .then(async function (res) {
-        if (res.data.status === PAYMENT_STATUS.PENDING_ACTION) {
+        if (res.data.status === PAYMENT_STATUS.APPROVED) {
           const user: any = await User.findOne({ email: params.email });
           await RyftPaymentMethods.create({
             userId: user.id,

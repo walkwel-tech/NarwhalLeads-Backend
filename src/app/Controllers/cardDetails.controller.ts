@@ -28,11 +28,11 @@ import { ONBOARDING_KEYS } from "../../utils/constantFiles/OnBoarding.keys";
 import { BusinessDetails } from "../Models/BusinessDetails";
 import { RyftPaymentMethods } from "../Models/RyftPaymentMethods";
 import { UserLeadsDetails } from "../Models/UserLeadsDetails";
+import { UserInterface } from "../../types/UserInterface";
 
 export class CardDetailsControllers {
   static create = async (req: Request, res: Response): Promise<any> => {
     const input = req.body;
-    console.log('input',input);
     
     if (!input.userId) {
       return res
@@ -374,11 +374,14 @@ export class CardDetailsControllers {
     const promoLink: any = await FreeCreditsLink.findOne({
       user: { $elemMatch: { userId: userId } },
     });
-    let user = await User.findById(userId);
-    
+    let user:UserInterface | null = await User.findById(userId);
+  
     try {
-      //@ts-ignore
-      if (!user.isRyftCustomer || !user.isLeadbyteCustomer) {
+      if(!user){
+        return res.status(404).json({error:{message:"User does not exist"}})
+      }
+      
+      if (user && (!user.isRyftCustomer || !user.isLeadbyteCustomer)) {
         return res.status(403).json({
           error: {
             message:
@@ -420,13 +423,11 @@ export class CardDetailsControllers {
       }
       const params: any = {
         fixedAmount: input?.amount || adminSettings?.minimumUserTopUpAmount,
-        //@ts-ignore
         email: user?.email,
         cardNumber: card?.cardNumber,
         expiryMonth: card?.expiryMonth,
         expiryYear: card?.expiryYear,
         cvc: card?.cvc,
-        //@ts-ignore
         buyerId: user?.buyerId,
         freeCredits: 0,
         clientId: user?.ryftClientId,
@@ -457,10 +458,9 @@ export class CardDetailsControllers {
               status: "success",
               amount: input.amount || adminSettings?.minimumUserTopUpAmount,
               creditsLeft:
-                user.credits +
+                user?.credits +
                 (input.amount || adminSettings?.minimumUserTopUpAmount),
             };
-            console.log(transactionData);
             const transaction = await Transaction.create(transactionData);
             if (!user?.xeroContactId) {
               console.log("xeroContact ID not found. Failed to generate pdf.");
@@ -486,6 +486,7 @@ export class CardDetailsControllers {
                 .catch(async (error) => {
                   refreshToken().then(async (_res) => {
                     generatePDF(
+                      //@ts-ignore
                       user?.xeroContactId,
                       transactionTitle.CREDITS_ADDED,
                       amount
@@ -515,15 +516,13 @@ export class CardDetailsControllers {
               title: transactionTitle.CREDITS_ADDED,
               status: "error",
               amount: input.amount || adminSettings?.minimumUserTopUpAmount,
-              creditsLeft: user.credits,
+              creditsLeft: user?.credits,
             };
             await Transaction.create(transactionData);
           });
       } else {
-    
-        params.paymentId =
-            //@ts-ignore
-          paymentMethodsExists.paymentMethod?.tokenizedDetails?.id;
+    //@ts-ignore
+        params.paymentId = paymentMethodsExists?.paymentMethod?.tokenizedDetails?.id;
         console.log(params);
         managePaymentsByPaymentMethods(params)
           .then(async (_res) => {
@@ -536,7 +535,7 @@ export class CardDetailsControllers {
               status: "success",
               amount: input.amount || adminSettings?.minimumUserTopUpAmount,
               creditsLeft:
-                user.credits +
+                user?.credits +
                 (input.amount || adminSettings?.minimumUserTopUpAmount),
             };
             console.log(transactionData);
@@ -566,6 +565,7 @@ export class CardDetailsControllers {
                 .catch(async (error) => {
                   refreshToken().then(async (_res) => {
                     generatePDF(
+                              //@ts-ignore
                       user?.xeroContactId,
                       transactionTitle.CREDITS_ADDED,
                       amount
@@ -596,7 +596,7 @@ export class CardDetailsControllers {
               title: transactionTitle.CREDITS_ADDED,
               status: "error",
               amount: input.amount || adminSettings?.minimumUserTopUpAmount,
-              creditsLeft: user.credits,
+              creditsLeft: user?.credits,
             };
             await Transaction.create(transactionData);
           });

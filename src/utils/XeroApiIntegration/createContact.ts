@@ -22,8 +22,8 @@ export const createContactOnXero = (name: string, token: string) => {
         resolve(data);
       })
       .catch(async (err) => {
-        // reject(err);
-        console.log('Xero Error',err.response)
+        reject(err);
+        // console.log('Xero Error',err.response)
       });
   });
 };
@@ -47,7 +47,7 @@ export const addUserXeroId = async (userId:string)=>{
     return user;
 }
 
-export const refreshToken = () => {
+export const refreshTokenOld = () => {
   return new Promise(async (resolve, reject) => {
     const token=await AccessToken.findOne()
     let data = new FormData();
@@ -78,4 +78,36 @@ export const refreshToken = () => {
         // reject(err)
       });
   });
+};
+export const refreshToken = () => {
+  return new Promise(async(resolve,reject)=>{
+      let data = new FormData();
+  data.append('grant_type', 'client_credentials');
+  data.append('scope', 'accounting.transactions accounting.transactions.read accounting.contacts accounting.contacts.read accounting.reports.read accounting.budgets.read accounting.settings accounting.settings.read accounting.attachments');
+  
+  let config = {
+    method: 'post',
+    url: `${process.env.REFRESH_TOKEN_URL}`,
+    headers: { 
+      'Authorization': `Basic ${process.env.XERO_CLIENT_ID_CLIENT_SECRET_BASE64_ENCODE}`, 
+    },
+    data : data
+  };
+  
+  axios(config)
+  .then(async function (response) {
+    await AccessToken.updateMany(
+      {},
+      { $set: { access_token: response.data.access_token,refresh_token:""} },
+      { new: true }
+    );
+    // console.log(JSON.stringify(response.data));
+    resolve(response)
+  })
+  .catch(function (error) {
+    // console.log(error);
+    reject(error)
+  });
+  })
+
 };

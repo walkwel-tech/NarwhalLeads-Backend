@@ -33,4 +33,6 @@ export interface UserInterface extends Document {
   onBoarding:[];
   registrationMailSentToAdmin:boolean;
   ryftClientId:string
+  isRyftCustomer:boolean;
+  isLeadbyteCustomer:boolean
 }

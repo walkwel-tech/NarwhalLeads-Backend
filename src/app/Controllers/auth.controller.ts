@@ -181,7 +181,9 @@ class AuthController {
                   );
                   console.log("success in creating contact");
                 }
-              );
+              ).catch((error)=>{
+                console.log("ERROR IN CREATING CUSTOMER AFTER TOKEN UPDATION.")
+              });
             }).catch((err)=>{
                           console.log("error in creating contact on xero",err.response.data);
 
