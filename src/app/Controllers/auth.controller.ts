@@ -13,7 +13,10 @@ import { LoginInput } from "../Inputs/Login.input";
 import { generateAuthToken } from "../../utils/jwt";
 import { RolesEnum } from "../../types/RolesEnum";
 import { CheckUserInput } from "../Inputs/checkUser.input";
-import { send_email_forget_password, send_email_for_registration } from "../Middlewares/mail";
+import {
+  send_email_forget_password,
+  send_email_for_registration,
+} from "../Middlewares/mail";
 import { ForgetPassword } from "../Models/ForgetPassword";
 import { forgetPasswordInput } from "../Inputs/forgetPasswordInput";
 import { AdminSettings } from "../Models/AdminSettings";
@@ -26,6 +29,7 @@ import {
 import { FreeCreditsLink } from "../Models/freeCreditsLink";
 import { paymentMethodEnum } from "../../utils/Enums/payment.method.enum";
 import { ONBOARDING_KEYS } from "../../utils/constantFiles/OnBoarding.keys";
+import { createCustomerOnRyft } from "../../utils/createCustomer/createOnRyft";
 const fs = require("fs");
 
 class AuthController {
@@ -88,23 +92,42 @@ class AuthController {
           autoCharge: true,
           rowIndex: showUsers?.rowIndex + 1 || 0,
           paymentMethod: paymentMethodEnum.MANUALLY_ADD_CREDITS_METHOD,
-          onBoarding:[ 
+          onBoarding: [
             {
-              "key": ONBOARDING_KEYS.BUSINESS_DETAILS,
-              "pendingFields": ['businessIndustry','businessName','businessSalesNumber','businessPostCode','businessLogo','address1','businessOpeningHours','businessCity'],
-              "dependencies": []
-          },
-            {
-                "key": ONBOARDING_KEYS.LEAD_DETAILS,
-                "pendingFields": ['daily','leadSchedule','postCodeTargettingList'],
-                "dependencies": ['businessIndustry']
+              key: ONBOARDING_KEYS.BUSINESS_DETAILS,
+              pendingFields: [
+                "businessIndustry",
+                "businessName",
+                "businessSalesNumber",
+                "businessPostCode",
+                "businessLogo",
+                "address1",
+                "businessOpeningHours",
+                "businessCity",
+              ],
+              dependencies: [],
             },
             {
-                "key":ONBOARDING_KEYS.CARD_DETAILS,
-                "pendingFields": ['cardHolderName','cardNumber','expiryMonth','expiryYear','cvc'],
-                "dependencies": []
-            }
-        ],
+              key: ONBOARDING_KEYS.LEAD_DETAILS,
+              pendingFields: [
+                "daily",
+                "leadSchedule",
+                "postCodeTargettingList",
+              ],
+              dependencies: ["businessIndustry"],
+            },
+            {
+              key: ONBOARDING_KEYS.CARD_DETAILS,
+              pendingFields: [
+                "cardHolderName",
+                "cardNumber",
+                "expiryMonth",
+                "expiryYear",
+                "cvc",
+              ],
+              dependencies: [],
+            },
+          ],
         });
         if (input.code) {
           const checkCode: any = await FreeCreditsLink.findOne({
@@ -142,53 +165,83 @@ class AuthController {
                 .status(401)
                 .json({ data: "User is deleted.Please contact admin" });
             }
-            const token = generateAuthToken(user);
-            res.send({
-              message: "successfully registered",
-              data: {
-                _id: user.id,
-                firstName: user.firstName,
-                lastName: user.lastName,
-                email: user.email,
-                phoneNumber: user.phoneNumber,
-                role: user.role,
-                credits: adminSettings?.amount,
-                token
-              },
-            });
-           
-
+            const authToken = generateAuthToken(user);
+            const params: Record<string, any> = {
+              email: user.email,
+              firstName: user.firstName,
+              lastName: user.lastName,
+              userId: user.id,
+            };
+            createCustomerOnRyft(params)
+              .then(async () => {
+                const token: any = await AccessToken.findOne();
+                const fullName = input.firstName + " " + input.lastName;
+                createContactOnXero(fullName, token?.access_token)
+                  .then(async (res: any) => {
+                    await User.findOneAndUpdate(
+                      { email: input.email },
+                      {
+                        $set: { xeroContactId: res.data.Contacts[0].ContactID },
+                      }
+                    );
+                    console.log("success in creating contact");
+                  })
+                  .catch((err) => {
+                    refreshToken()
+                      .then(async (res: any) => {
+                        console.log("Token updated while creating customer!!!");
+                        createContactOnXero(fullName, res.data.access_token)
+                          .then(async (res: any) => {
+                            await User.findOneAndUpdate(
+                              { email: input.email },
+                              {
+                                $set: {
+                                  xeroContactId: res.data.Contacts[0].ContactID,
+                                },
+                              }
+                            );
+                            console.log("success in creating contact");
+                          })
+                          .catch((error) => {
+                            console.log(
+                              "ERROR IN CREATING CUSTOMER AFTER TOKEN UPDATION."
+                            );
+                          });
+                      })
+                      .catch((err) => {
+                        console.log(
+                          "error in creating contact on xero",
+                          err.response.data
+                        );
+                      });
+                  });
+                res.send({
+                  message: "successfully registered",
+                  data: {
+                    _id: user.id,
+                    firstName: user.firstName,
+                    lastName: user.lastName,
+                    email: user.email,
+                    phoneNumber: user.phoneNumber,
+                    role: user.role,
+                    credits: adminSettings?.amount,
+                    authToken,
+                  },
+                });
+              })
+              .catch(async () => {
+                await User.findByIdAndDelete(user.id)
+                return res
+                  .status(400)
+                  .json({
+                    data: {
+                      message:
+                        "Email already exist on RYFT. please try again with another email.",
+                    },
+                  });
+              });
           }
         )(req, res);
-        const token: any = await AccessToken.findOne();
-        const fullName = input.firstName + " " + input.lastName;
-        createContactOnXero(fullName, token?.access_token)
-          .then(async (res: any) => {
-            await User.findOneAndUpdate(
-              { email: input.email },
-              { $set: { xeroContactId: res.data.Contacts[0].ContactID } }
-            );
-            console.log("success in creating contact");
-          })
-          .catch((err) => {
-            refreshToken().then(async (res: any) => {
-              console.log("Token updated while creating customer!!!")
-              createContactOnXero(fullName, res.data.access_token).then(
-                async (res: any) => {
-                  await User.findOneAndUpdate(
-                    { email: input.email },
-                    { $set: { xeroContactId: res.data.Contacts[0].ContactID } }
-                  );
-                  console.log("success in creating contact");
-                }
-              ).catch((error)=>{
-                console.log("ERROR IN CREATING CUSTOMER AFTER TOKEN UPDATION.")
-              });
-            }).catch((err)=>{
-                          console.log("error in creating contact on xero",err.response.data);
-
-            });
-          });
       } else {
         return res
           .status(400)
@@ -276,7 +329,7 @@ class AuthController {
             email: user.email,
             role: user.role,
             credits: user.credits,
-            onBoarding:user?.onBoarding,
+            onBoarding: user?.onBoarding,
             businessName: business?.businessName,
             topUpAmount: promoLink?.topUpAmount || null,
             freeCredits: promoLink?.freeCredits || null,
@@ -461,7 +514,6 @@ class AuthController {
         .json({ data: { message: "User does not exist." } });
     }
   };
-
 
   static showMapFile = async (req: Request, res: Response): Promise<any> => {
     try {

@@ -198,7 +198,7 @@ export class UsersControllers {
                   "businessDetailsId.createdAt": 0,
                   "businessDetailsId.updatedAt": 0,
                   "businessDetailsId.__v": 0,
-                  "userLeadsDetailsId.postCodeTargettingList": 0,
+                  // "userLeadsDetailsId.postCodeTargettingList": 0,
                   "userLeadsDetailsId._id": 0,
                   "userLeadsDetailsId.isDeleted": 0,
                   "userLeadsDetailsId.deletedAt": 0,
@@ -663,7 +663,6 @@ export class UsersControllers {
       }
       async function response() {
         const result = await User.findById(id, "-password -__v");
-
         return res.json({ data: result });
       }
       setTimeout(response, 6000);

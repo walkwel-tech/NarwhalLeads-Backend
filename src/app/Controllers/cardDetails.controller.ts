@@ -2,11 +2,14 @@ import { validate } from "class-validator";
 import { Request, Response } from "express";
 import { ValidationErrorResponse } from "../../types/ValidationErrorResponse";
 import { transactionTitle } from "../../utils/Enums/transaction.title.enum";
-import { addUserXeroId, refreshToken } from "../../utils/XeroApiIntegration/createContact";
+import {
+  addUserXeroId,
+  refreshToken,
+} from "../../utils/XeroApiIntegration/createContact";
 import { generatePDF } from "../../utils/XeroApiIntegration/generatePDF";
 import {
   managePayments,
-  managePaymentsByPaymentMethods
+  managePaymentsByPaymentMethods,
 } from "../../utils/payment";
 import { UpdateCardInput } from "../Inputs/UpdateCard.input";
 import {
@@ -33,7 +36,7 @@ import { UserInterface } from "../../types/UserInterface";
 export class CardDetailsControllers {
   static create = async (req: Request, res: Response): Promise<any> => {
     const input = req.body;
-    
+
     if (!input.userId) {
       return res
         .status(400)
@@ -374,13 +377,15 @@ export class CardDetailsControllers {
     const promoLink: any = await FreeCreditsLink.findOne({
       user: { $elemMatch: { userId: userId } },
     });
-    let user:UserInterface | null = await User.findById(userId);
-  
+    let user: UserInterface | null = await User.findById(userId);
+
     try {
-      if(!user){
-        return res.status(404).json({error:{message:"User does not exist"}})
+      if (!user) {
+        return res
+          .status(404)
+          .json({ error: { message: "User does not exist" } });
       }
-      
+
       if (user && (!user.isRyftCustomer || !user.isLeadbyteCustomer)) {
         return res.status(403).json({
           error: {
@@ -389,12 +394,15 @@ export class CardDetailsControllers {
           },
         });
       }
-      
 
-      if(!user?.xeroContactId){
-        user = await addUserXeroId(userId)
+      if (!user?.xeroContactId) {
+        try {
+          user = await addUserXeroId(userId);
+        } catch (error) {
+          console.log("error");
+        }
       }
-   
+
       if (
         user?.paymentMethod != paymentMethodEnum.MANUALLY_ADD_CREDITS_METHOD
       ) {
@@ -445,7 +453,7 @@ export class CardDetailsControllers {
       const paymentMethodsExists = await RyftPaymentMethods.findOne({
         cardId: card.id,
       });
-      
+
       if (!paymentMethodsExists) {
         managePayments(params)
           .then(async (_res) => {
@@ -521,8 +529,10 @@ export class CardDetailsControllers {
             await Transaction.create(transactionData);
           });
       } else {
-    //@ts-ignore
-        params.paymentId = paymentMethodsExists?.paymentMethod?.tokenizedDetails?.id;
+       
+        params.paymentId =
+         //@ts-ignore
+          paymentMethodsExists?.paymentMethod?.tokenizedDetails?.id;
         console.log(params);
         managePaymentsByPaymentMethods(params)
           .then(async (_res) => {
@@ -565,7 +575,7 @@ export class CardDetailsControllers {
                 .catch(async (error) => {
                   refreshToken().then(async (_res) => {
                     generatePDF(
-                              //@ts-ignore
+                      //@ts-ignore
                       user?.xeroContactId,
                       transactionTitle.CREDITS_ADDED,
                       amount
@@ -605,18 +615,17 @@ export class CardDetailsControllers {
       async function response() {
         const result = await User.findById(userId, "-password -__v");
         if (result?.credits === user?.credits) {
-          return res
-            .status(400)
-            .json({
-              error: {
-                message: "Error occur in your payment. Please try again after some time",
-              },
-            });
+          return res.status(400).json({
+            error: {
+              message:
+                "Error occur in your payment. Please try again after some time",
+            },
+          });
         } else {
           return res.json({ data: result });
         }
       }
-      setTimeout(response, 6000);
+      setTimeout(response, 10000);
     } catch (err) {
       return res
         .status(500)

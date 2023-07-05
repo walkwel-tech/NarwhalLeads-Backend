@@ -1,9 +1,9 @@
 import { CreateCustomerInput } from "../../app/Inputs/createCustomerOnRyft&Lead.inputs";
 import { createCustomerOnLeadByte } from "./createOnLeadByte";
-import { createCustomerOnRyft } from "./createOnRyft";
+// import { createCustomerOnRyft } from "./createOnRyft";
 export const createCustomersOnRyftAndLeadByte = (params: CreateCustomerInput) => {
   const allPromises = [
-    createCustomerOnRyft(params),
+    // createCustomerOnRyft(params),
     createCustomerOnLeadByte(params),
 
   ];
