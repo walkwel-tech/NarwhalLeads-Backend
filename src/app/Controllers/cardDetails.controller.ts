@@ -457,7 +457,7 @@ export class CardDetailsControllers {
       if (!paymentMethodsExists) {
         managePayments(params)
           .then(async (_res) => {
-            console.log("payment success!!");
+            console.log("payment success!! ");
             const transactionData: any = {
               userId: userId,
               cardId: card.id,
