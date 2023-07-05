@@ -28,7 +28,6 @@ import { send_lead_data_to_zap } from "../../utils/webhookUrls/send_data_zap";
 import { IP } from "../../utils/constantFiles/IP_Lists";
 import { BuisnessIndustries } from "../Models/BuisnessIndustries";
 
-
 const LIMIT = 10;
 
 export class LeadsController {
@@ -42,6 +41,7 @@ export class LeadsController {
         },
       });
     }
+
     const bid = req.params.id;
     const input = req.body;
     const user: any = await User.findOne({ buyerId: bid })
@@ -52,12 +52,10 @@ export class LeadsController {
       .sort({ rowIndex: -1 })
       .limit(1);
 
-
-
-      const industry = await BuisnessIndustries.findOne({
-            industry: user.businessDetailsId.businessIndustry,
-          });
-     const columns = await BuisnessIndustries.findById(industry?.id)
+    const industry = await BuisnessIndustries.findOne({
+      industry: user.businessDetailsId.businessIndustry,
+    });
+    const columns = await BuisnessIndustries.findById(industry?.id);
     const array: any = [];
     columns?.columnsNames.map((i) => {
       array.push(i["defaultColumn"]);
@@ -74,7 +72,7 @@ export class LeadsController {
       } else {
         columns?.columnsNames.map((i, idx) => {
           //@ts-ignore
-          if (i?.defaultColumn == j && i?.renamedColumn!="") {
+          if (i?.defaultColumn == j && i?.renamedColumn != "") {
             //@ts-ignore
             input[i?.renamedColumn] = input[j];
             delete input[j];
@@ -101,7 +99,7 @@ export class LeadsController {
     });
     await BuisnessIndustries.findByIdAndUpdate(
       industry?.id,
-      { columns: arr,columnsNames: columns?.columnsNames },
+      { columns: arr, columnsNames: columns?.columnsNames },
       { new: true }
     );
     // await CustomColumnNames.findByIdAndUpdate(
@@ -112,12 +110,15 @@ export class LeadsController {
     const checkPreferenceExists: any = await LeadTablePreference.findOne({
       userId: user._id,
     });
+
     if (!checkPreferenceExists) {
-      const columnsNames=await BuisnessIndustries.findById(user.businessIndustryId)
+      const columnsNames = await BuisnessIndustries.findById(
+        user.businessIndustryId
+      );
       // const columnsNames = await CustomColumnNames.findOne({
       //   industryId: user?.businessIndustryId,
       // });
-      let array: any = [];
+      let array: any = [{ name: "clientName", isVisible: true, index: 0 }];
       Object.keys(input).map((i: any) => {
         // columnsNames?.columnsNames.map((j)=>{
         let obj: any = {};
@@ -125,16 +126,17 @@ export class LeadsController {
           (obj.name = i),
             (obj.isVisible = true),
             (obj.index = array[array?.length - 1]?.index + 1 || 0);
-          columnsNames?.columnsNames.map((j:any) => {
+          columnsNames?.columnsNames.map((j: any) => {
             if (j?.defaultColumn == i) {
               if (j.renamedColumn?.length != 0) {
                 obj.newName = j.renamedColumn;
-              } 
+              }
             }
           });
           array.push(obj);
         }
-      });      
+      });
+
       const dataToSaveInLeadsPreference: any = {
         userId: user.id,
         columns: array,
@@ -145,35 +147,51 @@ export class LeadsController {
       const adminPref: any = await LeadTablePreference.findOne({
         userId: admin?._id,
       });
-      let key = Object.keys(input).map((i) => i);
-      key.forEach((item, idx) => {
-        const existingElement = adminPref?.columns.find(
-          (resElement: any) => resElement.name === item
+      console.log(adminPref)
+
+      if (adminPref) {
+        console.log("hereretfetywfehw")
+        let key = Object.keys(input).map((i) => i);
+        key.forEach((item, idx) => {
+          const existingElement = adminPref?.columns.find(
+            (resElement: any) => resElement.name === item
+          );
+          if (!existingElement && item != "c1") {
+            let obj: any = {};
+            (obj.name = item),
+              (obj.isVisible = false),
+              (obj.index = adminPref?.columns.length),
+              columnsNames?.columnsNames.map((j: any) => {
+                if (j?.defaultColumn == item) {
+                  if (j.renamedColumn?.length != 0) {
+                    obj.newName = j.renamedColumn;
+                  }
+                }
+              });
+            adminPref?.columns.push(obj);
+          }
+        });
+        await LeadTablePreference.updateOne(
+          { userId: admin?._id },
+          {
+            columns: adminPref?.columns,
+          }
         );
-        if (!existingElement && item != "c1") {
-          let obj:any={}
-          obj.name=item,
-          obj.isVisible= false,
-          obj.index= adminPref?.columns.length,
-          columnsNames?.columnsNames.map((j:any) => {
-            if (j?.defaultColumn == item) {
-              if (j.renamedColumn?.length != 0) {
-                obj.newName = j.renamedColumn;
-              } 
-            }
-          });
-          adminPref?.columns.push(obj);
-        }
-      });
-      await LeadTablePreference.updateOne(
-        { userId: admin?._id },
-        {
-          columns: adminPref?.columns,
-        }
-      );
+      }
+      if (!adminPref) {
+        console.log("----------->>>>");
+        await LeadTablePreference.updateOne(
+          { userId: admin?._id },
+          {
+            columns: { name: "clientName", isVisible: true, index: 0 },
+          }
+        );
+      }
     }
     let key = Object.keys(input).map((i) => i);
-    const columnsNames=await BuisnessIndustries.findById(user.businessIndustryId)
+    const columnsNames = await BuisnessIndustries.findById(
+      user.businessIndustryId
+    );
 
     // const columnsNames = await CustomColumnNames.findOne({
     //   industryId: user?.businessIndustryId,
@@ -183,21 +201,24 @@ export class LeadsController {
         (resElement: any) => resElement.name === item
       );
       if (!existingElement && item != "c1") {
-        let obj:any={}
-          obj.name=item,
-          obj.isVisible= false,
-          obj.index= checkPreferenceExists?.columns.length,
-          columnsNames?.columnsNames.map((j:any) => {
+        let obj: any = {};
+        (obj.name = item),
+          (obj.isVisible = false),
+          (obj.index = checkPreferenceExists?.columns.length),
+          columnsNames?.columnsNames.map((j: any) => {
             if (j?.defaultColumn == item) {
               if (j.renamedColumn?.length != 0) {
                 obj.newName = j.renamedColumn;
-              } 
+              }
             }
-          })
+          });
         checkPreferenceExists?.columns.push(obj);
       }
     });
     const admin = await User.findOne({ role: RolesEnum.ADMIN });
+    checkPreferenceExists?.columns.map((i:any)=>{
+      //todo: add object for clinet names
+    })
     await LeadTablePreference.updateOne(
       { userId: admin?._id },
       {
@@ -260,8 +281,7 @@ export class LeadsController {
         title: transactionTitle.NEW_LEAD,
         amount: leadcpl,
         status: "success",
-        creditsLeft:user.credits - leadcpl
-
+        creditsLeft: user.credits - leadcpl,
       };
       await Transaction.create(dataToSave);
     } else {
@@ -282,10 +302,10 @@ export class LeadsController {
         }
       });
       const message: any = {
-        firstName:input.firstName,
+        firstName: input.firstName,
         lastName: input.lastName,
         phone: input.phone,
-        email: input.email
+        email: input.email,
       };
       send_email_for_new_lead(user.email, message);
       const messageToAdmin: any = {
@@ -298,17 +318,17 @@ export class LeadsController {
 
     return res.json({ data: leadsSave });
   };
- 
+
   static update = async (req: Request, res: Response): Promise<any> => {
     const leadId = req.params.id;
     const input = req.body;
     const lead = await Leads.findById(leadId);
     try {
       const user: any = await User.findOne({ buyerId: lead?.bid });
-      if(!user){
+      if (!user) {
         return res
-      .status(400)
-      .json({ error: { message: "User of this lead does not exist" } });
+          .status(400)
+          .json({ error: { message: "User of this lead does not exist" } });
       }
       if (
         lead?.status == leadsStatusEnums.REPORT_ACCEPTED ||
@@ -405,8 +425,7 @@ export class LeadsController {
               isCredited: true,
               status: "success",
               //@ts-ignore
-              creditsLeft:user?.credits + lead?.leadsCost
-
+              creditsLeft: user?.credits + lead?.leadsCost,
             };
             await Transaction.create(dataToSave);
             const leadsUpdate = await Leads.findByIdAndUpdate(
@@ -425,8 +444,7 @@ export class LeadsController {
               title: transactionTitle.LEAD_REJECTION_APPROVED,
               isCredited: true,
               status: "error",
-              creditsLeft:user?.credits
-
+              creditsLeft: user?.credits,
             };
             await Transaction.create(dataToSave);
           });
@@ -987,28 +1005,28 @@ export class LeadsController {
                   leadsCost: 0,
                   updatedAt: 0,
                   "leads.c1": 0,
-                  "clientName.password":0,
-                  "clientName.autoCharge":0,
-                  "clientName.leadCost":0,
-                  "clientName.isRyftCustomer":0,
-                  "clientName.isArchived":0,
-                  "clientName.isLeadbyteCustomer":0,
-                  "clientName.autoChargeAmount":0,
-                  "clientName.verifiedAt":0,
-                  "clientName.isVerified":0,
-                  "clientName.isActive":0,
-                  "clientName.businessDetailsId":0,
-                  "clientName.businessIndustryId":0,
-                  "clientName.userLeadsDetailsId":0,
-                  "clientName.onBoarding":0,
-                  "clientName.registrationMailSentToAdmin":0,
-                  "clientName.createdAt":0,
-                  "clientName.activatedAt":0,
-                  "clientName.isDeleted":0,
-                  "clientName.invitedById":0,
-                  "clientName.__v":0,
-                  "clientName.buyerId":0,
-                  "clientName.role":0,
+                  "clientName.password": 0,
+                  "clientName.autoCharge": 0,
+                  "clientName.leadCost": 0,
+                  "clientName.isRyftCustomer": 0,
+                  "clientName.isArchived": 0,
+                  "clientName.isLeadbyteCustomer": 0,
+                  "clientName.autoChargeAmount": 0,
+                  "clientName.verifiedAt": 0,
+                  "clientName.isVerified": 0,
+                  "clientName.isActive": 0,
+                  "clientName.businessDetailsId": 0,
+                  "clientName.businessIndustryId": 0,
+                  "clientName.userLeadsDetailsId": 0,
+                  "clientName.onBoarding": 0,
+                  "clientName.registrationMailSentToAdmin": 0,
+                  "clientName.createdAt": 0,
+                  "clientName.activatedAt": 0,
+                  "clientName.isDeleted": 0,
+                  "clientName.invitedById": 0,
+                  "clientName.__v": 0,
+                  "clientName.buyerId": 0,
+                  "clientName.role": 0,
                 },
               },
             ],
@@ -1017,7 +1035,7 @@ export class LeadsController {
         },
       ]);
       query.results.map((item: any) => {
-        let clientName = Object.assign({}, item["clientName"][0]);        
+        let clientName = Object.assign({}, item["clientName"][0]);
         item.clientName = clientName;
       });
       const leadsCount = query.leadsCount[0]?.count || 0;
@@ -1229,29 +1247,28 @@ export class LeadsController {
                   leadsCost: 0,
                   updatedAt: 0,
                   "leads.c1": 0,
-                  "clientName.password":0,
-                  "clientName.autoCharge":0,
-                  "clientName.leadCost":0,
-                  "clientName.isRyftCustomer":0,
-                  "clientName.isArchived":0,
-                  "clientName.isLeadbyteCustomer":0,
-                  "clientName.autoChargeAmount":0,
-                  "clientName.verifiedAt":0,
-                  "clientName.isVerified":0,
-                  "clientName.isActive":0,
-                  "clientName.businessDetailsId":0,
-                  "clientName.businessIndustryId":0,
-                  "clientName.userLeadsDetailsId":0,
-                  "clientName.onBoarding":0,
-                  "clientName.registrationMailSentToAdmin":0,
-                  "clientName.createdAt":0,
-                  "clientName.activatedAt":0,
-                  "clientName.isDeleted":0,
-                  "clientName.invitedById":0,
-                  "clientName.__v":0,
-                  "clientName.buyerId":0,
-                  "clientName.role":0,
-
+                  "clientName.password": 0,
+                  "clientName.autoCharge": 0,
+                  "clientName.leadCost": 0,
+                  "clientName.isRyftCustomer": 0,
+                  "clientName.isArchived": 0,
+                  "clientName.isLeadbyteCustomer": 0,
+                  "clientName.autoChargeAmount": 0,
+                  "clientName.verifiedAt": 0,
+                  "clientName.isVerified": 0,
+                  "clientName.isActive": 0,
+                  "clientName.businessDetailsId": 0,
+                  "clientName.businessIndustryId": 0,
+                  "clientName.userLeadsDetailsId": 0,
+                  "clientName.onBoarding": 0,
+                  "clientName.registrationMailSentToAdmin": 0,
+                  "clientName.createdAt": 0,
+                  "clientName.activatedAt": 0,
+                  "clientName.isDeleted": 0,
+                  "clientName.invitedById": 0,
+                  "clientName.__v": 0,
+                  "clientName.buyerId": 0,
+                  "clientName.role": 0,
                 },
               },
             ],
@@ -1261,7 +1278,7 @@ export class LeadsController {
       ]);
       query.results.map((item: any) => {
         let clientName = Object.assign({}, item["clientName"][0]);
-        
+
         item.clientName = clientName;
       });
       const leadsCount = query.leadsCount[0]?.count || 0;
@@ -1324,7 +1341,9 @@ export class LeadsController {
     try {
       const Preference = await LeadTablePreference.findOne({ userId: userId });
       const user = await User.findById(userId);
-      const columnsOfIndustry=await BuisnessIndustries.findById(user?.businessIndustryId)
+      const columnsOfIndustry = await BuisnessIndustries.findById(
+        user?.businessIndustryId
+      );
 
       // const columnsOfIndustry = await CustomColumnNames.findOne({
       //   industryId: user?.businessIndustryId,
@@ -1334,22 +1353,25 @@ export class LeadsController {
           if (i?.defaultColumn == j?.name && i.renamedColumn.length != 0) {
             //@ts-ignore
             j.newName = i?.renamedColumn;
-          }
-         else if (i?.defaultColumn == j?.name && i.renamedColumn.length === 0) {
+          } else if (
+            i?.defaultColumn == j?.name &&
+            i.renamedColumn.length === 0
+          ) {
             //@ts-ignore
-            j.newName =j.name
+            j.newName = j.name;
           }
         });
       });
-      Preference?.columns.map((i:any)=>{
-        if(!i?.newName){
-          i.newName=i.name
+      Preference?.columns.map((i: any) => {
+        if (!i?.newName) {
+          i.newName = i.name;
         }
-      })
+      });
 
       if (Preference) {
         return res.json({ data: Preference });
       }
+
       return res.json({ data: { columns: columnsOfIndustry?.columns } });
     } catch (error) {
       return res
@@ -1389,7 +1411,7 @@ export class LeadsController {
       const pdfRequest = await https.request(
         options,
         function (apiResponse: any) {
-          console.log("api req",apiResponse)
+          console.log("api req", apiResponse);
           if (apiResponse.rawHeaders.includes("Bearer error=invalid_token")) {
             refreshToken().then(() => {
               LeadsController.generateInvoicePdf(_req, res);

@@ -687,6 +687,11 @@ class AuthController {
         .json({ error: { message: "Something went wrong." } });
     }
   };
+
+  static returnUrlApi = async (req: Request, res: Response) => {
+    const input=req
+  return res.json({data:input})
+  };
 }
 
 export { AuthController };
