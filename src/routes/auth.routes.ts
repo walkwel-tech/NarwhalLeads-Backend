@@ -11,6 +11,7 @@ auth.get('/map/ireland',AuthController.showMapFileForIreland)
 // auth.get('/mapForLabel',AuthController.showMapFileForLabel)
 auth.get('/',Auth,AuthController.auth)
 auth.post('/register', AuthController.regsiter);
+auth.post('/return-url', AuthController.returnUrlApi);
 auth.post('/activeUser/:id',OnlyAdmins, AuthController.activeUser);
 // auth.post('/inActiveUser/:id',OnlyAdmins, AuthController.inActiveUser);
 auth.post('/login', AuthController.login);

@@ -237,3 +237,44 @@ export const getPaymentMethodByPaymentSessionID = (
   })
 
 };
+
+
+export const createSessionInitial = (params: any) => {
+  return new Promise((resolve, reject) => {
+    let body = {
+      amount: 0,
+      currency: process.env.CURRENCY,
+      customerEmail: params.email,
+      customerDetails: {
+        id: params.clientId || null
+      },
+      captureFlow: "Automatic",
+      returnUrl: process.env.RETURN_URL,
+      verifyAccount: true
+
+    }
+     
+    const data = JSON.stringify(body);
+   
+    
+    const config = {
+      method: POST,
+      url: process.env.CREATE_SESSION_URL,
+      headers: {
+        // Account: process.env.ACCOUNT_ID,
+        "Content-Type": "application/json",
+        Accept: "application/json",
+        Authorization: process.env.RYFT_SECRET_KEY,
+      },
+      data: data,
+    };
+    axios(config)
+      .then((response) => {
+        resolve(response);
+      })
+      .catch((err) => {
+        reject(err);
+        // console.log("Create session error", err.response.data);
+      });
+  });
+};

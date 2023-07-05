@@ -1,17 +1,17 @@
 import axios from "axios";
 import { PaymentInput } from "../../app/Inputs/Payment.input";
 import { addCreditsToBuyer } from "./addBuyerCredit";
-import { attemptToPayment, attemptToPaymentBy_PaymentMethods, createSession, customerPaymentMethods, refundPayment } from "./createPaymentToRYFT";
+import { attemptToPayment, attemptToPaymentBy_PaymentMethods, createSession, createSessionInitial, customerPaymentMethods, refundPayment } from "./createPaymentToRYFT";
 
 export const managePayments = (params: PaymentInput) => {
   console.log('DEBUGGER params--->>>>>',params)
     return new Promise((resolve, reject) => {
       createSession(params)
         .then((response: any) => {
-          console.log("DEBUGGER 1--->", response.data)
+          console.log("DEBUGGER 1--->", response)
           attemptToPayment(response,params)
             .then((data:any) => {
-              console.log("DEBUGGER 2--->", data.data)
+              console.log("DEBUGGER 2--->", data)
 
               addCreditsToBuyer(params).then((res)=>{
                   resolve(res)
@@ -59,13 +59,13 @@ export const fetchPaymentSessionById = (id:string)=>{
     return new Promise((resolve, reject) => {
       createSession(params)
         .then((res: any) => {
-          console.log("DEBUGGER 1.1--->", res.data)          
+          console.log("DEBUGGER 1.1--->", res)          
           customerPaymentMethods(res).then((response:any)=>{
-            console.log("DEBUGGER 1.2--->", response.data)
+            console.log("DEBUGGER 1.2--->", response)
 
               attemptToPaymentBy_PaymentMethods(response,res.data.clientSecret)
             .then((data:any) => {
-              console.log("DEBUGGER 1.3--->", data.data)
+              console.log("DEBUGGER 1.3--->", data)
               addCreditsToBuyer(params).then((res)=>{
                 console.log("credits added")
 
@@ -132,3 +132,30 @@ export const fetchPaymentSessionById = (id:string)=>{
         });
     });
   };
+
+
+  export const manageInitialPayments = (params: PaymentInput) => {
+    console.log('DEBUGGER params--->>>>>',params)
+      return new Promise((resolve, reject) => {
+        createSessionInitial(params)
+          .then((response: any) => {
+            console.log("DEBUGGER 1--->", response)
+            attemptToPayment(response,params)
+              .then((data:any) => {
+                console.log("DEBUGGER 2--->", data)
+  
+                addCreditsToBuyer(params).then((res)=>{
+                    resolve(res)
+                }).catch((err)=>{
+                    reject(err.response?.data)
+                })
+              })
+              .catch((err) => {
+                reject(err.response?.data);
+              });
+          })
+          .catch((err) => {
+            reject(err.response?.data);
+          });
+      });
+    };
