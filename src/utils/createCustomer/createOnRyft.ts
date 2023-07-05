@@ -1,9 +1,9 @@
 import axios from "axios";
-import { CreateCustomerInput } from "../../app/Inputs/createCustomerOnRyft&Lead.inputs";
+// import { CreateCustomerInput } from "../../app/Inputs/createCustomerOnRyft&Lead.inputs";
 import { User } from "../../app/Models/User";
 const POST = "post";
 
-export const createCustomerOnRyft = (params: CreateCustomerInput) => {
+export const createCustomerOnRyft = (params: Record<string,any>) => {
   return new Promise((resolve, reject) => {
     const config = {
       method: POST,
@@ -20,7 +20,7 @@ export const createCustomerOnRyft = (params: CreateCustomerInput) => {
     axios(config)
       .then(async (response) => {
         console.log("ryft customer ress",response.data.id)
-        await User.findByIdAndUpdate(params.userId, { isRyftCustomer: true,ryftClientId:response.data.id });
+       await User.findByIdAndUpdate(params.userId, { isRyftCustomer: true,ryftClientId:response.data.id });
         resolve(response);
       })
       .catch((err) => {

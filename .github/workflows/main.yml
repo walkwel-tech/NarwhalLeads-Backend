@@ -61,6 +61,6 @@ jobs:
           script: |
             cd ${{ env.BUILD_DIR_PATH }}
             unzip -o dist.zip
-            pm2 restart 1
+            pm2 restart all
             rm dist.zip
             rm -rf 'NarwhalLeads-Backend'

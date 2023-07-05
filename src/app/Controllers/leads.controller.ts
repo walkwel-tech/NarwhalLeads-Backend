@@ -27,8 +27,7 @@ import { sort } from "../../utils/Enums/sorting.enum";
 import { send_lead_data_to_zap } from "../../utils/webhookUrls/send_data_zap";
 import { IP } from "../../utils/constantFiles/IP_Lists";
 import { BuisnessIndustries } from "../Models/BuisnessIndustries";
-// import { CustomColumnNames } from "../Models/CustomColumns.leads";
-// import { CustomColumnNames } from "../Models/CustomColumns.leads";
+
 
 const LIMIT = 10;
 
@@ -135,11 +134,7 @@ export class LeadsController {
           });
           array.push(obj);
         }
-      });
-
-
-
-      
+      });      
       const dataToSaveInLeadsPreference: any = {
         userId: user.id,
         columns: array,
@@ -961,6 +956,14 @@ export class LeadsController {
           $facet: {
             results: [
               { $match: dataToFind },
+              {
+                $lookup: {
+                  from: "users",
+                  localField: "bid",
+                  foreignField: "buyerId",
+                  as: "clientName",
+                },
+              },
               // { $sort: { rowIndex: -1 } },
               { $sort: { createdAt: sortingOrder } },
               { $skip: skip },
@@ -984,6 +987,28 @@ export class LeadsController {
                   leadsCost: 0,
                   updatedAt: 0,
                   "leads.c1": 0,
+                  "clientName.password":0,
+                  "clientName.autoCharge":0,
+                  "clientName.leadCost":0,
+                  "clientName.isRyftCustomer":0,
+                  "clientName.isArchived":0,
+                  "clientName.isLeadbyteCustomer":0,
+                  "clientName.autoChargeAmount":0,
+                  "clientName.verifiedAt":0,
+                  "clientName.isVerified":0,
+                  "clientName.isActive":0,
+                  "clientName.businessDetailsId":0,
+                  "clientName.businessIndustryId":0,
+                  "clientName.userLeadsDetailsId":0,
+                  "clientName.onBoarding":0,
+                  "clientName.registrationMailSentToAdmin":0,
+                  "clientName.createdAt":0,
+                  "clientName.activatedAt":0,
+                  "clientName.isDeleted":0,
+                  "clientName.invitedById":0,
+                  "clientName.__v":0,
+                  "clientName.buyerId":0,
+                  "clientName.role":0,
                 },
               },
             ],
@@ -991,6 +1016,10 @@ export class LeadsController {
           },
         },
       ]);
+      query.results.map((item: any) => {
+        let clientName = Object.assign({}, item["clientName"][0]);        
+        item.clientName = clientName;
+      });
       const leadsCount = query.leadsCount[0]?.count || 0;
       const totalPages = Math.ceil(leadsCount / perPage);
       return res.json({
@@ -1177,6 +1206,14 @@ export class LeadsController {
           $facet: {
             results: [
               { $match: dataToFind },
+              {
+                $lookup: {
+                  from: "users",
+                  localField: "bid",
+                  foreignField: "buyerId",
+                  as: "clientName",
+                },
+              },
               { $skip: skip },
               { $limit: perPage },
 
@@ -1192,6 +1229,29 @@ export class LeadsController {
                   leadsCost: 0,
                   updatedAt: 0,
                   "leads.c1": 0,
+                  "clientName.password":0,
+                  "clientName.autoCharge":0,
+                  "clientName.leadCost":0,
+                  "clientName.isRyftCustomer":0,
+                  "clientName.isArchived":0,
+                  "clientName.isLeadbyteCustomer":0,
+                  "clientName.autoChargeAmount":0,
+                  "clientName.verifiedAt":0,
+                  "clientName.isVerified":0,
+                  "clientName.isActive":0,
+                  "clientName.businessDetailsId":0,
+                  "clientName.businessIndustryId":0,
+                  "clientName.userLeadsDetailsId":0,
+                  "clientName.onBoarding":0,
+                  "clientName.registrationMailSentToAdmin":0,
+                  "clientName.createdAt":0,
+                  "clientName.activatedAt":0,
+                  "clientName.isDeleted":0,
+                  "clientName.invitedById":0,
+                  "clientName.__v":0,
+                  "clientName.buyerId":0,
+                  "clientName.role":0,
+
                 },
               },
             ],
@@ -1199,6 +1259,11 @@ export class LeadsController {
           },
         },
       ]);
+      query.results.map((item: any) => {
+        let clientName = Object.assign({}, item["clientName"][0]);
+        
+        item.clientName = clientName;
+      });
       const leadsCount = query.leadsCount[0]?.count || 0;
       const totalPages = Math.ceil(leadsCount / perPage);
       return res.json({
