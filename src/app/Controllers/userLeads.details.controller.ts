@@ -2,10 +2,10 @@ import { validate } from "class-validator";
 import { Request, Response } from "express";
 import { RolesEnum } from "../../types/RolesEnum";
 import { ValidationErrorResponse } from "../../types/ValidationErrorResponse";
-import { ONBOARDING_KEYS } from "../../utils/constantFiles/OnBoarding.keys";
 import { leadsAlertsEnums } from "../../utils/Enums/leads.Alerts.enum";
 import { checkOnbOardingComplete } from "../../utils/Functions/Onboarding_complete";
 import { openingHoursFormatting } from "../../utils/Functions/openingHoursManipulation";
+import { ONBOARDING_KEYS } from "../../utils/constantFiles/OnBoarding.keys";
 import { UserLeadDetailsInput } from "../Inputs/user.leadDetails.input";
 import {
   send_email_for_new_registration,
@@ -127,12 +127,14 @@ export class UserLeadsController {
             businessDeatilsData?.address1 + " " + businessDeatilsData?.address2,
           city: businessDeatilsData?.businessCity,
           country: businessDeatilsData?.businessCountry,
-          openingHours: formattedOpeningHours,
+          // openingHours: formattedOpeningHours,
+          openingHours:businessDeatilsData?.businessOpeningHours,
           totalLeads: leadData?.total,
           monthlyLeads: leadData?.monthly,
           weeklyLeads: leadData?.weekly,
           dailyLeads: leadData?.daily,
-          leadsHours: formattedLeadSchedule,
+          // leadsHours: formattedLeadSchedule,
+          leadsHours:leadData?.leadSchedule,
           area: leadData?.postCodeTargettingList,
         };
         send_email_for_new_registration(message);
@@ -269,12 +271,15 @@ export class UserLeadsController {
             businessDeatilsData?.address1 + " " + businessDeatilsData?.address2,
           city: businessDeatilsData?.businessCity,
           country: businessDeatilsData?.businessCountry,
-          openingHours:formattedOpeningHours,
+          // openingHours:formattedOpeningHours,
+          openingHours:businessDeatilsData?.businessOpeningHours,
+          logo:businessDeatilsData?.businessLogo,
           totalLeads: updatedDetails?.total,
           monthlyLeads: updatedDetails?.monthly,
           weeklyLeads: updatedDetails?.weekly,
           dailyLeads: updatedDetails?.daily,
-          leadsHours:formattedLeadSchedule,
+          leadsHours:updatedDetails?.leadSchedule,
+          // leadsHours:formattedLeadSchedule,
           area: updatedDetails?.postCodeTargettingList,
         };
         send_email_for_updated_details(message);

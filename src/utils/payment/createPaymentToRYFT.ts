@@ -248,7 +248,6 @@ export const createSessionInitial = (params: any) => {
       customerDetails: {
         id: params.clientId || null
       },
-      captureFlow: "Automatic",
       returnUrl: process.env.RETURN_URL,
       verifyAccount: true
 
@@ -275,6 +274,59 @@ export const createSessionInitial = (params: any) => {
       .catch((err) => {
         reject(err);
         // console.log("Create session error", err.response.data);
+      });
+  });
+};
+
+export const attemptToPaymentInitial = ( params: any) => {
+  return new Promise((resolve, reject) => {
+    const paymentData = JSON.stringify({
+      clientSecret: params.data.clientSecret,
+      // cardDetails: {
+      //   number: params.cardNumber,
+      //   expiryMonth: params.expiryMonth,
+      //   expiryYear: params.expiryYear,
+      //   cvc: params.cvc,
+      // },
+      // paymentMethodOptions: {
+      //   store: true,
+      // },
+    });
+    const config = {
+      method: "post",
+      url: process.env.ATTEMPT_TO_PAYMENT,
+      headers: {
+        // Account: process.env.ACCOUNT_ID,
+        "Content-Type": "application/json",
+        Accept: "application/json",
+        Authorization: process.env.RYFT_PUBLIC_KEY,
+      },
+      data: paymentData,
+    };
+    axios(config)
+      .then(async function (res) {
+        resolve(res)
+        // if (res.data.status === PAYMENT_STATUS.APPROVED) {
+        //   const user: any = await User.findOne({ email: params.email });
+        //   await RyftPaymentMethods.create({
+        //     userId: user.id,
+        //     ryftClientId: user.ryftClientId,
+        //     cardId: params.cardId,
+        //     paymentMethod: res.data.paymentMethod,
+        //   });
+        //   const card = await CardDetails.findById(params.cardId);
+        //   await CardDetails.findByIdAndUpdate(params.cardId, {
+        //     cardNumber: "000000000000" + card?.cardNumber.slice(-4),
+        //   });
+        //   resolve(res);
+        // } else {
+        //   console.log("Exception Occur")
+        //   throw new Error("Payment Pending");
+        // }
+      })
+      .catch(function (error) {
+        reject(error);
+        // console.log("attempt payment error", error.response.data);
       });
   });
 };

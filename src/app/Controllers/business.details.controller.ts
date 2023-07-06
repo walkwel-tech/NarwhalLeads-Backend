@@ -5,7 +5,7 @@ import { FileEnum } from "../../types/FileEnum";
 import { RolesEnum } from "../../types/RolesEnum";
 import { ValidationErrorResponse } from "../../types/ValidationErrorResponse";
 import { checkOnbOardingComplete } from "../../utils/Functions/Onboarding_complete";
-import { openingHoursFormatting } from "../../utils/Functions/openingHoursManipulation";
+// import { openingHoursFormatting } from "../../utils/Functions/openingHoursManipulation";
 import { ONBOARDING_KEYS } from "../../utils/constantFiles/OnBoarding.keys";
 import { createCustomersOnRyftAndLeadByte } from "../../utils/createCustomer";
 import { DeleteFile } from "../../utils/removeFile";
@@ -25,14 +25,14 @@ const ObjectId = mongoose.Types.ObjectId;
 export class BusinessDetailsController {
   static create = async (req: Request, res: Response): Promise<any> => {
     const input = req.body;
-
-    if (!input.userId) {
+ 
+    if(!input.userId){
       return res
         .status(400)
         .json({ error: { message: "User Id is required" } });
     }
-    let formattedOpeningHours;
-    let formattedLeadSchedule;
+    // let formattedOpeningHours;
+    // let formattedLeadSchedule;
     const Business = new BusinessDetailsInput();
     (Business.businessIndustry = input.businessIndustry),
       (Business.businessName = input.businessName),
@@ -149,14 +149,14 @@ export class BusinessDetailsController {
         const leadData = await UserLeadsDetails.findOne({
           userId: userData?._id,
         });
-        formattedOpeningHours = openingHoursFormatting(
-          userData?.businessOpeningHours
-        );
-        if (leadData) {
-          formattedLeadSchedule = openingHoursFormatting(
-            leadData?.leadSchedule
-          );
-        }
+        // formattedOpeningHours = openingHoursFormatting(
+        //   userData?.businessOpeningHours
+        // );
+        // if (leadData) {
+        //   formattedLeadSchedule = openingHoursFormatting(
+        //     leadData?.leadSchedule
+        //   );
+        // }
 
         const message = {
           firstName: user?.firstName,
@@ -168,14 +168,23 @@ export class BusinessDetailsController {
           address: userData?.address1 + " " + userData?.address2,
           city: userData?.businessCity,
           country: userData?.businessCountry,
-          openingHours: formattedOpeningHours,
+          // openingHours: formattedOpeningHours,
+          openingHours: userData?.businessOpeningHours,
           totalLeads: leadData?.total,
           monthlyLeads: leadData?.monthly,
           weeklyLeads: leadData?.weekly,
           dailyLeads: leadData?.daily,
-          leadsHours: formattedLeadSchedule,
+          // leadsHours: formattedLeadSchedule,
+          leadsHours: leadData?.leadSchedule,
           area: leadData?.postCodeTargettingList,
+
         };
+        if (req?.file) {
+          //@ts-ignore
+          message.businessLogo = `${FileEnum.PROFILEIMAGE}${req?.file.filename}`;
+        }
+        console.log('Message',message);
+        
         send_email_for_new_registration(message);
         await User.findByIdAndUpdate(user.id, {
           registrationMailSentToAdmin: true,
@@ -226,8 +235,8 @@ export class BusinessDetailsController {
   ): Promise<any> => {
     const { id } = req.params;
     const input = req.body;
-    let formattedOpeningHours;
-    let formattedLeadSchedule;
+    // let formattedOpeningHours;
+    // let formattedLeadSchedule;
     try {
       const details = await BusinessDetails.findOne({ _id: new ObjectId(id) });
       if (!details) {
@@ -294,14 +303,14 @@ export class BusinessDetailsController {
         const leadData = await UserLeadsDetails.findOne({
           userId: userData?._id,
         });
-        formattedOpeningHours = openingHoursFormatting(
-          updatedDetails?.businessOpeningHours
-        );
-        if (leadData) {
-          formattedLeadSchedule = openingHoursFormatting(
-            leadData?.leadSchedule
-          );
-        }
+        // formattedOpeningHours = openingHoursFormatting(
+        //   updatedDetails?.businessOpeningHours
+        // );
+        // if (leadData) {
+        //   formattedLeadSchedule = openingHoursFormatting(
+        //     leadData?.leadSchedule
+        //   );
+        // }
 
         const message = {
           firstName: userData?.firstName,
@@ -313,14 +322,18 @@ export class BusinessDetailsController {
           address: updatedDetails?.address1 + " " + updatedDetails?.address2,
           city: updatedDetails?.businessCity,
           country: updatedDetails?.businessCountry,
-          openingHours: formattedOpeningHours,
+          // openingHours: formattedOpeningHours,
+          openingHours: updatedDetails?.businessOpeningHours,
+          logo: updatedDetails?.businessLogo,
           totalLeads: leadData?.total,
           monthlyLeads: leadData?.monthly,
           weeklyLeads: leadData?.weekly,
           dailyLeads: leadData?.daily,
-          leadsHours: formattedLeadSchedule,
+          // leadsHours: formattedLeadSchedule,
+          leadsHours: leadData?.leadSchedule,
           area: leadData?.postCodeTargettingList,
         };
+        console.log('updatedDetails?.businessOpeningHours',updatedDetails?.businessOpeningHours);
         send_email_for_updated_details(message);
         if (req.file && details.businessLogo) {
           DeleteFile(`${details.businessLogo}`);

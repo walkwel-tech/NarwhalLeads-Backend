@@ -13,6 +13,9 @@ cardDetails.post("/addCredits",Auth,CardDetailsControllers.addCreditsManually);
 cardDetails.post("/addCard",Auth,CardDetailsControllers.addCard);
 cardDetails.get("/", CardDetailsControllers.show);
 cardDetails.get("/:id", CardDetailsControllers.showById);
+cardDetails.post("/create-session",CardDetailsControllers.createSessionRyft);
+cardDetails.post("/attempt-payment",CardDetailsControllers.attemptPaymentRyft);
+cardDetails.post("/payment-status",CardDetailsControllers.handlepaymentStatus);
 
 
 

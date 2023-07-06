@@ -24,14 +24,15 @@ import { User } from "../Models/User";
 import { FreeCreditsLink } from "../Models/freeCreditsLink";
 // import { BusinessDetails } from "../Models/BusinessDetails";
 // import { UserLeadsDetails } from "../Models/UserLeadsDetails";
+import { UserInterface } from "../../types/UserInterface";
 import { paymentMethodEnum } from "../../utils/Enums/payment.method.enum";
 import { checkOnbOardingComplete } from "../../utils/Functions/Onboarding_complete";
-import { openingHoursFormatting } from "../../utils/Functions/openingHoursManipulation";
+// import { openingHoursFormatting } from "../../utils/Functions/openingHoursManipulation";
 import { ONBOARDING_KEYS } from "../../utils/constantFiles/OnBoarding.keys";
 import { BusinessDetails } from "../Models/BusinessDetails";
 import { RyftPaymentMethods } from "../Models/RyftPaymentMethods";
 import { UserLeadsDetails } from "../Models/UserLeadsDetails";
-import { UserInterface } from "../../types/UserInterface";
+import { attemptToPaymentInitial, createSessionInitial } from "../../utils/payment/createPaymentToRYFT";
 
 export class CardDetailsControllers {
   static create = async (req: Request, res: Response): Promise<any> => {
@@ -42,8 +43,8 @@ export class CardDetailsControllers {
         .status(400)
         .json({ error: { message: "User Id is required" } });
     }
-    let formattedOpeningHours;
-    let formattedLeadSchedule;
+    // let formattedOpeningHours;
+    // let formattedLeadSchedule;
     try {
       const fixAmount: any = await AdminSettings.findOne();
       if (input.amount == null) {
@@ -126,16 +127,16 @@ export class CardDetailsControllers {
         const businessDeatilsData = await BusinessDetails.findById(
           user?.businessDetailsId
         );
-        if (businessDeatilsData) {
-          formattedOpeningHours = openingHoursFormatting(
-            businessDeatilsData?.businessOpeningHours
-          );
-        }
-        if (leadData) {
-          formattedLeadSchedule = openingHoursFormatting(
-            leadData?.leadSchedule
-          );
-        }
+        // if (businessDeatilsData) {
+        //   formattedOpeningHours = openingHoursFormatting(
+        //     businessDeatilsData?.businessOpeningHours
+        //   );
+        // }
+        // if (leadData) {
+        //   formattedLeadSchedule = openingHoursFormatting(
+        //     leadData?.leadSchedule
+        //   );
+        // }
 
         const message = {
           firstName: user?.firstName,
@@ -148,12 +149,14 @@ export class CardDetailsControllers {
             businessDeatilsData?.address1 + " " + businessDeatilsData?.address2,
           city: businessDeatilsData?.businessCity,
           country: businessDeatilsData?.businessCountry,
-          openingHours: formattedOpeningHours,
+          // openingHours: formattedOpeningHours,
+          openingHours: businessDeatilsData?.businessOpeningHours,
           totalLeads: leadData?.total,
           monthlyLeads: leadData?.monthly,
           weeklyLeads: leadData?.weekly,
           dailyLeads: leadData?.daily,
-          leadsHours: formattedLeadSchedule,
+          // leadsHours: formattedLeadSchedule,
+          leadsHours: leadData?.leadSchedule,
           area: leadData?.postCodeTargettingList,
         };
         send_email_for_new_registration(message);
@@ -529,9 +532,8 @@ export class CardDetailsControllers {
             await Transaction.create(transactionData);
           });
       } else {
-       
         params.paymentId =
-         //@ts-ignore
+          //@ts-ignore
           paymentMethodsExists?.paymentMethod?.tokenizedDetails?.id;
         console.log(params);
         managePaymentsByPaymentMethods(params)
@@ -631,5 +633,42 @@ export class CardDetailsControllers {
         .status(500)
         .json({ error: { message: "Something went wrong." } });
     }
+  };
+
+  static createSessionRyft = async (
+    req: Request,
+    res: Response
+  ): Promise<any> => {
+    const input = req.body;
+    let sessionObject:any={}
+
+    createSessionInitial(input).then((response: any) => {
+      sessionObject.clientSecret=response.data.clientSecret,
+      sessionObject.publicKey=process.env.RYFT_PUBLIC_KEY
+      sessionObject.status=response.data.status
+      return res.json({ data: sessionObject })
+      }).catch((error)=>{
+        return res.status(400).json({data:{message:"Error in creating session"}});
+    });
+  };
+  static attemptPaymentRyft = async (
+    req: Request,
+    res: Response
+  ): Promise<any> => {
+    const input = req.body;
+    attemptToPaymentInitial(input).then((response: any) => {
+      return res.json({ data: response })
+      }).catch((error)=>{
+        return res.status(400).json({data:{message:"Card not verified"}});
+    });
+  };
+
+
+  static handlepaymentStatus = async (
+    req: Request,
+    res: Response
+  ): Promise<any> => {
+    const input = req.body;
+    console.log(input)
   };
 }
