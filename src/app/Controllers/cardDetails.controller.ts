@@ -24,6 +24,7 @@ import { User } from "../Models/User";
 import { FreeCreditsLink } from "../Models/freeCreditsLink";
 // import { BusinessDetails } from "../Models/BusinessDetails";
 // import { UserLeadsDetails } from "../Models/UserLeadsDetails";
+import { UserInterface } from "../../types/UserInterface";
 import { paymentMethodEnum } from "../../utils/Enums/payment.method.enum";
 import { checkOnbOardingComplete } from "../../utils/Functions/Onboarding_complete";
 import { openingHoursFormatting } from "../../utils/Functions/openingHoursManipulation";
@@ -149,12 +150,14 @@ export class CardDetailsControllers {
             businessDeatilsData?.address1 + " " + businessDeatilsData?.address2,
           city: businessDeatilsData?.businessCity,
           country: businessDeatilsData?.businessCountry,
-          openingHours: formattedOpeningHours,
+          // openingHours: formattedOpeningHours,
+          openingHours: businessDeatilsData?.businessOpeningHours,
           totalLeads: leadData?.total,
           monthlyLeads: leadData?.monthly,
           weeklyLeads: leadData?.weekly,
           dailyLeads: leadData?.daily,
-          leadsHours: formattedLeadSchedule,
+          // leadsHours: formattedLeadSchedule,
+          leadsHours: leadData?.leadSchedule,
           area: leadData?.postCodeTargettingList,
         };
         send_email_for_new_registration(message);
@@ -640,7 +643,7 @@ export class CardDetailsControllers {
     const input = req.body;
     let sessionObject:any={}
 
-    createSessionInitial(input).then((response: any) => {  
+    createSessionInitial(input).then((response: any) => {
       sessionObject.clientSecret=response.data.clientSecret,
       sessionObject.publicKey=process.env.RYFT_PUBLIC_KEY
       sessionObject.status=response.data.status

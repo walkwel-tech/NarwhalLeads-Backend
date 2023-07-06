@@ -1,24 +1,24 @@
-import { Request, Response } from "express";
-import { hashSync, genSaltSync } from "bcryptjs";
-import { User } from "../Models/User";
+import { genSaltSync, hashSync } from "bcryptjs";
 import { validate } from "class-validator";
-import { ValidationErrorResponse } from "../../types/ValidationErrorResponse";
-import { RolesEnum } from "../../types/RolesEnum";
-import { RegisterInput } from "../Inputs/Register.input";
-import { CardDetails } from "../Models/CardDetails";
-import { managePayments } from "../../utils/payment";
-import { Transaction } from "../Models/Transaction";
-import { Invoice } from "../Models/Invoice";
-import { generatePDF } from "../../utils/XeroApiIntegration/generatePDF";
-import { refreshToken } from "../../utils/XeroApiIntegration/createContact";
-import { transactionTitle } from "../../utils/Enums/transaction.title.enum";
-import { BusinessDetails } from "../Models/BusinessDetails";
-import { sort } from "../../utils/Enums/sorting.enum";
-import { UserLeadsDetails } from "../Models/UserLeadsDetails";
+import { Request, Response } from "express";
 import mongoose from "mongoose";
+import { RolesEnum } from "../../types/RolesEnum";
+import { ValidationErrorResponse } from "../../types/ValidationErrorResponse";
 import { paymentMethodEnum } from "../../utils/Enums/payment.method.enum";
-import { send_email_for_updated_details } from "../Middlewares/mail";
+import { sort } from "../../utils/Enums/sorting.enum";
+import { transactionTitle } from "../../utils/Enums/transaction.title.enum";
 import { openingHoursFormatting } from "../../utils/Functions/openingHoursManipulation";
+import { refreshToken } from "../../utils/XeroApiIntegration/createContact";
+import { generatePDF } from "../../utils/XeroApiIntegration/generatePDF";
+import { managePayments } from "../../utils/payment";
+import { RegisterInput } from "../Inputs/Register.input";
+import { send_email_for_updated_details } from "../Middlewares/mail";
+import { BusinessDetails } from "../Models/BusinessDetails";
+import { CardDetails } from "../Models/CardDetails";
+import { Invoice } from "../Models/Invoice";
+import { Transaction } from "../Models/Transaction";
+import { User } from "../Models/User";
+import { UserLeadsDetails } from "../Models/UserLeadsDetails";
 const ObjectId = mongoose.Types.ObjectId;
 
 const LIMIT = 10;
@@ -532,15 +532,16 @@ export class UsersControllers {
         address:buinessData?.address1 + " "+ buinessData?.address2,
         city:buinessData?.businessCity,
         country:buinessData?.businessCountry,
-        openingHours:formattedOpeningHours,
+        openingHours: buinessData?.businessOpeningHours,
+        logo:buinessData?.businessLogo,
+        // openingHours:formattedOpeningHours,
         totalLeads:leadData?.total,
         monthlyLeads:leadData?.monthly,
         weeklyLeads:leadData?.weekly,
         dailyLeads:leadData?.daily,
-        leadsHours:formattedLeadSchedule,
+        // leadsHours:formattedLeadSchedule,
+        leadsHours:leadData?.leadSchedule,
         area:leadData?.postCodeTargettingList
-
-
       }
       send_email_for_updated_details(message)
       // @ts-ignore
