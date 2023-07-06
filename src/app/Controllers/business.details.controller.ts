@@ -5,7 +5,7 @@ import { FileEnum } from "../../types/FileEnum";
 import { RolesEnum } from "../../types/RolesEnum";
 import { ValidationErrorResponse } from "../../types/ValidationErrorResponse";
 import { checkOnbOardingComplete } from "../../utils/Functions/Onboarding_complete";
-import { openingHoursFormatting } from "../../utils/Functions/openingHoursManipulation";
+// import { openingHoursFormatting } from "../../utils/Functions/openingHoursManipulation";
 import { ONBOARDING_KEYS } from "../../utils/constantFiles/OnBoarding.keys";
 import { createCustomersOnRyftAndLeadByte } from "../../utils/createCustomer";
 import { DeleteFile } from "../../utils/removeFile";
@@ -31,8 +31,8 @@ export class BusinessDetailsController {
         .status(400)
         .json({ error: { message: "User Id is required" } });
     }
-    let formattedOpeningHours;
-    let formattedLeadSchedule;
+    // let formattedOpeningHours;
+    // let formattedLeadSchedule;
     const Business = new BusinessDetailsInput();
     (Business.businessIndustry = input.businessIndustry),
       (Business.businessName = input.businessName),
@@ -149,14 +149,14 @@ export class BusinessDetailsController {
         const leadData = await UserLeadsDetails.findOne({
           userId: userData?._id,
         });
-        formattedOpeningHours = openingHoursFormatting(
-          userData?.businessOpeningHours
-        );
-        if (leadData) {
-          formattedLeadSchedule = openingHoursFormatting(
-            leadData?.leadSchedule
-          );
-        }
+        // formattedOpeningHours = openingHoursFormatting(
+        //   userData?.businessOpeningHours
+        // );
+        // if (leadData) {
+        //   formattedLeadSchedule = openingHoursFormatting(
+        //     leadData?.leadSchedule
+        //   );
+        // }
 
         const message = {
           firstName: user?.firstName,
@@ -235,8 +235,8 @@ export class BusinessDetailsController {
   ): Promise<any> => {
     const { id } = req.params;
     const input = req.body;
-    let formattedOpeningHours;
-    let formattedLeadSchedule;
+    // let formattedOpeningHours;
+    // let formattedLeadSchedule;
     try {
       const details = await BusinessDetails.findOne({ _id: new ObjectId(id) });
       if (!details) {
@@ -303,14 +303,14 @@ export class BusinessDetailsController {
         const leadData = await UserLeadsDetails.findOne({
           userId: userData?._id,
         });
-        formattedOpeningHours = openingHoursFormatting(
-          updatedDetails?.businessOpeningHours
-        );
-        if (leadData) {
-          formattedLeadSchedule = openingHoursFormatting(
-            leadData?.leadSchedule
-          );
-        }
+        // formattedOpeningHours = openingHoursFormatting(
+        //   updatedDetails?.businessOpeningHours
+        // );
+        // if (leadData) {
+        //   formattedLeadSchedule = openingHoursFormatting(
+        //     leadData?.leadSchedule
+        //   );
+        // }
 
         const message = {
           firstName: userData?.firstName,

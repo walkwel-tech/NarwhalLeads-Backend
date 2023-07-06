@@ -7,7 +7,7 @@ import { ValidationErrorResponse } from "../../types/ValidationErrorResponse";
 import { paymentMethodEnum } from "../../utils/Enums/payment.method.enum";
 import { sort } from "../../utils/Enums/sorting.enum";
 import { transactionTitle } from "../../utils/Enums/transaction.title.enum";
-import { openingHoursFormatting } from "../../utils/Functions/openingHoursManipulation";
+// import { openingHoursFormatting } from "../../utils/Functions/openingHoursManipulation";
 import { refreshToken } from "../../utils/XeroApiIntegration/createContact";
 import { generatePDF } from "../../utils/XeroApiIntegration/generatePDF";
 import { managePayments } from "../../utils/payment";
@@ -520,8 +520,8 @@ export class UsersControllers {
           );      }
       const buinessData=await BusinessDetails.findOne(checkUser.businessDetailsId)
       const leadData=await UserLeadsDetails.findOne(checkUser.userLeadsDetailsId)
-      const formattedOpeningHours=openingHoursFormatting(buinessData?.businessOpeningHours)
-      const formattedLeadSchedule=openingHoursFormatting(leadData?.leadSchedule)
+      // const formattedOpeningHours=openingHoursFormatting(buinessData?.businessOpeningHours)
+      // const formattedLeadSchedule=openingHoursFormatting(leadData?.leadSchedule)
       const message={
         firstName:checkUser?.firstName,
         lastName:checkUser?.lastName,
