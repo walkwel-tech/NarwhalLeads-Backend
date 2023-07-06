@@ -4,7 +4,6 @@ import { RolesEnum } from "../../types/RolesEnum";
 import { ValidationErrorResponse } from "../../types/ValidationErrorResponse";
 import { leadsAlertsEnums } from "../../utils/Enums/leads.Alerts.enum";
 import { checkOnbOardingComplete } from "../../utils/Functions/Onboarding_complete";
-import { openingHoursFormatting } from "../../utils/Functions/openingHoursManipulation";
 import { ONBOARDING_KEYS } from "../../utils/constantFiles/OnBoarding.keys";
 import { UserLeadDetailsInput } from "../Inputs/user.leadDetails.input";
 import {
@@ -113,9 +112,6 @@ export class UserLeadsController {
         const businessDeatilsData = await BusinessDetails.findById(
           user?.businessDetailsId
         );
-        const formattedOpeningHours=openingHoursFormatting(businessDeatilsData?.businessOpeningHours)
-      const formattedLeadSchedule=openingHoursFormatting(leadData?.leadSchedule)
-
         const message = {
           firstName: user?.firstName,
           lastName: user?.lastName,
@@ -144,6 +140,7 @@ export class UserLeadsController {
       }
       return res.json({ data: details });
     } catch (error) {
+      console.log(error);
       return res
         .status(500)
         .json({ error: { message: "Something went wrong." } });
@@ -178,6 +175,7 @@ export class UserLeadsController {
       }
       return res.json({ data: data });
     } catch (err) {
+      console.log(err);
       return res
         .status(500)
         .json({ error: { message: "something went wrong" } });
@@ -189,6 +187,7 @@ export class UserLeadsController {
       const data = await UserLeadsDetails.find({ isDeleted: false });
       return res.json({ data: data });
     } catch (err) {
+      console.log(err);
       return res
         .status(500)
         .json({ error: { message: "something went wrong" } });
@@ -218,6 +217,7 @@ export class UserLeadsController {
 
       return res.json({ message: "details deleted successfully." });
     } catch (err) {
+      console.log(err);
       return res
         .status(500)
         .json({ error: { message: "Something went wrong." } });
@@ -258,8 +258,6 @@ export class UserLeadsController {
         const businessDeatilsData = await BusinessDetails.findById(
           userData?.businessDetailsId
         );
-        const formattedOpeningHours=openingHoursFormatting(businessDeatilsData?.businessOpeningHours)
-      const formattedLeadSchedule=openingHoursFormatting(updatedDetails?.leadSchedule)
         const message = {
           firstName: userData?.firstName,
           lastName: userData?.lastName,
@@ -295,6 +293,7 @@ export class UserLeadsController {
         });
       }
     } catch (error) {
+      console.log(error);
       return res
         .status(500)
         .json({ error: { message: "Something went wrong." } });

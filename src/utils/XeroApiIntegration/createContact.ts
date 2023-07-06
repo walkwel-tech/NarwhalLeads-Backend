@@ -22,8 +22,9 @@ export const createContactOnXero = (name: string, token: string) => {
         resolve(data);
       })
       .catch(async (err) => {
+        console.log('Xero Error',err.response)
         reject(err);
-        // console.log('Xero Error',err.response)
+        
       });
   });
 };

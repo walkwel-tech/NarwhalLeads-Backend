@@ -27,7 +27,6 @@ import { FreeCreditsLink } from "../Models/freeCreditsLink";
 import { UserInterface } from "../../types/UserInterface";
 import { paymentMethodEnum } from "../../utils/Enums/payment.method.enum";
 import { checkOnbOardingComplete } from "../../utils/Functions/Onboarding_complete";
-import { openingHoursFormatting } from "../../utils/Functions/openingHoursManipulation";
 import { ONBOARDING_KEYS } from "../../utils/constantFiles/OnBoarding.keys";
 import { BusinessDetails } from "../Models/BusinessDetails";
 import { RyftPaymentMethods } from "../Models/RyftPaymentMethods";
@@ -42,8 +41,6 @@ export class CardDetailsControllers {
         .status(400)
         .json({ error: { message: "User Id is required" } });
     }
-    let formattedOpeningHours;
-    let formattedLeadSchedule;
     try {
       const fixAmount: any = await AdminSettings.findOne();
       if (input.amount == null) {
@@ -126,16 +123,6 @@ export class CardDetailsControllers {
         const businessDeatilsData = await BusinessDetails.findById(
           user?.businessDetailsId
         );
-        if (businessDeatilsData) {
-          formattedOpeningHours = openingHoursFormatting(
-            businessDeatilsData?.businessOpeningHours
-          );
-        }
-        if (leadData) {
-          formattedLeadSchedule = openingHoursFormatting(
-            leadData?.leadSchedule
-          );
-        }
 
         const message = {
           firstName: user?.firstName,

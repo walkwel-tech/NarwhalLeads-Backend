@@ -1,7 +1,7 @@
-import { Request, Response } from "express";
-import { validate } from "class-validator";
-import passport from "passport";
 import { genSaltSync, hashSync } from "bcryptjs";
+import { validate } from "class-validator";
+import { Request, Response } from "express";
+import passport from "passport";
 
 import { ValidationErrorResponse } from "../../types/ValidationErrorResponse";
 import { RegisterInput } from "../Inputs/Register.input";
@@ -9,27 +9,27 @@ import { User } from "../Models/User";
 
 import { UserInterface } from "../../types/UserInterface";
 
-import { LoginInput } from "../Inputs/Login.input";
-import { generateAuthToken } from "../../utils/jwt";
 import { RolesEnum } from "../../types/RolesEnum";
-import { CheckUserInput } from "../Inputs/checkUser.input";
-import {
-  send_email_forget_password,
-  send_email_for_registration,
-} from "../Middlewares/mail";
-import { ForgetPassword } from "../Models/ForgetPassword";
-import { forgetPasswordInput } from "../Inputs/forgetPasswordInput";
-import { AdminSettings } from "../Models/AdminSettings";
-import { BusinessDetails } from "../Models/BusinessDetails";
-import { AccessToken } from "../Models/AccessToken";
+import { paymentMethodEnum } from "../../utils/Enums/payment.method.enum";
 import {
   createContactOnXero,
   refreshToken,
 } from "../../utils/XeroApiIntegration/createContact";
-import { FreeCreditsLink } from "../Models/freeCreditsLink";
-import { paymentMethodEnum } from "../../utils/Enums/payment.method.enum";
 import { ONBOARDING_KEYS } from "../../utils/constantFiles/OnBoarding.keys";
 import { createCustomerOnRyft } from "../../utils/createCustomer/createOnRyft";
+import { generateAuthToken } from "../../utils/jwt";
+import { LoginInput } from "../Inputs/Login.input";
+import { CheckUserInput } from "../Inputs/checkUser.input";
+import { forgetPasswordInput } from "../Inputs/forgetPasswordInput";
+import {
+  send_email_for_registration,
+  send_email_forget_password,
+} from "../Middlewares/mail";
+import { AccessToken } from "../Models/AccessToken";
+import { AdminSettings } from "../Models/AdminSettings";
+import { BusinessDetails } from "../Models/BusinessDetails";
+import { ForgetPassword } from "../Models/ForgetPassword";
+import { FreeCreditsLink } from "../Models/freeCreditsLink";
 const fs = require("fs");
 
 class AuthController {
@@ -172,6 +172,9 @@ class AuthController {
               lastName: user.lastName,
               userId: user.id,
             };
+          
+
+           
             createCustomerOnRyft(params)
               .then(async () => {
                 const token: any = await AccessToken.findOne();

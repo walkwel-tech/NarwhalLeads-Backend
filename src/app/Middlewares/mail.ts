@@ -399,14 +399,14 @@ export function send_email_for_lead_status(send_to: string, message: any) {
 }
 
 const mapHours = (hours: any) => {
-  hours.openingHours = hours.openingHours.map((item: any,idx:number) => {
+  hours.openingHours = hours?.openingHours?.map((item: any,idx:number) => {
     const days = ["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"]
     if(item.day === ""){
       item.day = days[idx]
     }
     return item
   });
-  return hours
+  return hours || []
 }
 
 
