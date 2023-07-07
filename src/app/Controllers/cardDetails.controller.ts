@@ -460,7 +460,7 @@ export class CardDetailsControllers {
         clientId: user?.ryftClientId,
         cardId: card.id,
       };
-      let amount;
+      let amount = 0;
       if (input.amount) {
         amount = input.amount;
       } else {
