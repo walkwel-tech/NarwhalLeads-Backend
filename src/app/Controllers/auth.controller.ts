@@ -119,11 +119,11 @@ class AuthController {
             {
               key: ONBOARDING_KEYS.CARD_DETAILS,
               pendingFields: [
-                "cardHolderName",
+                // "cardHolderName",
                 "cardNumber",
-                "expiryMonth",
-                "expiryYear",
-                "cvc",
+                // "expiryMonth",
+                // "expiryYear",
+                // "cvc",
               ],
               dependencies: [],
             },

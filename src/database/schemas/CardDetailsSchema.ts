@@ -3,7 +3,7 @@ import {Schema, Types} from 'mongoose';
 const CardDetailsSchema = new Schema({
     cardHolderName:{
         type: String,
-        required: true,
+        required: false,
     },
     cardNumber: {
         type: String,
@@ -11,11 +11,11 @@ const CardDetailsSchema = new Schema({
     },
     expiryMonth: {
         type: String,
-        required: true,
+        required: false,
     },
     expiryYear: {
         type: String,
-        required: true,
+        required: false,
     },
     cvc: {
         type: String,

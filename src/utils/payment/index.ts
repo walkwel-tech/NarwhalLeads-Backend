@@ -1,7 +1,9 @@
 import axios from "axios";
 import { PaymentInput } from "../../app/Inputs/Payment.input";
+// import { RyftPaymentMethods } from "../../app/Models/RyftPaymentMethods";
+// import { User } from "../../app/Models/User";
 import { addCreditsToBuyer } from "./addBuyerCredit";
-import { attemptToPayment, attemptToPaymentBy_PaymentMethods, createSession, createSessionInitial, customerPaymentMethods, refundPayment } from "./createPaymentToRYFT";
+import { attemptToPayment, attemptToPaymentBy_PaymentMethods, createSession, createSessionInitial, refundPayment } from "./createPaymentToRYFT";
 
 export const managePayments = (params: PaymentInput) => {
   console.log('DEBUGGER params--->>>>>',params)
@@ -57,32 +59,33 @@ export const fetchPaymentSessionById = (id:string)=>{
     console.log('DEBUGGER params by payment method--->>>>>',params)
 
     return new Promise((resolve, reject) => {
-      createSession(params)
-        .then((res: any) => {
-          console.log("DEBUGGER 1.1--->", res)          
-          customerPaymentMethods(res).then((response:any)=>{
-            console.log("DEBUGGER 1.2--->", response)
+      createSessionInitial(params)
+        .then(async(res: any) => {
+          // console.log("DEBUGGER 1.1--->", res)          
+          // customerPaymentMethods(res).then((response:any)=>{
+            // console.log("DEBUGGER 1.2--->", response)
 
-              attemptToPaymentBy_PaymentMethods(response,res.data.clientSecret)
+              attemptToPaymentBy_PaymentMethods(params?.paymentId,res.data.clientSecret)
             .then((data:any) => {
-              console.log("DEBUGGER 1.3--->", data)
-              addCreditsToBuyer(params).then((res)=>{
-                console.log("credits added")
+              resolve(data)
+              // console.log("DEBUGGER 1.3--->", data)
+              // addCreditsToBuyer(params).then((res)=>{
+              //   console.log("credits added")
 
-                  resolve(res)
-              }).catch((err)=>{
-                  reject(err.response?.data)
-              })
+              //     resolve(res)
+              // }).catch((err)=>{
+              //     reject(err.response?.data)
+              // })
             })          
             .catch((err) => {
               reject(err.response?.data);
             });
           })
-          .catch((err)=>{
-            reject(err.response?.data)
-          })
+          // .catch((err)=>{
+          //   reject(err.response?.data)
+          // })
         
-        })
+        // })
         .catch((err) => {
           reject(err.response?.data);
         });

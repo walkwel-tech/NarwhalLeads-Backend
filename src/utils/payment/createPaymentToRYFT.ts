@@ -9,13 +9,12 @@ const POST = "post";
 export const createSession = (params: any) => {
   return new Promise((resolve, reject) => {
     let body = {
-      amount: params.fixedAmount,
+      amount: params.amount,
       currency: process.env.CURRENCY,
       customerEmail: params.email,
       customerDetails: {
         id: params.clientId || null
       },
-      captureFlow: "Automatic",
       returnUrl: process.env.RETURN_URL,
     }
      
@@ -152,7 +151,7 @@ export const attemptToPaymentBy_PaymentMethods = (
     const paymentData = JSON.stringify({
       clientSecret: clientSecret,
       paymentMethod: {
-        id: response.data.items[0]?.id,
+        id: response,
       },
     });
     const config = {
@@ -242,20 +241,20 @@ export const getPaymentMethodByPaymentSessionID = (
 export const createSessionInitial = (params: any) => {
   return new Promise((resolve, reject) => {
     let body = {
-      amount: 0,
+      amount: params?.fixedAmount || 0,
       currency: process.env.CURRENCY,
       customerEmail: params.email,
       customerDetails: {
         id: params.clientId || null
       },
-      returnUrl: process.env.RETURN_URL,
+      returnUrl: process.env.RYFT_RETURN_URL,
       verifyAccount: true
-
+    }
+    if(params?.fixedAmount && params.fixedAmount >0){
+      body.verifyAccount=false
     }
      
-    const data = JSON.stringify(body);
-   
-    
+    const data = JSON.stringify(body);    
     const config = {
       method: POST,
       url: process.env.CREATE_SESSION_URL,
@@ -281,7 +280,7 @@ export const createSessionInitial = (params: any) => {
 export const attemptToPaymentInitial = ( params: any) => {
   return new Promise((resolve, reject) => {
     const paymentData = JSON.stringify({
-      clientSecret: params.data.clientSecret,
+      clientSecret: params.clientSecret,
       // cardDetails: {
       //   number: params.cardNumber,
       //   expiryMonth: params.expiryMonth,

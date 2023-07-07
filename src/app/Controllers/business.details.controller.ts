@@ -137,18 +137,14 @@ export class BusinessDetailsController {
       if (!user?.xeroContactId) {
         try {
           await addUserXeroId(input.userId);
-        } catch (error) {
-          console.log('error while creating customer on xero',error);
-          
+        } catch (error) {          
           console.log("ERROR WHILE CREATING CUSTOMER!!");
         }
       }
-
       if (checkOnbOardingComplete(user) && !user.registrationMailSentToAdmin) {
         const leadData = await UserLeadsDetails.findOne({
           userId: userData?._id,
         });
-
         const message = {
           firstName: user?.firstName,
           lastName: user?.lastName,
@@ -174,8 +170,6 @@ export class BusinessDetailsController {
           //@ts-ignore
           message.businessLogo = `${FileEnum.PROFILEIMAGE}${req?.file.filename}`;
         }
-        console.log('Message',message);
-        
         send_email_for_new_registration(message);
         await User.findByIdAndUpdate(user.id, {
           registrationMailSentToAdmin: true,
@@ -331,10 +325,10 @@ export class BusinessDetailsController {
         });
       }
     } catch (error) {
-      console.log(error);
+      console.log("errrorroro",error)
       return res
         .status(500)
-        .json({ error: { message: "Something went wrong." } });
+        .json({ error: { message: "Something went wrong." ,error} });
     }
   };
 
