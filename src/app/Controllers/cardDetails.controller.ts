@@ -223,10 +223,10 @@ export class CardDetailsControllers {
         };
         await RyftPaymentMethods.create(dataToSave);
         return res.json({
-          data: userData,
+          data: {data:userData,message:"Card added successfully!"},
         });
       } else {
-        return res.json({ data: "Card Verified" });
+        return res.json({ data:{message: "Card Verified!" }});
       }
     } catch (error) {
       return res
@@ -879,7 +879,7 @@ export class CardDetailsControllers {
     console.log("sesss", sessionId);
     let config = {
       method: "get",
-      url: `https://sandbox-api.ryftpay.com/v1/payment-sessions/${sessionId}`,
+      url: `${process.env.RYFT_PAYMENT_METHODS_BY_PAYMENT_SESSION_ID}/${sessionId}`,
       headers: {
         Authorization: process.env.RYFT_SECRET_KEY,
       },
