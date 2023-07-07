@@ -460,12 +460,12 @@ export class CardDetailsControllers {
         clientId: user?.ryftClientId,
         cardId: card.id,
       };
-      let amount = 0;
-      if (input.amount) {
-        amount = input.amount;
-      } else {
-        amount = adminSettings?.minimumUserTopUpAmount;
-      }
+      // let amount:any
+      // if (input.amount) {
+      //   amount = input.amount;
+      // } else {
+      //   amount = adminSettings?.minimumUserTopUpAmount;
+      // }
       if (input.amount >= promoLink?.topUpAmount) {
         params.freeCredits = promoLink.freeCredits;
       }
@@ -793,7 +793,7 @@ export class CardDetailsControllers {
               });
             });
         }
-      } else {
+      } else if(input.eventType == "PaymentSession.approved" || input.eventType == "PaymentSession.captured") {
         const card = await RyftPaymentMethods.findOne({
           paymentMethod: input.data?.paymentMethod?.id,
         });
