@@ -44,9 +44,9 @@ const TransactionSchema = new Schema(
         type: Date,
         default: null,
       },
-      creditsLeft:{
-        type:Number,
-      }
+      // creditsLeft:{
+      //   type:Number,
+      // }
     },
     { timestamps: true }
   );

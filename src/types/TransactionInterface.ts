@@ -13,6 +13,6 @@ export interface TransactionInterface extends Document {
   invoiceId:string;
   createdAt: Date;
   paymentSessionId:string;
-  creditsLeft:number
+  // creditsLeft:number
 
 }

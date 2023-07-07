@@ -67,7 +67,7 @@ export function send_email_for_autocharge(send_to: any, message: any) {
   sgMail
     .send(msg)
     .then(() => {
-      console.log("Email sent",message);
+      console.log("Email sent");
     })
     .catch((error: any) => {
       console.error(error);
@@ -177,9 +177,14 @@ export function send_email_for_add_credits(send_to: any, message: any) {
 }
 
 export function send_email_for_new_registration(message: any) {
+if(message.openingHours){
+    message.openingHours = mapHours(message.openingHours)
 
-  message.openingHours = mapHours(message.openingHours)
-  message.leadsHours = mapHours(message.leadsHours)
+}
+if( message.leadsHours){
+    message.leadsHours = mapHours(message.leadsHours)
+
+}
   const msg = {
     to: "leads@nmg.group", // Change to your recipient
     // to:'diegochelittle@gmail.com',
@@ -256,7 +261,7 @@ export function send_email_to_invited_user(send_to: string, message: any) {
   sgMail
     .send(msg)
     .then(() => {
-      console.log("Email sent",message);
+      console.log("Email sent");
     })
     .catch((error: any) => {
       console.error(error);
@@ -399,20 +404,28 @@ export function send_email_for_lead_status(send_to: string, message: any) {
 }
 
 const mapHours = (hours: any) => {
-  hours.openingHours = hours.openingHours.map((item: any,idx:number) => {
+  if(hours.openingHours){
+      hours.openingHours = hours?.openingHours?.map((item: any,idx:number) => {
     const days = ["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"]
     if(item.day === ""){
       item.day = days[idx]
     }
     return item
   });
-  return hours
+  }
+
+  return hours || []
 }
 
 
 export function send_email_for_updated_details(message: any) {
-  message.openingHours = mapHours(message.openingHours)
-  message.leadsHours = mapHours(message.leadsHours)
+  if(message.openingHours){
+      message.openingHours = mapHours(message.openingHours)
+  }
+  if(message.leadsHours){
+      message.leadsHours = mapHours(message.leadsHours)
+
+  }
   
   const msg = {
     to: "leads@nmg.group", // Change to your recipient
@@ -455,7 +468,7 @@ export function send_email_for_updated_details(message: any) {
   sgMail
     .send(msg)
     .then(() => {
-      console.log("Email sent",message);
+      console.log("Email sent");
     })
     .catch((error: any) => {
       console.log('ERROR SEND EMAIL FOR UPDATED DETAILS',error);

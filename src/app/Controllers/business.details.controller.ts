@@ -5,7 +5,6 @@ import { FileEnum } from "../../types/FileEnum";
 import { RolesEnum } from "../../types/RolesEnum";
 import { ValidationErrorResponse } from "../../types/ValidationErrorResponse";
 import { checkOnbOardingComplete } from "../../utils/Functions/Onboarding_complete";
-// import { openingHoursFormatting } from "../../utils/Functions/openingHoursManipulation";
 import { ONBOARDING_KEYS } from "../../utils/constantFiles/OnBoarding.keys";
 import { createCustomersOnRyftAndLeadByte } from "../../utils/createCustomer";
 import { DeleteFile } from "../../utils/removeFile";
@@ -31,8 +30,6 @@ export class BusinessDetailsController {
         .status(400)
         .json({ error: { message: "User Id is required" } });
     }
-    // let formattedOpeningHours;
-    // let formattedLeadSchedule;
     const Business = new BusinessDetailsInput();
     (Business.businessIndustry = input.businessIndustry),
       (Business.businessName = input.businessName),
@@ -140,24 +137,14 @@ export class BusinessDetailsController {
       if (!user?.xeroContactId) {
         try {
           await addUserXeroId(input.userId);
-        } catch (error) {
+        } catch (error) {          
           console.log("ERROR WHILE CREATING CUSTOMER!!");
         }
       }
-
       if (checkOnbOardingComplete(user) && !user.registrationMailSentToAdmin) {
         const leadData = await UserLeadsDetails.findOne({
           userId: userData?._id,
         });
-        // formattedOpeningHours = openingHoursFormatting(
-        //   userData?.businessOpeningHours
-        // );
-        // if (leadData) {
-        //   formattedLeadSchedule = openingHoursFormatting(
-        //     leadData?.leadSchedule
-        //   );
-        // }
-
         const message = {
           firstName: user?.firstName,
           lastName: user?.lastName,
@@ -183,8 +170,6 @@ export class BusinessDetailsController {
           //@ts-ignore
           message.businessLogo = `${FileEnum.PROFILEIMAGE}${req?.file.filename}`;
         }
-        console.log('Message',message);
-        
         send_email_for_new_registration(message);
         await User.findByIdAndUpdate(user.id, {
           registrationMailSentToAdmin: true,
@@ -235,8 +220,6 @@ export class BusinessDetailsController {
   ): Promise<any> => {
     const { id } = req.params;
     const input = req.body;
-    // let formattedOpeningHours;
-    // let formattedLeadSchedule;
     try {
       const details = await BusinessDetails.findOne({ _id: new ObjectId(id) });
       if (!details) {
@@ -303,15 +286,7 @@ export class BusinessDetailsController {
         const leadData = await UserLeadsDetails.findOne({
           userId: userData?._id,
         });
-        // formattedOpeningHours = openingHoursFormatting(
-        //   updatedDetails?.businessOpeningHours
-        // );
-        // if (leadData) {
-        //   formattedLeadSchedule = openingHoursFormatting(
-        //     leadData?.leadSchedule
-        //   );
-        // }
-
+       
         const message = {
           firstName: userData?.firstName,
           lastName: userData?.lastName,
@@ -333,7 +308,6 @@ export class BusinessDetailsController {
           leadsHours: leadData?.leadSchedule,
           area: leadData?.postCodeTargettingList,
         };
-        console.log('updatedDetails?.businessOpeningHours',updatedDetails?.businessOpeningHours);
         send_email_for_updated_details(message);
         if (req.file && details.businessLogo) {
           DeleteFile(`${details.businessLogo}`);
@@ -351,9 +325,10 @@ export class BusinessDetailsController {
         });
       }
     } catch (error) {
+      console.log("errrorroro",error)
       return res
         .status(500)
-        .json({ error: { message: "Something went wrong." } });
+        .json({ error: { message: "Something went wrong." ,error} });
     }
   };
 

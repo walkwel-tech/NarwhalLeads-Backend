@@ -17,7 +17,7 @@ const RyftPaymentSchema = new Schema(
         ref: "CardDetails",
       },
       paymentMethod:{
-        type:Object
+        type:String
       }
     
     },
