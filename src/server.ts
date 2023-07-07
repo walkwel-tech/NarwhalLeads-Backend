@@ -29,7 +29,7 @@ import TermsAndConditionsRoutes from "./routes/termsAndConditions.routes";
 import freeCreditsLinkRoutes from "./routes/FreeCreditsLink.routes";
 // import {  dataCleaning } from "./dataCleaning";
 
-
+let version="0.1.2b"
 export class Server {
     public app: Application;
 
@@ -82,12 +82,15 @@ export class Server {
         this.app.use("/api/v1/freeCredits",freeCreditsLinkRoutes)
         this.app.use("/api/v1/businessIndustry",BusinessIndustriesRoutes)
 
-
+        this.app.get("/version", (req: Request, res: Response) => {
+            res.status(200).json({message: `App running on version ${version}`});
+        });
 
         this.app.get("*", (req: Request, res: Response) => {
             res.sendFile(path.join(__dirname, "../build", "index.html"));
             // res.status(200).json({message: `App running on version ${version}`});
         });
+     
        
 
     }
