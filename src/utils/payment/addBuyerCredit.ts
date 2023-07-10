@@ -27,10 +27,9 @@ export const addCreditsToBuyer = (params:any) => {
           else{
             updatedCredits=buyerIdUser?.credits + parseInt(params?.fixedAmount)
           }
-          const userrr=await User.findByIdAndUpdate(buyerIdUser.id, {
+         await User.findByIdAndUpdate(buyerIdUser.id, {
             credits: updatedCredits,
           });
-          console.log("uesrrarsss",userrr)
 
           await User.updateMany({invitedById:buyerIdUser?.id}, {$set:{
             credits: updatedCredits,
@@ -39,7 +38,7 @@ export const addCreditsToBuyer = (params:any) => {
         resolve(response);
       })
       .catch(function (error) {
-        // reject(error);
+        reject(error);
       });
   });
 };

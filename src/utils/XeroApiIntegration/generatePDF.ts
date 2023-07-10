@@ -45,8 +45,8 @@ const token=await AccessToken.findOne()
         resolve(response)
       })
       .catch(function (error:any) {
-        // reject(error)
-        console.log(error.response?.data)
+        reject(error)
+        // console.log(error.response?.data)
       });
   });
 };

@@ -541,7 +541,7 @@ export class CardDetailsControllers {
         });
         const transaction = await Transaction.create({
           userId: userId?.id,
-          amount: input.data.amount,
+          amount: (input?.data?.amount)/100,
           status: input.eventType,
           title: transactionTitle.PAYMNET_FAILED,
           isCredited: false,
@@ -556,7 +556,7 @@ export class CardDetailsControllers {
             userId?.xeroContactId,
             transactionTitle.CREDITS_ADDED,
             //@ts-ignore
-            parseInt(input?.data?.amount)
+            parseInt(input?.data?.amount)/100
           )
             .then(async (res: any) => {
               const dataToSaveInInvoice: any = {
@@ -579,7 +579,7 @@ export class CardDetailsControllers {
                   userId?.xeroContactId,
                   transactionTitle.CREDITS_ADDED,
                   //@ts-ignore
-                  parseInt(input?.data?.amount)
+                  parseInt(input?.data?.amount)/100
                 ).then(async (res: any) => {
                   const dataToSaveInInvoice: any = {
                     userId: userId?.id,
@@ -597,13 +597,13 @@ export class CardDetailsControllers {
               });
             });
         }
-      } else if(input.eventType == "PaymentSession.approved" || input.eventType == "PaymentSession.captured") {
+      } else if(input.eventType == "PaymentSession.captured") {
         const card = await RyftPaymentMethods.findOne({
           paymentMethod: input.data?.paymentMethod?.id,
         });
         addCreditsToBuyer({
           buyerId: userId?.buyerId,
-          fixedAmount: parseInt(input.data?.amount),
+          fixedAmount: parseInt(input.data?.amount)/100,
         })
           .then(async (res: any) => {
             // console.log("WEBHOOK 3------->>>",res)
@@ -611,7 +611,7 @@ export class CardDetailsControllers {
             userId = await User.findById(userId?.id);
             const transaction = await Transaction.create({
               userId: userId?.id,
-              amount: input.data.amount,
+              amount:( input?.data?.amount)/100,
               status: input.eventType,
               title: transactionTitle.CREDITS_ADDED,
               isCredited: true,
@@ -625,7 +625,7 @@ export class CardDetailsControllers {
                 userId?.xeroContactId,
                 transactionTitle.CREDITS_ADDED,
                 //@ts-ignore
-                parseInt(input?.data?.amount)
+                parseInt(input?.data?.amount)/100
               )
                 .then(async (res: any) => {
                   const dataToSaveInInvoice: any = {
@@ -648,7 +648,7 @@ export class CardDetailsControllers {
                       userId?.xeroContactId,
                       transactionTitle.CREDITS_ADDED,
                       //@ts-ignore
-                      parseInt(input?.data?.amount)
+                      parseInt(input?.data?.amount)/100
                     ).then(async (res: any) => {
                       const dataToSaveInInvoice: any = {
                         userId: userId?.id,
@@ -672,6 +672,7 @@ export class CardDetailsControllers {
           });
       }
     }
+    res.status(200).json({data:{message:"success"}})
   };
 
   static retrievePaymentSssion = async (
