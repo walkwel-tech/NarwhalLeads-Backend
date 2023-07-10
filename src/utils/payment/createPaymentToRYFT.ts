@@ -167,6 +167,7 @@ export const attemptToPaymentBy_PaymentMethods = (
     };
     axios(config)
       .then(async function (res) {
+        console.log("--------------->>>>>>>",)
         if (res.data.status === PAYMENT_STATUS.APPROVED) {
           resolve(res);
         } else {
