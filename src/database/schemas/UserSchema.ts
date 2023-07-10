@@ -132,6 +132,10 @@ const UserSchema = new Schema(
     onBoarding: {
       type: Array,
     },
+    isUserSignup: {
+      type: Boolean,
+      default: false,
+    },
     registrationMailSentToAdmin: {
       type: Boolean,
       default: false,
