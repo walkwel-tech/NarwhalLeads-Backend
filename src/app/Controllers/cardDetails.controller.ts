@@ -35,6 +35,7 @@ import { createSessionInitial } from "../../utils/payment/createPaymentToRYFT";
 import { BusinessDetails } from "../Models/BusinessDetails";
 import { RyftPaymentMethods } from "../Models/RyftPaymentMethods";
 import { UserLeadsDetails } from "../Models/UserLeadsDetails";
+import { PAYMENT_STATUS } from "../../utils/Enums/payment.status";
 
 export class CardDetailsControllers {
   static create = async (req: Request, res: Response): Promise<any> => {
@@ -542,13 +543,14 @@ export class CardDetailsControllers {
         const transaction = await Transaction.create({
           userId: userId?.id,
           amount: (input?.data?.amount)/100,
-          status: input.eventType,
+          status: PAYMENT_STATUS.DECLINE,
           title: transactionTitle.PAYMNET_FAILED,
           isCredited: false,
           isDebited: false,
           invoiceId: "",
           paymentSessionId: input.data.id,
           cardId: card?.cardId,
+          creditsLeft:userId?.credits
         });
 
         if (userId?.xeroContactId) {
@@ -612,12 +614,13 @@ export class CardDetailsControllers {
             const transaction = await Transaction.create({
               userId: userId?.id,
               amount:( input?.data?.amount)/100,
-              status: input.eventType,
+              status: PAYMENT_STATUS.CAPTURED,
               title: transactionTitle.CREDITS_ADDED,
               isCredited: true,
               invoiceId: "",
               paymentSessionId: input.data.id,
               cardId: card?.cardId,
+              creditsLeft:userId?.credits
             });
 
             if (userId?.xeroContactId) {

@@ -168,12 +168,12 @@ export const attemptToPaymentBy_PaymentMethods = (
     axios(config)
       .then(async function (res) {
         console.log("--------------->>>>>>>",)
-        if (res.data.status === PAYMENT_STATUS.APPROVED) {
+        // if (res.data.status === PAYMENT_STATUS.APPROVED) {
           resolve(res);
-        } else {
-          console.log("Exception Occur")
-          throw new Error("payment pending");
-        }
+        // } else {
+          // console.log("Exception Occur")
+          // throw new Error("payment pending");
+        // }
       })
       .catch(function (error) {
         reject(error);

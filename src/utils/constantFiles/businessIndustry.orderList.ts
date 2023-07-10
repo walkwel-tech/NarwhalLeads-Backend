@@ -5,6 +5,14 @@ export const order = [
     isVisible: true,
 
     index: 0,
-  }
+  },
+  // {
+  //   name: "clientName",
+
+  //   isVisible: true,
+
+  //   index: 0,
+  // },
+
 ];
 
