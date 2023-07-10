@@ -18,7 +18,7 @@ cardDetails.get("/:id", CardDetailsControllers.showById);
 cardDetails.post("/create-session",CardDetailsControllers.createInitialSessionRyft);
 // cardDetails.post("/create-session-credits",CardDetailsControllers.createFurtherSessionRyft);
 // cardDetails.post("/attempt-payment",CardDetailsControllers.attemptPaymentRyft);
-cardDetails.post("/payment-status",CardDetailsControllers.handlepaymentStatus);
+cardDetails.post("/payment-status",CardDetailsControllers.handlepaymentStatusWebhook);
 
 
 

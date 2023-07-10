@@ -241,7 +241,7 @@ export const getPaymentMethodByPaymentSessionID = (
 export const createSessionInitial = (params: any) => {
   return new Promise((resolve, reject) => {
     let body = {
-      amount: params?.fixedAmount || 0,
+      amount: (params?.fixedAmount * 100) || 0,
       currency: process.env.CURRENCY,
       customerEmail: params.email,
       customerDetails: {

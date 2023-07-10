@@ -26,6 +26,7 @@ export interface UserInterface extends Document {
   isDeleted: boolean;
   rowIndex: number;
   isArchived:boolean;
+  isUserSignup:boolean;
   invitedById: Types.ObjectId;
   userNotes:string;
   businessDetailsId: Types.ObjectId;
