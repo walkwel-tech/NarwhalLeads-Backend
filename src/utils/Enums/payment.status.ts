@@ -1,7 +1,8 @@
 export const PAYMENT_STATUS={
-    APPROVED:'Approved',
+    APPROVED:'approved',
     PENDING_PAYMENT:'PendingPayment',
     PROCESSING:'Processing',
-    CAPTURED:'Captured',
+    CAPTURED:'success',
+    DECLINE:'failed',
     PENDING_ACTION:'PendingAction'
 }

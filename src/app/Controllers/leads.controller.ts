@@ -1344,10 +1344,6 @@ export class LeadsController {
       const columnsOfIndustry = await BuisnessIndustries.findById(
         user?.businessIndustryId
       );
-
-      // const columnsOfIndustry = await CustomColumnNames.findOne({
-      //   industryId: user?.businessIndustryId,
-      // });
       columnsOfIndustry?.columnsNames.map((i: any) => {
         Preference?.columns.map((j: any) => {
           if (i?.defaultColumn == j?.name && i.renamedColumn.length != 0) {
@@ -1371,7 +1367,7 @@ export class LeadsController {
       if (Preference) {
         return res.json({ data: Preference });
       }
-
+console.log("columnsOfIndustry?.columns",columnsOfIndustry?.columns)
       return res.json({ data: { columns: columnsOfIndustry?.columns } });
     } catch (error) {
       return res

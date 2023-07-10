@@ -19,6 +19,7 @@ import { BusinessDetails } from "../Models/BusinessDetails";
 import { addUserXeroId } from "../../utils/XeroApiIntegration/createContact";
 import { User } from "../Models/User";
 import { UserLeadsDetails } from "../Models/UserLeadsDetails";
+import { LeadTablePreference } from "../Models/LeadTablePreference";
 const ObjectId = mongoose.Types.ObjectId;
 
 export class BusinessDetailsController {
@@ -235,9 +236,11 @@ export class BusinessDetailsController {
         });
         userData = await User.findByIdAndUpdate(
           userData?.id,
-          { leadCost: industry?.leadCost },
+          { leadCost: industry?.leadCost ,businessIndustryId:industry?.id},
+        
           { new: true }
         );
+      await LeadTablePreference.findOneAndUpdate({userId:userData?.id},{$set:{columns:industry?.columns}})
       }
       const data = await BusinessDetails.findByIdAndUpdate(
         id,
