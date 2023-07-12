@@ -471,7 +471,7 @@ export class CardDetailsControllers {
       if (!paymentMethodsExists) {
         return res
           .status(404)
-          .json({ data: { message: "payment methods does not found." } });
+          .json({ data: { message: "Payment methods does not found." } });
       } else {
         params.paymentId =
           //@ts-ignore
@@ -556,7 +556,7 @@ export class CardDetailsControllers {
         if (userId?.xeroContactId) {
           generatePDF(
             userId?.xeroContactId,
-            transactionTitle.CREDITS_ADDED,
+            transactionTitle.PAYMNET_FAILED,
             //@ts-ignore
             parseInt(input?.data?.amount)/100
           )
@@ -579,7 +579,7 @@ export class CardDetailsControllers {
                 generatePDF(
                   //@ts-ignore
                   userId?.xeroContactId,
-                  transactionTitle.CREDITS_ADDED,
+                  transactionTitle.PAYMNET_FAILED,
                   //@ts-ignore
                   parseInt(input?.data?.amount)/100
                 ).then(async (res: any) => {
@@ -682,9 +682,7 @@ export class CardDetailsControllers {
     req: Request,
     res: Response
   ): Promise<any> => {
-    console.log("WEBHOOK START------->>>");
     const sessionId = req.query.ps;
-    console.log("sesss", sessionId);
     let config = {
       method: "get",
       url: `${process.env.RYFT_PAYMENT_METHODS_BY_PAYMENT_SESSION_ID}/${sessionId}`,
@@ -694,35 +692,29 @@ export class CardDetailsControllers {
     };
     axios(config)
       .then(async function (response: any) {
-        console.log("--------------------->>>>>>>>>>");
-        console.log(JSON.stringify(response.data));
         const sessionData = response.data;
         const { customerDetails, paymentMethod, amount } = sessionData;
         const user = await User.findOne({ ryftClientId: customerDetails.id });
-        console.log("here", user);
         const paymentMthods = await RyftPaymentMethods.find({
           paymentMethod: paymentMethod?.tokenizedDetails?.id,
         });
-        console.log("here", paymentMthods);
         if (
           (!paymentMthods || paymentMthods.length == 0) &&
           paymentMethod?.tokenizedDetails?.id
         ) {
-          console.log("here");
           const card = await CardDetails.create({
             cardNumber: paymentMethod?.card?.last4,
             userId: user?.id,
             cardHolderName: `${customerDetails.firstName} ${customerDetails?.lastName}`,
             amount,
           });
-          const data = await RyftPaymentMethods.create({
+           await RyftPaymentMethods.create({
             userId: user?.id,
             ryftClientId: customerDetails.id,
             paymentMethod: paymentMethod?.tokenizedDetails?.id,
             cardId: card.id,
           });
 
-          console.log("data", data);
         }
 
         res.status(302).redirect(process.env.RETURN_URL || "");
