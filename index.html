@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <script src="https://embedded.ryftpay.com/v1/ryft.min.js"></script>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+</head>
+
+<body>
+  <div>
+    <div className="Ryft--paysection">
+      <form id="ryft-pay-form" className="Ryft--payform">
+        <button id="pay-btn" disabled>
+          PAY NOW
+        </button>
+        <div id="ryft-pay-error">
+          <!-- populate this div with any errors -->
+        </div>
+      </form>
+    </div>
+  </div>
+</body>
+<script type="text/javascript">
+  const clientSecret = "ps_01H4Q8DM6VR067DE4627CESFQC_secret_af97d07d-189b-40ce-85a5-b5b48f37121a"; // fetch from your backend
+  Ryft.init({
+    publicKey: "pk_sandbox_KsBhr+1YuoJytmfdNgPxaZ5ekp0uKVVpGZq7Qz0r5W0ESpQ3ZIBJmpNr3nsUyYAm",
+    clientSecret,
+    usage: 'payment', //default, the customer is paying
+    customerPaymentMethods: {
+      allowStorage: true // defaults to true
+    }
+    // Note for marketplaces: Add a sub account id here as `accountId`
+  });
+
+  Ryft.addEventHandler("cardValidationChanged", e => {
+    const payButton = document.getElementById("pay-btn");
+    payButton.disabled = !e.isValid;
+  });
+
+  const form = document.getElementById("ryft-pay-form");
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    Ryft.attemptPayment()
+      .then((paymentSession) => {
+        if (
+          paymentSession.status === 'Approved' ||
+          paymentSession.status === 'Captured'
+        ) {
+          console.log("paymentSessionpaymentSessionpaymentSessionpaymentSession", paymentSession)
+          // Show the customer your order success page
+          return;
+        }
+        if (paymentSession.lastError) {
+          console.log("pwewqeqweqeqweaymentSessionpaymentSessionpaymentSessionpaymentSession", paymentSession)
+
+          const userFacingError = Ryft.getUserFacingErrorMessage(paymentSession.lastError);
+          alert("lastError")
+
+          // Show userFacingError to customer
+        }
+      })
+      .catch((error) => {
+        // Show error to customer
+      });
+  });
+</script>
+
+</html>
