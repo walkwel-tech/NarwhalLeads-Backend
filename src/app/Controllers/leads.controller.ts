@@ -41,7 +41,7 @@ export class LeadsController {
         },
       });
     }
-
+console.log("ready")
     const bid = req.params.id;
     const input = req.body;
     const user: any = await User.findOne({ buyerId: bid })
@@ -150,7 +150,6 @@ export class LeadsController {
       console.log(adminPref)
 
       if (adminPref) {
-        console.log("hereretfetywfehw")
         let key = Object.keys(input).map((i) => i);
         key.forEach((item, idx) => {
           const existingElement = adminPref?.columns.find(
@@ -179,7 +178,6 @@ export class LeadsController {
         );
       }
       if (!adminPref) {
-        console.log("----------->>>>");
         await LeadTablePreference.updateOne(
           { userId: admin?._id },
           {
@@ -216,9 +214,20 @@ export class LeadsController {
       }
     });
     const admin = await User.findOne({ role: RolesEnum.ADMIN });
-    checkPreferenceExists?.columns.map((i:any)=>{
-      //todo: add object for clinet names
-    })
+    // checkPreferenceExists?.columns.map((i:any)=>{
+    //   //todo: add object for clinet names
+    //   const existingElement = checkPreferenceExists?.columns.find(
+    //     (resElement: any) => resElement.name === "clientName"
+    //   );
+    //   if(!existingElement){
+    //     let obj={
+    //       name:"clientName",
+    //       isVisible:true,
+    //       index:checkPreferenceExists?.columns.length    
+    //     }
+    //     checkPreferenceExists?.columns.push(obj)
+    //   }
+    // })
     await LeadTablePreference.updateOne(
       { userId: admin?._id },
       {

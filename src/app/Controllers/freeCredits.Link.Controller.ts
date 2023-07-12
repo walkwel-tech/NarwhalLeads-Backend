@@ -37,6 +37,12 @@ export class freeCreditsLinkController {
         $or: [{ code: { $regex: req.query.search, $options: "i" } }],
       };
     }
+    if(req.query.expired){
+      dataToFind.isDisabled=true
+    }
+    if(req.query.live){
+      dataToFind.isDisabled=false
+    }
     try {
       const query = await FreeCreditsLink.find(dataToFind)
         .populate("user.userId")
