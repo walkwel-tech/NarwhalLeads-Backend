@@ -710,6 +710,7 @@ export class CardDetailsControllers {
     res: Response
   ): Promise<any> => {
     const sessionId = req.query.ps;
+    const shouldReturnJson = !!req.query.requestJson || false;
     let config = {
       method: "get",
       url: `${process.env.RYFT_PAYMENT_METHODS_BY_PAYMENT_SESSION_ID}/${sessionId}`,
@@ -768,11 +769,27 @@ export class CardDetailsControllers {
           });
 
         }
-//need to change here in url
-        res.status(302).redirect(process.env.RETURN_URL || "");
+
+        if (shouldReturnJson) {
+          res.json({
+           data:{ message: "Session validated"}
+          });
+        } else {
+          //need to change here in url
+          res.status(302).redirect(process.env.RETURN_URL || "");
+        }
+
       })
       .catch(function (error: any) {
-        res.status(302).redirect(process.env.RETURN_URL || "");
+        if (shouldReturnJson) {
+          res.json({
+            message: "Session error",
+            error: error
+          });
+        } else {
+          //need to change here in url
+          res.status(302).redirect(process.env.RETURN_URL || "");
+        }
         // return res.status(400).json({ error: { message: "your payment got failed" } });
         // console.log(error);
       });
