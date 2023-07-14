@@ -206,7 +206,7 @@ export class CardDetailsControllers {
           userId: user,
           cardHolderName: input.cardHolderName,
           //to trim the space between card number
-          cardNumber: input?.cardNumber,
+          cardNumber: "000000000000"+input?.cardNumber,
           // cardNumber:input.cardNumber,
 
           expiryMonth: input?.expiryMonth,
@@ -692,6 +692,7 @@ export class CardDetailsControllers {
     };
     axios(config)
       .then(async function (response: any) {
+        console.log("here it comes -------------------------------")
         const sessionData = response.data;
         const { customerDetails, paymentMethod, amount } = sessionData;
         const user = await User.findOne({ ryftClientId: customerDetails.id });
@@ -702,11 +703,36 @@ export class CardDetailsControllers {
           (!paymentMthods || paymentMthods.length == 0) &&
           paymentMethod?.tokenizedDetails?.id
         ) {
-          const card = await CardDetails.create({
+          const cardExist=await CardDetails.find({userId:user?.id})
+          let dataToSave:Record<string,any>={
             cardNumber: paymentMethod?.card?.last4,
             userId: user?.id,
             cardHolderName: `${customerDetails.firstName} ${customerDetails?.lastName}`,
             amount,
+          }
+          if(cardExist.length==0){
+            dataToSave.isDefault=true
+          }
+         
+          const card = await CardDetails.create(dataToSave);
+          await User.findByIdAndUpdate(user?.id, {
+            onBoarding: [
+              {
+                key: ONBOARDING_KEYS.BUSINESS_DETAILS,
+                pendingFields: [],
+                dependencies: [],
+              },
+              {
+                key: ONBOARDING_KEYS.LEAD_DETAILS,
+                pendingFields: [],
+                dependencies: [],
+              },
+              {
+                key: ONBOARDING_KEYS.CARD_DETAILS,
+                pendingFields: [],
+                dependencies: [],
+              },
+            ],
           });
            await RyftPaymentMethods.create({
             userId: user?.id,
@@ -716,7 +742,7 @@ export class CardDetailsControllers {
           });
 
         }
-
+//need to change here in url
         res.status(302).redirect(process.env.RETURN_URL || "");
       })
       .catch(function (error: any) {
@@ -724,5 +750,15 @@ export class CardDetailsControllers {
         // return res.status(400).json({ error: { message: "your payment got failed" } });
         // console.log(error);
       });
+  };
+  static ryftPaymentLogger = async (
+    req: Request,
+    res: Response
+  ): Promise<any> => {
+    const input = req.body;
+    console.log("WEBHOOK START------->>>", input);
+  
+    
+    res.status(200).json({data:{message:input}})
   };
 }
