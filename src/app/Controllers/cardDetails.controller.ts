@@ -37,6 +37,13 @@ import { RyftPaymentMethods } from "../Models/RyftPaymentMethods";
 import { UserLeadsDetails } from "../Models/UserLeadsDetails";
 import { PAYMENT_STATUS } from "../../utils/Enums/payment.status";
 
+interface PaymentResponse {
+  message: string;
+  status: number;
+  url?: string;
+}
+
+
 export class CardDetailsControllers {
   static create = async (req: Request, res: Response): Promise<any> => {
     const input = req.body;
@@ -477,17 +484,37 @@ export class CardDetailsControllers {
           //@ts-ignore
           paymentMethodsExists?.paymentMethod;
         managePaymentsByPaymentMethods(params)
-          .then(async (_res) => {
+          .then(async (_res:any) => {
+
+            let response: PaymentResponse= {
+              message: "In progress",
+              status: 200
+            };
+
+            if (_res.data.status=="PendingAction") {
+              response.message = "Further Action required";
+              response.status = 302;
+              response.url = _res.data.requiredAction.url
+              // {
+              //   message:
+              //     ,
+
+              //   status: 302,
+              //   url: _res.data.requiredAction.url
+              // }
+            } else {
+              response.message = "Payment processed successfully, credits will be reflect in few seconds.";
+              response.status = 200;              
+            }
+
+
+// res.status(302).redirect(_res.data.requiredAction.url)
             return res.json({
-              data: {
-                message:
-                  "Payment processed successfully, credits will be reflect in few seconds.",
-              },
+              data: response,
             });
            
           })
           .catch(async (err) => {
-            console.log("failed");
             return res.json({
               error: { message: "Error occured in payment." },
             });
@@ -692,7 +719,6 @@ export class CardDetailsControllers {
     };
     axios(config)
       .then(async function (response: any) {
-        console.log("here it comes -------------------------------")
         const sessionData = response.data;
         const { customerDetails, paymentMethod, amount } = sessionData;
         const user = await User.findOne({ ryftClientId: customerDetails.id });
