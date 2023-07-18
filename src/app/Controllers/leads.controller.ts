@@ -41,7 +41,7 @@ export class LeadsController {
         },
       });
     }
-console.log("ready")
+
     const bid = req.params.id;
     const input = req.body;
     const user: any = await User.findOne({ buyerId: bid })
@@ -103,22 +103,25 @@ console.log("ready")
       { new: true }
     );
     // await CustomColumnNames.findByIdAndUpdate(
-    //   columns?.id,
-    //   { columnsNames: columns?.columnsNames },
-    //   { new: true }
+    // columns?.id,
+    // { columnsNames: columns?.columnsNames },
+    // { new: true }
     // );
     const checkPreferenceExists: any = await LeadTablePreference.findOne({
       userId: user._id,
     });
-
+    const admin = await User.findOne({ role: RolesEnum.ADMIN });
+    const adminPref: any = await LeadTablePreference.findOne({
+      userId: admin?._id,
+    });
     if (!checkPreferenceExists) {
       const columnsNames = await BuisnessIndustries.findById(
         user.businessIndustryId
       );
       // const columnsNames = await CustomColumnNames.findOne({
-      //   industryId: user?.businessIndustryId,
+      // industryId: user?.businessIndustryId,
       // });
-      let array: any = [{ name: "clientName", isVisible: true, index: 0 }];
+      let array: any = [{ name: "clientName", isVisible: true, index: 0}];
       Object.keys(input).map((i: any) => {
         // columnsNames?.columnsNames.map((j)=>{
         let obj: any = {};
@@ -144,10 +147,8 @@ console.log("ready")
 
       await LeadTablePreference.create(dataToSaveInLeadsPreference);
       const admin = await User.findOne({ role: RolesEnum.ADMIN });
-      const adminPref: any = await LeadTablePreference.findOne({
-        userId: admin?._id,
-      });
-      console.log(adminPref)
+
+      console.log(adminPref);
 
       if (adminPref) {
         let key = Object.keys(input).map((i) => i);
@@ -178,12 +179,10 @@ console.log("ready")
         );
       }
       if (!adminPref) {
-        await LeadTablePreference.updateOne(
-          { userId: admin?._id },
-          {
-            columns: { name: "clientName", isVisible: true, index: 0 },
-          }
-        );
+        await LeadTablePreference.create({
+          userId: admin?._id,
+          columns: { name: "clientName", isVisible: true, index: 0 },
+        });
       }
     }
     let key = Object.keys(input).map((i) => i);
@@ -192,7 +191,7 @@ console.log("ready")
     );
 
     // const columnsNames = await CustomColumnNames.findOne({
-    //   industryId: user?.businessIndustryId,
+    // industryId: user?.businessIndustryId,
     // });
     key.forEach((item, idx) => {
       const existingElement = checkPreferenceExists?.columns.find(
@@ -213,28 +212,32 @@ console.log("ready")
         checkPreferenceExists?.columns.push(obj);
       }
     });
-    const admin = await User.findOne({ role: RolesEnum.ADMIN });
-    // checkPreferenceExists?.columns.map((i:any)=>{
-    //   //todo: add object for clinet names
-    //   const existingElement = checkPreferenceExists?.columns.find(
-    //     (resElement: any) => resElement.name === "clientName"
-    //   );
-    //   if(!existingElement){
-    //     let obj={
-    //       name:"clientName",
-    //       isVisible:true,
-    //       index:checkPreferenceExists?.columns.length    
-    //     }
-    //     checkPreferenceExists?.columns.push(obj)
-    //   }
-    // })
-    await LeadTablePreference.updateOne(
-      { userId: admin?._id },
-      {
-        columns: checkPreferenceExists?.columns,
-      }
+    checkPreferenceExists?.columns.map((i:any)=>{
+    //todo: add object for clinet names
+    const existingElement = checkPreferenceExists?.columns.find(
+    (resElement: any) => resElement.name === "clientName"
     );
-
+    if(!existingElement){
+    let obj={
+    name:"clientName",
+    isVisible:true,
+    index:checkPreferenceExists?.columns.length,
+    // newName:"clientName"
+    }
+    checkPreferenceExists?.columns.push(obj)
+    }
+    })
+    if (adminPref) {
+      await LeadTablePreference.findOneAndUpdate(
+        { userId: admin?._id },
+        { columns: checkPreferenceExists?.columns }
+      );
+    } else {
+       await LeadTablePreference.create({
+        userId: admin?._id,
+        columns: checkPreferenceExists?.columns,
+      });
+    }
     await LeadTablePreference.findByIdAndUpdate(checkPreferenceExists?.id, {
       columns: checkPreferenceExists?.columns,
     });
@@ -1043,9 +1046,14 @@ console.log("ready")
           },
         },
       ]);
+      // query.results.map((item: any) => {
+        // let clientName = Object.assign({}, item["clientName"][0]);
+        // item.clientName = clientName;
+      // });
       query.results.map((item: any) => {
-        let clientName = Object.assign({}, item["clientName"][0]);
-        item.clientName = clientName;
+        item.leads.clientName =  item["clientName"][0]?.firstName +" "+ item["clientName"][0]?.lastName;
+        // let clientName = Object.assign({}, item["clientName"][0]);
+        // item.clientName = clientName;
       });
       const leadsCount = query.leadsCount[0]?.count || 0;
       const totalPages = Math.ceil(leadsCount / perPage);
@@ -1139,14 +1147,70 @@ console.log("ready")
           $facet: {
             results: [
               { $match: dataToFind },
+              {
+                $lookup: {
+                  from: "users",
+                  localField: "bid",
+                  foreignField: "buyerId",
+                  as: "clientName",
+                },
+              },
               { $sort: { createdAt: sortingOrder } },
               { $skip: skip },
               { $limit: perPage },
+              {
+                $project: {
+                  verifiedAt: 0,
+                  isVerified: 0,
+                  // isActive: 0,
+                  activatedAt: 0,
+                  isDeleted: 0,
+                  deletedAt: 0,
+                  __v: 0,
+                  // isArchived:0,
+                  // createdAt: 0,
+                  feedbackForNMG: 0,
+                  clientNotes1: 0,
+                  clientNotes2: 0,
+                  clientNotes3: 0,
+                  bid: 0,
+                  leadsCost: 0,
+                  updatedAt: 0,
+                  "leads.c1": 0,
+                  "clientName.password": 0,
+                  "clientName.autoCharge": 0,
+                  "clientName.leadCost": 0,
+                  "clientName.isRyftCustomer": 0,
+                  "clientName.isArchived": 0,
+                  "clientName.isLeadbyteCustomer": 0,
+                  "clientName.autoChargeAmount": 0,
+                  "clientName.verifiedAt": 0,
+                  "clientName.isVerified": 0,
+                  "clientName.isActive": 0,
+                  "clientName.businessDetailsId": 0,
+                  "clientName.businessIndustryId": 0,
+                  "clientName.userLeadsDetailsId": 0,
+                  "clientName.onBoarding": 0,
+                  "clientName.registrationMailSentToAdmin": 0,
+                  "clientName.createdAt": 0,
+                  "clientName.activatedAt": 0,
+                  "clientName.isDeleted": 0,
+                  "clientName.invitedById": 0,
+                  "clientName.__v": 0,
+                  "clientName.buyerId": 0,
+                  "clientName.role": 0,
+                },
+              },
             ],
             leadsCount: [{ $match: dataToFind }, { $count: "count" }],
           },
         },
       ]);
+      query.results.map((item: any) => {
+        item.leads.clientName =  item["clientName"][0]?.firstName +" "+ item["clientName"][0]?.lastName;
+        // let clientName = Object.assign({}, item["clientName"][0]);
+        // item.clientName = clientName;
+      });
       const leadsCount = query.leadsCount[0]?.count || 0;
       const totalPages = Math.ceil(leadsCount / perPage);
       return res.json({
@@ -1286,9 +1350,9 @@ console.log("ready")
         },
       ]);
       query.results.map((item: any) => {
-        let clientName = Object.assign({}, item["clientName"][0]);
-
-        item.clientName = clientName;
+        item.leads.clientName =  item["clientName"][0]?.firstName +" "+ item["clientName"][0]?.lastName;
+        // let clientName = Object.assign({}, item["clientName"][0]);
+        // item.clientName = clientName;
       });
       const leadsCount = query.leadsCount[0]?.count || 0;
       const totalPages = Math.ceil(leadsCount / perPage);
@@ -1376,7 +1440,7 @@ console.log("ready")
       if (Preference) {
         return res.json({ data: Preference });
       }
-console.log("columnsOfIndustry?.columns",columnsOfIndustry?.columns)
+      console.log("columnsOfIndustry?.columns", columnsOfIndustry?.columns);
       return res.json({ data: { columns: columnsOfIndustry?.columns } });
     } catch (error) {
       return res

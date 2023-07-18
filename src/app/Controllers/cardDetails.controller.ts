@@ -567,7 +567,7 @@ export class CardDetailsControllers {
         const card = await RyftPaymentMethods.findOne({
           paymentMethod: input.data?.paymentMethod?.id,
         });
-        const transaction = await Transaction.create({
+        await Transaction.create({
           userId: userId?.id,
           amount: (input?.data?.amount)/100,
           status: PAYMENT_STATUS.DECLINE,
@@ -580,52 +580,52 @@ export class CardDetailsControllers {
           creditsLeft:userId?.credits
         });
 
-        if (userId?.xeroContactId) {
-          generatePDF(
-            userId?.xeroContactId,
-            transactionTitle.PAYMNET_FAILED,
-            //@ts-ignore
-            parseInt(input?.data?.amount)/100
-          )
-            .then(async (res: any) => {
-              const dataToSaveInInvoice: any = {
-                userId: userId?.id,
-                transactionId: transaction.id,
-                price: userId?.credits,
-                invoiceId: res.data.Invoices[0].InvoiceID,
-              };
-              await Invoice.create(dataToSaveInInvoice);
-              await Transaction.findByIdAndUpdate(transaction.id, {
-                invoiceId: res.data.Invoices[0].InvoiceID,
-              });
+        // if (userId?.xeroContactId) {
+        //   generatePDF(
+        //     userId?.xeroContactId,
+        //     transactionTitle.PAYMNET_FAILED,
+        //     //@ts-ignore
+        //     parseInt(input?.data?.amount)/100
+        //   )
+        //     .then(async (res: any) => {
+        //       const dataToSaveInInvoice: any = {
+        //         userId: userId?.id,
+        //         transactionId: transaction.id,
+        //         price: userId?.credits,
+        //         invoiceId: res.data.Invoices[0].InvoiceID,
+        //       };
+        //       await Invoice.create(dataToSaveInInvoice);
+        //       await Transaction.findByIdAndUpdate(transaction.id, {
+        //         invoiceId: res.data.Invoices[0].InvoiceID,
+        //       });
 
-              console.log("PDF generated");
-            })
-            .catch(async (err) => {
-              refreshToken().then(async (res) => {
-                generatePDF(
-                  //@ts-ignore
-                  userId?.xeroContactId,
-                  transactionTitle.PAYMNET_FAILED,
-                  //@ts-ignore
-                  parseInt(input?.data?.amount)/100
-                ).then(async (res: any) => {
-                  const dataToSaveInInvoice: any = {
-                    userId: userId?.id,
-                    transactionId: transaction.id,
-                    price: userId?.credits,
-                    invoiceId: res.data.Invoices[0].InvoiceID,
-                  };
-                  await Invoice.create(dataToSaveInInvoice);
-                  await Transaction.findByIdAndUpdate(transaction.id, {
-                    invoiceId: res.data.Invoices[0].InvoiceID,
-                  });
+        //       console.log("PDF generated");
+        //     })
+        //     .catch(async (err) => {
+        //       refreshToken().then(async (res) => {
+        //         generatePDF(
+        //           //@ts-ignore
+        //           userId?.xeroContactId,
+        //           transactionTitle.PAYMNET_FAILED,
+        //           //@ts-ignore
+        //           parseInt(input?.data?.amount)/100
+        //         ).then(async (res: any) => {
+        //           const dataToSaveInInvoice: any = {
+        //             userId: userId?.id,
+        //             transactionId: transaction.id,
+        //             price: userId?.credits,
+        //             invoiceId: res.data.Invoices[0].InvoiceID,
+        //           };
+        //           await Invoice.create(dataToSaveInInvoice);
+        //           await Transaction.findByIdAndUpdate(transaction.id, {
+        //             invoiceId: res.data.Invoices[0].InvoiceID,
+        //           });
 
-                  console.log("PDF generated");
-                });
-              });
-            });
-        }
+        //           console.log("PDF generated");
+        //         });
+        //       });
+        //     });
+        // }
       } else if(input.eventType == "PaymentSession.captured") {
         const card = await RyftPaymentMethods.findOne({
           paymentMethod: input.data?.paymentMethod?.id,
