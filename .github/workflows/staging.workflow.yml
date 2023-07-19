@@ -1,16 +1,16 @@
-name: Deploy to Production
+name: Deploy to Staging
 
 on:
   push:
     branches:
-      - production
+      - staging
 
 env:
-  SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
-  SV_KEY_PASS: ${{ secrets.SV_KEY_PASS }}
-  SV_IP_ADDRESS: ${{ secrets.SV_IP_ADDRESS }}
-  SV_USER: ${{ secrets.SV_USER }}
-  BUILD_DIR_PATH: ${{ vars.BUILD_DIR_PATH }}
+  SSH_PRIVATE_KEY: ${{ secrets.STAGING_SSH_PRIVATE_KEY }}
+  SV_KEY_PASS: ${{ secrets.STAGING_SV_KEY_PASS }}
+  SV_IP_ADDRESS: ${{ secrets.STAGING_SV_IP_ADDRESS }}
+  SV_USER: ${{ secrets.STAGING_SV_USER }}
+  BUILD_DIR_PATH: ${{ vars.STAGING_BUILD_DIR_PATH }}
   CI: false
 
 jobs:
@@ -51,6 +51,17 @@ jobs:
           source: "dist.zip"
           target: ${{ env.BUILD_DIR_PATH }}
 
+      - name: Extracting...
+        uses: appleboy/ssh-action@v0.1.9
+        with:
+          host: ${{ env.SV_IP_ADDRESS }}
+          username: ${{ env.SV_USER }}
+          key: ${{ env.SSH_PRIVATE_KEY }}
+          passphrase: ${{ env.SV_KEY_PASS }}
+          script: |
+            cd ${{ env.BUILD_DIR_PATH }}
+            unzip -o dist.zip            
+
       - name: Go Live
         uses: appleboy/ssh-action@v0.1.9
         with:
@@ -60,7 +71,16 @@ jobs:
           passphrase: ${{ env.SV_KEY_PASS }}
           script: |
             cd ${{ env.BUILD_DIR_PATH }}
-            unzip -o dist.zip
             pm2 restart all
+
+      - name: Cleanup
+        uses: appleboy/ssh-action@v0.1.9
+        with:
+          host: ${{ env.SV_IP_ADDRESS }}
+          username: ${{ env.SV_USER }}
+          key: ${{ env.SSH_PRIVATE_KEY }}
+          passphrase: ${{ env.SV_KEY_PASS }}
+          script: |
+            cd ${{ env.BUILD_DIR_PATH }}
             rm dist.zip
             rm -rf 'NarwhalLeads-Backend'

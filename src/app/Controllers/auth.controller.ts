@@ -438,7 +438,7 @@ class AuthController {
           .status(401)
           .json({ data: { message: "User doesn't exist." } });
       }
-      const activeUser = await User.findByIdAndUpdate(
+      const activeUser:any = await User.findByIdAndUpdate(
         id,
         {
           isActive: isActive,
@@ -448,7 +448,21 @@ class AuthController {
           new: true,
         }
       );
-      return res.json({ data: activeUser });
+    const dataToShow={
+      id:activeUser.id,
+    firstName:activeUser.firstName,
+    lastName:activeUser.lastName,
+    email:activeUser.email,
+    role:activeUser.role,
+    isRyftCustomer:activeUser.isRyftCustomer,
+    isLeadbyteCustomer:activeUser.isLeadbyteCustomer,
+    autoChargeAmount:activeUser.autoChargeAmount,
+    businessDetailsId:activeUser.businessDetailsId,
+    userLeadsDetailsId:activeUser.userLeadsDetailsId,
+
+
+    }
+      return res.json({ data: dataToShow });
     } catch (error) {
       return res
         .status(500)
@@ -474,7 +488,21 @@ class AuthController {
           new: true,
         }
       );
-      return res.json({ data: inActiveUser });
+      const dataToShow={
+        id:inActiveUser?.id,
+      firstName:inActiveUser?.firstName,
+      lastName:inActiveUser?.lastName,
+      email:inActiveUser?.email,
+      role:inActiveUser?.role,
+      isRyftCustomer:inActiveUser?.isRyftCustomer,
+      isLeadbyteCustomer:inActiveUser?.isLeadbyteCustomer,
+      autoChargeAmount:inActiveUser?.autoChargeAmount,
+      businessDetailsId:inActiveUser?.businessDetailsId,
+      userLeadsDetailsId:inActiveUser?.userLeadsDetailsId,
+  
+  
+      }
+      return res.json({ data: dataToShow });
     } catch (error) {
       return res
         .status(500)

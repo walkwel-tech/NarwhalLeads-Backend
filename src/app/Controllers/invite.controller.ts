@@ -118,7 +118,7 @@ export class invitedUsersController {
         skip = 0;
       }
     try {
-      const invitedUsers = await User.find(dataToFind).populate("invitedById").sort({createdAt:-1}).skip(skip).limit(perPage);
+      const invitedUsers = await User.find(dataToFind,'-password').populate("invitedById").sort({createdAt:-1}).skip(skip).limit(perPage);
 
       // if (invitedUsers.length == 0) {
         // return res.json({ error: { message: "No Data Found" } });
@@ -174,6 +174,7 @@ export class invitedUsersController {
         return res.status(400).json({ error: { message: "No User Found" } });
       } else {
         const user=await User.findByIdAndUpdate(id,input,{new:true});
+
         return res.json({ data: user  });
       }
     } catch (error) {
