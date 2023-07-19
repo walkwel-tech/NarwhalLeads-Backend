@@ -23,7 +23,7 @@ leads.get('/leftDashboardChart',Auth,LeadsController.totalLeadCostDashboardChart
 leads.get('/dashboardTopCards',Auth,LeadsController.dashboardTopThreeCards)
 leads.patch('/re-order',Auth,LeadsController.reOrderIndex)
 leads.patch('/:id',Auth,LeadsController.update)
-leads.get('/',Auth,LeadsController.show),
+leads.get('/',Auth,LeadsController.index),
 leads.get('/reported-leads',Auth,LeadsController.showReportedLeads),
 leads.get('/export-csv-file-user-leads',Auth,LeadsController.export_csv_file_user_leads),
 leads.get('/export-csv-file-admin-leads',OnlyAdmins,LeadsController.export_csv_file_admin_leads),
