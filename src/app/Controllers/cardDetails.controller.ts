@@ -41,6 +41,7 @@ interface PaymentResponse {
   message: string;
   status: number;
   url?: string;
+  sessionID?:string
 }
 
 
@@ -493,13 +494,14 @@ export class CardDetailsControllers {
 
             let response: PaymentResponse= {
               message: "In progress",
-              status: 200
+              status: 200,
             };
 
             if (_res.data.status=="PendingAction") {
               response.message = "Further Action required";
               response.status = 302;
-              response.url = _res.data.requiredAction.url
+              response.url = _res.data.requiredAction.url;
+              response.sessionID=_res.data?.id
               // {
               //   message:
               //     ,
@@ -509,7 +511,8 @@ export class CardDetailsControllers {
               // }
             } else {
               response.message = "Payment processed successfully, credits will be reflect in few seconds.";
-              response.status = 200;              
+              response.status = 200;  
+              response.sessionID=_res.data?.id            
             }
 
 
@@ -637,8 +640,7 @@ export class CardDetailsControllers {
         const card = await RyftPaymentMethods.findOne({
           paymentMethod: input.data?.paymentMethod?.id,
         });
-        const a=await CardDetails.findByIdAndUpdate(card?.cardId,{status:PAYMENT_SESSION.SUCCESS})
-        console.log("🚀 ~ file: ~ a:", a)
+        await CardDetails.findByIdAndUpdate(card?.cardId,{status:PAYMENT_SESSION.SUCCESS})
         addCreditsToBuyer({
           buyerId: userId?.buyerId,
           fixedAmount: parseInt(input.data?.amount)/100,
@@ -810,6 +812,7 @@ export class CardDetailsControllers {
         // console.log(error);
       });
   };
+
   static ryftPaymentLogger = async (
     req: Request,
     res: Response
