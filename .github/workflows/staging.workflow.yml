@@ -51,7 +51,7 @@ jobs:
           source: "dist.zip"
           target: ${{ env.BUILD_DIR_PATH }}
 
-      - name: Extracting...
+      - name: Unzip
         uses: appleboy/ssh-action@v0.1.9
         with:
           host: ${{ env.SV_IP_ADDRESS }}
