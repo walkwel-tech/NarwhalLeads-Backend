@@ -12,5 +12,8 @@ export interface CardDetailsInterface extends Document {
   isDefault:boolean;
   createdAt: Date;
   isDeleted: boolean;
+  paymentMethod: string;
+  paymentSessionID: string;
+  status: string;
 
 }

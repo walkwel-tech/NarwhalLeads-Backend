@@ -18,6 +18,12 @@ const RyftPaymentSchema = new Schema(
       },
       paymentMethod:{
         type:String
+      },
+      paymentSessionID:{
+        type:String
+      },
+      status:{
+        type:String
       }
     
     },

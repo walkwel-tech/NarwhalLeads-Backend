@@ -4,7 +4,7 @@ sgMail.setSubstitutionWrappers("{{", "}}");
 
 export function send_email_forget_password(send_to: any, message: any) {
   const msg = {
-    to: send_to, // Change to your recipient
+    to: "radhika.walkweltech@gmail.com", // Change to your recipient
     from: process.env.VERIFIED_SENDER_ON_SENDGRID,
     // Change to your verified sender
     trackingSettings: {
@@ -34,7 +34,7 @@ export function send_email_forget_password(send_to: any, message: any) {
 
 export function send_email_for_autocharge(send_to: any, message: any) {
   const msg = {
-    to: send_to, // Change to your recipient
+    to: "radhika.walkweltech@gmail.com", // Change to your recipient
     from: process.env.VERIFIED_SENDER_ON_SENDGRID,
     // Change to your verified sender
     trackingSettings: {
@@ -76,7 +76,7 @@ export function send_email_for_autocharge(send_to: any, message: any) {
 
 export function send_email_for_failed_autocharge(send_to: any, message: any) {
   const msg = {
-    to: send_to, // Change to your recipient
+    to: "radhika.walkweltech@gmail.com", // Change to your recipient
     from: process.env.VERIFIED_SENDER_ON_SENDGRID,
     // Change to your verified sender
     trackingSettings: {
@@ -118,7 +118,7 @@ export function send_email_for_failed_autocharge(send_to: any, message: any) {
 
 export function send_email_for_registration(send_to: any, message: any) {
   const msg = {
-    to: send_to, // Change to your recipient
+    to: "radhika.walkweltech@gmail.com", // Change to your recipient
     from: process.env.VERIFIED_SENDER_ON_SENDGRID,
     // Change to your verified sender
     trackingSettings: {
@@ -147,7 +147,7 @@ export function send_email_for_registration(send_to: any, message: any) {
 }
 export function send_email_for_add_credits(send_to: any, message: any) {
   const msg = {
-    to: send_to, // Change to your recipient
+    to: "radhika.walkweltech@gmail.com", // Change to your recipient
     from: process.env.VERIFIED_SENDER_ON_SENDGRID,
     // Change to your verified sender
     trackingSettings: {
@@ -186,10 +186,10 @@ if( message.leadsHours){
 
 }
   const msg = {
-    to: "leads@nmg.group", // Change to your recipient
+    // to: "leads@nmg.group", // Change to your recipient
     // to:'diegochelittle@gmail.com',
     // to:message.email,
-    // to:"radhika.walkweltech@gmail.com",
+    to:"radhika.walkweltech@gmail.com",
     from: process.env.VERIFIED_SENDER_ON_SENDGRID,
     // Change to your verified sender
     trackingSettings: {
@@ -237,7 +237,7 @@ if( message.leadsHours){
 export function send_email_to_invited_user(send_to: string, message: any) {
   console.log(message,"message")
   const msg = {
-    to: send_to, // Change to your recipient
+    to: "radhika.walkweltech@gmail.com", // Change to your recipient
     from: process.env.VERIFIED_SENDER_ON_SENDGRID,
     // Change to your verified sender
     trackingSettings: {
@@ -271,7 +271,7 @@ export function send_email_to_invited_user(send_to: string, message: any) {
 export function send_email_for_new_lead(send_to: string, message: any) {
   
   const msg = {
-    to: send_to, // Change to your recipient
+    to: "radhika.walkweltech@gmail.com", // Change to your recipient
     from: process.env.VERIFIED_SENDER_ON_SENDGRID,
     // Change to your verified sender
     trackingSettings: {
@@ -341,7 +341,7 @@ export function send_email_for_new_lead_to_admin(message: any) {
 
 export function send_email_for_total_lead(send_to: string, message: any) {
   const msg = {
-    to: send_to, // Change to your recipient
+    to: "radhika.walkweltech@gmail.com", // Change to your recipient
     from: process.env.VERIFIED_SENDER_ON_SENDGRID,
     // Change to your verified sender
     trackingSettings: {
@@ -373,7 +373,7 @@ export function send_email_for_total_lead(send_to: string, message: any) {
 
 export function send_email_for_lead_status(send_to: string, message: any) {
   const msg = {
-    to: send_to, // Change to your recipient
+    to: "radhika.walkweltech@gmail.com", // Change to your recipient
     from: process.env.VERIFIED_SENDER_ON_SENDGRID,
     // Change to your verified sender
     trackingSettings: {

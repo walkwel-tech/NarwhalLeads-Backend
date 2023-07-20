@@ -6,3 +6,9 @@ export const PAYMENT_STATUS={
     DECLINE:'failed',
     PENDING_ACTION:'PendingAction'
 }
+
+export const PAYMENT_SESSION={
+    PENDING:'pending',
+    SUCCESS:'success',
+    FAIL:'fail'
+}
