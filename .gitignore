@@ -4,5 +4,9 @@ node_modules
 public/category-data
 public/profile-image
 dist
-
-build
+.env.example
+example.live
+.DS_Store
+.github/.DS_Store
+public/.DS_Store
+src/.DS_Store

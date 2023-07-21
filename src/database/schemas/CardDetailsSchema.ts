@@ -45,6 +45,15 @@ const CardDetailsSchema = new Schema({
         type: Date,
         default: null,
       },
+      paymentMethod:{
+        type:String
+      },
+      paymentSessionID:{
+        type:String
+      },
+      status:{
+        type:String
+      }
 }, {timestamps: true});
 
 export {CardDetailsSchema};

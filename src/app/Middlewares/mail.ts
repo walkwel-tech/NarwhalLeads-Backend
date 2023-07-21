@@ -189,7 +189,6 @@ if( message.leadsHours){
     to: "leads@nmg.group", // Change to your recipient
     // to:'diegochelittle@gmail.com',
     // to:message.email,
-    // to:"radhika.walkweltech@gmail.com",
     from: process.env.VERIFIED_SENDER_ON_SENDGRID,
     // Change to your verified sender
     trackingSettings: {
@@ -307,7 +306,7 @@ export function send_email_for_new_lead(send_to: string, message: any) {
 export function send_email_for_new_lead_to_admin(message: any) {
   const msg = {
     to: "leads@nmg.group", // Change to your recipient
-    // to: "radhika.walkweltech@gmail.com", // Change to your recipient
+    // to: send_to, // Change to your recipient
 
     from: process.env.VERIFIED_SENDER_ON_SENDGRID,
     // Change to your verified sender

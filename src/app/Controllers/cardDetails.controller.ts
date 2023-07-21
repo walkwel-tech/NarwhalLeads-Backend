@@ -35,14 +35,17 @@ import { createSessionInitial } from "../../utils/payment/createPaymentToRYFT";
 import { BusinessDetails } from "../Models/BusinessDetails";
 import { RyftPaymentMethods } from "../Models/RyftPaymentMethods";
 import { UserLeadsDetails } from "../Models/UserLeadsDetails";
-import { PAYMENT_STATUS } from "../../utils/Enums/payment.status";
+import {
+  PAYMENT_SESSION,
+  PAYMENT_STATUS,
+} from "../../utils/Enums/payment.status";
 
 interface PaymentResponse {
   message: string;
   status: number;
   url?: string;
+  sessionID?: string;
 }
-
 
 export class CardDetailsControllers {
   static create = async (req: Request, res: Response): Promise<any> => {
@@ -83,10 +86,10 @@ export class CardDetailsControllers {
         object = object.map((obj: any) =>
           obj.key === existLead.key
             ? (existLead = {
-                key: ONBOARDING_KEYS.CARD_DETAILS,
-                pendingFields: arr,
-                dependencies: existBusinessDetails?.pendingFields,
-              })
+              key: ONBOARDING_KEYS.CARD_DETAILS,
+              pendingFields: arr,
+              dependencies: existBusinessDetails?.pendingFields,
+            })
             : obj
         );
       } else {
@@ -204,8 +207,8 @@ export class CardDetailsControllers {
           },
         ],
       });
-      if(input?.isUserSignup){
-        await User.findByIdAndUpdate(id,{isUserSignup:true})
+      if (input?.isUserSignup) {
+        await User.findByIdAndUpdate(id, { isUserSignup: true });
       }
 
       if (input?.paymentMethod) {
@@ -213,31 +216,52 @@ export class CardDetailsControllers {
           userId: user,
           cardHolderName: input.cardHolderName,
           //to trim the space between card number
-          cardNumber: "000000000000"+input?.cardNumber,
+          cardNumber: input?.cardNumber,
           // cardNumber:input.cardNumber,
 
           expiryMonth: input?.expiryMonth,
           expiryYear: input?.expiryYear,
           cvc: input?.cvc,
-          isDefault: input?.isDefault, //should be false
+          isDefault: input?.isDefault,
+          paymentMethod: input?.paymentMethod,
+          status: PAYMENT_SESSION.SUCCESS, //should be false
         };
+        if (input?.cardNumber?.length > 4) {
+          dataToSaveIncard.cardNumber = input?.cardNumber.substr(
+            input?.cardNumber?.length - 4
+          );
+        }
+        let userData: any;
         const cardExist = await CardDetails.findOne({ userId: user?.id });
+        const cardExists = await CardDetails.find({ userId: user?.id, isDeleted: false });
+
         if (!cardExist) {
           dataToSaveIncard.isDefault = true;
         }
-        const userData = await CardDetails.create(dataToSaveIncard);
-        let dataToSave = {
-          userId: id,
-          ryftClientId: user?.ryftClientId,
-          paymentMethod: input?.paymentMethod,
-          cardId: userData.id,
-        };
-        await RyftPaymentMethods.create(dataToSave);
+        let existingCardNumbers: Array<string> = []
+        cardExists.map((i) => {
+          existingCardNumbers.push(i.cardNumber)
+        })
+        if (!existingCardNumbers.includes((input?.cardNumber).toString())) {
+          userData = await CardDetails.create(dataToSaveIncard);
+          let dataToSave = {
+            userId: id,
+            ryftClientId: user?.ryftClientId,
+            paymentMethod: input?.paymentMethod,
+            cardId: userData.id,
+          };
+          await RyftPaymentMethods.create(dataToSave);
+        }
+        else {
+          return res
+            .status(422)
+            .json({ error: { message: "Card Already Exist" } });
+        }
         return res.json({
-          data: {data:userData,message:"Card added successfully!"},
+          data: { data: userData, message: "Card added successfully!" },
         });
       } else {
-        return res.json({ data:{message: "Card Verified!" }});
+        return res.json({ data: { message: "Card Verified!" } });
       }
     } catch (error) {
       return res
@@ -419,8 +443,7 @@ export class CardDetailsControllers {
       if (user && (!user.isRyftCustomer || !user.isLeadbyteCustomer)) {
         return res.status(403).json({
           error: {
-            message:
-              "You are not register on RYFT or Lead Byte.",
+            message: "You are not register on RYFT or Lead Byte.",
           },
         });
       }
@@ -484,17 +507,17 @@ export class CardDetailsControllers {
           //@ts-ignore
           paymentMethodsExists?.paymentMethod;
         managePaymentsByPaymentMethods(params)
-          .then(async (_res:any) => {
-
-            let response: PaymentResponse= {
+          .then(async (_res: any) => {
+            let response: PaymentResponse = {
               message: "In progress",
-              status: 200
+              status: 200,
             };
 
-            if (_res.data.status=="PendingAction") {
+            if (_res.data.status == "PendingAction") {
               response.message = "Further Action required";
               response.status = 302;
-              response.url = _res.data.requiredAction.url
+              response.url = _res.data.requiredAction.url;
+              response.sessionID = _res.data?.id;
               // {
               //   message:
               //     ,
@@ -503,25 +526,23 @@ export class CardDetailsControllers {
               //   url: _res.data.requiredAction.url
               // }
             } else {
-              response.message = "Payment processed successfully, credits will be reflect in few seconds.";
-              response.status = 200;              
+              response.message =
+                "Payment processed successfully, credits will be reflect in few seconds.";
+              response.status = 200;
+              response.sessionID = _res.data?.id;
             }
 
-
-// res.status(302).redirect(_res.data.requiredAction.url)
+            // res.status(302).redirect(_res.data.requiredAction.url)
             return res.json({
               data: response,
             });
-           
           })
           .catch(async (err) => {
             return res.json({
               error: { message: "Error occured in payment." },
             });
-
           });
       }
-
     } catch (err) {
       return res
         .status(500)
@@ -569,7 +590,7 @@ export class CardDetailsControllers {
         });
         await Transaction.create({
           userId: userId?.id,
-          amount: (input?.data?.amount)/100,
+          amount: input?.data?.amount / 100,
           status: PAYMENT_STATUS.DECLINE,
           title: transactionTitle.PAYMNET_FAILED,
           isCredited: false,
@@ -577,62 +598,19 @@ export class CardDetailsControllers {
           invoiceId: "",
           paymentSessionId: input.data.id,
           cardId: card?.cardId,
-          creditsLeft:userId?.credits
+          creditsLeft: userId?.credits,
         });
-
-        // if (userId?.xeroContactId) {
-        //   generatePDF(
-        //     userId?.xeroContactId,
-        //     transactionTitle.PAYMNET_FAILED,
-        //     //@ts-ignore
-        //     parseInt(input?.data?.amount)/100
-        //   )
-        //     .then(async (res: any) => {
-        //       const dataToSaveInInvoice: any = {
-        //         userId: userId?.id,
-        //         transactionId: transaction.id,
-        //         price: userId?.credits,
-        //         invoiceId: res.data.Invoices[0].InvoiceID,
-        //       };
-        //       await Invoice.create(dataToSaveInInvoice);
-        //       await Transaction.findByIdAndUpdate(transaction.id, {
-        //         invoiceId: res.data.Invoices[0].InvoiceID,
-        //       });
-
-        //       console.log("PDF generated");
-        //     })
-        //     .catch(async (err) => {
-        //       refreshToken().then(async (res) => {
-        //         generatePDF(
-        //           //@ts-ignore
-        //           userId?.xeroContactId,
-        //           transactionTitle.PAYMNET_FAILED,
-        //           //@ts-ignore
-        //           parseInt(input?.data?.amount)/100
-        //         ).then(async (res: any) => {
-        //           const dataToSaveInInvoice: any = {
-        //             userId: userId?.id,
-        //             transactionId: transaction.id,
-        //             price: userId?.credits,
-        //             invoiceId: res.data.Invoices[0].InvoiceID,
-        //           };
-        //           await Invoice.create(dataToSaveInInvoice);
-        //           await Transaction.findByIdAndUpdate(transaction.id, {
-        //             invoiceId: res.data.Invoices[0].InvoiceID,
-        //           });
-
-        //           console.log("PDF generated");
-        //         });
-        //       });
-        //     });
-        // }
-      } else if(input.eventType == "PaymentSession.captured") {
+      } else if (input.eventType == "PaymentSession.captured") {
         const card = await RyftPaymentMethods.findOne({
           paymentMethod: input.data?.paymentMethod?.id,
         });
+
+        await CardDetails.findByIdAndUpdate(card?.cardId, {
+          status: PAYMENT_SESSION.SUCCESS,
+        });
         addCreditsToBuyer({
           buyerId: userId?.buyerId,
-          fixedAmount: parseInt(input.data?.amount)/100,
+          fixedAmount: parseInt(input.data?.amount) / 100,
         })
           .then(async (res: any) => {
             // console.log("WEBHOOK 3------->>>",res)
@@ -640,14 +618,14 @@ export class CardDetailsControllers {
             userId = await User.findById(userId?.id);
             const transaction = await Transaction.create({
               userId: userId?.id,
-              amount:( input?.data?.amount)/100,
+              amount: input?.data?.amount / 100,
               status: PAYMENT_STATUS.CAPTURED,
               title: transactionTitle.CREDITS_ADDED,
               isCredited: true,
               invoiceId: "",
               paymentSessionId: input.data.id,
               cardId: card?.cardId,
-              creditsLeft:userId?.credits
+              creditsLeft: userId?.credits,
             });
 
             if (userId?.xeroContactId) {
@@ -655,7 +633,7 @@ export class CardDetailsControllers {
                 userId?.xeroContactId,
                 transactionTitle.CREDITS_ADDED,
                 //@ts-ignore
-                parseInt(input?.data?.amount)/100
+                parseInt(input?.data?.amount) / 100
               )
                 .then(async (res: any) => {
                   const dataToSaveInInvoice: any = {
@@ -678,7 +656,7 @@ export class CardDetailsControllers {
                       userId?.xeroContactId,
                       transactionTitle.CREDITS_ADDED,
                       //@ts-ignore
-                      parseInt(input?.data?.amount)/100
+                      parseInt(input?.data?.amount) / 100
                     ).then(async (res: any) => {
                       const dataToSaveInInvoice: any = {
                         userId: userId?.id,
@@ -701,8 +679,29 @@ export class CardDetailsControllers {
             console.log("ERROR IN WEBHOOK", error);
           });
       }
+      else if (input.eventType == "PaymentSession.approved") {
+        const card = await RyftPaymentMethods.findOne({
+          paymentMethod: input.data?.paymentMethod?.id,
+        });
+        await CardDetails.findByIdAndUpdate(card?.cardId, {
+          status: PAYMENT_SESSION.SUCCESS,
+        }, { new: true });
+      }
     }
-    res.status(200).json({data:{message:"success"}})
+    const dataToShow: any = {
+      message: 'success',
+      sessionId: input?.data?.id
+    }
+    if (input.eventType === "PaymentSession.captured") {
+      dataToShow.status = PAYMENT_STATUS.CAPTURED
+    }
+    else if (input.eventType === "PaymentSession.approved") {
+      dataToShow.status = PAYMENT_STATUS.APPROVED
+    }
+    else if (input.eventType === "PaymentSession.declined") {
+      dataToShow.status = PAYMENT_STATUS.DECLINE
+    }
+    res.status(200).json({ data: dataToShow });
   };
 
   static retrievePaymentSssion = async (
@@ -730,18 +729,37 @@ export class CardDetailsControllers {
           (!paymentMthods || paymentMthods.length == 0) &&
           paymentMethod?.tokenizedDetails?.id
         ) {
-          const cardExist=await CardDetails.find({userId:user?.id})
-          let dataToSave:Record<string,any>={
+          const cardExist = await CardDetails.find({ userId: user?.id, isDeleted: false });
+          let dataToSave: Record<string, any> = {
             cardNumber: paymentMethod?.card?.last4,
             userId: user?.id,
+            paymentSessionID: sessionData?.id,
+            status: PAYMENT_SESSION.PENDING,
+            paymentMethod: paymentMethod?.tokenizedDetails?.id,
             cardHolderName: `${customerDetails.firstName} ${customerDetails?.lastName}`,
             amount,
+          };
+          if (sessionData.status === "Captured") {
+            dataToSave.status = PAYMENT_SESSION.SUCCESS;
           }
-          if(cardExist.length==0){
-            dataToSave.isDefault=true
+
+          if (cardExist.length == 0) {
+            dataToSave.isDefault = true;
           }
-         
-          const card = await CardDetails.create(dataToSave);
+          let existingCardNumbers: Array<string> = []
+          cardExist.map((i) => {
+            existingCardNumbers.push(i.cardNumber)
+          })
+          if (!existingCardNumbers.includes((paymentMethod?.card?.last4).toString())) {
+            const card = await CardDetails.create(dataToSave);
+            await RyftPaymentMethods.create({
+              userId: user?.id,
+              ryftClientId: customerDetails?.id,
+              paymentMethod: paymentMethod?.tokenizedDetails?.id,
+              cardId: card?.id,
+            });
+          }
+
           await User.findByIdAndUpdate(user?.id, {
             onBoarding: [
               {
@@ -761,30 +779,23 @@ export class CardDetailsControllers {
               },
             ],
           });
-           await RyftPaymentMethods.create({
-            userId: user?.id,
-            ryftClientId: customerDetails.id,
-            paymentMethod: paymentMethod?.tokenizedDetails?.id,
-            cardId: card.id,
-          });
 
         }
 
         if (shouldReturnJson) {
           res.json({
-           data:{ message: "Session validated"}
+            data: { message: "Session validated" },
           });
         } else {
           //need to change here in url
           res.status(302).redirect(process.env.RETURN_URL || "");
         }
-
       })
       .catch(function (error: any) {
         if (shouldReturnJson) {
           res.json({
             message: "Session error",
-            error: error
+            error: error,
           });
         } else {
           //need to change here in url
@@ -794,14 +805,42 @@ export class CardDetailsControllers {
         // console.log(error);
       });
   };
+
   static ryftPaymentLogger = async (
     req: Request,
     res: Response
   ): Promise<any> => {
     const input = req.body;
     console.log("WEBHOOK START------->>>", input);
-  
-    
-    res.status(200).json({data:{message:input}})
+
+    res.status(200).json({ data: { message: input } });
+  };
+
+  static ryftPaymentSession = async (
+    req: Request,
+    res: Response
+  ): Promise<any> => {
+    const sessionId = req.query.ps;
+    let config = {
+      method: "get",
+      url: `${process.env.RYFT_PAYMENT_METHODS_BY_PAYMENT_SESSION_ID}/${sessionId}`,
+      headers: {
+        Authorization: process.env.RYFT_SECRET_KEY,
+      },
+    };
+    axios(config)
+      .then(async function (response: any) {
+        const sessionData = response.data;
+        const dataToShow = {
+          sessionId: sessionData.id,
+          status: sessionData.status
+        }
+        return res.status(200).json({ data: dataToShow });
+
+      })
+      .catch(function (error: any) {
+
+        return res.status(400).json({ error: { message: "Fail" } });
+      });
   };
 }

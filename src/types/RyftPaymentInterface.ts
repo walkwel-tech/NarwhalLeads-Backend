@@ -5,5 +5,7 @@ export interface RyftPaymentInterface extends Document {
   userId: Types.ObjectId;
   ryftClientId: string;
   cardId: Types.ObjectId;
-  paymentMethod: string
+  paymentMethod: string;
+  paymentSessionID: string;
+  status: string;
 }

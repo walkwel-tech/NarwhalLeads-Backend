@@ -22,8 +22,11 @@
   </div>
 </body>
 <script type="text/javascript">
-  const clientSecret = "ps_01H4Q8DM6VR067DE4627CESFQC_secret_af97d07d-189b-40ce-85a5-b5b48f37121a"; // fetch from your backend
+  const clientSecret = "ps_01H5A5V5K7VAAPDY42XKNKBQWE_secret_048724a2-41a5-453e-9287-6723f37fd8ca"; // fetch from your backend
   Ryft.init({
+   
+        // publicKey: "pk_mdVWR4Kn8Cr+mx/Wy6xhnmRAf8A8oSPrJ0drdWIXKDGfqAEuxeiJ6m8PiX+XESps",
+
     publicKey: "pk_sandbox_KsBhr+1YuoJytmfdNgPxaZ5ekp0uKVVpGZq7Qz0r5W0ESpQ3ZIBJmpNr3nsUyYAm",
     clientSecret,
     usage: 'payment', //default, the customer is paying
@@ -43,6 +46,7 @@
     e.preventDefault();
     Ryft.attemptPayment()
       .then((paymentSession) => {
+        console.log("payment---->>>>",paymentSession)
         if (
           paymentSession.status === 'Approved' ||
           paymentSession.status === 'Captured'
