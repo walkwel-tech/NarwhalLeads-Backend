@@ -70,8 +70,7 @@ jobs:
           key: ${{ env.SSH_PRIVATE_KEY }}
           passphrase: ${{ env.SV_KEY_PASS }}
           script: |
-            cd ${{ env.BUILD_DIR_PATH }}
-            pm2 restart all --update-env
+            pm2 restart all --update-env            
 
       - name: Cleanup
         uses: appleboy/ssh-action@v0.1.9
