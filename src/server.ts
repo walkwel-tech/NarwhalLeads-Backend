@@ -24,10 +24,11 @@ import {Auth} from "./app/Middlewares";
 import { FileEnum } from "./types/FileEnum";
 import TransactionsRoutes from "./routes/transaction.routes";
 import { autoUpdateTasks } from "./app/AutoUpdateTasks";
-import path from "path";
 import TermsAndConditionsRoutes from "./routes/termsAndConditions.routes";
 import freeCreditsLinkRoutes from "./routes/FreeCreditsLink.routes";
 // import {  dataCleaning } from "./dataCleaning";
+const swaggerDocument = require('../Swagger.json'); // Replace with the path to your actual Swagger document
+const swaggerUi = require('swagger-ui-express');
 
 let version="0.1.2b"
 export class Server {
@@ -56,6 +57,8 @@ export class Server {
         this.app.use(express.urlencoded({limit: "50mb", extended: true}));
         // this.app.use(helmet());
         this.app.use(cors());
+        this.app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
+
        
     }
 
@@ -86,11 +89,10 @@ export class Server {
             res.status(200).json({message: `App running on version ${version}`});
         });
 
-        this.app.get("*", (req: Request, res: Response) => {
-            res.sendFile(path.join(__dirname, "../build", "index.html"));
-            // res.status(200).json({message: `App running on version ${version}`});
-        });
-     
+        // this.app.get("*", (req: Request, res: Response) => {
+        //     res.sendFile(path.join(__dirname, "../build", "index.html"));
+        //     // res.status(200).json({message: `App running on version ${version}`});
+        // });     
        
 
     }
@@ -108,6 +110,6 @@ export class Server {
             console.log(`:rocket: HTTP Server started at port ${this.port}`);
         });
         autoUpdateTasks()
-        // dataCleaning()
+
     }
 }
