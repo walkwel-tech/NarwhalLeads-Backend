@@ -12,7 +12,7 @@ export default function OnlyAdminOrUserLogin(
   return passport.authenticate(
     "jwt",
     { session: false },
-    (err, payload: UserInterface) => {
+    (err:any, payload: UserInterface) => {
       if (err) {
         return res
           .status(500)
