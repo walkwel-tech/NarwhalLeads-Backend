@@ -9,7 +9,7 @@ export default function Auth(req: Request, res: Response, next: NextFunction) {
   return passport.authenticate(
     "jwt",
     { session: false },
-    async (err, payload: UserInterface) => {
+    async (err:any, payload: UserInterface) => {
       if (err) {
         return res
           .status(500)
