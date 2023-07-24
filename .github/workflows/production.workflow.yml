@@ -11,7 +11,6 @@ env:
   SV_IP_ADDRESS: ${{ secrets.SV_IP_ADDRESS }}
   SV_USER: ${{ secrets.SV_USER }}
   BUILD_DIR_PATH: ${{ vars.BUILD_DIR_PATH }}
-  REPO_DIR_NAME: ${{ vars.REPO_DIR_NAME }}
   CI: false
 
 jobs:
@@ -62,6 +61,6 @@ jobs:
           script: |
             cd ${{ env.BUILD_DIR_PATH }}
             unzip -o dist.zip
-            pm2 restart all
+            pm2 restart all --update-env
             rm dist.zip
-            rm -rf env.REPO_DIR_NAME
+            rm -rf 'NarwhalLeads-Backend'
