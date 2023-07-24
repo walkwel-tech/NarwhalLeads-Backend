@@ -35,15 +35,29 @@ export class AdminSettingsController {
     const input = req.body;
     try {
       const data = await AdminSettings.findOne();
-      delete input.leadByteKey;
-      const updatedData = await AdminSettings.findByIdAndUpdate(data?.id, {
-        ...input,
-      });
-      return res.json({ message: "successfuly updated!", data: updatedData });
+      delete input?.leadByteKey;
+      if (data) {
+        const updatedData = await AdminSettings.findByIdAndUpdate(data?.id, {
+          ...input,
+        });
+        return res.json({ message: "successfuly updated!", data: updatedData });
+      }
+      else {
+        let dataToSave: any = {
+          amount: input.amount,
+          thresholdValue: input.thresholdValue,
+          defaultLeadAmount: input.defaultLeadAmount,
+          minimumUserTopUpAmount: ""
+
+        };
+        await AdminSettings.create(dataToSave);
+        return res.json({ message: "successfuly Created!", data: dataToSave });
+      }
+
     } catch (error) {
       return res
         .status(500)
-        .json({ error: { message: "Something went wrong." } });
+        .json({ error: { message: "Something went wrong.", error } });
     }
   };
 
@@ -142,7 +156,7 @@ export class AdminSettingsController {
     //@ts-ignore
     try {
       const Preference = await ClientTablePreference.findOne()
-      Preference?.columns.sort((a:any, b:any) => a.index - b.index);
+      Preference?.columns.sort((a: any, b: any) => a.index - b.index);
       return res.json({ data: Preference });
     } catch (error) {
       return res
@@ -151,5 +165,5 @@ export class AdminSettingsController {
     }
   };
 
- 
+
 }

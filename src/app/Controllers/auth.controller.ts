@@ -27,9 +27,10 @@ import {
 } from "../Middlewares/mail";
 import { AccessToken } from "../Models/AccessToken";
 import { AdminSettings } from "../Models/AdminSettings";
-import { BusinessDetails } from "../Models/BusinessDetails";
+// import { BusinessDetails } from "../Models/BusinessDetails";
 import { ForgetPassword } from "../Models/ForgetPassword";
 import { FreeCreditsLink } from "../Models/freeCreditsLink";
+import { PROMO_LINK } from "../../utils/Enums/promoLink.enum";
 const fs = require("fs");
 
 class AuthController {
@@ -61,74 +62,93 @@ class AuthController {
         .json({ error: { message: "VALIDATIONS_ERROR", info: errorsInfo } });
     }
     try {
-      if (input.code) {
-        const checkCode = await FreeCreditsLink.findOne({ code: input.code });
-        if (checkCode?.isDisabled) {
-          return res.status(400).json({ data: { message: "Link Expired!" } });
-        }
-        if (!checkCode) {
-          return res.status(400).json({ data: { message: "Link Invalid!" } });
-        }
-      }
-
+     
       const user = await User.findOne({ email: input.email });
       if (!user) {
+       
         const salt = genSaltSync(10);
         const hashPassword = hashSync(input.password, salt);
         const showUsers: any = await User.findOne()
           .sort({ rowIndex: -1 })
           .limit(1);
-        const createdUser = await User.create({
-          firstName: input.firstName,
-          lastName: input.lastName,
-          email: input.email,
-          phoneNumber: input.phoneNumber,
-          password: hashPassword,
-          role: RolesEnum.USER,
-          // leadCost: adminSettings?.defaultLeadAmount,
-          autoChargeAmount: adminSettings?.amount,
-          isActive: true, //need to delete
-          isVerified: true, //need to delete
-          autoCharge: true,
-          rowIndex: showUsers?.rowIndex + 1 || 0,
-          paymentMethod: paymentMethodEnum.MANUALLY_ADD_CREDITS_METHOD,
-          onBoarding: [
-            {
-              key: ONBOARDING_KEYS.BUSINESS_DETAILS,
-              pendingFields: [
-                "businessIndustry",
-                "businessName",
-                "businessSalesNumber",
-                "businessPostCode",
-                "businessLogo",
-                "address1",
-                "businessOpeningHours",
-                "businessCity",
-              ],
-              dependencies: [],
-            },
-            {
-              key: ONBOARDING_KEYS.LEAD_DETAILS,
-              pendingFields: [
-                "daily",
-                "leadSchedule",
-                "postCodeTargettingList",
-              ],
-              dependencies: ["businessIndustry"],
-            },
-            {
-              key: ONBOARDING_KEYS.CARD_DETAILS,
-              pendingFields: [
-                // "cardHolderName",
-                "cardNumber",
-                // "expiryMonth",
-                // "expiryYear",
-                // "cvc",
-              ],
-              dependencies: [],
-            },
-          ],
-        });
+          let checkCode ;
+          let codeExists;
+          if (input.code) {
+            checkCode = await FreeCreditsLink.findOne({ code: input.code });
+            if (checkCode?.isDisabled) {
+              return res.status(400).json({ data: { message: "Link Expired!" } });
+            }
+            if (!checkCode) {
+              return res.status(400).json({ data: { message: "Link Invalid!" } });
+            }
+            if(checkCode.maxUseCounts>=checkCode.useCounts){
+              return res.status(400).json({ data: { message: "Link has reached maximum limit!" } });
+            }
+            else{
+              codeExists=true
+            }
+          }
+    
+          let dataToSave : any={
+            firstName: input.firstName,
+            lastName: input.lastName,
+            email: input.email,
+            phoneNumber: input.phoneNumber,
+            password: hashPassword,
+            role: RolesEnum.USER,
+            // leadCost: adminSettings?.defaultLeadAmount,
+            autoChargeAmount: adminSettings?.amount,
+            isActive: true, //need to delete
+            isVerified: true, //need to delete
+            autoCharge: true,
+            rowIndex: showUsers?.rowIndex + 1 || 0,
+            paymentMethod: paymentMethodEnum.MANUALLY_ADD_CREDITS_METHOD,
+            onBoarding: [
+              {
+                key: ONBOARDING_KEYS.BUSINESS_DETAILS,
+                pendingFields: [
+                  "businessIndustry",
+                  "businessName",
+                  "businessSalesNumber",
+                  "businessPostCode",
+                  "businessLogo",
+                  "address1",
+                  "businessOpeningHours",
+                  "businessCity",
+                ],
+                dependencies: [],
+              },
+              {
+                key: ONBOARDING_KEYS.LEAD_DETAILS,
+                pendingFields: [
+                  "daily",
+                  "leadSchedule",
+                  "postCodeTargettingList",
+                ],
+                dependencies: ["businessIndustry"],
+              },
+              {
+                key: ONBOARDING_KEYS.CARD_DETAILS,
+                pendingFields: [
+                  // "cardHolderName",
+                  "cardNumber",
+                  // "expiryMonth",
+                  // "expiryYear",
+                  // "cvc",
+                ],
+                dependencies: [],
+              },
+            ],
+          }
+          if(codeExists && checkCode?.topUpAmount===0){
+            dataToSave.premiumUser=PROMO_LINK.PREMIUM_USER_NO_TOP_UP
+            dataToSave.promoLinkId=checkCode?.id
+          }
+          else if(codeExists && checkCode?.topUpAmount!=0){
+            dataToSave.premiumUser=PROMO_LINK.PREMIUM_USER_TOP_UP
+            dataToSave.promoLinkId=checkCode?.id
+          }
+        const createdUser = await User.create(dataToSave);
         if (input.code) {
           const checkCode: any = await FreeCreditsLink.findOne({
             code: input.code,
@@ -139,7 +159,7 @@ class AuthController {
             usedAt: new Date(),
             useCounts: checkCode?.useCounts + 1,
           };
-          await FreeCreditsLink.findByIdAndUpdate(checkCode?.id, dataToSave);
+       await FreeCreditsLink.findByIdAndUpdate(checkCode?.id, dataToSave,{new:true});
         }
         send_email_for_registration(input.email, input.firstName);
 
@@ -171,10 +191,8 @@ class AuthController {
               firstName: user.firstName,
               lastName: user.lastName,
               userId: user.id,
-            };
-          
-
-           
+            };      
+         
             createCustomerOnRyft(params)
               .then(async () => {
                 const token: any = await AccessToken.findOne();
@@ -218,18 +236,11 @@ class AuthController {
                         );
                       });
                   });
+                  //@ts-ignore
+                  user.password =undefined
                 res.send({
                   message: "successfully registered",
-                  data: {
-                    _id: user.id,
-                    firstName: user.firstName,
-                    lastName: user.lastName,
-                    email: user.email,
-                    phoneNumber: user.phoneNumber,
-                    role: user.role,
-                    credits: adminSettings?.amount,
-                    authToken,
-                  },
+                  data: user,token:authToken,
                 });
               })
               .catch(async () => {
@@ -320,24 +331,14 @@ class AuthController {
           });
         }
         const token = generateAuthToken(user);
-        const business = await BusinessDetails.findById(user.businessDetailsId);
-        const promoLink: any = await FreeCreditsLink.findOne({
-          user: { $elemMatch: { userId: user._id } },
-        });
+        // const business = await BusinessDetails.findById(user.businessDetailsId);
+        // const promoLink: any = await FreeCreditsLink.findOne({
+        //   user: { $elemMatch: { userId: user._id } },
+        // });
+        //@ts-ignore
+        user.password =undefined
         return res.json({
-          data: {
-            _id: user._id,
-            firstName: user.firstName,
-            lastName: user.lastName,
-            email: user.email,
-            role: user.role,
-            credits: user.credits,
-            onBoarding: user?.onBoarding,
-            businessName: business?.businessName,
-            topUpAmount: promoLink?.topUpAmount || null,
-            freeCredits: promoLink?.freeCredits || null,
-            token,
-          },
+          data: user,token
         });
       }
     )(req, res);

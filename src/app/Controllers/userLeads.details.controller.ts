@@ -13,6 +13,9 @@ import {
 import { BusinessDetails } from "../Models/BusinessDetails";
 import { User } from "../Models/User";
 import { UserLeadsDetails } from "../Models/UserLeadsDetails";
+import { FreeCreditsLink } from "../Models/freeCreditsLink";
+import { PROMO_LINK } from "../../utils/Enums/promoLink.enum";
+import { addCreditsToBuyer } from "../../utils/payment/addBuyerCredit";
 
 export class UserLeadsController {
   static create = async (req: Request, res: Response) => {
@@ -138,6 +141,20 @@ export class UserLeadsController {
           registrationMailSentToAdmin: true,
         });
       }
+      if(user.premiumUser && user.premiumUser==PROMO_LINK.PREMIUM_USER_NO_TOP_UP){
+              const promoLink=await FreeCreditsLink.findById(user?.promoLinkId)
+              const params={
+                buyerId:user.buyerId,
+                freeCredits:promoLink?.freeCredits
+              }
+              addCreditsToBuyer(params).then((_res)=>{
+                console.log("FREE CREDITS ADDED WITH SIGNUP CODE")
+              }).catch((error)=>{
+                console.log("ERROR DURING ADDING FREE CREDITS WITH SIGNUP CODE")
+              })
+
+
+      }
       return res.json({ data: details });
     } catch (error) {
       console.log(error);
@@ -228,13 +245,19 @@ export class UserLeadsController {
     req: Request,
     res: Response
   ): Promise<any> => {
-    console.log("hello");
 
     const id = req.params.id;
     const input = req.body;
     try {
       const details = await UserLeadsDetails.findById(id);
       const user: any = await User.findById(details?.userId);
+      if(input.zapierUrl){
+        await UserLeadsDetails.findByIdAndUpdate(
+          user?.userLeadsDetailsId,
+          { zapierUrl: input.zapierUrl, sendDataToZapier:true },
+
+          { new: true }
+        );      }
       if (!details) {
         return res
           .status(404)
