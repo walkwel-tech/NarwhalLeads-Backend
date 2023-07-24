@@ -47,17 +47,12 @@ export const autoChargePayment = async () => {
           isDeleted: false,
         });
         const params: any = {
-          fixedAmount: i?.autoChargeAmount,
+          fixedAmount: i?.autoChargeAmount || fixedAmount.amount ,
           email: i.email,
           cardNumber: card?.cardNumber,
-          expiryMonth: card?.expiryMonth,
-          expiryYear: card?.expiryYear,
-          cvc: card?.cvc,
           buyerId: i.buyerId,
           clientId:i?.ryftClientId,
           cardId:card.id
-
-
         };
         const text = {
           firstName: i.firstName,
@@ -143,56 +138,62 @@ export const autoChargePayment = async () => {
         else{
          
           //@ts-ignore
-          params.paymentId=paymentMethodsExists?.paymentMethod?.tokenizedDetails?.id
+          params.paymentId=paymentMethodsExists?.paymentMethod
+
           managePaymentsByPaymentMethods(params)
           .then(async (res) => {
-            if (!i.xeroContactId) {
-              console.log("xeroContact ID not found. Failed to generate pdf.");
-            }
-            const dataToSave: any = {
-              userId: i.id,
-              cardId: card?.id,
-              amount: i?.autoChargeAmount,
-              title: transactionTitle.CREDITS_ADDED,
-              isCredited: true,
-              status: "success",
-            };
-            const transaction = await Transaction.create(dataToSave);
-            if (i.xeroContactId) {
-              generatePDF(
-                i?.xeroContactId,
-                transactionTitle.CREDITS_ADDED,
-                i?.autoChargeAmount
-              )
-                .then(async (res:any) => {
-                  const dataToSaveInInvoice: any = {
-                    userId: i.id,
-                    transactionId: transaction.id,
-                    price: i?.autoChargeAmount,
-                    invoiceId: res.data.Invoices[0].InvoiceID,
-                  };
-                  await Invoice.create(dataToSaveInInvoice);
-                  console.log("payment success!!!!!!!!!!!!!");
-                })
-                .catch((error) => {
-                  refreshToken().then(async (res) => {
-                    generatePDF(
-                      i?.xeroContactId,
-                      transactionTitle.CREDITS_ADDED,
-                      i?.autoChargeAmount
-                    ).then(async (res:any) => {
-                      const dataToSaveInInvoice: any = {
-                        userId: i.id,
-                        transactionId: transaction.id,
-                        price:i?.autoChargeAmount,
-                        invoiceId: res.data.Invoices[0].InvoiceID,
-                      };
-                      await Invoice.create(dataToSaveInInvoice);
-                      console.log("payment success!!!!!!!!!!!!!");
+            addCreditsToBuyer(params).then(async (res)=>{
+              console.log("credits added")
+              if (!i.xeroContactId) {
+                console.log("xeroContact ID not found. Failed to generate pdf.");
+              }
+              const dataToSave: any = {
+                userId: i.id,
+                cardId: card?.id,
+                amount: i?.autoChargeAmount || fixedAmount.amount,
+                title: transactionTitle.CREDITS_ADDED,
+                isCredited: true,
+                status: "success",
+              };
+              const transaction = await Transaction.create(dataToSave);
+              if (i.xeroContactId) {
+                generatePDF(
+                  i?.xeroContactId,
+                  transactionTitle.CREDITS_ADDED,
+                  (i?.autoChargeAmount || fixedAmount.amount)
+                )
+                  .then(async (res:any) => {
+                    const dataToSaveInInvoice: any = {
+                      userId: i.id,
+                      transactionId: transaction.id,
+                      price: i?.autoChargeAmount || fixedAmount.amount,
+                      invoiceId: res.data.Invoices[0].InvoiceID,
+                    };
+                    await Invoice.create(dataToSaveInInvoice);
+                    console.log("payment success!!!!!!!!!!!!!");
+                  })
+                  .catch((error) => {
+                    refreshToken().then(async (res) => {
+                      generatePDF(
+                        i?.xeroContactId,
+                        transactionTitle.CREDITS_ADDED,
+                        i?.autoChargeAmount
+                      ).then(async (res:any) => {
+                        const dataToSaveInInvoice: any = {
+                          userId: i.id,
+                          transactionId: transaction.id,
+                          price:i?.autoChargeAmount || fixedAmount.amount,
+                          invoiceId: res.data.Invoices[0].InvoiceID,
+                        };
+                        await Invoice.create(dataToSaveInInvoice);
+                        console.log("payment success!!!!!!!!!!!!!");
+                      });
                     });
                   });
-                });
-            }
+              }
+            }).catch((err)=>{
+            })
+            
           })
           .catch(async (err) => {
             send_email_for_failed_autocharge(i.email, text);
@@ -200,7 +201,7 @@ export const autoChargePayment = async () => {
             const dataToSave: any = {
               userId: i.id,
               cardId: card?.id,
-              amount: i?.autoChargeAmount,
+              amount: i?.autoChargeAmount || fixedAmount.amount,
               title: transactionTitle.CREDITS_ADDED,
               isCredited: true,
               status: "error",
@@ -208,7 +209,6 @@ export const autoChargePayment = async () => {
             await Transaction.create(dataToSave);
           });
         }
-        console.log("--->>>",params)
        
       });
     } else {
