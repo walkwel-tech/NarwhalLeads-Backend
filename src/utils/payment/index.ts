@@ -61,7 +61,7 @@ export const fetchPaymentSessionById = (id:string)=>{
     return new Promise((resolve, reject) => {
       createSessionInitial(params)
         .then(async(res: any) => {
-          // console.log("DEBUGGER 1.1--->", res)          
+          console.log("DEBUGGER 1.1--->", res)          
           // customerPaymentMethods(res).then((response:any)=>{
             // console.log("DEBUGGER 1.2--->", response)
 

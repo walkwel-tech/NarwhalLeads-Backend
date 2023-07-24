@@ -39,6 +39,7 @@ import {
   PAYMENT_SESSION,
   PAYMENT_STATUS,
 } from "../../utils/Enums/payment.status";
+import { PROMO_LINK } from "../../utils/Enums/promoLink.enum";
 
 interface PaymentResponse {
   message: string;
@@ -187,7 +188,7 @@ export class CardDetailsControllers {
     const input = req.body;
     const id = Object(req.user).id;
     try {
-      const user = await User.findById(id);
+      const user :any= await User.findById(id);
       await User.findByIdAndUpdate(user?.id, {
         onBoarding: [
           {
@@ -214,13 +215,9 @@ export class CardDetailsControllers {
       if (input?.paymentMethod) {
         let dataToSaveIncard: any = {
           userId: user,
-          cardHolderName: input.cardHolderName,
+          cardHolderName: user?.firstName + user?.lastName,
           //to trim the space between card number
           cardNumber: input?.cardNumber,
-          // cardNumber:input.cardNumber,
-
-          expiryMonth: input?.expiryMonth,
-          expiryYear: input?.expiryYear,
           cvc: input?.cvc,
           isDefault: input?.isDefault,
           paymentMethod: input?.paymentMethod,
@@ -428,11 +425,8 @@ export class CardDetailsControllers {
     //@ts-ignore
     const userId = req.user?.id;
     const input = req.body;
-    const promoLink: any = await FreeCreditsLink.findOne({
-      user: { $elemMatch: { userId: userId } },
-    });
-    let user: UserInterface | null = await User.findById(userId);
 
+    let user: UserInterface | null = await User.findById(userId);
     try {
       if (!user) {
         return res
@@ -491,9 +485,6 @@ export class CardDetailsControllers {
       // } else {
       //   amount = adminSettings?.minimumUserTopUpAmount;
       // }
-      if (input.amount >= promoLink?.topUpAmount) {
-        params.freeCredits = promoLink.freeCredits;
-      }
       const paymentMethodsExists = await RyftPaymentMethods.findOne({
         cardId: card.id,
       });
@@ -608,13 +599,22 @@ export class CardDetailsControllers {
         await CardDetails.findByIdAndUpdate(card?.cardId, {
           status: PAYMENT_SESSION.SUCCESS,
         });
-        addCreditsToBuyer({
+        // TODO: apply conditipon for user does not iuncludes in promo link.users
+        const promoLink = await FreeCreditsLink.findOne({_id:userId.promoLinkId,'user.userId':{ $nin:[userId.id]}})
+        let params: any = {
           buyerId: userId?.buyerId,
           fixedAmount: parseInt(input.data?.amount) / 100,
-        })
+        }
+        //TODO: THIS WILL BE ONLY ON 1 TRANSATION
+        if (promoLink && userId?.promoLinkId && userId.premiumUser == PROMO_LINK.PREMIUM_USER_TOP_UP && parseInt(input?.data?.amount) >= promoLink?.topUpAmount) {
+          params.freeCredits = promoLink?.topUpAmount
+        }
+        else if (promoLink?.spotDiffPremiumPlan && parseInt(input?.data?.amount) >= promoLink?.topUpAmount) {
+          params.freeCredits = promoLink?.topUpAmount
+        }
+        addCreditsToBuyer(params)
           .then(async (res: any) => {
             // console.log("WEBHOOK 3------->>>",res)
-
             userId = await User.findById(userId?.id);
             const transaction = await Transaction.create({
               userId: userId?.id,
@@ -625,7 +625,7 @@ export class CardDetailsControllers {
               invoiceId: "",
               paymentSessionId: input.data.id,
               cardId: card?.cardId,
-              creditsLeft: userId?.credits,
+              creditsLeft: (userId?.credits) || 0 - params.freeCredits,
             });
 
             if (userId?.xeroContactId) {
@@ -673,6 +673,67 @@ export class CardDetailsControllers {
                     });
                   });
                 });
+            }
+            if (params.freeCredits) {
+              userId = await User.findById(userId?.id);
+              const transaction = await Transaction.create({
+                userId: userId?.id,
+                amount: params.freeCredits,
+                status: PAYMENT_STATUS.CAPTURED,
+                title: transactionTitle.FREE_CREDITS,
+                isCredited: true,
+                invoiceId: "",
+                paymentSessionId: input.data.id,
+                cardId: card?.cardId,
+                creditsLeft: userId?.credits,
+              });
+
+              if (userId?.xeroContactId) {
+                generatePDF(
+                  userId?.xeroContactId,
+                  transactionTitle.FREE_CREDITS,
+                  //@ts-ignore
+                  parseInt(params.freeCredits)
+                )
+                  .then(async (res: any) => {
+                    const dataToSaveInInvoice: any = {
+                      userId: userId?.id,
+                      transactionId: transaction.id,
+                      price: userId?.credits,
+                      invoiceId: res.data.Invoices[0].InvoiceID,
+                    };
+                    await Invoice.create(dataToSaveInInvoice);
+                    await Transaction.findByIdAndUpdate(transaction.id, {
+                      invoiceId: res.data.Invoices[0].InvoiceID,
+                    });
+
+                    console.log("PDF generated");
+                  })
+                  .catch(async (err) => {
+                    refreshToken().then(async (res) => {
+                      generatePDF(
+                        //@ts-ignore
+                        userId?.xeroContactId,
+                        transactionTitle.FREE_CREDITS,
+                        //@ts-ignore
+                        parseInt(params.freeCredits)
+                      ).then(async (res: any) => {
+                        const dataToSaveInInvoice: any = {
+                          userId: userId?.id,
+                          transactionId: transaction.id,
+                          price: userId?.credits,
+                          invoiceId: res.data.Invoices[0].InvoiceID,
+                        };
+                        await Invoice.create(dataToSaveInInvoice);
+                        await Transaction.findByIdAndUpdate(transaction.id, {
+                          invoiceId: res.data.Invoices[0].InvoiceID,
+                        });
+
+                        console.log("PDF generated");
+                      });
+                    });
+                  });
+              }
             }
           })
           .catch((error) => {

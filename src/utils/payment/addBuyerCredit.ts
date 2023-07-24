@@ -14,7 +14,7 @@ export const addCreditsToBuyer = (params:any) => {
       },
       data: {
         BID: params.buyerId,
-        amount: parseInt(params.fixedAmount) + (params?.freeCredits || 0),
+        amount: parseInt(params?.fixedAmount) + parseInt(params?.freeCredits || 0),
       },
     };
     axios(config)

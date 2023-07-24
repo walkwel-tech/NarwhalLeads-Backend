@@ -26,10 +26,23 @@ import TransactionsRoutes from "./routes/transaction.routes";
 import { autoUpdateTasks } from "./app/AutoUpdateTasks";
 import TermsAndConditionsRoutes from "./routes/termsAndConditions.routes";
 import freeCreditsLinkRoutes from "./routes/FreeCreditsLink.routes";
+import { autoChargePayment } from "./app/AutoUpdateTasks/autoCharge";
 // import {  dataCleaning } from "./dataCleaning";
-const swaggerDocument = require('../Swagger.json'); // Replace with the path to your actual Swagger document
+const swaggerDocument = require('../swagger.json'); // Replace with the path to your actual Swagger document
 const swaggerUi = require('swagger-ui-express');
 
+const swaggerUiOptions = {
+    swaggerOptions: {
+      basicAuth: {
+        name:   'Authorization',
+        schema: {
+          type: 'basic',
+          in:   'header'
+        },
+        value:  'Basic admin:secret@1'
+      }
+    }
+  }
 let version="0.1.2b"
 export class Server {
     public app: Application;
@@ -57,7 +70,7 @@ export class Server {
         this.app.use(express.urlencoded({limit: "50mb", extended: true}));
         // this.app.use(helmet());
         this.app.use(cors());
-        this.app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
+        this.app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument,swaggerUiOptions));
 
        
     }
@@ -85,7 +98,7 @@ export class Server {
         this.app.use("/api/v1/freeCredits",freeCreditsLinkRoutes)
         this.app.use("/api/v1/businessIndustry",BusinessIndustriesRoutes)
 
-        this.app.get("/version", (req: Request, res: Response) => {
+        this.app.get("/api/v1/version", (req: Request, res: Response) => {
             res.status(200).json({message: `App running on version ${version}`});
         });
 
@@ -110,6 +123,7 @@ export class Server {
             console.log(`:rocket: HTTP Server started at port ${this.port}`);
         });
         autoUpdateTasks()
+        autoChargePayment()
 
     }
 }

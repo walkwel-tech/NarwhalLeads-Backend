@@ -397,7 +397,7 @@ export class UsersControllers {
       ) {
         return res
           .status(404)
-          .json({ error: { message: "Card Details not found" } });
+          .json({ error: { message: "Card Details not found!" } });
       }
       if (input.businessName) {
         await BusinessDetails.findByIdAndUpdate(
@@ -506,7 +506,7 @@ export class UsersControllers {
       if(input.zapierUrl){
         await UserLeadsDetails.findByIdAndUpdate(
           checkUser?.userLeadsDetailsId,
-          { zapierUrl: input.zapierUrl },
+          { zapierUrl: input.zapierUrl, sendDataToZapier:true },
 
           { new: true }
         );      }

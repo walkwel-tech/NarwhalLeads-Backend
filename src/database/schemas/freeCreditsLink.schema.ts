@@ -38,8 +38,11 @@ const FreeCreditsLinkSchema = new Schema({
     },
     topUpAmount: {
         type: Number,
-        default: null
+        default: 0
     },
+    spotDiffPremiumPlan:{
+        type: Boolean
+        }
 
 }, {timestamps: true});
 

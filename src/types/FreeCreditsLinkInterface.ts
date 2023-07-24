@@ -14,5 +14,6 @@ export interface freeCreditsLinkInterface extends Document {
   isUsed: boolean;
 
   usedAt: Date;
-  topUpAmount:number
+  topUpAmount:number;
+  spotDiffPremiumPlan:boolean
 }

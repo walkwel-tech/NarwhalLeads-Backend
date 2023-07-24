@@ -22,7 +22,15 @@ export class freeCreditsLinkController {
         maxUseCounts: input.maxUseCounts,
         useCounts: 0,
       };
+      if(input.spotDiffPremiumPlan){
+        dataToSave.code='SPOTDIFF_' + randomString(10)
+        dataToSave.spotDiffPremiumPlan=true
+      }
+      if(input.spotDiffPremiumPlan && !input.topUpAmount){
+        res.status(400).json({ error: { message: "Top-up amount is required" } });
+      }
       const data = await FreeCreditsLink.create(dataToSave);
+      console.log(data)
       return res.json({ data: data });
     } catch (error) {
       res.status(500).json({ error: { message: "something Went wrong." } });
@@ -36,6 +44,12 @@ export class freeCreditsLinkController {
         ...dataToFind,
         $or: [{ code: { $regex: req.query.search, $options: "i" } }],
       };
+    }
+    if(!req.query.spotDiffPremiumPlan){
+      dataToFind.spotDiffPremiumPlan={ $exists: false}
+    }   
+     if(req.query.spotDiffPremiumPlan){
+      dataToFind.spotDiffPremiumPlan=true
     }
     if(req.query.expired){
       dataToFind.isDisabled=true
@@ -69,4 +83,5 @@ export class freeCreditsLinkController {
       res.status(500).json({ error: { message: "something Went wrong." } });
     }
   };
+  
 }
