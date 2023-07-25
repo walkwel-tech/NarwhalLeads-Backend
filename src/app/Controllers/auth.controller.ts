@@ -81,7 +81,8 @@ class AuthController {
             if (!checkCode) {
               return res.status(400).json({ data: { message: "Link Invalid!" } });
             }
-            if(checkCode.maxUseCounts>=checkCode.useCounts){
+            console.log("----",(checkCode.maxUseCounts>=checkCode.useCounts),checkCode.maxUseCounts,checkCode.useCounts)
+            if(checkCode.maxUseCounts && checkCode.maxUseCounts>=checkCode.useCounts){
               return res.status(400).json({ data: { message: "Link has reached maximum limit!" } });
             }
             else{
