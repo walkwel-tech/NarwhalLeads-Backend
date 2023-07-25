@@ -3,5 +3,6 @@ export const transactionTitle={
    NEW_LEAD:"New Lead",
   LEAD_REJECTION_APPROVED:"Refund - Lead Rejection Approved",
   PAYMNET_FAILED:"Payment Declined",
-  FREE_CREDITS:"Free Credits"
+  FREE_CREDITS:"Free Credits",
+  INVOICES_VAT:"VAT"
     }

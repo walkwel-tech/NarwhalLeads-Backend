@@ -39,7 +39,7 @@ const swaggerUiOptions = {
           type: 'basic',
           in:   'header'
         },
-        value:  'Basic admin:secret@1'
+        value:  'Basic admin:secret@7'
       }
     }
   }

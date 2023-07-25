@@ -58,9 +58,16 @@ export class freeCreditsLinkController {
       dataToFind.isDisabled=false
     }
     try {
+      //TODO: need to reduce user data
       const query = await FreeCreditsLink.find(dataToFind)
         .populate("user.userId")
         .sort({ createdAt: -1 });
+        query.map((i:any)=>{
+        i.user.map((j:any)=>{
+          //@ts-ignore
+         j.userId?.password =undefined
+        })
+        })
       return res.json({
         data: query,
       });

@@ -37,5 +37,6 @@ export interface UserInterface extends Document {
   isRyftCustomer:boolean;
   isLeadbyteCustomer:boolean;
   premiumUser:string
-  promoLinkId:Types.ObjectId
+  promoLinkId:Types.ObjectId;
+  isLeadReceived:boolean;
 }
