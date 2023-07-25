@@ -14,10 +14,6 @@ const AdminSettingsSchema = new Schema({
         type: String,
         required: true,
     },
-    leadByteKey: {
-        type: String,
-        required: true,
-    },
     defaultLeadAmount: {
         type: Number,
         required: false,

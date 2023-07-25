@@ -69,6 +69,7 @@ const UserSchema = new Schema(
     autoChargeAmount: {
       type: Number,
       required: false,
+      default: 50,
     },
     verifiedAt: {
       type: Date,
@@ -143,6 +144,19 @@ const UserSchema = new Schema(
     ryftClientId: {
       type: String,
     },
+    premiumUser:{
+      type:String,
+      default:false
+    },
+    promoLinkId:{
+      type: Types.ObjectId,
+      ref: "FreeCreditsLink",
+      default: null,
+    },
+    isLeadReceived:{
+      type:Boolean,
+      default:false
+    }
   },
   { timestamps: true }
 );

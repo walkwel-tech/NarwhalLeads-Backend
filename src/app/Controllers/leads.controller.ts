@@ -47,7 +47,9 @@ export class LeadsController {
     const user: any = await User.findOne({ buyerId: bid })
       .populate("userLeadsDetailsId")
       .populate("businessDetailsId");
-
+    if(!user.isLeadReceived){
+      await User.findByIdAndUpdate(user.id,{isLeadReceived:true})
+    }
     const leads = await Leads.findOne({ bid: user?.buyerId })
       .sort({ rowIndex: -1 })
       .limit(1);

@@ -51,17 +51,6 @@ jobs:
           source: "dist.zip"
           target: ${{ env.BUILD_DIR_PATH }}
 
-      - name: Unzip
-        uses: appleboy/ssh-action@v0.1.9
-        with:
-          host: ${{ env.SV_IP_ADDRESS }}
-          username: ${{ env.SV_USER }}
-          key: ${{ env.SSH_PRIVATE_KEY }}
-          passphrase: ${{ env.SV_KEY_PASS }}
-          script: |
-            cd ${{ env.BUILD_DIR_PATH }}
-            unzip -o dist.zip            
-
       - name: Go Live
         uses: appleboy/ssh-action@v0.1.9
         with:
@@ -71,16 +60,7 @@ jobs:
           passphrase: ${{ env.SV_KEY_PASS }}
           script: |
             cd ${{ env.BUILD_DIR_PATH }}
+            unzip -o dist.zip
             pm2 restart all --update-env
-
-      - name: Cleanup
-        uses: appleboy/ssh-action@v0.1.9
-        with:
-          host: ${{ env.SV_IP_ADDRESS }}
-          username: ${{ env.SV_USER }}
-          key: ${{ env.SSH_PRIVATE_KEY }}
-          passphrase: ${{ env.SV_KEY_PASS }}
-          script: |
-            cd ${{ env.BUILD_DIR_PATH }}
             rm dist.zip
             rm -rf 'NarwhalLeads-Backend'

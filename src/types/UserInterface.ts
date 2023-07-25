@@ -35,5 +35,8 @@ export interface UserInterface extends Document {
   registrationMailSentToAdmin:boolean;
   ryftClientId:string
   isRyftCustomer:boolean;
-  isLeadbyteCustomer:boolean
+  isLeadbyteCustomer:boolean;
+  premiumUser:string
+  promoLinkId:Types.ObjectId;
+  isLeadReceived:boolean;
 }
