@@ -354,9 +354,11 @@ export class UsersControllers {
     // @ts-ignore
     if (input.email && req.user?.role == RolesEnum.USER) {
       // @ts-ignore
-      return res
-      .status(403)
-      .json({ error: { message: "You can not update your email." } });    }
+      input.email=req.user?.email
+      // return res
+      // .status(403)
+      // .json({ error: { message: "You can not update your email." } });  
+      }
 
     try {
       const checkUser = await User.findById(id);
