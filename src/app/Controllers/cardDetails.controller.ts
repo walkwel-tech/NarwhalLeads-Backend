@@ -531,7 +531,7 @@ export class CardDetailsControllers {
           })
           .catch(async (err) => {
             return res.json({
-              data: { message: "Error occured in payment." },
+              error: { message: "Error occured in payment." },
             });
           });
       }
