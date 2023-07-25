@@ -152,6 +152,10 @@ const UserSchema = new Schema(
       type: Types.ObjectId,
       ref: "FreeCreditsLink",
       default: null,
+    },
+    isLeadReceived:{
+      type:Boolean,
+      default:false
     }
   },
   { timestamps: true }
