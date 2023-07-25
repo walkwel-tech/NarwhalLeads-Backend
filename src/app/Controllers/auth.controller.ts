@@ -62,93 +62,92 @@ class AuthController {
         .json({ error: { message: "VALIDATIONS_ERROR", info: errorsInfo } });
     }
     try {
-     
+
       const user = await User.findOne({ email: input.email });
       if (!user) {
-       
+
         const salt = genSaltSync(10);
         const hashPassword = hashSync(input.password, salt);
         const showUsers: any = await User.findOne()
           .sort({ rowIndex: -1 })
           .limit(1);
-          let checkCode ;
-          let codeExists;
-          if (input.code) {
-            checkCode = await FreeCreditsLink.findOne({ code: input.code });
-            if (checkCode?.isDisabled) {
-              return res.status(400).json({ data: { message: "Link Expired!" } });
-            }
-            if (!checkCode) {
-              return res.status(400).json({ data: { message: "Link Invalid!" } });
-            }
-            console.log("----",(checkCode.maxUseCounts>=checkCode.useCounts),checkCode.maxUseCounts,checkCode.useCounts)
-            if(checkCode.maxUseCounts && checkCode.maxUseCounts>=checkCode.useCounts){
-              return res.status(400).json({ data: { message: "Link has reached maximum limit!" } });
-            }
-            else{
-              codeExists=true
-            }
+        let checkCode;
+        let codeExists;
+        if (input.code) {
+          checkCode = await FreeCreditsLink.findOne({ code: input.code });
+          if (checkCode?.isDisabled) {
+            return res.status(400).json({ data: { message: "Link Expired!" } });
           }
-    
-          let dataToSave : any={
-            firstName: input.firstName,
-            lastName: input.lastName,
-            email: input.email,
-            phoneNumber: input.phoneNumber,
-            password: hashPassword,
-            role: RolesEnum.USER,
-            // leadCost: adminSettings?.defaultLeadAmount,
-            autoChargeAmount: adminSettings?.amount,
-            isActive: true, //need to delete
-            isVerified: true, //need to delete
-            autoCharge: true,
-            rowIndex: showUsers?.rowIndex + 1 || 0,
-            paymentMethod: paymentMethodEnum.MANUALLY_ADD_CREDITS_METHOD,
-            onBoarding: [
-              {
-                key: ONBOARDING_KEYS.BUSINESS_DETAILS,
-                pendingFields: [
-                  "businessIndustry",
-                  "businessName",
-                  "businessSalesNumber",
-                  "businessPostCode",
-                  "businessLogo",
-                  "address1",
-                  "businessOpeningHours",
-                  "businessCity",
-                ],
-                dependencies: [],
-              },
-              {
-                key: ONBOARDING_KEYS.LEAD_DETAILS,
-                pendingFields: [
-                  "daily",
-                  "leadSchedule",
-                  "postCodeTargettingList",
-                ],
-                dependencies: ["businessIndustry"],
-              },
-              {
-                key: ONBOARDING_KEYS.CARD_DETAILS,
-                pendingFields: [
-                  // "cardHolderName",
-                  "cardNumber",
-                  // "expiryMonth",
-                  // "expiryYear",
-                  // "cvc",
-                ],
-                dependencies: [],
-              },
-            ],
+          if (!checkCode) {
+            return res.status(400).json({ data: { message: "Link Invalid!" } });
           }
-          if(codeExists && checkCode?.topUpAmount===0){
-            dataToSave.premiumUser=PROMO_LINK.PREMIUM_USER_NO_TOP_UP
-            dataToSave.promoLinkId=checkCode?.id
+          if (checkCode.maxUseCounts && checkCode.maxUseCounts >= checkCode.useCounts) {
+            return res.status(400).json({ data: { message: "Link has reached maximum limit!" } });
           }
-          else if(codeExists && checkCode?.topUpAmount!=0){
-            dataToSave.premiumUser=PROMO_LINK.PREMIUM_USER_TOP_UP
-            dataToSave.promoLinkId=checkCode?.id
+          else {
+            codeExists = true
           }
+        }
+        input.email = String(input.email).toLowerCase()
+        let dataToSave: any = {
+          firstName: input.firstName,
+          lastName: input.lastName,
+          email: input.email,
+          phoneNumber: input.phoneNumber,
+          password: hashPassword,
+          role: RolesEnum.USER,
+          // leadCost: adminSettings?.defaultLeadAmount,
+          autoChargeAmount: adminSettings?.amount,
+          isActive: true, //need to delete
+          isVerified: true, //need to delete
+          autoCharge: true,
+          rowIndex: showUsers?.rowIndex + 1 || 0,
+          paymentMethod: paymentMethodEnum.MANUALLY_ADD_CREDITS_METHOD,
+          onBoarding: [
+            {
+              key: ONBOARDING_KEYS.BUSINESS_DETAILS,
+              pendingFields: [
+                "businessIndustry",
+                "businessName",
+                "businessSalesNumber",
+                "businessPostCode",
+                "businessLogo",
+                "address1",
+                "businessOpeningHours",
+                "businessCity",
+              ],
+              dependencies: [],
+            },
+            {
+              key: ONBOARDING_KEYS.LEAD_DETAILS,
+              pendingFields: [
+                "daily",
+                "leadSchedule",
+                "postCodeTargettingList",
+              ],
+              dependencies: ["businessIndustry"],
+            },
+            {
+              key: ONBOARDING_KEYS.CARD_DETAILS,
+              pendingFields: [
+                // "cardHolderName",
+                "cardNumber",
+                // "expiryMonth",
+                // "expiryYear",
+                // "cvc",
+              ],
+              dependencies: [],
+            },
+          ],
+        }
+        if (codeExists && checkCode?.topUpAmount === 0) {
+          dataToSave.premiumUser = PROMO_LINK.PREMIUM_USER_NO_TOP_UP
+          dataToSave.promoLinkId = checkCode?.id
+        }
+        else if (codeExists && checkCode?.topUpAmount != 0) {
+          dataToSave.premiumUser = PROMO_LINK.PREMIUM_USER_TOP_UP
+          dataToSave.promoLinkId = checkCode?.id
+        }
         const createdUser = await User.create(dataToSave);
         if (input.code) {
           const checkCode: any = await FreeCreditsLink.findOne({
@@ -160,7 +159,7 @@ class AuthController {
             usedAt: new Date(),
             useCounts: checkCode?.useCounts + 1,
           };
-       await FreeCreditsLink.findByIdAndUpdate(checkCode?.id, dataToSave,{new:true});
+          await FreeCreditsLink.findByIdAndUpdate(checkCode?.id, dataToSave, { new: true });
         }
         send_email_for_registration(input.email, input.firstName);
 
@@ -192,8 +191,8 @@ class AuthController {
               firstName: user.firstName,
               lastName: user.lastName,
               userId: user.id,
-            };      
-         
+            };
+
             createCustomerOnRyft(params)
               .then(async () => {
                 const token: any = await AccessToken.findOne();
@@ -237,11 +236,11 @@ class AuthController {
                         );
                       });
                   });
-                  //@ts-ignore
-                  user.password =undefined
+                //@ts-ignore
+                user.password = undefined
                 res.send({
                   message: "successfully registered",
-                  data: user,token:authToken,
+                  data: user, token: authToken,
                 });
               })
               .catch(async () => {
@@ -337,9 +336,9 @@ class AuthController {
         //   user: { $elemMatch: { userId: user._id } },
         // });
         //@ts-ignore
-        user.password =undefined
+        user.password = undefined
         return res.json({
-          data: user,token
+          data: user, token
         });
       }
     )(req, res);
@@ -440,7 +439,7 @@ class AuthController {
           .status(401)
           .json({ data: { message: "User doesn't exist." } });
       }
-      const activeUser:any = await User.findByIdAndUpdate(
+      const activeUser: any = await User.findByIdAndUpdate(
         id,
         {
           isActive: isActive,
@@ -450,20 +449,20 @@ class AuthController {
           new: true,
         }
       );
-    const dataToShow={
-      id:activeUser.id,
-    firstName:activeUser.firstName,
-    lastName:activeUser.lastName,
-    email:activeUser.email,
-    role:activeUser.role,
-    isRyftCustomer:activeUser.isRyftCustomer,
-    isLeadbyteCustomer:activeUser.isLeadbyteCustomer,
-    autoChargeAmount:activeUser.autoChargeAmount,
-    businessDetailsId:activeUser.businessDetailsId,
-    userLeadsDetailsId:activeUser.userLeadsDetailsId,
+      const dataToShow = {
+        id: activeUser.id,
+        firstName: activeUser.firstName,
+        lastName: activeUser.lastName,
+        email: activeUser.email,
+        role: activeUser.role,
+        isRyftCustomer: activeUser.isRyftCustomer,
+        isLeadbyteCustomer: activeUser.isLeadbyteCustomer,
+        autoChargeAmount: activeUser.autoChargeAmount,
+        businessDetailsId: activeUser.businessDetailsId,
+        userLeadsDetailsId: activeUser.userLeadsDetailsId,
 
 
-    }
+      }
       return res.json({ data: dataToShow });
     } catch (error) {
       return res
@@ -490,19 +489,19 @@ class AuthController {
           new: true,
         }
       );
-      const dataToShow={
-        id:inActiveUser?.id,
-      firstName:inActiveUser?.firstName,
-      lastName:inActiveUser?.lastName,
-      email:inActiveUser?.email,
-      role:inActiveUser?.role,
-      isRyftCustomer:inActiveUser?.isRyftCustomer,
-      isLeadbyteCustomer:inActiveUser?.isLeadbyteCustomer,
-      autoChargeAmount:inActiveUser?.autoChargeAmount,
-      businessDetailsId:inActiveUser?.businessDetailsId,
-      userLeadsDetailsId:inActiveUser?.userLeadsDetailsId,
-  
-  
+      const dataToShow = {
+        id: inActiveUser?.id,
+        firstName: inActiveUser?.firstName,
+        lastName: inActiveUser?.lastName,
+        email: inActiveUser?.email,
+        role: inActiveUser?.role,
+        isRyftCustomer: inActiveUser?.isRyftCustomer,
+        isLeadbyteCustomer: inActiveUser?.isLeadbyteCustomer,
+        autoChargeAmount: inActiveUser?.autoChargeAmount,
+        businessDetailsId: inActiveUser?.businessDetailsId,
+        userLeadsDetailsId: inActiveUser?.userLeadsDetailsId,
+
+
       }
       return res.json({ data: dataToShow });
     } catch (error) {
@@ -722,8 +721,8 @@ class AuthController {
   };
 
   static returnUrlApi = async (req: Request, res: Response) => {
-    const input=req
-  return res.json({data:input})
+    const input = req
+    return res.json({ data: input })
   };
 }
 
