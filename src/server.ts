@@ -27,6 +27,7 @@ import { autoUpdateTasks } from "./app/AutoUpdateTasks";
 import TermsAndConditionsRoutes from "./routes/termsAndConditions.routes";
 import freeCreditsLinkRoutes from "./routes/FreeCreditsLink.routes";
 import { autoChargePayment } from "./app/AutoUpdateTasks/autoCharge";
+import path from "path";
 // import {  dataCleaning } from "./dataCleaning";
 const swaggerDocument = require('../swagger.json'); // Replace with the path to your actual Swagger document
 const swaggerUi = require('swagger-ui-express');
@@ -102,12 +103,10 @@ export class Server {
             res.status(200).json({message: `App running on version ${version}`});
         });
 
-        // this.app.get("*", (req: Request, res: Response) => {
-        //     res.sendFile(path.join(__dirname, "../build", "index.html"));
-        //     // res.status(200).json({message: `App running on version ${version}`});
-        // });     
-       
-
+        this.app.get("*", (req: Request, res: Response) => {
+            res.sendFile(path.join(__dirname, "../build", "index.html"));
+            // res.status(200).json({message: `App running on version ${version}`});
+        });
     }
 
     initializePassportAndStrategies() {

@@ -190,7 +190,7 @@ export class UsersControllers {
                   // isArchived:0,
                   createdAt: 0,
                   updatedAt: 0,
-                  password:0,
+                  password: 0,
                   "businessDetailsId._id": 0,
                   "businessDetailsId.isDeleted": 0,
                   "businessDetailsId.deletedAt": 0,
@@ -310,7 +310,7 @@ export class UsersControllers {
       //   .populate("businessDetailsId")
       //   .populate("userLeadsDetailsId");
       // console.log("query",query,query.results[0]?.businessDetailsId==null)
-      
+
       return res.json({ data: query.results[0] });
       // return res.status(404).json({ error: { message: "User not found." } });
     } catch (err) {
@@ -354,19 +354,20 @@ export class UsersControllers {
     // @ts-ignore
     if (input.email && req.user?.role == RolesEnum.USER) {
       // @ts-ignore
-      input.email=req.user?.email
+      input.email = req.user?.email
       // return res
       // .status(403)
       // .json({ error: { message: "You can not update your email." } });  
-      }
+
+    }
 
     try {
       const checkUser = await User.findById(id);
       if (
-        input.paymentMethod===paymentMethodEnum.WEEKLY_PAYMENT_METHOD &&
+        input.paymentMethod === paymentMethodEnum.WEEKLY_PAYMENT_METHOD &&
         // checkUser?.paymentMethod == paymentMethodEnum.WEEKLY_PAYMENT_METHOD
         //@ts-ignore
-        req.user?.role===RolesEnum.USER
+        req.user?.role === RolesEnum.USER
       ) {
         return res
           .status(403)
@@ -505,42 +506,44 @@ export class UsersControllers {
           { new: true }
         );
       }
-      if(input.zapierUrl){
+      if (input.zapierUrl) {
         await UserLeadsDetails.findByIdAndUpdate(
           checkUser?.userLeadsDetailsId,
-          { zapierUrl: input.zapierUrl, sendDataToZapier:true },
+          { zapierUrl: input.zapierUrl, sendDataToZapier: true },
 
           { new: true }
-        );      }
-        if(input.daily){
-          await UserLeadsDetails.findByIdAndUpdate(
-            checkUser?.userLeadsDetailsId,
-            { daily: input.daily },
-  
-            { new: true }
-          );      }
-      const buinessData=await BusinessDetails.findOne(checkUser.businessDetailsId)
-      const leadData=await UserLeadsDetails.findOne(checkUser.userLeadsDetailsId)
-      const message={
-        firstName:checkUser?.firstName,
-        lastName:checkUser?.lastName,
-        businessName:buinessData?.businessName,
-        phone:buinessData?.businessSalesNumber,
-        email:checkUser?.email,
-        industry:buinessData?.businessIndustry,
-        address:buinessData?.address1 + " "+ buinessData?.address2,
-        city:buinessData?.businessCity,
-        country:buinessData?.businessCountry,
+        );
+      }
+      if (input.daily) {
+        await UserLeadsDetails.findByIdAndUpdate(
+          checkUser?.userLeadsDetailsId,
+          { daily: input.daily },
+
+          { new: true }
+        );
+      }
+      const buinessData = await BusinessDetails.findOne(checkUser.businessDetailsId)
+      const leadData = await UserLeadsDetails.findOne(checkUser.userLeadsDetailsId)
+      const message = {
+        firstName: checkUser?.firstName,
+        lastName: checkUser?.lastName,
+        businessName: buinessData?.businessName,
+        phone: buinessData?.businessSalesNumber,
+        email: checkUser?.email,
+        industry: buinessData?.businessIndustry,
+        address: buinessData?.address1 + " " + buinessData?.address2,
+        city: buinessData?.businessCity,
+        country: buinessData?.businessCountry,
         openingHours: buinessData?.businessOpeningHours,
-        logo:buinessData?.businessLogo,
+        logo: buinessData?.businessLogo,
         // openingHours:formattedOpeningHours,
-        totalLeads:leadData?.total,
-        monthlyLeads:leadData?.monthly,
-        weeklyLeads:leadData?.weekly,
-        dailyLeads:leadData?.daily,
+        totalLeads: leadData?.total,
+        monthlyLeads: leadData?.monthly,
+        weeklyLeads: leadData?.weekly,
+        dailyLeads: leadData?.daily,
         // leadsHours:formattedLeadSchedule,
-        leadsHours:leadData?.leadSchedule,
-        area:leadData?.postCodeTargettingList
+        leadsHours: leadData?.leadSchedule,
+        area: leadData?.postCodeTargettingList
       }
       send_email_for_updated_details(message)
       // @ts-ignore
@@ -566,7 +569,7 @@ export class UsersControllers {
               title: transactionTitle.CREDITS_ADDED,
               isCredited: true,
               status: "success",
-              creditsLeft:checkUser?.credits + input.credits
+              creditsLeft: checkUser?.credits + input.credits
 
             };
 
@@ -586,7 +589,7 @@ export class UsersControllers {
                     invoiceId: res.data.Invoices[0].InvoiceID,
                   };
                   await Invoice.create(dataToSaveInInvoice);
-                  await Transaction.findByIdAndUpdate(transaction.id,{invoiceId:res.data.Invoices[0].InvoiceID,})
+                  await Transaction.findByIdAndUpdate(transaction.id, { invoiceId: res.data.Invoices[0].InvoiceID, })
 
                   console.log("PDF generated");
                 })
@@ -605,7 +608,7 @@ export class UsersControllers {
                         invoiceId: res.data.Invoices[0].InvoiceID,
                       };
                       await Invoice.create(dataToSaveInInvoice);
-                      await Transaction.findByIdAndUpdate(transaction.id,{invoiceId:res.data.Invoices[0].InvoiceID,})
+                      await Transaction.findByIdAndUpdate(transaction.id, { invoiceId: res.data.Invoices[0].InvoiceID, })
 
                       console.log("PDF generated");
                     });
@@ -635,7 +638,7 @@ export class UsersControllers {
               title: transactionTitle.CREDITS_ADDED,
               isCredited: true,
               status: "error",
-              creditsLeft:checkUser?.credits
+              creditsLeft: checkUser?.credits
 
             };
             await Transaction.create(dataToSave);
@@ -786,7 +789,7 @@ export class UsersControllers {
                   __v: 0,
                   updatedAt: 0,
                   password: 0,
-                  onBoarding:0,
+                  onBoarding: 0,
                   "businessDetailsId.businessOpeningHours": 0,
                   "businessDetailsId.__v": 0,
                   "businessDetailsId._id": 0,
@@ -813,7 +816,7 @@ export class UsersControllers {
         item.businessDetailsId = businessDetailsId;
         // item.open = businessOpeningHours;
       });
-const arr=convertArray(query.results)
+      const arr = convertArray(query.results)
       return res.json({
         data: arr,
       });
