@@ -9,7 +9,7 @@ import { sort } from "../../utils/Enums/sorting.enum";
 import { transactionTitle } from "../../utils/Enums/transaction.title.enum";
 import { refreshToken } from "../../utils/XeroApiIntegration/createContact";
 import { generatePDF } from "../../utils/XeroApiIntegration/generatePDF";
-import { managePayments } from "../../utils/payment";
+import { managePaymentsByPaymentMethods } from "../../utils/payment";
 import { RegisterInput } from "../Inputs/Register.input";
 import { send_email_for_updated_details } from "../Middlewares/mail";
 import { BusinessDetails } from "../Models/BusinessDetails";
@@ -352,7 +352,7 @@ export class UsersControllers {
       delete input.credits;
     }
     // @ts-ignore
-    if (input.email && req.user?.role == RolesEnum.USER) {
+    if ((input.email || input.email =="") && req.user?.role == RolesEnum.USER) {
       // @ts-ignore
       input.email = req.user?.email
       // return res
@@ -372,6 +372,14 @@ export class UsersControllers {
         return res
           .status(403)
           .json({ error: { message: "Please contact admin to request for weekly payment method" } });
+      }
+      if (
+            // @ts-ignore
+        (input.buyerId || input.leadCost || input.ryftClientId || input.xeroContactId) &&  req.user?.role == RolesEnum.USER
+      ) {
+        return res
+          .status(403)
+          .json({ error: { message: "Please contact admin to update." } });
       }
       if (
         input.paymentMethod &&
@@ -551,13 +559,13 @@ export class UsersControllers {
         const params: any = {
           fixedAmount: input.credits,
           email: checkUser?.email,
-          cardNumber: cardExist?.cardNumber,
-          expiryMonth: cardExist?.expiryMonth,
-          expiryYear: cardExist?.expiryYear,
-          cvc: cardExist?.cvc,
+           cardNumber:cardExist?.cardNumber,
           buyerId: checkUser?.buyerId,
+          clientId:checkUser.ryftClientId,
+          cardId:cardExist?.id
         };
-        managePayments(params)
+
+        managePaymentsByPaymentMethods(params)
           .then(async (res) => {
             if (!checkUser.xeroContactId) {
               console.log("xeroContact ID not found. Failed to generate pdf.");
