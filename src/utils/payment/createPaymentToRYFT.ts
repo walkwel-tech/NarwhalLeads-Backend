@@ -6,6 +6,7 @@ import { User } from "../../app/Models/User";
 import { PAYMENT_STATUS } from "../Enums/payment.status";
 
 const POST = "post";
+
 export const createSession = (params: any) => {
   return new Promise((resolve, reject) => {
     let body = {
@@ -167,7 +168,6 @@ export const attemptToPaymentBy_PaymentMethods = (
     };
     axios(config)
       .then(async function (res) {
-        console.log("--------------->>>>>>>",)
         // if (res.data.status === PAYMENT_STATUS.APPROVED) {
           resolve(res);
         // } else {
