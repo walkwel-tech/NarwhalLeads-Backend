@@ -34,7 +34,7 @@ import { PROMO_LINK } from "../../utils/Enums/promoLink.enum";
 const fs = require("fs");
 
 class AuthController {
-  static regsiter = async (req: Request, res: Response): Promise<any> => {
+  static register = async (req: Request, res: Response): Promise<any> => {
     const input = req.body;
 
     const registerInput = new RegisterInput();
@@ -81,7 +81,7 @@ class AuthController {
           if (!checkCode) {
             return res.status(400).json({ data: { message: "Link Invalid!" } });
           }
-          if (checkCode.maxUseCounts && checkCode.maxUseCounts >= checkCode.useCounts) {
+          if (checkCode.maxUseCounts && checkCode.maxUseCounts <= checkCode.useCounts) {
             return res.status(400).json({ data: { message: "Link has reached maximum limit!" } });
           }
           else {
@@ -607,52 +607,6 @@ class AuthController {
         .json({ error: { message: "Something went wrong." } });
     }
   };
-
-  // static showMapFileForLabel = async (req: Request, res: Response): Promise<any> => {
-  //   try {
-  //     let a:any=[]
-  //     fs.readFile(
-  //       `${process.cwd()}/public/map/uk.topo.json`,
-  //       "utf8",
-  //       (err: any, data: any) => {
-  //         if (err) {
-  //           console.error(err);
-  //           return;
-  //         }
-  //         data = JSON.parse(data);
-  //         fs.readFile(
-  //           `${process.cwd()}/public/map/data.json`,
-  //           "utf8",
-  //           (err: any, data2: any) => {
-  //             if (err) {
-  //               console.error(err);
-  //               return;
-  //             }
-  //             data2 = JSON.parse(data2);
-  //             data.objects.GBR_adm2.geometries.map((j: any) => {
-  //               data2.map((i: any) => {
-  //                 if (
-  //                   i["Postcode Area"] == j.properties?.HASC_2.split(".")[1]
-  //                 ) {
-  //                   const obj={}
-  //                   Object.assign(obj, {
-  //                     Id: j.properties?.ID_2,
-  //                   });
-  //                   a.push(obj)
-  //                 }
-  //               });
-  //             });
-  //             return res.json({ data: a });
-  //           }
-  //         );
-  //       }
-  //     );
-  //   } catch (err) {
-  //     return res
-  //       .status(500)
-  //       .json({ error: { message: "Something went wrong." } });
-  //   }
-  // };
 
   static showMapFileForIreland = async (
     req: Request,
