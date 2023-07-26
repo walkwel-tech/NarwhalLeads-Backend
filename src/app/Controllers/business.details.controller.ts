@@ -35,7 +35,7 @@ export class BusinessDetailsController {
     (Business.businessIndustry = input.businessIndustry),
       (Business.businessName = input.businessName),
       //@ts-ignore
-      (Business.businessLogo = String(req.file?.filename)),
+      // (Business.businessLogo = String(req.file?.filename)),
       (Business.businessSalesNumber = input.businessSalesNumber),
       (Business.address1 = input.address1),
       // (Business.businessAddress = input.businessAddress),
