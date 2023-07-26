@@ -50,6 +50,7 @@ interface PaymentResponse {
 }
 
 export class CardDetailsControllers {
+  //FIXME:not in use
   static create = async (req: Request, res: Response): Promise<any> => {
     const input = req.body;
 
@@ -518,8 +519,7 @@ export class CardDetailsControllers {
               //   url: _res.data.requiredAction.url
               // }
             } else {
-              response.message =
-                "Payment processed successfully, credits will be reflect in few seconds.";
+              response.message = "Payment has been initiated, will be update within few minutes.";
               response.status = 200;
               response.sessionID = _res.data?.id;
             }
@@ -882,16 +882,6 @@ export class CardDetailsControllers {
         // return res.status(400).json({ error: { message: "your payment got failed" } });
         // console.log(error);
       });
-  };
-
-  static ryftPaymentLogger = async (
-    req: Request,
-    res: Response
-  ): Promise<any> => {
-    const input = req.body;
-    console.log("WEBHOOK START------->>>", input);
-
-    res.status(200).json({ data: { message: input } });
   };
 
   static ryftPaymentSession = async (

@@ -111,7 +111,6 @@ class AuthController {
                 "businessName",
                 "businessSalesNumber",
                 "businessPostCode",
-                "businessLogo",
                 "address1",
                 "businessOpeningHours",
                 "businessCity",

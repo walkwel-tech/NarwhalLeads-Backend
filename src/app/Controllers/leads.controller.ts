@@ -1483,7 +1483,6 @@ export class LeadsController {
       if (Preference) {
         return res.json({ data: Preference });
       }
-      console.log("columnsOfIndustry?.columns", columnsOfIndustry?.columns);
       return res.json({ data: { columns: columnsOfIndustry?.columns } });
     } catch (error) {
       return res
