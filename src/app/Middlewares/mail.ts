@@ -2,8 +2,6 @@ const sgMail = require("@sendgrid/mail");
 sgMail.setApiKey(process.env.SENDGRID_API_KEY);
 sgMail.setSubstitutionWrappers("{{", "}}");
 
-//fixme: emails change to send to
-
 export function send_email_forget_password(send_to: any, message: any) {
   const msg = {
     to: send_to, // Change to your recipient
