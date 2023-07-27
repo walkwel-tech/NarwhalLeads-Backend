@@ -2,9 +2,13 @@ const sgMail = require("@sendgrid/mail");
 sgMail.setApiKey(process.env.SENDGRID_API_KEY);
 sgMail.setSubstitutionWrappers("{{", "}}");
 
+//fixme: emails change to send to
+
 export function send_email_forget_password(send_to: any, message: any) {
   const msg = {
     to: send_to, // Change to your recipient
+    // to: "radhika.walkweltech@gmail.com",
+
     from: process.env.VERIFIED_SENDER_ON_SENDGRID,
     // Change to your verified sender
     trackingSettings: {
@@ -34,7 +38,8 @@ export function send_email_forget_password(send_to: any, message: any) {
 
 export function send_email_for_autocharge(send_to: any, message: any) {
   const msg = {
-    to: send_to, // Change to your recipient
+    // to: send_to, // Change to your recipient
+    to: "radhika.walkweltech@gmail.com",
     from: process.env.VERIFIED_SENDER_ON_SENDGRID,
     // Change to your verified sender
     trackingSettings: {
@@ -76,7 +81,8 @@ export function send_email_for_autocharge(send_to: any, message: any) {
 
 export function send_email_for_failed_autocharge(send_to: any, message: any) {
   const msg = {
-    to: send_to, // Change to your recipient
+    // to: send_to, // Change to your recipient
+    to: "radhika.walkweltech@gmail.com",
     from: process.env.VERIFIED_SENDER_ON_SENDGRID,
     // Change to your verified sender
     trackingSettings: {
@@ -119,6 +125,7 @@ export function send_email_for_failed_autocharge(send_to: any, message: any) {
 export function send_email_for_registration(send_to: any, message: any) {
   const msg = {
     to: send_to, // Change to your recipient
+    // to: "radhika.walkweltech@gmail.com",
     from: process.env.VERIFIED_SENDER_ON_SENDGRID,
     // Change to your verified sender
     trackingSettings: {
@@ -145,9 +152,11 @@ export function send_email_for_registration(send_to: any, message: any) {
       console.error(error);
     });
 }
+
 export function send_email_for_add_credits(send_to: any, message: any) {
   const msg = {
     to: send_to, // Change to your recipient
+    // to: "radhika.walkweltech@gmail.com",
     from: process.env.VERIFIED_SENDER_ON_SENDGRID,
     // Change to your verified sender
     trackingSettings: {
@@ -187,8 +196,7 @@ if( message.leadsHours){
 }
   const msg = {
     to: "leads@nmg.group", // Change to your recipient
-    // to:'diegochelittle@gmail.com',
-    // to:message.email,
+// to: "radhika.walkweltech@gmail.com",    // to:message.email,
     from: process.env.VERIFIED_SENDER_ON_SENDGRID,
     // Change to your verified sender
     trackingSettings: {
@@ -214,15 +222,12 @@ if( message.leadsHours){
       city:message?.city,
       country:message?.country,
       openingHours:message?.openingHours,
-      totalLeads:message?.totalLeads,
-      monthlyLeads:message?.monthlyLeads,
-      weeklyLeads:message?.weeklyLeads,
       dailyLeads:message?.dailyLeads,
       leadsHours:message?.leadsHours,
       area:message?.area
   }
   };
-
+console.log("new regsitration", msg.dynamic_template_data)
   sgMail
     .send(msg)
     .then(() => {
@@ -234,9 +239,9 @@ if( message.leadsHours){
 }
 
 export function send_email_to_invited_user(send_to: string, message: any) {
-  console.log(message,"message")
   const msg = {
     to: send_to, // Change to your recipient
+    // to: "radhika.walkweltech@gmail.com",
     from: process.env.VERIFIED_SENDER_ON_SENDGRID,
     // Change to your verified sender
     trackingSettings: {
@@ -253,7 +258,8 @@ export function send_email_to_invited_user(send_to: string, message: any) {
     templateId:"d-36df0c800ea548218686a17005b78c6c",
     dynamic_template_data: {
       name: message.name,
-      password: message.password
+      password: message.password,
+      businessName:message.businessName,
   }
   };
 
@@ -271,6 +277,7 @@ export function send_email_for_new_lead(send_to: string, message: any) {
   
   const msg = {
     to: send_to, // Change to your recipient
+    // to: "radhika.walkweltech@gmail.com",
     from: process.env.VERIFIED_SENDER_ON_SENDGRID,
     // Change to your verified sender
     trackingSettings: {
@@ -286,6 +293,7 @@ export function send_email_for_new_lead(send_to: string, message: any) {
     // templateId: "d-ca4e694d81ce4b3c8738b304a7a2368e",
     templateId: "d-ee68c14cdeb143e487467d8f3224c781",
     dynamic_template_data:{
+      userName:message.userName,
       firstName:message.firstName,
         lastName: message.lastName,
         phone: message.phone,
@@ -303,44 +311,44 @@ export function send_email_for_new_lead(send_to: string, message: any) {
     });
 }
 
-export function send_email_for_new_lead_to_admin(message: any) {
-  const msg = {
-    to: "leads@nmg.group", // Change to your recipient
-    // to: send_to, // Change to your recipient
+// export function send_email_for_new_lead_to_admin(message: any) {
+//   const msg = {
+//     // to: "leads@nmg.group", // Change to your recipient
+//     to: "radhika.walkweltech@gmail.com",
+//     from: process.env.VERIFIED_SENDER_ON_SENDGRID,
+//     // Change to your verified sender
+//     trackingSettings: {
+//       clickTracking: {
+//         enable: false,
+//         enableText: false,
+//       },
+//       openTracking: {
+//         enable: false,
+//       },
+//     },
+//     // html: "<strong>and easy to do anywhere, even with Node.js</strong>",
+//     templateId: "d-8ca3c3f92cf94bb5a0a9ad6d4f1e106f",
+//     dynamic_template_data: {
+//       leadsCost: message.leadsCost,
+//       email: message.email,
+//       cardNumber: message.cardNumber,
+//     },
+//   };
 
-    from: process.env.VERIFIED_SENDER_ON_SENDGRID,
-    // Change to your verified sender
-    trackingSettings: {
-      clickTracking: {
-        enable: false,
-        enableText: false,
-      },
-      openTracking: {
-        enable: false,
-      },
-    },
-    // html: "<strong>and easy to do anywhere, even with Node.js</strong>",
-    templateId: "d-8ca3c3f92cf94bb5a0a9ad6d4f1e106f",
-    dynamic_template_data: {
-      leadsCost: message.leadsCost,
-      email: message.email,
-      cardNumber: message.cardNumber,
-    },
-  };
-
-  sgMail
-    .send(msg)
-    .then(() => {
-      console.log("Email sent");
-    })
-    .catch((error: any) => {
-      console.error(error);
-    });
-}
+//   sgMail
+//     .send(msg)
+//     .then(() => {
+//       console.log("Email sent");
+//     })
+//     .catch((error: any) => {
+//       console.error(error);
+//     });
+// }
 
 export function send_email_for_total_lead(send_to: string, message: any) {
   const msg = {
     to: send_to, // Change to your recipient
+    // to: "radhika.walkweltech@gmail.com",
     from: process.env.VERIFIED_SENDER_ON_SENDGRID,
     // Change to your verified sender
     trackingSettings: {
@@ -373,6 +381,7 @@ export function send_email_for_total_lead(send_to: string, message: any) {
 export function send_email_for_lead_status(send_to: string, message: any) {
   const msg = {
     to: send_to, // Change to your recipient
+    // to: "radhika.walkweltech@gmail.com",
     from: process.env.VERIFIED_SENDER_ON_SENDGRID,
     // Change to your verified sender
     trackingSettings: {
@@ -416,7 +425,6 @@ const mapHours = (hours: any) => {
   return hours || []
 }
 
-
 export function send_email_for_updated_details(message: any) {
   if(message.openingHours){
       message.openingHours = mapHours(message.openingHours)
@@ -428,7 +436,7 @@ export function send_email_for_updated_details(message: any) {
   
   const msg = {
     to: "leads@nmg.group", // Change to your recipient
-    // to: message.email,
+    // to: "radhika.walkweltech@gmail.com",
     // to:"kilp@yopmail.com",
     from: process.env.VERIFIED_SENDER_ON_SENDGRID,
     // Change to your verified sender
@@ -476,3 +484,76 @@ export function send_email_for_updated_details(message: any) {
     });
 }
 
+export function send_email_for_payment_success(send_to: any, message: any) {
+  const msg = {
+    to: send_to, // Change to your recipient
+    // to: "radhika.walkweltech@gmail.com",
+    from: process.env.VERIFIED_SENDER_ON_SENDGRID,
+    // Change to your verified sender
+    trackingSettings: {
+      clickTracking: {
+        enable: false,
+        enableText: false,
+      },
+      openTracking: {
+        enable: false,
+      },
+    },
+    // html: "<strong>and easy to do anywhere, even with Node.js</strong>",
+    // templateId: "d-69dcead271404a1d8a90aab2416bdc42",
+    templateId:"d-7265bc9729b34fcb98cd0c081ddcb39f",
+    dynamic_template_data: {
+      firstName: message?.firstName,
+      credit:`£${message?.credits}`,
+      paymentAmount: `£${message?.amount}`,
+      cardNumberEnd:message?.cardNumberEnd,
+      cardHolderName:message?.cardHolderName
+  }
+  };
+
+  sgMail
+    .send(msg)
+    .then(() => {
+      console.log("Email sent");
+    })
+    .catch((error: any) => {
+      console.error(error);
+    });
+}
+
+export function send_email_for_payment_failure(send_to: any, message: any) {
+  const msg = {
+    to: send_to, // Change to your recipient
+    // to: "radhika.walkweltech@gmail.com",
+    from: process.env.VERIFIED_SENDER_ON_SENDGRID,
+    // Change to your verified sender
+    trackingSettings: {
+      clickTracking: {
+        enable: false,
+        enableText: false,
+      },
+      openTracking: {
+        enable: false,
+      },
+    },
+    // html: "<strong>and easy to do anywhere, even with Node.js</strong>",
+    // templateId: "d-69dcead271404a1d8a90aab2416bdc42",
+    templateId:"d-3bf15874bf854794b411dc470699bc6b ",
+    dynamic_template_data: {
+      firstName: message?.firstName,
+      credit:`£${message?.credits}`,
+      paymentAmount: `£${message?.amount}`,
+      cardNumberEnd:message?.cardNumberEnd,
+      cardHolderName:message?.cardHolderName
+  }
+  };
+
+  sgMail
+    .send(msg)
+    .then(() => {
+      console.log("Email sent");
+    })
+    .catch((error: any) => {
+      console.error(error);
+    });
+}
