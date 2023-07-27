@@ -156,7 +156,11 @@ const UserSchema = new Schema(
     isLeadReceived:{
       type:Boolean,
       default:false
-    }
+    },
+    promoCodeUsed: {
+      type: Boolean,
+      default: false,
+    },
   },
   { timestamps: true }
 );

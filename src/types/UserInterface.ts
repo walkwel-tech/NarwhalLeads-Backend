@@ -39,4 +39,5 @@ export interface UserInterface extends Document {
   premiumUser:string
   promoLinkId:Types.ObjectId;
   isLeadReceived:boolean;
+  promoCodeUsed:boolean
 }
