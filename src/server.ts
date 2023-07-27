@@ -26,7 +26,6 @@ import TransactionsRoutes from "./routes/transaction.routes";
 import { autoUpdateTasks } from "./app/AutoUpdateTasks";
 import TermsAndConditionsRoutes from "./routes/termsAndConditions.routes";
 import freeCreditsLinkRoutes from "./routes/FreeCreditsLink.routes";
-import { autoChargePayment } from "./app/AutoUpdateTasks/autoCharge";
 import path from "path";
 // import {  dataCleaning } from "./dataCleaning";
 const swaggerDocument = require('../swagger.json'); // Replace with the path to your actual Swagger document
@@ -122,7 +121,6 @@ export class Server {
             console.log(`:rocket: HTTP Server started at port ${this.port}`);
         });
         autoUpdateTasks()
-        autoChargePayment()
 
     }
 }
