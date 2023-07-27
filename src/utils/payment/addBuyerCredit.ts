@@ -23,6 +23,7 @@ export const addCreditsToBuyer = (params:any) => {
           let updatedCredits:any;
           if(params?.freeCredits){
             updatedCredits=buyerIdUser?.credits + params?.fixedAmount+params?.freeCredits
+            await User.findByIdAndUpdate(buyerIdUser.id,{promoCodeUsed:true})
           }
           else{
             updatedCredits=buyerIdUser?.credits + parseInt(params?.fixedAmount)
