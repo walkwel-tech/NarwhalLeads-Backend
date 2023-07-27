@@ -18,7 +18,6 @@ import { DeleteFile } from "../../utils/removeFile";
 import {
   send_email_for_lead_status,
   send_email_for_new_lead,
-  send_email_for_new_lead_to_admin,
 } from "../Middlewares/mail";
 import { transactionTitle } from "../../utils/Enums/transaction.title.enum";
 import { leadsAlertsEnums } from "../../utils/Enums/leads.Alerts.enum";
@@ -42,7 +41,7 @@ export class LeadsController {
       });
     }
 
-    const bid = req.params.id;
+    const bid = req.params.buyerId;
     const input = req.body;
     const user: any = await User.findOne({ buyerId: bid })
       .populate("userLeadsDetailsId")
@@ -325,18 +324,19 @@ export class LeadsController {
         }
       });
       const message: any = {
+        userName:user.firstName,
         firstName: input.firstName,
         lastName: input.lastName,
         phone: input.phone,
         email: input.email,
       };
       send_email_for_new_lead(user.email, message);
-      const messageToAdmin: any = {
-        leadsCost: leadcpl,
-        email: user.email,
-        cardNumber: cardDetails?.cardNumber?.substr(-4),
-      };
-      send_email_for_new_lead_to_admin(messageToAdmin);
+      // const messageToAdmin: any = {
+      //   leadsCost: leadcpl,
+      //   email: user.email,
+      //   cardNumber: cardDetails?.cardNumber?.substr(-4),
+      // };
+      // send_email_for_new_lead_to_admin(messageToAdmin);
     }
 
     return res.json({ data: leadsSave });

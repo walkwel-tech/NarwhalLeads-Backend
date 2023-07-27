@@ -38,9 +38,11 @@ export class invitedUsersController {
         const credentials = {
           email: input.email,
           password: text,
-          //@ts-ignore
-          name: user?.firstName + " "+user?.lastName,
+          name: input?.firstName + " "+input?.lastName,
+            //@ts-ignore
+          businessName:user?.businessDetailsId?.businessName
         };
+        console.log("EMAIL MESSAGE FOR INVITATON",credentials)
         send_email_to_invited_user(input.email, credentials);
         const hashPassword = hashSync(text, salt);
         //@ts-ignore
