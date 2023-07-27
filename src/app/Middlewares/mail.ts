@@ -36,91 +36,91 @@ export function send_email_forget_password(send_to: any, message: any) {
     });
 }
 
-// export function send_email_for_autocharge(send_to: any, message: any) {
-//   const msg = {
-//     // to: send_to, // Change to your recipient
-//     to: "radhika.walkweltech@gmail.com",
-//     from: process.env.VERIFIED_SENDER_ON_SENDGRID,
-//     // Change to your verified sender
-//     trackingSettings: {
-//       clickTracking: {
-//         enable: false,
-//         enableText: false,
-//       },
-//       openTracking: {
-//         enable: false,
-//       },
-//     },
-//     // html: "<strong>and easy to do anywhere, even with Node.js</strong>",
-//     // templateId: "d-69dcead271404a1d8a90aab2416bdc42",
-//     templateId:"d-7265bc9729b34fcb98cd0c081ddcb39f",
-//     dynamic_template_data: {
-//       firstName: message?.firstName,
-//       lastName:message?.lastName,
-//       //@ts-ignore
-//       businessName:message?.businessName,
-//           //@ts-ignore
-//       phone:message?.phone,
-//       email:message?.email,
-//       credit:`£${message?.credits}`,
-//       paymentAmount: `£${message?.amount}`,
-//       cardNumberEnd:message?.cardNumberEnd,
-//       cardHolderName:message?.cardHolderName
-//   }
-//   };
+export function send_email_for_autocharge(send_to: any, message: any) {
+  const msg = {
+    // to: send_to, // Change to your recipient
+    to: "radhika.walkweltech@gmail.com",
+    from: process.env.VERIFIED_SENDER_ON_SENDGRID,
+    // Change to your verified sender
+    trackingSettings: {
+      clickTracking: {
+        enable: false,
+        enableText: false,
+      },
+      openTracking: {
+        enable: false,
+      },
+    },
+    // html: "<strong>and easy to do anywhere, even with Node.js</strong>",
+    // templateId: "d-69dcead271404a1d8a90aab2416bdc42",
+    templateId:"d-7265bc9729b34fcb98cd0c081ddcb39f",
+    dynamic_template_data: {
+      firstName: message?.firstName,
+      lastName:message?.lastName,
+      //@ts-ignore
+      businessName:message?.businessName,
+          //@ts-ignore
+      phone:message?.phone,
+      email:message?.email,
+      credit:`£${message?.credits}`,
+      paymentAmount: `£${message?.amount}`,
+      cardNumberEnd:message?.cardNumberEnd,
+      cardHolderName:message?.cardHolderName
+  }
+  };
 
-//   sgMail
-//     .send(msg)
-//     .then(() => {
-//       console.log("Email sent");
-//     })
-//     .catch((error: any) => {
-//       console.error(error);
-//     });
-// }
+  sgMail
+    .send(msg)
+    .then(() => {
+      console.log("Email sent");
+    })
+    .catch((error: any) => {
+      console.error(error);
+    });
+}
 
-// export function send_email_for_failed_autocharge(send_to: any, message: any) {
-//   const msg = {
-//     // to: send_to, // Change to your recipient
-//     to: "radhika.walkweltech@gmail.com",
-//     from: process.env.VERIFIED_SENDER_ON_SENDGRID,
-//     // Change to your verified sender
-//     trackingSettings: {
-//       clickTracking: {
-//         enable: false,
-//         enableText: false,
-//       },
-//       openTracking: {
-//         enable: false,
-//       },
-//     },
-//     // html: "<strong>and easy to do anywhere, even with Node.js</strong>",
-//     // templateId: "d-5ec8ce254e7d4fb08db52f7bbecac652",
-//     templateId:"d-3bf15874bf854794b411dc470699bc6b",
-//     dynamic_template_data: {
-//       firstName: message?.firstName,
-//       lastName:message?.lastName,
-//       //@ts-ignore
-//       businessName:message?.businessName,
-//           //@ts-ignore
-//       phone:message?.phone,
-//       email:message?.email,
-//       credit:`£${message?.credits}`,
-//       paymentAmount: `£${message?.amount}`,
-//       cardNumberEnd:message?.cardNumberEnd,
-//       cardHolderName:message?.cardHolderName
-//   }
-//   };
+export function send_email_for_failed_autocharge(send_to: any, message: any) {
+  const msg = {
+    // to: send_to, // Change to your recipient
+    to: "radhika.walkweltech@gmail.com",
+    from: process.env.VERIFIED_SENDER_ON_SENDGRID,
+    // Change to your verified sender
+    trackingSettings: {
+      clickTracking: {
+        enable: false,
+        enableText: false,
+      },
+      openTracking: {
+        enable: false,
+      },
+    },
+    // html: "<strong>and easy to do anywhere, even with Node.js</strong>",
+    // templateId: "d-5ec8ce254e7d4fb08db52f7bbecac652",
+    templateId:"d-3bf15874bf854794b411dc470699bc6b",
+    dynamic_template_data: {
+      firstName: message?.firstName,
+      lastName:message?.lastName,
+      //@ts-ignore
+      businessName:message?.businessName,
+          //@ts-ignore
+      phone:message?.phone,
+      email:message?.email,
+      credit:`£${message?.credits}`,
+      paymentAmount: `£${message?.amount}`,
+      cardNumberEnd:message?.cardNumberEnd,
+      cardHolderName:message?.cardHolderName
+  }
+  };
 
-//   sgMail
-//     .send(msg)
-//     .then(() => {
-//       console.log("Email sent");
-//     })
-//     .catch((error: any) => {
-//       console.error(error);
-//     });
-// }
+  sgMail
+    .send(msg)
+    .then(() => {
+      console.log("Email sent");
+    })
+    .catch((error: any) => {
+      console.error(error);
+    });
+}
 
 export function send_email_for_registration(send_to: any, message: any) {
   const msg = {
