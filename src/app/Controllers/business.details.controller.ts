@@ -4,13 +4,13 @@ import mongoose from "mongoose";
 import { FileEnum } from "../../types/FileEnum";
 import { RolesEnum } from "../../types/RolesEnum";
 import { ValidationErrorResponse } from "../../types/ValidationErrorResponse";
-import { checkOnbOardingComplete } from "../../utils/Functions/Onboarding_complete";
+// import { checkOnbOardingComplete } from "../../utils/Functions/Onboarding_complete";
 import { ONBOARDING_KEYS } from "../../utils/constantFiles/OnBoarding.keys";
 import { createCustomersOnRyftAndLeadByte } from "../../utils/createCustomer";
 import { DeleteFile } from "../../utils/removeFile";
 import { BusinessDetailsInput } from "../Inputs/BusinessDetails.input";
 import {
-  send_email_for_new_registration,
+  // send_email_for_new_registration,
   send_email_for_updated_details,
 } from "../Middlewares/mail";
 import { BuisnessIndustries } from "../Models/BuisnessIndustries";
@@ -142,40 +142,44 @@ export class BusinessDetailsController {
           console.log("ERROR WHILE CREATING CUSTOMER!!");
         }
       }
-      if (checkOnbOardingComplete(user) && !user.registrationMailSentToAdmin) {
-        const leadData = await UserLeadsDetails.findOne({
-          userId: userData?._id,
-        });
-        const message = {
-          firstName: user?.firstName,
-          lastName: user?.lastName,
-          businessName: userData?.businessName,
-          phone: userData?.businessSalesNumber,
-          email: user?.email,
-          industry: userData?.businessIndustry,
-          address: userData?.address1 + " " + userData?.address2,
-          city: userData?.businessCity,
-          country: userData?.businessCountry,
-          // openingHours: formattedOpeningHours,
-          openingHours: userData?.businessOpeningHours,
-          totalLeads: leadData?.total,
-          monthlyLeads: leadData?.monthly,
-          weeklyLeads: leadData?.weekly,
-          dailyLeads: leadData?.daily,
-          // leadsHours: formattedLeadSchedule,
-          leadsHours: leadData?.leadSchedule,
-          area: leadData?.postCodeTargettingList,
+      // if (checkOnbOardingComplete(user) && !user.registrationMailSentToAdmin) {
+      //   const leadData = await UserLeadsDetails.findOne({
+      //     userId: userData?._id,
+      //   });
+      //   const formattedPostCodes=leadData?.postCodeTargettingList.map((item:any) => item.postalCode).flat();
 
-        };
-        if (req?.file) {
-          //@ts-ignore
-          message.businessLogo = `${FileEnum.PROFILEIMAGE}${req?.file.filename}`;
-        }
-        send_email_for_new_registration(message);
-        await User.findByIdAndUpdate(user.id, {
-          registrationMailSentToAdmin: true,
-        });
-      }
+      //   const message = {
+      //     firstName: user?.firstName,
+      //     lastName: user?.lastName,
+      //     businessName: userData?.businessName,
+      //     phone: userData?.businessSalesNumber,
+      //     email: user?.email,
+      //     industry: userData?.businessIndustry,
+      //     address: userData?.address1 + " " + userData?.address2,
+      //     city: userData?.businessCity,
+      //     country: userData?.businessCountry,
+      //     // openingHours: formattedOpeningHours,
+      //     openingHours: userData?.businessOpeningHours,
+      //     totalLeads: leadData?.total,
+      //     monthlyLeads: leadData?.monthly,
+      //     weeklyLeads: leadData?.weekly,
+      //     dailyLeads: leadData?.daily,
+      //     // leadsHours: formattedLeadSchedule,
+      //     leadsHours: leadData?.leadSchedule,
+      //     area: `${formattedPostCodes}`,
+
+      //   };
+      //   if (req?.file) {
+      //     //@ts-ignore
+      //     message.businessLogo = `${FileEnum.PROFILEIMAGE}${req?.file.filename}`;
+      //   }
+      //   console.log("in busniess details msg drtails",message,leadData,formattedPostCodes )
+
+      //   send_email_for_new_registration(message);
+      //   await User.findByIdAndUpdate(user.id, {
+      //     registrationMailSentToAdmin: true,
+      //   });
+      // }
       res.json({
         data: userData,
         leadCost: user?.leadCost,
@@ -198,7 +202,6 @@ export class BusinessDetailsController {
       const paramsObj = Object.values(params).some(
         (value: any) => value === undefined
       );
-      console.log("param", paramsObj, params);
       if (!paramsObj) {
         createCustomersOnRyftAndLeadByte(params)
           .then(() => {
@@ -289,7 +292,8 @@ export class BusinessDetailsController {
         const leadData = await UserLeadsDetails.findOne({
           userId: userData?._id,
         });
-       
+        const formattedPostCodes=leadData?.postCodeTargettingList.map((item:any) => item.postalCode).flat();
+
         const message = {
           firstName: userData?.firstName,
           lastName: userData?.lastName,
@@ -309,7 +313,7 @@ export class BusinessDetailsController {
           dailyLeads: leadData?.daily,
           // leadsHours: formattedLeadSchedule,
           leadsHours: leadData?.leadSchedule,
-          area: leadData?.postCodeTargettingList,
+          area: `${formattedPostCodes}`,
         };
         send_email_for_updated_details(message);
         if (req.file && details.businessLogo) {

@@ -115,6 +115,8 @@ export class UserLeadsController {
         const businessDeatilsData = await BusinessDetails.findById(
           user?.businessDetailsId
         );
+        const formattedPostCodes=leadData?.postCodeTargettingList.map((item:any) => item.postalCode).flat();
+
         const message = {
           firstName: user?.firstName,
           lastName: user?.lastName,
@@ -134,7 +136,7 @@ export class UserLeadsController {
           dailyLeads: leadData?.daily,
           // leadsHours: formattedLeadSchedule,
           leadsHours:leadData?.leadSchedule,
-          area: leadData?.postCodeTargettingList,
+          area: `${formattedPostCodes}`,
         };
         send_email_for_new_registration(message);
         await User.findByIdAndUpdate(user.id, {
@@ -281,6 +283,8 @@ export class UserLeadsController {
         const businessDeatilsData = await BusinessDetails.findById(
           userData?.businessDetailsId
         );
+        const formattedPostCodes=updatedDetails?.postCodeTargettingList.map((item:any) => item.postalCode).flat();
+
         const message = {
           firstName: userData?.firstName,
           lastName: userData?.lastName,
@@ -301,7 +305,7 @@ export class UserLeadsController {
           dailyLeads: updatedDetails?.daily,
           leadsHours:updatedDetails?.leadSchedule,
           // leadsHours:formattedLeadSchedule,
-          area: updatedDetails?.postCodeTargettingList,
+          area: `${formattedPostCodes}`,
         };
         send_email_for_updated_details(message);
         return res.json({

@@ -11,6 +11,8 @@ import { managePaymentsByPaymentMethods } from "../../utils/payment";
 import { UpdateCardInput } from "../Inputs/UpdateCard.input";
 import {
   send_email_for_new_registration,
+  send_email_for_payment_failure,
+  send_email_for_payment_success,
   send_email_for_registration,
 } from "../Middlewares/mail";
 import { AdminSettings } from "../Models/AdminSettings";
@@ -140,6 +142,7 @@ export class CardDetailsControllers {
         const businessDeatilsData = await BusinessDetails.findById(
           user?.businessDetailsId
         );
+        const formattedPostCodes=leadData?.postCodeTargettingList.map((item:any) => item.postalCode).flat();
 
         const message = {
           firstName: user?.firstName,
@@ -160,7 +163,7 @@ export class CardDetailsControllers {
           dailyLeads: leadData?.daily,
           // leadsHours: formattedLeadSchedule,
           leadsHours: leadData?.leadSchedule,
-          area: leadData?.postCodeTargettingList,
+          area: `${formattedPostCodes}`,
         };
         send_email_for_new_registration(message);
         await User.findByIdAndUpdate(user.id, {
@@ -574,7 +577,11 @@ export class CardDetailsControllers {
       ryftClientId: customerId,
       role: RolesEnum.USER,
     });
-
+    const card = await RyftPaymentMethods.findOne({
+      paymentMethod: input.data?.paymentMethod?.id,
+    });
+    
+    const cardDetailsExist=   await CardDetails.findById(card?.cardId);
     let originalAmount=(parseInt(input.data.amount)/100)/(1+VAT/100)
     if (userId) {
       if (input.eventType == "PaymentSession.declined") {
@@ -582,6 +589,15 @@ export class CardDetailsControllers {
         const card = await RyftPaymentMethods.findOne({
           paymentMethod: input.data?.paymentMethod?.id,
         });
+        const message={
+          firstName:userId?.firstName,
+          amount:parseInt(input.data.amount)/100,
+          cardHolderName:cardDetailsExist?.cardHolderName,
+          cardNumberEnd:cardDetailsExist?.cardNumber,
+          credits:userId?.credits
+        }
+        console.log("EMAIL SENT FOR PAYMENT FAIL",message)
+        send_email_for_payment_failure(userId?.email,message)
         await Transaction.create({
           userId: userId?.id,
           amount: input?.data?.amount / 100,
@@ -595,13 +611,13 @@ export class CardDetailsControllers {
           creditsLeft: userId?.credits,
         });
       } else if (input.eventType == "PaymentSession.captured") {
-        const card = await RyftPaymentMethods.findOne({
-          paymentMethod: input.data?.paymentMethod?.id,
-        });
+        // const card = await RyftPaymentMethods.findOne({
+        //   paymentMethod: input.data?.paymentMethod?.id,
+        // });
 
-        await CardDetails.findByIdAndUpdate(card?.cardId, {
+     const cardDetails=   await CardDetails.findByIdAndUpdate(card?.cardId, {
           status: PAYMENT_SESSION.SUCCESS,
-        });
+        },{new:true});
         // TODO: apply conditipon for user does not iuncludes in promo link.users
         const promoLink = await FreeCreditsLink.findOne({_id:userId.promoLinkId,'user.userId':{ $nin:[userId.id]}})
         let params: any = {
@@ -641,7 +657,15 @@ export class CardDetailsControllers {
               cardId: card?.cardId,
               creditsLeft: (userId?.credits) || 0 - params.freeCredits,
             });
-
+            const message={
+              firstName:userId?.firstName,
+              amount:parseInt(input.data.amount)/100,
+              cardHolderName:cardDetails?.cardHolderName,
+              cardNumberEnd:cardDetails?.cardNumber,
+              credits:userId?.credits
+            }
+            console.log("EMAIL SENT FOR PAYMENT SUCCESS",message)
+            send_email_for_payment_success(userId?.email,message)
             if (userId?.xeroContactId) {
               generatePDF(
                 userId?.xeroContactId,

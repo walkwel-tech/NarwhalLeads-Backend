@@ -375,7 +375,7 @@ export class UsersControllers {
       }
       if (
             // @ts-ignore
-        (input.buyerId || input.leadCost || input.ryftClientId || input.xeroContactId) &&  req.user?.role == RolesEnum.USER
+        (input.buyerId || input.leadCost || input.ryftClientId || input.xeroContactId || input.role) &&  req.user?.role == RolesEnum.USER
       ) {
         return res
           .status(403)
@@ -530,30 +530,6 @@ export class UsersControllers {
           { new: true }
         );
       }
-      const buinessData = await BusinessDetails.findOne(checkUser.businessDetailsId)
-      const leadData = await UserLeadsDetails.findOne(checkUser.userLeadsDetailsId)
-      const message = {
-        firstName: checkUser?.firstName,
-        lastName: checkUser?.lastName,
-        businessName: buinessData?.businessName,
-        phone: buinessData?.businessSalesNumber,
-        email: checkUser?.email,
-        industry: buinessData?.businessIndustry,
-        address: buinessData?.address1 + " " + buinessData?.address2,
-        city: buinessData?.businessCity,
-        country: buinessData?.businessCountry,
-        openingHours: buinessData?.businessOpeningHours,
-        logo: buinessData?.businessLogo,
-        // openingHours:formattedOpeningHours,
-        totalLeads: leadData?.total,
-        monthlyLeads: leadData?.monthly,
-        weeklyLeads: leadData?.weekly,
-        dailyLeads: leadData?.daily,
-        // leadsHours:formattedLeadSchedule,
-        leadsHours: leadData?.leadSchedule,
-        area: leadData?.postCodeTargettingList
-      }
-      send_email_for_updated_details(message)
       // @ts-ignore
       if (input.credits && req?.user.role == RolesEnum.ADMIN) {
         const params: any = {
@@ -669,14 +645,36 @@ export class UsersControllers {
             .json({ error: { message: "User to update does not exists." } });
         }
         const result = await User.findById(id, "-password -__v");
+        const buinessData= await BusinessDetails.findById(result?.businessDetailsId)
+        const leadData= await UserLeadsDetails.findById(result?.userLeadsDetailsId)
+        console.log(" leadData?.postCodeTargettingList", leadData?.postCodeTargettingList)
+        const formattedPostCodes=leadData?.postCodeTargettingList.map((item:any) => item.postalCode).flat();
+
+        const message = {
+          firstName: result?.firstName,
+          lastName: result?.lastName,
+          businessName: buinessData?.businessName,
+          phone: buinessData?.businessSalesNumber,
+          email: result?.email,
+          industry: buinessData?.businessIndustry,
+          address: buinessData?.address1 + " " + buinessData?.address2,
+          city: buinessData?.businessCity,
+          country: buinessData?.businessCountry,
+          openingHours: buinessData?.businessOpeningHours,
+          logo: buinessData?.businessLogo,
+          // openingHours:formattedOpeningHours,
+          totalLeads: leadData?.total,
+          monthlyLeads: leadData?.monthly,
+          weeklyLeads: leadData?.weekly,
+          dailyLeads: leadData?.daily,
+          // leadsHours:formattedLeadSchedule,
+          leadsHours: leadData?.leadSchedule,
+          area: `${formattedPostCodes}`
+        }
+        send_email_for_updated_details(message)
 
         return res.json({ data: result });
-      }
-      async function response() {
-        const result = await User.findById(id, "-password -__v");
-        return res.json({ data: result });
-      }
-      setTimeout(response, 6000);
+      }  
     } catch (err) {
       return res
         .status(500)
