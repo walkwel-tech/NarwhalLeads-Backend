@@ -20,6 +20,7 @@ import { addUserXeroId } from "../../utils/XeroApiIntegration/createContact";
 import { User } from "../Models/User";
 import { UserLeadsDetails } from "../Models/UserLeadsDetails";
 import { LeadTablePreference } from "../Models/LeadTablePreference";
+
 const ObjectId = mongoose.Types.ObjectId;
 
 export class BusinessDetailsController {
@@ -42,7 +43,7 @@ export class BusinessDetailsController {
       (Business.businessCity = input.businessCity),
       // (Business.businessCountry = input.businessCountry),
       (Business.businessPostCode = input.businessPostCode);
-    Business.businessOpeningHours = JSON.parse(input.businessOpeningHours);
+    Business.businessOpeningHours = JSON.parse(input?.businessOpeningHours);
     const errors = await validate(Business);
     // get onboarding value of user
     const { onBoarding }: any = await User.findById(input.userId);
@@ -133,6 +134,7 @@ export class BusinessDetailsController {
         businessDetailsId: new ObjectId(userData._id),
         leadCost: industry?.leadCost,
         businessIndustryId: industry?.id,
+        onBoardingPercentage:input?.onBoardingPercentage
       });
       const user: any = await User.findById(input.userId);
       if (!user?.xeroContactId) {
@@ -222,8 +224,10 @@ export class BusinessDetailsController {
     req: Request,
     res: Response
   ): Promise<any> => {
+    console.log("hgeuywgedyuwgeydg")
     const { id } = req.params;
     const input = req.body;
+   
     try {
       const details = await BusinessDetails.findOne({ _id: new ObjectId(id) });
       if (!details) {
@@ -245,6 +249,7 @@ export class BusinessDetailsController {
         );
       await LeadTablePreference.findOneAndUpdate({userId:userData?.id},{$set:{columns:industry?.columns}})
       }
+     
       const data = await BusinessDetails.findByIdAndUpdate(
         id,
         {

@@ -45,13 +45,8 @@ import { PROMO_LINK } from "../../utils/Enums/promoLink.enum";
 import { VAT } from "../../utils/constantFiles/Invoices";
 import mongoose from "mongoose";
 const ObjectId = mongoose.Types.ObjectId;
+import { PaymentResponse } from "../../types/PaymentResponseInterface";
 
-interface PaymentResponse {
-  message: string;
-  status: number;
-  url?: string;
-  sessionID?: string;
-}
 
 export class CardDetailsControllers {
   //FIXME:not in use

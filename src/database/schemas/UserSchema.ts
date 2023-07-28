@@ -161,6 +161,10 @@ const UserSchema = new Schema(
       type: Boolean,
       default: false,
     },
+    onBoardingPercentage: {
+      type: Number,
+      required: false,
+    },
   },
   { timestamps: true }
 );
