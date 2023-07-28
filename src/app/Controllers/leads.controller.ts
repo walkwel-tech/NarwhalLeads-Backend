@@ -945,7 +945,10 @@ export class LeadsController {
       const totalPages = Math.ceil(leadsCount / perPage);
       query.results.map((item: any) => {
         item.leads.clientName =  item["clientName"][0]?.firstName +" "+ item["clientName"][0]?.lastName;
+        //fixme: according to v2 front end, added status in leads object
+        item.leads.status =  item.status;
         delete item.clientName
+        
       });
       return res.json({
         data: query.results,
@@ -1099,6 +1102,8 @@ export class LeadsController {
         item.leads.clientName =  item["clientName"][0]?.firstName +" "+ item["clientName"][0]?.lastName;
         // let clientName = Object.assign({}, item["clientName"][0]);
         // item.clientName = clientName;
+        item.leads.status =  item.status;
+
       });
       const leadsCount = query.leadsCount[0]?.count || 0;
       const totalPages = Math.ceil(leadsCount / perPage);
@@ -1253,6 +1258,8 @@ export class LeadsController {
       ]);
       query.results.map((item: any) => {
         item.leads.clientName =  item["clientName"][0]?.firstName +" "+ item["clientName"][0]?.lastName;
+        item.leads.status =  item.status;
+
       });
       const leadsCount = query.leadsCount[0]?.count || 0;
       const totalPages = Math.ceil(leadsCount / perPage);
@@ -1396,6 +1403,8 @@ export class LeadsController {
         item.leads.clientName =  item["clientName"][0]?.firstName +" "+ item["clientName"][0]?.lastName;
         // let clientName = Object.assign({}, item["clientName"][0]);
         // item.clientName = clientName;
+        item.leads.status =  item.status;
+
       });
       const leadsCount = query.leadsCount[0]?.count || 0;
       const totalPages = Math.ceil(leadsCount / perPage);

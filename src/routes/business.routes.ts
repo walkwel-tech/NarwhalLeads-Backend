@@ -7,8 +7,15 @@ import { storeFile } from "../app/Middlewares/fileUpload";
 
 import { FileEnum } from "../types/FileEnum";
 import { fileMaxSize } from "../utils/constantFiles/fileMaxSize";
+// import path from "path";
+// const fs=require("fs")
 //@ts-ignore
-export const fileSizeLimitErrorHandler = (err, req, res, next) => {
+export const fileSizeLimitErrorHandler = (err, req, res, next) => { 
+  // const profileImageDir = path.join(__dirname, "..",FileEnum.PROFILEIMAGE);
+    
+  // if (!fs.existsSync(profileImageDir)) {
+  //   fs.mkdirSync(profileImageDir, { recursive: true });
+  // }
     if (err) {
       return res
       .status(400)

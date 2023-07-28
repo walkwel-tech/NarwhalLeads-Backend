@@ -677,6 +677,37 @@ class AuthController {
     const input = req
     return res.json({ data: input })
   };
+
+  static me = async (req: Request, res: Response): Promise<any> => {
+    const user: any = req.user;
+    try {
+      const exists = await User.findById(user?.id, "-password")
+        .populate("businessDetailsId")
+        .populate("userLeadsDetailsId")
+        .populate("invitedById");
+      if (exists) {
+        return res.json({ data: exists });
+      }
+      return res.json({ data: "User not exists" });
+    } catch (error) {
+      console.log(error);
+      return res
+        .status(500)
+        .json({ error: { message: "Something went wrong." } });
+    }
+  };
+
+  
+  static test = async (req: Request, res: Response): Promise<any> => {
+    try {
+      const input=req?.body
+      return res.json({ data: input});
+    } catch (error) {
+      return res
+        .status(500)
+        .json({ error: { message: "Something went wrong." } });
+    }
+  };
 }
 
 export { AuthController };

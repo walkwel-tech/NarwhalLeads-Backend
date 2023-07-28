@@ -647,7 +647,6 @@ export class UsersControllers {
         const result = await User.findById(id, "-password -__v");
         const buinessData= await BusinessDetails.findById(result?.businessDetailsId)
         const leadData= await UserLeadsDetails.findById(result?.userLeadsDetailsId)
-        console.log(" leadData?.postCodeTargettingList", leadData?.postCodeTargettingList)
         const formattedPostCodes=leadData?.postCodeTargettingList.map((item:any) => item.postalCode).flat();
 
         const message = {
