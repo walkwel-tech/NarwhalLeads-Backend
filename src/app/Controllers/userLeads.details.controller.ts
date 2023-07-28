@@ -109,6 +109,7 @@ export class UserLeadsController {
       const details = await UserLeadsDetails.create(dataToSave);
       await User.findByIdAndUpdate(input.userId, {
         userLeadsDetailsId: details._id,
+        onBoardingPercentage:input?.onBoardingPercentage
       });
       if (checkOnbOardingComplete(user) && !user.registrationMailSentToAdmin) {
         const leadData = await UserLeadsDetails.findOne({ userId: user?._id });

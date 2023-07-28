@@ -40,4 +40,5 @@ export interface UserInterface extends Document {
   promoLinkId:Types.ObjectId;
   isLeadReceived:boolean;
   promoCodeUsed:boolean
+  onBoardingPercentage:number;
 }

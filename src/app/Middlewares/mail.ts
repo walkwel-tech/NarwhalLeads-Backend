@@ -36,8 +36,8 @@ export function send_email_forget_password(send_to: any, message: any) {
 
 export function send_email_for_autocharge(send_to: any, message: any) {
   const msg = {
-    // to: send_to, // Change to your recipient
-    to: "radhika.walkweltech@gmail.com",
+    to: send_to, /// Change to your recipient
+    // to: "radhika.walkweltech@gmail.com",
     from: process.env.VERIFIED_SENDER_ON_SENDGRID,
     // Change to your verified sender
     trackingSettings: {
@@ -79,8 +79,8 @@ export function send_email_for_autocharge(send_to: any, message: any) {
 
 export function send_email_for_failed_autocharge(send_to: any, message: any) {
   const msg = {
-    // to: send_to, // Change to your recipient
-    to: "radhika.walkweltech@gmail.com",
+    to: send_to, // Change to your recipient
+    // to: "radhika.walkweltech@gmail.com",
     from: process.env.VERIFIED_SENDER_ON_SENDGRID,
     // Change to your verified sender
     trackingSettings: {
