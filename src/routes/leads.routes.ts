@@ -18,7 +18,7 @@ const leads: Router = Router();
 leads.get('/generatepdf/:invoiceID',Auth, LeadsController.generateInvoicePdf);
 leads.post('/leads-Preference', Auth,LeadsController.createPreference);
 leads.post('/:buyerId',LeadsController.create);
-leads.post('/:id',Auth,LeadsController.update)
+leads.post('/update/:id',Auth,LeadsController.update)
 leads.get('/leads-Preference', Auth,LeadsController.showPreference);
 leads.get('/revenue',Auth,LeadsController.revenue)
 leads.get('/rightDashboardChart',Auth,LeadsController.leadsCountDashboardChart)
