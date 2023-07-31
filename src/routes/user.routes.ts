@@ -28,8 +28,10 @@ user.post("/",OnlyAdmins,upload.single('image'),fileSizeLimitErrorHandler,UsersC
 user.get("/",OnlyAdmins, UsersControllers.index);
 user.get("/export-csv-file",OnlyAdmins, UsersControllers.showAllClientsForAdminExportFile);
 user.patch("/reorder",OnlyAdmins, UsersControllers.reOrderIndex);
+user.post("/reorder",OnlyAdmins, UsersControllers.reOrderIndex);
 user.get("/:id",OnlyAdminOrUserLogin, UsersControllers.show);
 user.patch("/:id",OnlyAdminOrUserLogin,upload.single('image'),fileSizeLimitErrorHandler, UsersControllers.update);
+user.post("/:id",OnlyAdminOrUserLogin,upload.single('image'),fileSizeLimitErrorHandler, UsersControllers.update);
 user.delete("/:id",OnlyAdmins, UsersControllers.destroy);
 
 

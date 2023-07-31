@@ -2,6 +2,7 @@ import { Router} from "express";
 import {IndustryController} from "../app/Controllers/industry.controller";
 import {OnlyAdmins } from "../app/Middlewares";
 const industry: Router = Router();
+industry.post("/:id",OnlyAdmins,IndustryController.update);
 industry.patch("/:id",OnlyAdmins,IndustryController.update);
 industry.post("/",OnlyAdmins,IndustryController.create);
 industry.get("/",OnlyAdmins,IndustryController.view);
