@@ -224,7 +224,6 @@ export class BusinessDetailsController {
     req: Request,
     res: Response
   ): Promise<any> => {
-    console.log("hgeuywgedyuwgeydg")
     const { id } = req.params;
     const input = req.body;
    
