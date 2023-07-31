@@ -1019,8 +1019,6 @@ export class LeadsController {
             { "leads.email": { $regex: _req.query.search, $options: "i" } },
             { "leads.firstName": { $regex: _req.query.search, $options: "i" } },
             { "leads.lastName": { $regex: _req.query.search, $options: "i" } },
-            { "leads.address": { $regex: _req.query.search, $options: "i" } },
-            { "leads.phone": { $regex: _req.query.search, $options: "i" } },
           ],
         };
         skip = 0;
@@ -1179,12 +1177,8 @@ export class LeadsController {
             { bid: { $regex: _req.query.search, $options: "i" } },
             { status: { $regex: _req.query.search, $options: "i" } },
             { "leads.email": { $regex: _req.query.search, $options: "i" } },
-            { "leads.firstname": { $regex: _req.query.search, $options: "i" } },
-            { "leads.lastname": { $regex: _req.query.search, $options: "i" } },
-            { "leads.gender": { $regex: _req.query.search, $options: "i" } },
-            { "leads.dob": { $regex: _req.query.search, $options: "i" } },
-            { "leads.jobtitle": { $regex: _req.query.search, $options: "i" } },
-            { "leads.county": { $regex: _req.query.search, $options: "i" } },
+            { "leads.firstName": { $regex: _req.query.search, $options: "i" } },
+            { "leads.lastName": { $regex: _req.query.search, $options: "i" } }
           ],
         };
         skip = 0;
@@ -1323,18 +1317,12 @@ export class LeadsController {
             { invalidLeadReason: { $regex: _req.query.search, $options: "i" } },
             { leadRemarks: { $regex: _req.query.search, $options: "i" } },
             { feedbackForNMG: { $regex: _req.query.search, $options: "i" } },
-            { clientNotes1: { $regex: _req.query.search, $options: "i" } },
-            { clientNotes2: { $regex: _req.query.search, $options: "i" } },
-            { clientNotes3: { $regex: _req.query.search, $options: "i" } },
+            { clientNotes: { $regex: _req.query.search, $options: "i" } },
             { bid: { $regex: _req.query.search, $options: "i" } },
             { status: { $regex: _req.query.search, $options: "i" } },
             { "leads.email": { $regex: _req.query.search, $options: "i" } },
-            { "leads.firstname": { $regex: _req.query.search, $options: "i" } },
-            { "leads.lastname": { $regex: _req.query.search, $options: "i" } },
-            { "leads.gender": { $regex: _req.query.search, $options: "i" } },
-            { "leads.dob": { $regex: _req.query.search, $options: "i" } },
-            { "leads.jobtitle": { $regex: _req.query.search, $options: "i" } },
-            { "leads.county": { $regex: _req.query.search, $options: "i" } },
+            { "leads.firstName": { $regex: _req.query.search, $options: "i" } },
+            { "leads.lastName": { $regex: _req.query.search, $options: "i" } }
           ],
         };
         skip = 0;
@@ -1593,6 +1581,8 @@ export class LeadsController {
       const c = new Date(new Date().setDate(new Date().getDate() - 14));
       const d = new Date(new Date().setDate(new Date().getDate() - 30));
       const dd = new Date(new Date().setDate(new Date().getDate() - 60));
+      const e = new Date(new Date().setDate(new Date().getDate() - 90));
+      const ee = new Date(new Date().setDate(new Date().getDate() - 180));
 
       const yesterday = new Date(
         new Date(new Date(a.getTime() - a.getTimezoneOffset() * 60000))
@@ -1621,6 +1611,16 @@ export class LeadsController {
       );
       const beforeTwoMonthDate = new Date(
         new Date(new Date(dd.getTime() - dd.getTimezoneOffset() * 60000))
+          .toISOString()
+          .split("T")[0]
+      );
+      const beforeThreeMonthDate = new Date(
+        new Date(new Date(e.getTime() - e.getTimezoneOffset() * 60000))
+          .toISOString()
+          .split("T")[0]
+      );
+      const beforeSixMonthDate = new Date(
+        new Date(new Date(ee.getTime() - ee.getTimezoneOffset() * 60000))
           .toISOString()
           .split("T")[0]
       );
@@ -1675,6 +1675,22 @@ export class LeadsController {
           $lte: new Date(beforeOneMonthDate),
         },
       });
+
+      const beforeThreeMonthData = await Leads.find({
+        bid: user?.buyerId,
+        createdAt: {
+          $gte: new Date(beforeThreeMonthDate),
+          $lte: new Date(today),
+        },
+      });
+
+      const beforeSixMonthData = await Leads.find({
+        bid: user?.buyerId,
+        createdAt: {
+          $gte: new Date(beforeSixMonthDate),
+          $lte: new Date(beforeThreeMonthDate),
+        },
+      });
       //@ts-ignore
       function percentage(a, b) {
         let result = Math.floor(((a - b) * 100) / a + b);
@@ -1702,16 +1718,23 @@ export class LeadsController {
         currentMonthData.length,
         beforeOneMonthData.length
       );
+
+      const quarterlyPercentage = percentage(
+        beforeThreeMonthData.length,
+        beforeSixMonthData.length
+      );
       return res.json({
         data: {
           todayData: todayData.length,
           // yesterdayData: yesterdayData.length,
           lastWeekData: lastWeekData.length,
           monthlyData: currentMonthData.length,
+          quarterlyData:beforeThreeMonthData.length,
           todayPercentage: todayPercentage,
           // yesterdayPercentage: yesterdayPercentage,
           pastWeekPercentage: pastWeekPercentage,
           monthlyPercentage: monthlyPercentage,
+          quarterlyPercentage:quarterlyPercentage
         },
       });
     } catch (err) {
