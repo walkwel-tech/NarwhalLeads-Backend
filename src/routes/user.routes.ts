@@ -21,7 +21,6 @@ const fileSizeLimitErrorHandler = (err, req, res, next) => {
 }
 const upload = multer({ storage: storeFile(`${process.cwd()}${FileEnum.PUBLICDIR}${FileEnum.PROFILEIMAGE}`) ,limits:{fileSize:maxSize}})
 user.post("/:id",OnlyAdminOrUserLogin,upload.single('image'),fileSizeLimitErrorHandler, UsersControllers.update);
-
 user.get("/invoices",Auth, UsersControllers.invoices);
 user.get("/show",OnlyAdmins, UsersControllers.indexName);
 user.post("/",OnlyAdmins,upload.single('image'),fileSizeLimitErrorHandler,UsersControllers.create);

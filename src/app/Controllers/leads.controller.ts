@@ -46,8 +46,8 @@ export class LeadsController {
     const user: any = await User.findOne({ buyerId: bid })
       .populate("userLeadsDetailsId")
       .populate("businessDetailsId");
-    if(!user.isLeadReceived){
-      await User.findByIdAndUpdate(user.id,{isLeadReceived:true})
+    if (!user.isLeadReceived) {
+      await User.findByIdAndUpdate(user.id, { isLeadReceived: true });
     }
     const leads = await Leads.findOne({ bid: user?.buyerId })
       .sort({ rowIndex: -1 })
@@ -63,7 +63,6 @@ export class LeadsController {
       array.push(i["defaultColumn"]);
     });
     let arr: any = [];
-
 
     Object.keys(input).map((j) => {
       if (!array.includes(j)) {
@@ -121,14 +120,13 @@ export class LeadsController {
       userId: admin?._id,
     });
     if (!checkPreferenceExists) {
-
       const columnsNames = await BuisnessIndustries.findById(
         user.businessIndustryId
       );
       // const columnsNames = await CustomColumnNames.findOne({
       // industryId: user?.businessIndustryId,
       // });
-      let array: any = [{ name: "clientName", isVisible: true, index: 0}];
+      let array: any = [{ name: "clientName", isVisible: true, index: 0 }];
       Object.keys(input).map((i: any) => {
         // columnsNames?.columnsNames.map((j)=>{
         let obj: any = {};
@@ -151,7 +149,6 @@ export class LeadsController {
         userId: user.id,
         columns: array,
       };
-
 
       await LeadTablePreference.create(dataToSaveInLeadsPreference);
       const admin = await User.findOne({ role: RolesEnum.ADMIN });
@@ -222,21 +219,21 @@ export class LeadsController {
         checkPreferenceExists?.columns.push(obj);
       }
     });
-    checkPreferenceExists?.columns.map((i:any)=>{
-    //todo: add object for clinet names
-    const existingElement = checkPreferenceExists?.columns.find(
-    (resElement: any) => resElement.name === "clientName"
-    );
-    if(!existingElement){
-    let obj={
-    name:"clientName",
-    isVisible:true,
-    index:checkPreferenceExists?.columns.length,
-    // newName:"clientName"
-    }
-    checkPreferenceExists?.columns.push(obj)
-    }
-    })
+    checkPreferenceExists?.columns.map((i: any) => {
+      //todo: add object for clinet names
+      const existingElement = checkPreferenceExists?.columns.find(
+        (resElement: any) => resElement.name === "clientName"
+      );
+      if (!existingElement) {
+        let obj = {
+          name: "clientName",
+          isVisible: true,
+          index: checkPreferenceExists?.columns.length,
+          // newName:"clientName"
+        };
+        checkPreferenceExists?.columns.push(obj);
+      }
+    });
 
     if (adminPref) {
       await LeadTablePreference.findOneAndUpdate(
@@ -244,7 +241,7 @@ export class LeadsController {
         { columns: checkPreferenceExists?.columns }
       );
     } else {
-       await LeadTablePreference.create({
+      await LeadTablePreference.create({
         userId: admin?._id,
         columns: checkPreferenceExists?.columns,
       });
@@ -324,7 +321,7 @@ export class LeadsController {
         }
       });
       const message: any = {
-        userName:user.firstName,
+        userName: user.firstName,
         firstName: input.firstName,
         lastName: input.lastName,
         phone: input.phone,
@@ -944,11 +941,13 @@ export class LeadsController {
       const leadsCount = query.leadsCount[0]?.count || 0;
       const totalPages = Math.ceil(leadsCount / perPage);
       query.results.map((item: any) => {
-        item.leads.clientName =  item["clientName"][0]?.firstName +" "+ item["clientName"][0]?.lastName;
+        item.leads.clientName =
+          item["clientName"][0]?.firstName +
+          " " +
+          item["clientName"][0]?.lastName;
         //fixme: according to v2 front end, added status in leads object
-        item.leads.status =  item.status;
-        delete item.clientName
-        
+        item.leads.status = item.status;
+        delete item.clientName;
       });
       return res.json({
         data: query.results,
@@ -1002,6 +1001,11 @@ export class LeadsController {
           },
         ],
       };
+
+      if (_req.query.userId) {
+        const user = await User.findById(_req.query.userId);
+        dataToFind.bid = user?.buyerId;
+      }
       const user = await User.findById(userId);
       if (user?.credits == 0 && user?.role == RolesEnum.USER) {
         return res
@@ -1093,15 +1097,17 @@ export class LeadsController {
         },
       ]);
       // query.results.map((item: any) => {
-        // let clientName = Object.assign({}, item["clientName"][0]);
-        // item.clientName = clientName;
+      // let clientName = Object.assign({}, item["clientName"][0]);
+      // item.clientName = clientName;
       // });
       query.results.map((item: any) => {
-        item.leads.clientName =  item["clientName"][0]?.firstName +" "+ item["clientName"][0]?.lastName;
+        item.leads.clientName =
+          item["clientName"][0]?.firstName +
+          " " +
+          item["clientName"][0]?.lastName;
         // let clientName = Object.assign({}, item["clientName"][0]);
         // item.clientName = clientName;
-        item.leads.status =  item.status;
-
+        item.leads.status = item.status;
       });
       const leadsCount = query.leadsCount[0]?.count || 0;
       const totalPages = Math.ceil(leadsCount / perPage);
@@ -1178,7 +1184,7 @@ export class LeadsController {
             { status: { $regex: _req.query.search, $options: "i" } },
             { "leads.email": { $regex: _req.query.search, $options: "i" } },
             { "leads.firstName": { $regex: _req.query.search, $options: "i" } },
-            { "leads.lastName": { $regex: _req.query.search, $options: "i" } }
+            { "leads.lastName": { $regex: _req.query.search, $options: "i" } },
           ],
         };
         skip = 0;
@@ -1251,9 +1257,11 @@ export class LeadsController {
         },
       ]);
       query.results.map((item: any) => {
-        item.leads.clientName =  item["clientName"][0]?.firstName +" "+ item["clientName"][0]?.lastName;
-        item.leads.status =  item.status;
-
+        item.leads.clientName =
+          item["clientName"][0]?.firstName +
+          " " +
+          item["clientName"][0]?.lastName;
+        item.leads.status = item.status;
       });
       const leadsCount = query.leadsCount[0]?.count || 0;
       const totalPages = Math.ceil(leadsCount / perPage);
@@ -1322,7 +1330,7 @@ export class LeadsController {
             { status: { $regex: _req.query.search, $options: "i" } },
             { "leads.email": { $regex: _req.query.search, $options: "i" } },
             { "leads.firstName": { $regex: _req.query.search, $options: "i" } },
-            { "leads.lastName": { $regex: _req.query.search, $options: "i" } }
+            { "leads.lastName": { $regex: _req.query.search, $options: "i" } },
           ],
         };
         skip = 0;
@@ -1388,11 +1396,13 @@ export class LeadsController {
         },
       ]);
       query.results.map((item: any) => {
-        item.leads.clientName =  item["clientName"][0]?.firstName +" "+ item["clientName"][0]?.lastName;
+        item.leads.clientName =
+          item["clientName"][0]?.firstName +
+          " " +
+          item["clientName"][0]?.lastName;
         // let clientName = Object.assign({}, item["clientName"][0]);
         // item.clientName = clientName;
-        item.leads.status =  item.status;
-
+        item.leads.status = item.status;
       });
       const leadsCount = query.leadsCount[0]?.count || 0;
       const totalPages = Math.ceil(leadsCount / perPage);
@@ -1729,12 +1739,12 @@ export class LeadsController {
           // yesterdayData: yesterdayData.length,
           lastWeekData: lastWeekData.length,
           monthlyData: currentMonthData.length,
-          quarterlyData:beforeThreeMonthData.length,
+          quarterlyData: beforeThreeMonthData.length,
           todayPercentage: todayPercentage,
           // yesterdayPercentage: yesterdayPercentage,
           pastWeekPercentage: pastWeekPercentage,
           monthlyPercentage: monthlyPercentage,
-          quarterlyPercentage:quarterlyPercentage
+          quarterlyPercentage: quarterlyPercentage,
         },
       });
     } catch (err) {
