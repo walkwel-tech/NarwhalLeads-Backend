@@ -411,6 +411,9 @@ export class UsersControllers {
           .json({ error: { message: "Card Details not found!" } });
       }
       if (input.businessName) {
+        if(!checkUser.businessDetailsId){
+          return res.status(400).json({error:{message:"business details not found"}})
+        }
         await BusinessDetails.findByIdAndUpdate(
           checkUser?.businessDetailsId,
           { businessName: input.businessName },
@@ -419,6 +422,9 @@ export class UsersControllers {
         );
       }
       if (input.businessAddress) {
+        if(!checkUser.businessDetailsId){
+          return res.status(400).json({error:{message:"business details not found"}})
+        }
         await BusinessDetails.findByIdAndUpdate(
           checkUser?.businessDetailsId,
           { businessAddress: input.businessAddress },
@@ -427,6 +433,9 @@ export class UsersControllers {
         );
       }
       if (input.businessCity) {
+        if(!checkUser.businessDetailsId){
+          return res.status(400).json({error:{message:"business details not found"}})
+        }
         await BusinessDetails.findByIdAndUpdate(
           checkUser?.businessDetailsId,
           { businessCity: input.businessCity },
@@ -435,6 +444,9 @@ export class UsersControllers {
         );
       }
       if (input.businessCountry) {
+        if(!checkUser.businessDetailsId){
+          return res.status(400).json({error:{message:"business details not found"}})
+        }
         await BusinessDetails.findByIdAndUpdate(
           checkUser?.businessDetailsId,
           { businessCountry: input.businessCountry },
@@ -443,6 +455,9 @@ export class UsersControllers {
         );
       }
       if (input.businessPostCode) {
+        if(!checkUser.businessDetailsId){
+          return res.status(400).json({error:{message:"business details not found"}})
+        }
         await BusinessDetails.findByIdAndUpdate(
           checkUser?.businessDetailsId,
           { businessPostCode: input.businessPostCode },
@@ -451,6 +466,9 @@ export class UsersControllers {
         );
       }
       if (input.businessIndustry) {
+        if(!checkUser.businessDetailsId){
+          return res.status(400).json({error:{message:"business details not found"}})
+        }
         await BusinessDetails.findByIdAndUpdate(
           checkUser?.businessDetailsId,
           { businessIndustry: input.businessIndustry },
@@ -459,6 +477,9 @@ export class UsersControllers {
         );
       }
       if (input.businessOpeningHours) {
+        if(!checkUser.businessDetailsId){
+          return res.status(400).json({error:{message:"business details not found"}})
+        }
         await BusinessDetails.findByIdAndUpdate(
           checkUser?.businessDetailsId,
           { businessOpeningHours: input.businessOpeningHours },
@@ -467,6 +488,9 @@ export class UsersControllers {
         );
       }
       if (input.total) {
+        if(!checkUser.userLeadsDetailsId){
+          return res.status(400).json({error:{message:"lead details not found"}})
+        }
         await UserLeadsDetails.findByIdAndUpdate(
           checkUser?.userLeadsDetailsId,
           { total: input.total },
@@ -475,6 +499,9 @@ export class UsersControllers {
         );
       }
       if (input.weekly) {
+        if(!checkUser.userLeadsDetailsId){
+          return res.status(400).json({error:{message:"lead details not found"}})
+        }
         await UserLeadsDetails.findByIdAndUpdate(
           checkUser?.userLeadsDetailsId,
           { weekly: input.weekly },
@@ -483,6 +510,9 @@ export class UsersControllers {
         );
       }
       if (input.monthly) {
+        if(!checkUser.userLeadsDetailsId){
+          return res.status(400).json({error:{message:"lead details not found"}})
+        }
         await UserLeadsDetails.findByIdAndUpdate(
           checkUser?.userLeadsDetailsId,
           { monthly: input.monthly },
@@ -491,6 +521,9 @@ export class UsersControllers {
         );
       }
       if (input.leadSchedule) {
+        if(!checkUser.userLeadsDetailsId){
+          return res.status(400).json({error:{message:"lead details not found"}})
+        }
         await UserLeadsDetails.findByIdAndUpdate(
           checkUser?.userLeadsDetailsId,
           { leadSchedule: input.leadSchedule },
@@ -499,6 +532,9 @@ export class UsersControllers {
         );
       }
       if (input.postCodeTargettingList) {
+        if(!checkUser.userLeadsDetailsId){
+          return res.status(400).json({error:{message:"lead details not found"}})
+        }
         await UserLeadsDetails.findByIdAndUpdate(
           checkUser?.userLeadsDetailsId,
           { postCodeTargettingList: input.postCodeTargettingList },
@@ -507,6 +543,9 @@ export class UsersControllers {
         );
       }
       if (input.leadAlertsFrequency) {
+        if(!checkUser.userLeadsDetailsId){
+          return res.status(400).json({error:{message:"lead details not found"}})
+        }
         await UserLeadsDetails.findByIdAndUpdate(
           checkUser?.userLeadsDetailsId,
           { leadAlertsFrequency: input.leadAlertsFrequency },
@@ -515,6 +554,9 @@ export class UsersControllers {
         );
       }
       if (input.zapierUrl) {
+        if(!checkUser.userLeadsDetailsId){
+          return res.status(400).json({error:{message:"lead details not found"}})
+        }
         await UserLeadsDetails.findByIdAndUpdate(
           checkUser?.userLeadsDetailsId,
           { zapierUrl: input.zapierUrl, sendDataToZapier: true },
@@ -523,6 +565,10 @@ export class UsersControllers {
         );
       }
       if (input.daily) {
+        if(!checkUser.userLeadsDetailsId){
+          return res.status(400).json({error:{message:"lead details not found"}})
+        }
+        input.daily=parseInt(input.daily)
         await UserLeadsDetails.findByIdAndUpdate(
           checkUser?.userLeadsDetailsId,
           { daily: input.daily },
