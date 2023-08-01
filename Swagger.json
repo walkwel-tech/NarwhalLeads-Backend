@@ -779,6 +779,116 @@
         }
       }
     },
+    "/auth/me": {
+      "get": {
+        "tags": [
+          "User Authentication"
+        ],
+        "summary": "LoggedIn user",
+        "description": "**Frontend Uses:**\n\n- Response: ILoggedInUserResponse",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                },
+                "example": {
+                  "data": {
+                    "autoChargeAmount": 50,
+                    "_id": "64bb678286f8c55861d3d2ee",
+                    "firstName": "John",
+                    "lastName": "Doe",
+                    "email": "john76.doe@example.com",
+                    "role": "user",
+                    "autoCharge": true,
+                    "leadCost": 10,
+                    "phoneNumber": "09876532",
+                    "isRyftCustomer": true,
+                    "isArchived": false,
+                    "isLeadbyteCustomer": false,
+                    "credits": 0,
+                    "verifiedAt": null,
+                    "isVerified": true,
+                    "isActive": true,
+                    "activatedAt": null,
+                    "isDeleted": false,
+                    "businessDetailsId": null,
+                    "businessIndustryId": null,
+                    "userLeadsDetailsId": null,
+                    "invitedById": null,
+                    "paymentMethod": "add credits manually",
+                    "rowIndex": 3,
+                    "userNotes": "",
+                    "isLeadCostCheck": true,
+                    "onBoarding": [
+                      {
+                        "key": "businessDetails",
+                        "pendingFields": [
+                          "businessIndustry",
+                          "businessName",
+                          "businessSalesNumber",
+                          "businessPostCode",
+                          "businessLogo",
+                          "address1",
+                          "businessOpeningHours",
+                          "businessCity"
+                        ],
+                        "dependencies": []
+                      },
+                      {
+                        "key": "leadDetails",
+                        "pendingFields": [
+                          "daily",
+                          "leadSchedule",
+                          "postCodeTargettingList"
+                        ],
+                        "dependencies": [
+                          "businessIndustry"
+                        ]
+                      },
+                      {
+                        "key": "cardDetails",
+                        "pendingFields": [
+                          "cardNumber"
+                        ],
+                        "dependencies": []
+                      }
+                    ],
+                    "isUserSignup": false,
+                    "registrationMailSentToAdmin": false,
+                    "createdAt": "2023-07-22T05:22:10.497Z",
+                    "updatedAt": "2023-07-22T05:22:11.598Z",
+                    "ryftClientId": "cus_01H5Y0RP53WA8X4JBGTVMMB62B"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                },
+                "example": {
+                  "error": {
+                    "message": "Invalid Token. Access Denied!"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/auth/activeUser/{userId}": {
       "post": {
         "tags": [
@@ -1388,6 +1498,179 @@
       },
       "/user/{userId}": {
         "patch": {
+          "tags": [
+            "Authenticated Routes > User module"
+          ],
+          "summary": "Update User",
+          "description": "**Frontend Uses:**\n\n- Request: IUpateUserRequest\n- Response: IUpateUserResponse (UserBase)",
+          "parameters": [
+            {
+              "name": "userId",
+              "in": "path",
+              "schema": {
+                "type": "string"
+              },
+              "example": "63aed277bf2d3eda4e0edcc0"
+            }
+          ],
+          "requestBody": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "example":  {
+                    "autoChargeAmount": 50,
+                    "_id": "64bb678286f8c55861d3d2ee",
+                    "firstName": "John",
+                    "lastName": "Doe",
+                    "email": "john76.doe@example.com",
+                    "role": "user",
+                    "autoCharge": true,
+                    "leadCost": 10,
+                    "phoneNumber": "09876532",
+                    "isRyftCustomer": true,
+                    "isArchived": false,
+                    "isLeadbyteCustomer": false,
+                    "credits": 0,
+                    "verifiedAt": null,
+                    "isVerified": true,
+                    "isActive": true,
+                    "activatedAt": null,
+                    "isDeleted": false,
+                    "businessDetailsId": null,
+                    "businessIndustryId": null,
+                    "userLeadsDetailsId": null,
+                    "invitedById": null,
+                    "paymentMethod": "add credits manually",
+                    "rowIndex": 3,
+                    "userNotes": "",
+                    "isLeadCostCheck": true,
+                    "onBoarding": [
+                      {
+                        "key": "businessDetails",
+                        "pendingFields": [
+                          "businessIndustry",
+                          "businessName",
+                          "businessSalesNumber",
+                          "businessPostCode",
+                          "businessLogo",
+                          "address1",
+                          "businessOpeningHours",
+                          "businessCity"
+                        ],
+                        "dependencies": []
+                      },
+                      {
+                        "key": "leadDetails",
+                        "pendingFields": [
+                          "daily",
+                          "leadSchedule",
+                          "postCodeTargettingList"
+                        ],
+                        "dependencies": [
+                          "businessIndustry"
+                        ]
+                      },
+                      {
+                        "key": "cardDetails",
+                        "pendingFields": [
+                          "cardNumber"
+                        ],
+                        "dependencies": []
+                      }
+                    ],
+                    "isUserSignup": false,
+                    "registrationMailSentToAdmin": false,
+                    "createdAt": "2023-07-22T05:22:10.497Z",
+                    "updatedAt": "2023-07-22T05:22:11.598Z",
+                    "ryftClientId": "cus_01H5Y0RP53WA8X4JBGTVMMB62B",
+                    "premiumUser":"top-up",
+                    "promoLinkId":"64bbd3d5b577b0466e7a4b77"
+                  }
+                }
+              }
+            }
+          },
+          "security": [
+            {
+              "bearerAuth": []
+            }
+          ],
+          "responses": {
+            "200": {
+              "description": "OK",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "type": "object"
+                  },
+                  "example": {
+                    "data": {
+                      "_id": "64b67928cc83d49f8ec7a161",
+                      "firstName": "updated",
+                      "lastName": "name updated",
+                      "email": "jack123@example.com",
+                      "role": "user",
+                      "autoCharge": true,
+                      "leadCost": 10,
+                      "phoneNumber": "09876532",
+                      "isRyftCustomer": true,
+                      "isArchived": false,
+                      "isLeadbyteCustomer": false,
+                      "credits": 0,
+                      "autoChargeAmount": 500,
+                      "verifiedAt": null,
+                      "isVerified": true,
+                      "isActive": true,
+                      "activatedAt": "2023-07-18T12:10:10.113Z",
+                      "isDeleted": false,
+                      "businessDetailsId": "64b67995cc83d49f8ec7a179",
+                      "businessIndustryId": null,
+                      "userLeadsDetailsId": "64b67b0496130d40296336f6",
+                      "invitedById": null,
+                      "paymentMethod": "add credits manually",
+                      "rowIndex": 927,
+                      "userNotes": "",
+                      "isLeadCostCheck": true,
+                      "onBoarding": [
+                        {
+                          "key": "businessDetails",
+                          "pendingFields": []
+                        },
+                        {
+                          "key": "leadDetails",
+                          "pendingFields": [
+                            "daily",
+                            "leadSchedule",
+                            "postCodeTargettingList"
+                          ],
+                          "dependencies": [
+                            "businessIndustry"
+                          ]
+                        },
+                        {
+                          "key": "cardDetails",
+                          "pendingFields": [
+                            "cardNumber"
+                          ],
+                          "dependencies": []
+                        }
+                      ],
+                      "isUserSignup": false,
+                      "registrationMailSentToAdmin": true,
+                      "createdAt": "2023-07-18T11:36:08.193Z",
+                      "updatedAt": "2023-07-18T12:13:50.215Z",
+                      "ryftClientId": "cus_01H5MCJJ89NHSZXH3E1Y32VTSA"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "/user/{userId}": {
+        "post": {
           "tags": [
             "Authenticated Routes > User module"
           ],
@@ -6510,7 +6793,6 @@
           }
         }
       },
-
       "/userLeadsDetails/{userLeadsDetailsId}": {
         "get": {
           "tags": [

@@ -15,7 +15,7 @@ auth.patch('/test',AuthController.test)
 auth.post('/register', AuthController.register);
 auth.post('/return-url', AuthController.returnUrlApi);
 auth.post('/activeUser/:id',OnlyAdmins, AuthController.activeUser);
-// auth.post('/inActiveUser/:id',OnlyAdmins, AuthController.inActiveUser);
+auth.post('/admin/register', AuthController.adminRegister);
 auth.post('/login', AuthController.login);
 auth.post('/adminLogin', AuthController.adminLogin);
 auth.post('/checkUser', AuthController.checkUser);
