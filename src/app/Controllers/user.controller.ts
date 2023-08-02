@@ -18,9 +18,17 @@ import { Invoice } from "../Models/Invoice";
 import { Transaction } from "../Models/Transaction";
 import { User } from "../Models/User";
 import { UserLeadsDetails } from "../Models/UserLeadsDetails";
+import { ClientTablePreferenceInterface } from "../../types/clientTablePrefrenceInterface";
+import { ClientTablePreference } from "../Models/ClientTablePrefrence";
+import { Column } from "../../types/ColumnsPreferenceInterface";
 const ObjectId = mongoose.Types.ObjectId;
 
 const LIMIT = 10;
+
+
+interface DataObject {
+  [key: string]: any;
+}
 
 export class UsersControllers {
   static create = async (req: Request, res: Response): Promise<Response> => {
@@ -862,12 +870,18 @@ export class UsersControllers {
           {},
           item["userLeadsDetailsId"][0]
         );
-        // let businessOpeningHours=Object.assign({}, item["businessDetailsId"][0]?.businessOpeningHours)
         item.userLeadsDetailsId = userLeadsDetailsId;
         item.businessDetailsId = businessDetailsId;
-        // item.open = businessOpeningHours;
       });
-      const arr = convertArray(query.results)
+      const pref: ClientTablePreferenceInterface | null =
+      await ClientTablePreference.findOne({ userId: _req.user.id });
+
+    const filteredDataArray: DataObject[] = filterAndTransformData(
+            //@ts-ignore
+      pref?.columns,
+      convertArray(query.results)
+    );
+      const arr = filteredDataArray
       return res.json({
         data: arr,
       });
@@ -903,5 +917,21 @@ function convertArray(arr: any) {
       }
     });
     return newObj;
+  });
+}
+function filterAndTransformData(
+  columns: Column[],
+  dataArray: DataObject[]
+): DataObject[] {
+  return dataArray.map((dataObj: DataObject) => {
+    const filteredData: DataObject = {};
+
+    columns.forEach((column: Column) => {
+      if (column.isVisible && column.name in dataObj) {
+        filteredData[column.newName || column.name] = dataObj[column.name];
+      }
+    });
+
+    return filteredData;
   });
 }
