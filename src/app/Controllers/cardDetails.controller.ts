@@ -615,12 +615,10 @@ export class CardDetailsControllers {
         // TODO: apply conditipon for user does not iuncludes in promo link.users
         userId.id=new ObjectId(userId?.id)
         const promoLink = await FreeCreditsLink.findOne({_id:new ObjectId(userId?.promoLinkId)})
-        console.log("promo",promoLink,userId?.promoLinkId,userId?.id)
         let params: any = {
           buyerId: userId?.buyerId,
           fixedAmount:originalAmount,
         }
-        console.log("check 1", promoLink , userId?.promoLinkId , userId.premiumUser == PROMO_LINK.PREMIUM_USER_TOP_UP , parseInt(input?.data?.amount), promoLink?.topUpAmount)
         //TODO: THIS WILL BE ONLY ON 1 TRANSATION
         if (promoLink && !userId.promoCodeUsed && userId?.promoLinkId && userId.premiumUser == PROMO_LINK.PREMIUM_USER_TOP_UP && parseInt(input?.data?.amount) >= promoLink?.topUpAmount) {
           params.freeCredits = promoLink?.freeCredits
