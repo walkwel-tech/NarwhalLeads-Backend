@@ -26,8 +26,14 @@ import { sort } from "../../utils/Enums/sorting.enum";
 import { send_lead_data_to_zap } from "../../utils/webhookUrls/send_data_zap";
 import { IP } from "../../utils/constantFiles/IP_Lists";
 import { BuisnessIndustries } from "../Models/BuisnessIndustries";
-
+import { LeadTablePreferenceInterface } from "../../types/LeadTablePreferenceInterface";
+import { Column } from "../../types/ColumnsPreferenceInterface";
 const LIMIT = 10;
+
+
+interface DataObject {
+  [key: string]: any;
+}
 
 export class LeadsController {
   static create = async (req: Request, res: Response) => {
@@ -1950,8 +1956,18 @@ export class LeadsController {
           },
         },
       ]);
+
+      const pref: LeadTablePreferenceInterface | null =
+        await LeadTablePreference.findOne({ userId: user?.id });
+
+      const filteredDataArray: DataObject[] = filterAndTransformData(
+              //@ts-ignore
+        pref?.columns,
+        convertArray(query.results)
+      );
+
       return res.json({
-        data: convertArray(query.results),
+        data: filteredDataArray,
       });
     } catch (err) {
       return res.status(500).json({
@@ -2030,8 +2046,16 @@ export class LeadsController {
           },
         },
       ]);
+      const pref: LeadTablePreferenceInterface | null =
+      await LeadTablePreference.findOne({ userId: _req.user.id });
+
+    const filteredDataArray: DataObject[] = filterAndTransformData(
+            //@ts-ignore
+      pref?.columns,
+      convertArray(query.results)
+    );
       return res.json({
-        data: convertArray(query.results),
+        data: filteredDataArray,
       });
     } catch (err) {
       return res.status(500).json({
@@ -2064,5 +2088,23 @@ function convertArray(arr: any) {
       }
     });
     return newObj;
+  });
+}
+
+// Function to filter and transform the data
+function filterAndTransformData(
+  columns: Column[],
+  dataArray: DataObject[]
+): DataObject[] {
+  return dataArray.map((dataObj: DataObject) => {
+    const filteredData: DataObject = {};
+
+    columns.forEach((column: Column) => {
+      if (column.isVisible && column.name in dataObj) {
+        filteredData[column.newName || column.name] = dataObj[column.name];
+      }
+    });
+
+    return filteredData;
   });
 }

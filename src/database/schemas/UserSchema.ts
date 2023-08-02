@@ -128,7 +128,7 @@ const UserSchema = new Schema(
     },
     isLeadCostCheck: {
       type: Boolean,
-      default: true,
+      default: false,
     },
     onBoarding: {
       type: Array,
