@@ -122,6 +122,7 @@ export class UsersControllers {
       if (isActive === "undefined" || isActive === "null") {
         isActive = "true";
       }
+
       const perPage =
         _req.query && _req.query.perPage > 0
           ? parseInt(_req.query.perPage)
@@ -136,8 +137,10 @@ export class UsersControllers {
         // role:{$ne: RolesEnum.INVITED },
         isDeleted: false,
         isArchived: JSON.parse(isArchived?.toLowerCase()),
-        // isActive: JSON.parse(isActive?.toLowerCase()),
       };
+      if(_req.query.isActive){
+        dataToFind.isActive=JSON.parse(isActive?.toLowerCase())
+      }
       if (_req.query.search) {
         dataToFind = {
           ...dataToFind,
