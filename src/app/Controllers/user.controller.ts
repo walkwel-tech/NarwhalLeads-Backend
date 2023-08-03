@@ -140,6 +140,7 @@ export class UsersControllers {
       };
       if(_req.query.isActive){
         dataToFind.isActive=JSON.parse(isActive?.toLowerCase())
+        dataToFind.isArchived=false
       }
       if(_req.query.isArchived){
         dataToFind.isArchived=JSON.parse(isArchived?.toLowerCase())
