@@ -388,7 +388,7 @@ export class LeadsController {
       ) {
         await Leads.findByIdAndUpdate(
           leadId,
-          { status: leadsStatusEnums.REPORTED, reportedAt: new Date() },
+          { status: leadsStatusEnums.REPORTED, reportedAt: new Date(),clientNotes:input?.clientNotes },
           { new: true }
         );
       }
@@ -839,7 +839,7 @@ export class LeadsController {
       perPage;
 
     try {
-      let dataToFind: any = { status: { $nin: [leadsStatusEnums.ARCHIVED] } };
+      let dataToFind: any = { };
       const user = await User.findById(userId);
       if (user?.role == RolesEnum.INVITED) {
         const invitedBy = await User.findOne({ _id: user?.invitedById });
@@ -858,19 +858,12 @@ export class LeadsController {
           $or: [
             { invalidLeadReason: { $regex: _req.query.search, $options: "i" } },
             { leadRemarks: { $regex: _req.query.search, $options: "i" } },
-            { feedbackForNMG: { $regex: _req.query.search, $options: "i" } },
-            { clientNotes1: { $regex: _req.query.search, $options: "i" } },
-            { clientNotes2: { $regex: _req.query.search, $options: "i" } },
-            { clientNotes3: { $regex: _req.query.search, $options: "i" } },
+            { clientNotes: { $regex: _req.query.search, $options: "i" } },
             { bid: { $regex: _req.query.search, $options: "i" } },
             { status: { $regex: _req.query.search, $options: "i" } },
             { "leads.email": { $regex: _req.query.search, $options: "i" } },
-            { "leads.firstname": { $regex: _req.query.search, $options: "i" } },
-            { "leads.lastname": { $regex: _req.query.search, $options: "i" } },
-            { "leads.gender": { $regex: _req.query.search, $options: "i" } },
-            { "leads.dob": { $regex: _req.query.search, $options: "i" } },
-            { "leads.jobtitle": { $regex: _req.query.search, $options: "i" } },
-            { "leads.county": { $regex: _req.query.search, $options: "i" } },
+            { "leads.firstName": { $regex: _req.query.search, $options: "i" } },
+            { "leads.lastName": { $regex: _req.query.search, $options: "i" } },
           ],
         };
         skip = 0;
