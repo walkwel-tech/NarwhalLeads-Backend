@@ -136,10 +136,13 @@ export class UsersControllers {
         role: { $nin: [RolesEnum.ADMIN, RolesEnum.INVITED] },
         // role:{$ne: RolesEnum.INVITED },
         isDeleted: false,
-        isArchived: JSON.parse(isArchived?.toLowerCase()),
+        // isArchived: JSON.parse(isArchived?.toLowerCase()),
       };
       if(_req.query.isActive){
         dataToFind.isActive=JSON.parse(isActive?.toLowerCase())
+      }
+      if(_req.query.isArchived){
+        dataToFind.isArchived=JSON.parse(isArchived?.toLowerCase())
       }
       if (_req.query.search) {
         dataToFind = {
@@ -160,7 +163,6 @@ export class UsersControllers {
         };
         skip = 0;
       }
-
       const [query]: any = await User.aggregate([
         {
           $facet: {
