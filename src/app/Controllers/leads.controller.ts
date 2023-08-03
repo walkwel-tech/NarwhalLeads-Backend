@@ -1941,6 +1941,14 @@ export class LeadsController {
           $facet: {
             results: [
               { $match: dataToFind },
+              {
+                $lookup: {
+                  from: "users",
+                  localField: "bid",
+                  foreignField: "buyerId",
+                  as: "clientName",
+                },
+              },
               { $sort: { createdAt: sortingOrder } },
               {
                 $project: {
@@ -1956,7 +1964,12 @@ export class LeadsController {
           },
         },
       ]);
-
+      query.results.map((item: any) => {
+        item.leads.clientName =
+          item["clientName"][0]?.firstName +
+          " " +
+          item["clientName"][0]?.lastName;
+      });
       const pref: LeadTablePreferenceInterface | null =
         await LeadTablePreference.findOne({ userId: user?.id });
 
@@ -2032,6 +2045,14 @@ export class LeadsController {
           $facet: {
             results: [
               { $match: dataToFind },
+              {
+                $lookup: {
+                  from: "users",
+                  localField: "bid",
+                  foreignField: "buyerId",
+                  as: "clientName",
+                },
+              },
               { $sort: { createdAt: sortingOrder } },
               {
                 $project: {
@@ -2046,6 +2067,12 @@ export class LeadsController {
           },
         },
       ]);
+      query.results.map((item: any) => {
+        item.leads.clientName =
+          item["clientName"][0]?.firstName +
+          " " +
+          item["clientName"][0]?.lastName;
+      });
       const pref: LeadTablePreferenceInterface | null =
       await LeadTablePreference.findOne({ userId: _req.user.id });
 
