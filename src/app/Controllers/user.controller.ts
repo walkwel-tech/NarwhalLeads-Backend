@@ -291,8 +291,8 @@ export class UsersControllers {
                   as: "cardDetailsId",
                 },
               },
-              { $match: { _id: new ObjectId(id) } },
-            ],
+              { $match: { _id: new ObjectId(id) } }
+                        ],
           },
         },
       ]);
@@ -339,7 +339,8 @@ export class UsersControllers {
       const user = await User.find(
         { role: { $nin: [RolesEnum.ADMIN, RolesEnum.INVITED] } },
         "firstName lastName email buyerId"
-      );
+      ).sort("firstName")
+      ;
 
       if (user) {
         return res.json({ data: user });
@@ -397,7 +398,8 @@ export class UsersControllers {
       }
       if (
         input.paymentMethod &&
-        checkUser?.paymentMethod == paymentMethodEnum.WEEKLY_PAYMENT_METHOD
+         // @ts-ignore
+        checkUser?.paymentMethod == paymentMethodEnum.WEEKLY_PAYMENT_METHOD && req.user?.role===RolesEnum.USER
       ) {
         return res
           .status(403)
