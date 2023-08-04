@@ -406,6 +406,19 @@ export class LeadsController {
           },
         });
       }
+
+      if (
+        lead?.status === leadsStatusEnums.REPORTED &&
+        
+        input.status == leadsStatusEnums.ARCHIVED){
+        return res.status(400).json({
+          error: {
+            message:
+              "You can not archive this lead.",
+          },
+        });
+      }
+
       if (
         //@ts-ignore
         req.user.role === RolesEnum.ADMIN &&
