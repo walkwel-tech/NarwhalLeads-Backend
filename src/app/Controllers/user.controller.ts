@@ -816,7 +816,10 @@ export class UsersControllers {
       sortingOrder = -1;
     }
     try {
-      let dataToFind: any = {};
+      let dataToFind: any = {  role:{$nin: [RolesEnum.ADMIN, RolesEnum.INVITED]} };
+      if(_req.query.invited){
+        dataToFind.role={$nin: [RolesEnum.ADMIN]}
+      }
       if (_req.query.search) {
         dataToFind = {
           ...dataToFind,

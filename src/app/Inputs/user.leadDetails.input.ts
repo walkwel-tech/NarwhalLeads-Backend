@@ -1,7 +1,7 @@
-import { IsArray, IsInt, IsNotEmpty, } from "class-validator";
+import { IsArray  , IsNotEmpty, } from "class-validator";
 
 export class UserLeadDetailsInput {
-  @IsInt({ message: "daily is required." })
+  // @IsInt({ message: "daily is required." })
   @IsNotEmpty()
 
   daily: number;
