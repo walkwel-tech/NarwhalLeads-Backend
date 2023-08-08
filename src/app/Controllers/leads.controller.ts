@@ -76,15 +76,15 @@ export class LeadsController {
         //@ts-ignore
         columns?.columnsNames.push(obj);
       } else {
-        columns?.columnsNames.map((i, idx) => {
-          //@ts-ignore
-          if (i?.defaultColumn == j && i?.renamedColumn != "") {
-            //@ts-ignore
-            input[i?.renamedColumn] = input[j];
-            //@ts-ignore
-            delete input[i?.renamedColumn];
-          }
-        });
+        // columns?.columnsNames.map((i, idx) => {
+        //   //@ts-ignore
+        //   if (i?.defaultColumn == j && i?.renamedColumn != "") {
+        //     //@ts-ignore
+        //     input[i?.renamedColumn] = input[j];
+        //     //@ts-ignore
+        //     // delete input[j];
+        //   }
+        // });
       }
     });
 
