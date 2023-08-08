@@ -25,10 +25,6 @@ const UserSchema = new Schema(
       required: true,
       default: RolesEnum.USER,
     },
-    autoCharge: {
-      type: Boolean,
-      required: false,
-    },
     leadCost: {
       type: Number,
       default: 10,

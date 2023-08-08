@@ -43,7 +43,7 @@ const swaggerUiOptions = {
       }
     }
   }
-let version="2.6.6"
+let version="2.6.7"
 export class Server {
     public app: Application;
 
