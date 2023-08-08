@@ -816,16 +816,19 @@ export class UsersControllers {
       sortingOrder = -1;
     }
     try {
-      let dataToFind: any = {  role:{$nin: [RolesEnum.ADMIN, RolesEnum.INVITED]} };
+      let dataToFind: any = {  role:{$nin: [RolesEnum.ADMIN, RolesEnum.INVITED]},  isDeleted: false, };
       if(_req.query.invited){
         dataToFind.role={$nin: [RolesEnum.ADMIN]}
       }
       if(_req.query.isActive){
         dataToFind.isActive=true
+        dataToFind.isArchived=false
       }
+      
       if(_req.query.isInActive){
         dataToFind.isActive=false
       }
+
       if(_req.query.isArchived){
         dataToFind.isArchived=true
       }
