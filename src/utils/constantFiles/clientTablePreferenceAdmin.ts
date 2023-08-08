@@ -31,7 +31,7 @@
         index: 10
       },
       {
-        name: "autoCharge",
+        name: "buyerId",
         isVisible: false,
         index: 11
       },
@@ -49,11 +49,6 @@
         name: "email",
         isVisible: false,
         index: 14
-      },
-      {
-        name: "buyerId",
-        isVisible: false,
-        index: 16
       },
       {
         name: "firstName",

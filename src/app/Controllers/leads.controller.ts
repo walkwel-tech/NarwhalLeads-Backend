@@ -96,12 +96,16 @@ export class LeadsController {
         obj.name = i?.renamedColumn;
         obj.isVisible = true;
         obj.index = idx;
+        //@ts-ignore
+        obj.newName = i?.renamedColumn;
         arr.push(obj);
       } else {
         //@ts-ignore
         obj.name = i?.defaultColumn;
         obj.isVisible = true;
         obj.index = idx;
+           //@ts-ignore
+        obj.newName = i?.defaultColumn;
         arr.push(obj);
       }
     });
@@ -131,7 +135,7 @@ export class LeadsController {
       // const columnsNames = await CustomColumnNames.findOne({
       // industryId: user?.businessIndustryId,
       // });
-      let array: any = [{ name: "clientName", isVisible: true, index: 0 }];
+      let array: any = [{ name: "clientName", isVisible: true, index: 0,newName:"clientName" }];
       Object.keys(input).map((i: any) => {
         // columnsNames?.columnsNames.map((j)=>{
         let obj: any = {};
@@ -139,6 +143,7 @@ export class LeadsController {
           (obj.name = i),
             (obj.isVisible = true),
             (obj.index = array[array?.length - 1]?.index + 1 || 0);
+            (obj.newName = i),
           columnsNames?.columnsNames.map((j: any) => {
             if (j?.defaultColumn == i) {
               if (j.renamedColumn?.length != 0) {
@@ -171,6 +176,7 @@ export class LeadsController {
             (obj.name = item),
               (obj.isVisible = false),
               (obj.index = adminPref?.columns.length),
+              (obj.newName = item),
               columnsNames?.columnsNames.map((j: any) => {
                 if (j?.defaultColumn == item) {
                   if (j.renamedColumn?.length != 0) {
@@ -192,7 +198,7 @@ export class LeadsController {
       if (!adminPref) {
         await LeadTablePreference.create({
           userId: admin?._id,
-          columns: { name: "clientName", isVisible: true, index: 0 },
+          columns: { name: "clientName", isVisible: true, index: 0 , newName:"clientName"},
         });
       }
     }
@@ -214,6 +220,7 @@ export class LeadsController {
         (obj.name = item),
           (obj.isVisible = false),
           (obj.index = checkPreferenceExists?.columns.length),
+          (obj.newName = item),
           columnsNames?.columnsNames.map((j: any) => {
             if (j?.defaultColumn == item) {
               if (j.renamedColumn?.length != 0) {
@@ -234,7 +241,7 @@ export class LeadsController {
           name: "clientName",
           isVisible: true,
           index: checkPreferenceExists?.columns.length,
-          // newName:"clientName"
+          newName:"clientName"
         };
         checkPreferenceExists?.columns.push(obj);
       }
