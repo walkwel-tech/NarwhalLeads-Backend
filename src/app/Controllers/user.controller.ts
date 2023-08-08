@@ -824,9 +824,10 @@ export class UsersControllers {
         dataToFind.isActive=true
         dataToFind.isArchived=false
       }
-      
+
       if(_req.query.isInActive){
         dataToFind.isActive=false
+        dataToFind.isArchived=false
       }
 
       if(_req.query.isArchived){
