@@ -43,13 +43,10 @@ import {
 } from "../../utils/Enums/payment.status";
 import { PROMO_LINK } from "../../utils/Enums/promoLink.enum";
 import { VAT } from "../../utils/constantFiles/Invoices";
+import mongoose from "mongoose";
+const ObjectId = mongoose.Types.ObjectId;
+import { PaymentResponse } from "../../types/PaymentResponseInterface";
 
-interface PaymentResponse {
-  message: string;
-  status: number;
-  url?: string;
-  sessionID?: string;
-}
 
 export class CardDetailsControllers {
   //FIXME:not in use
@@ -534,7 +531,7 @@ export class CardDetailsControllers {
           })
           .catch(async (err) => {
             return res.status(400).json({
-              error: { message: "Error occured in payment." },
+              error: { message: "Error occured in payment." ,err},
             });
           });
       }
@@ -611,26 +608,28 @@ export class CardDetailsControllers {
           creditsLeft: userId?.credits,
         });
       } else if (input.eventType == "PaymentSession.captured") {
-        // const card = await RyftPaymentMethods.findOne({
-        //   paymentMethod: input.data?.paymentMethod?.id,
-        // });
 
      const cardDetails=   await CardDetails.findByIdAndUpdate(card?.cardId, {
           status: PAYMENT_SESSION.SUCCESS,
         },{new:true});
         // TODO: apply conditipon for user does not iuncludes in promo link.users
-        const promoLink = await FreeCreditsLink.findOne({_id:userId.promoLinkId,'user.userId':{ $nin:[userId.id]}})
+        userId.id=new ObjectId(userId?.id)
+        const promoLink = await FreeCreditsLink.findOne({_id:new ObjectId(userId?.promoLinkId)})
         let params: any = {
           buyerId: userId?.buyerId,
           fixedAmount:originalAmount,
         }
         //TODO: THIS WILL BE ONLY ON 1 TRANSATION
-        if (promoLink && userId?.promoLinkId && userId.premiumUser == PROMO_LINK.PREMIUM_USER_TOP_UP && parseInt(input?.data?.amount) >= promoLink?.topUpAmount) {
-          params.freeCredits = promoLink?.topUpAmount
+        if (promoLink && !userId.promoCodeUsed && userId?.promoLinkId && userId.premiumUser == PROMO_LINK.PREMIUM_USER_TOP_UP && parseInt(input?.data?.amount) >= promoLink?.topUpAmount) {
+          params.freeCredits = promoLink?.freeCredits
+          console.log("in 1")
         }
-        else if (promoLink?.spotDiffPremiumPlan && parseInt(input?.data?.amount) >= promoLink?.topUpAmount) {
-          params.freeCredits = promoLink?.topUpAmount
+        else if (promoLink?.spotDiffPremiumPlan && parseInt(input?.data?.amount) >= promoLink?.topUpAmount && userId.promoCodeUsed) {
+          params.freeCredits = promoLink?.freeCredits
+          console.log("in 2")
+
         }
+        console.log("params",params)
         addCreditsToBuyer(params)
           .then(async (res: any) => {
             // console.log("WEBHOOK 3------->>>",res)

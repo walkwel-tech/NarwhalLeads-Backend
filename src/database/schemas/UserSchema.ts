@@ -25,10 +25,6 @@ const UserSchema = new Schema(
       required: true,
       default: RolesEnum.USER,
     },
-    autoCharge: {
-      type: Boolean,
-      required: false,
-    },
     leadCost: {
       type: Number,
       default: 10,
@@ -128,7 +124,7 @@ const UserSchema = new Schema(
     },
     isLeadCostCheck: {
       type: Boolean,
-      default: true,
+      default: false,
     },
     onBoarding: {
       type: Array,
@@ -156,7 +152,15 @@ const UserSchema = new Schema(
     isLeadReceived:{
       type:Boolean,
       default:false
-    }
+    },
+    promoCodeUsed: {
+      type: Boolean,
+      default: false,
+    },
+    onBoardingPercentage: {
+      type: Number,
+      required: false,
+    },
   },
   { timestamps: true }
 );

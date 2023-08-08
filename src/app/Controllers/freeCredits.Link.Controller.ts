@@ -15,22 +15,24 @@ export class freeCreditsLinkController {
   static create = async (req: Request, res: Response): Promise<any> => {
     try {
       const input = req.body;
+      if(input?.freeCredits <0 || input?.topUpAmount <0){
+        res.status(400).json({ error: { message: "Invalid value" } });
+      }
       const dataToSave: any = {
         code: randomString(10),
         freeCredits: input.freeCredits,
-        topUpAmount:input.topUpAmount,
+        topUpAmount: input.topUpAmount,
         maxUseCounts: input.maxUseCounts,
         useCounts: 0,
       };
-      if(input.spotDiffPremiumPlan){
-        dataToSave.code='SPOTDIFF_' + randomString(10)
-        dataToSave.spotDiffPremiumPlan=true
+      if (input.spotDiffPremiumPlan) {
+        dataToSave.code = 'SPOTDIFF_' + randomString(10)
+        dataToSave.spotDiffPremiumPlan = true
       }
-      if(input.spotDiffPremiumPlan && !input.topUpAmount){
+      if (input.spotDiffPremiumPlan && !input.topUpAmount) {
         res.status(400).json({ error: { message: "Top-up amount is required" } });
       }
       const data = await FreeCreditsLink.create(dataToSave);
-      console.log(data)
       return res.json({ data: data });
     } catch (error) {
       res.status(500).json({ error: { message: "something Went wrong." } });
@@ -45,37 +47,44 @@ export class freeCreditsLinkController {
         $or: [{ code: { $regex: req.query.search, $options: "i" } }],
       };
     }
-    if(!req.query.spotDiffPremiumPlan){
-      dataToFind.spotDiffPremiumPlan={ $exists: false}
-    }   
-     if(req.query.spotDiffPremiumPlan){
-      dataToFind.spotDiffPremiumPlan=true
+    if (!req.query.spotDiffPremiumPlan) {
+      dataToFind.spotDiffPremiumPlan = { $exists: false }
     }
-    if(req.query.expired){
-      dataToFind.isDisabled=true
+    if (req.query.spotDiffPremiumPlan) {
+      dataToFind.spotDiffPremiumPlan = true
     }
-    if(req.query.live){
-      dataToFind.isDisabled=false
+    if (req.query.expired) {
+      dataToFind.isDisabled = true
+    }
+    if (req.query.live) {
+      dataToFind.isDisabled = false
     }
     try {
-      //TODO: need to reduce user data
-      const query = await FreeCreditsLink.find(dataToFind)
-        .populate("user.userId")
-        .sort({ createdAt: -1 });
-        query.map((i:any)=>{
-        i.user.map((j:any)=>{
-          //@ts-ignore
-         j.userId?.password =undefined
-        })
-        })
+      let query = await FreeCreditsLink.find(dataToFind)
+        // .populate("user.userId")
+        // .sort({ createdAt: -1 })
+
+        .populate("user.userId", "_id firstName lastName createdAt")
+        .sort({ createdAt: -1 })
+        .select("_id code freeCredits useCounts maxUseCounts isDisabled isUsed usedAt topUpAmount user createdAt updatedAt __v")
+        .lean();
+
+      const transformedArray = query.map((item: any) => {
+        return {
+          ...item,
+          user: item?.user.map((userItem: any) => {
+             return userItem.userId
+          })
+        };
+      });
       return res.json({
-        data: query,
+        data: transformedArray,
       });
     } catch (error) {
       res.status(500).json({ error: { message: "something Went wrong." } });
     }
   };
-  
+
   static delete = async (req: Request, res: Response): Promise<any> => {
     const id = req.params.id;
     try {
@@ -90,5 +99,5 @@ export class freeCreditsLinkController {
       res.status(500).json({ error: { message: "something Went wrong." } });
     }
   };
-  
+
 }

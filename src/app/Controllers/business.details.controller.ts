@@ -20,13 +20,14 @@ import { addUserXeroId } from "../../utils/XeroApiIntegration/createContact";
 import { User } from "../Models/User";
 import { UserLeadsDetails } from "../Models/UserLeadsDetails";
 import { LeadTablePreference } from "../Models/LeadTablePreference";
+
 const ObjectId = mongoose.Types.ObjectId;
 
 export class BusinessDetailsController {
   static create = async (req: Request, res: Response): Promise<any> => {
     const input = req.body;
- 
-    if(!input.userId){
+
+    if (!input.userId) {
       return res
         .status(400)
         .json({ error: { message: "User Id is required" } });
@@ -42,7 +43,7 @@ export class BusinessDetailsController {
       (Business.businessCity = input.businessCity),
       // (Business.businessCountry = input.businessCountry),
       (Business.businessPostCode = input.businessPostCode);
-    Business.businessOpeningHours = JSON.parse(input.businessOpeningHours);
+    Business.businessOpeningHours = JSON.parse(input?.businessOpeningHours);
     const errors = await validate(Business);
     // get onboarding value of user
     const { onBoarding }: any = await User.findById(input.userId);
@@ -133,12 +134,13 @@ export class BusinessDetailsController {
         businessDetailsId: new ObjectId(userData._id),
         leadCost: industry?.leadCost,
         businessIndustryId: industry?.id,
+        onBoardingPercentage: input?.onBoardingPercentage,
       });
       const user: any = await User.findById(input.userId);
       if (!user?.xeroContactId) {
         try {
           await addUserXeroId(input.userId);
-        } catch (error) {          
+        } catch (error) {
           console.log("ERROR WHILE CREATING CUSTOMER!!");
         }
       }
@@ -224,6 +226,7 @@ export class BusinessDetailsController {
   ): Promise<any> => {
     const { id } = req.params;
     const input = req.body;
+
     try {
       const details = await BusinessDetails.findOne({ _id: new ObjectId(id) });
       if (!details) {
@@ -232,67 +235,85 @@ export class BusinessDetailsController {
           .json({ error: { message: "details does not exists." } });
       }
       let userData = await User.findOne({ businessDetailsId: id });
-
+      if(input.businessOpeningHours){
+              input.businessOpeningHours= JSON.parse(input.businessOpeningHours)
+      }
+      if( (req.file || {}).filename){
+        input.businessLogo=`${FileEnum.PROFILEIMAGE}${req?.file?.filename}`
+      }
+      //       ? //@ts-ignore
+      //         `${FileEnum.PROFILEIMAGE}${req?.file.filename}`)
       if (input.businessIndustry) {
         const industry = await BuisnessIndustries.findOne({
           industry: input.businessIndustry,
         });
         userData = await User.findByIdAndUpdate(
           userData?.id,
-          { leadCost: industry?.leadCost ,businessIndustryId:industry?.id},
-        
+          { leadCost: industry?.leadCost, businessIndustryId: industry?.id },
+
           { new: true }
         );
-      await LeadTablePreference.findOneAndUpdate({userId:userData?.id},{$set:{columns:industry?.columns}})
-      }
-      const data = await BusinessDetails.findByIdAndUpdate(
-        id,
-        {
-          businessIndustry: input.businessIndustry
-            ? input.businessIndustry
-            : details.businessIndustry,
-          businessName: input.businessName
-            ? input.businessName
-            : details.businessName,
-          businessSalesNumber: input.businessSalesNumber
-            ? input.businessSalesNumber
-            : details.businessSalesNumber,
-          businessAddress: input.businessAddress
-            ? input.businessAddress
-            : details.businessAddress,
-          businessDescription: input.businessDescription
-            ? input.businessDescription
-            : details.businessDescription,
-          address1: input.address1 ? input.address1 : details.address1,
-          address2: input.address2 ? input.address2 : details.address2,
-          businessCity: input.businessCity
-            ? input.businessCity
-            : details.businessCity,
-          businessCountry: input?.businessCountry
-            ? input?.businessCountry
-            : details.businessCountry,
-          businessPostCode: input.businessPostCode
-            ? input.businessPostCode
-            : details.businessPostCode,
-          businessOpeningHours: input.businessOpeningHours
-            ? JSON.parse(input.businessOpeningHours)
-            : details.businessOpeningHours,
-          businessLogo: (req.file || {}).filename
-            ? //@ts-ignore
-              `${FileEnum.PROFILEIMAGE}${req?.file.filename}`
-            : details.businessLogo,
-        },
-        {
-          new: true,
+        const prefExist = await LeadTablePreference.find({
+          userId: userData?.id,
+        });
+        if (!prefExist) {
+          await LeadTablePreference.findOneAndUpdate(
+            { userId: userData?.id },
+            { $set: { columns: industry?.columns } }
+          );
         }
-      );
+      }
+const data=await BusinessDetails.findByIdAndUpdate(id,input,{new:true})
+      // const data = await BusinessDetails.findByIdAndUpdate(
+      //   id,
+      //   {
+      //     businessIndustry: input.businessIndustry
+      //       ? input.businessIndustry
+      //       : details.businessIndustry,
+      //     businessName: input.businessName
+      //       ? input.businessName
+      //       : details.businessName,
+      //     businessSalesNumber: input.businessSalesNumber
+      //       ? input.businessSalesNumber
+      //       : details.businessSalesNumber,
+      //     businessAddress: input.businessAddress
+      //       ? input.businessAddress
+      //       : details.businessAddress,
+      //     businessDescription: input.businessDescription
+      //       ? input.businessDescription
+      //       : details.businessDescription,
+      //     address1: input.address1 ? input.address1 : details.address1,
+      //     address2: input.address2 ? input.address2 : details.address2,
+      //     businessCity: input.businessCity
+      //       ? input.businessCity
+      //       : details.businessCity,
+      //     businessCountry: input?.businessCountry
+      //       ? input?.businessCountry
+      //       : details.businessCountry,
+      //     businessPostCode: input.businessPostCode
+      //       ? input.businessPostCode
+      //       : details.businessPostCode,
+      //     businessOpeningHours: input.businessOpeningHours
+      //       ? JSON.parse(input.businessOpeningHours)
+      //       : details.businessOpeningHours,
+      //     businessLogo: (req.file || {}).filename
+      //       ? //@ts-ignore
+      //         `${FileEnum.PROFILEIMAGE}${req?.file.filename}`
+      //       : details.businessLogo,
+      //   },
+      //   {
+      //     new: true,
+      //   }
+      // );
 
       if (data) {
         const updatedDetails = await BusinessDetails.findById(id);
         const leadData = await UserLeadsDetails.findOne({
           userId: userData?._id,
         });
-        const formattedPostCodes=leadData?.postCodeTargettingList.map((item:any) => item.postalCode).flat();
+        const formattedPostCodes = leadData?.postCodeTargettingList
+          .map((item: any) => item.postalCode)
+          .flat();
 
         const message = {
           firstName: userData?.firstName,
@@ -332,10 +353,10 @@ export class BusinessDetailsController {
         });
       }
     } catch (error) {
-      console.log("errrorroro",error)
+      console.log("errrorroro", error);
       return res
         .status(500)
-        .json({ error: { message: "Something went wrong." ,error} });
+        .json({ error: { message: "Something went wrong.", error } });
     }
   };
 

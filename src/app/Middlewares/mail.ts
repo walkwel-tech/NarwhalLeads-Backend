@@ -2,14 +2,15 @@ const sgMail = require("@sendgrid/mail");
 sgMail.setApiKey(process.env.SENDGRID_API_KEY);
 sgMail.setSubstitutionWrappers("{{", "}}");
 
-//fixme: emails change to send to
-
 export function send_email_forget_password(send_to: any, message: any) {
   const msg = {
     to: send_to, // Change to your recipient
     // to: "radhika.walkweltech@gmail.com",
 
-    from: process.env.VERIFIED_SENDER_ON_SENDGRID,
+     from: {
+      name: process.env.VERIFIED_SENDER_ON_SENDGRID_FROM_NAME,
+      email:  process.env.VERIFIED_SENDER_ON_SENDGRID,
+  },
     // Change to your verified sender
     trackingSettings: {
       clickTracking: {
@@ -38,9 +39,12 @@ export function send_email_forget_password(send_to: any, message: any) {
 
 export function send_email_for_autocharge(send_to: any, message: any) {
   const msg = {
-    // to: send_to, // Change to your recipient
-    to: "radhika.walkweltech@gmail.com",
-    from: process.env.VERIFIED_SENDER_ON_SENDGRID,
+    to: send_to, /// Change to your recipient
+    // to: "radhika.walkweltech@gmail.com",
+     from: {
+      name: process.env.VERIFIED_SENDER_ON_SENDGRID_FROM_NAME,
+      email:  process.env.VERIFIED_SENDER_ON_SENDGRID,
+  },
     // Change to your verified sender
     trackingSettings: {
       clickTracking: {
@@ -81,9 +85,12 @@ export function send_email_for_autocharge(send_to: any, message: any) {
 
 export function send_email_for_failed_autocharge(send_to: any, message: any) {
   const msg = {
-    // to: send_to, // Change to your recipient
-    to: "radhika.walkweltech@gmail.com",
-    from: process.env.VERIFIED_SENDER_ON_SENDGRID,
+    to: send_to, // Change to your recipient
+    // to: "radhika.walkweltech@gmail.com",
+     from: {
+      name: process.env.VERIFIED_SENDER_ON_SENDGRID_FROM_NAME,
+      email:  process.env.VERIFIED_SENDER_ON_SENDGRID,
+  },
     // Change to your verified sender
     trackingSettings: {
       clickTracking: {
@@ -126,7 +133,10 @@ export function send_email_for_registration(send_to: any, message: any) {
   const msg = {
     to: send_to, // Change to your recipient
     // to: "radhika.walkweltech@gmail.com",
-    from: process.env.VERIFIED_SENDER_ON_SENDGRID,
+     from: {
+      name: process.env.VERIFIED_SENDER_ON_SENDGRID_FROM_NAME,
+      email:  process.env.VERIFIED_SENDER_ON_SENDGRID,
+  },
     // Change to your verified sender
     trackingSettings: {
       clickTracking: {
@@ -157,7 +167,10 @@ export function send_email_for_add_credits(send_to: any, message: any) {
   const msg = {
     to: send_to, // Change to your recipient
     // to: "radhika.walkweltech@gmail.com",
-    from: process.env.VERIFIED_SENDER_ON_SENDGRID,
+     from: {
+      name: process.env.VERIFIED_SENDER_ON_SENDGRID_FROM_NAME,
+      email:  process.env.VERIFIED_SENDER_ON_SENDGRID,
+  },
     // Change to your verified sender
     trackingSettings: {
       clickTracking: {
@@ -197,7 +210,10 @@ if( message.leadsHours){
   const msg = {
     to: "leads@nmg.group", // Change to your recipient
 // to: "radhika.walkweltech@gmail.com",    // to:message.email,
-    from: process.env.VERIFIED_SENDER_ON_SENDGRID,
+     from: {
+      name: process.env.VERIFIED_SENDER_ON_SENDGRID_FROM_NAME,
+      email:  process.env.VERIFIED_SENDER_ON_SENDGRID,
+  },
     // Change to your verified sender
     trackingSettings: {
       clickTracking: {
@@ -241,8 +257,10 @@ console.log("new regsitration", msg.dynamic_template_data)
 export function send_email_to_invited_user(send_to: string, message: any) {
   const msg = {
     to: send_to, // Change to your recipient
-    // to: "radhika.walkweltech@gmail.com",
-    from: process.env.VERIFIED_SENDER_ON_SENDGRID,
+    from: {
+      name: process.env.VERIFIED_SENDER_ON_SENDGRID_FROM_NAME,
+      email:  process.env.VERIFIED_SENDER_ON_SENDGRID,
+  },
     // Change to your verified sender
     trackingSettings: {
       clickTracking: {
@@ -278,7 +296,10 @@ export function send_email_for_new_lead(send_to: string, message: any) {
   const msg = {
     to: send_to, // Change to your recipient
     // to: "radhika.walkweltech@gmail.com",
-    from: process.env.VERIFIED_SENDER_ON_SENDGRID,
+     from: {
+      name: process.env.VERIFIED_SENDER_ON_SENDGRID_FROM_NAME,
+      email:  process.env.VERIFIED_SENDER_ON_SENDGRID,
+  },
     // Change to your verified sender
     trackingSettings: {
       clickTracking: {
@@ -315,7 +336,10 @@ export function send_email_for_new_lead(send_to: string, message: any) {
 //   const msg = {
 //     // to: "leads@nmg.group", // Change to your recipient
 //     to: "radhika.walkweltech@gmail.com",
-//     from: process.env.VERIFIED_SENDER_ON_SENDGRID,
+//      from: {
+  //     name: process.env.VERIFIED_SENDER_ON_SENDGRID_FROM_NAME,
+  //     email:  process.env.VERIFIED_SENDER_ON_SENDGRID,
+  // },
 //     // Change to your verified sender
 //     trackingSettings: {
 //       clickTracking: {
@@ -349,7 +373,10 @@ export function send_email_for_total_lead(send_to: string, message: any) {
   const msg = {
     to: send_to, // Change to your recipient
     // to: "radhika.walkweltech@gmail.com",
-    from: process.env.VERIFIED_SENDER_ON_SENDGRID,
+     from: {
+      name: process.env.VERIFIED_SENDER_ON_SENDGRID_FROM_NAME,
+      email:  process.env.VERIFIED_SENDER_ON_SENDGRID,
+  },
     // Change to your verified sender
     trackingSettings: {
       clickTracking: {
@@ -382,7 +409,10 @@ export function send_email_for_lead_status(send_to: string, message: any) {
   const msg = {
     to: send_to, // Change to your recipient
     // to: "radhika.walkweltech@gmail.com",
-    from: process.env.VERIFIED_SENDER_ON_SENDGRID,
+     from: {
+      name: process.env.VERIFIED_SENDER_ON_SENDGRID_FROM_NAME,
+      email:  process.env.VERIFIED_SENDER_ON_SENDGRID,
+  },
     // Change to your verified sender
     trackingSettings: {
       clickTracking: {
@@ -436,9 +466,10 @@ export function send_email_for_updated_details(message: any) {
   
   const msg = {
     to: "leads@nmg.group", // Change to your recipient
-    // to: "radhika.walkweltech@gmail.com",
-    // to:"kilp@yopmail.com",
-    from: process.env.VERIFIED_SENDER_ON_SENDGRID,
+     from: {
+      name: process.env.VERIFIED_SENDER_ON_SENDGRID_FROM_NAME,
+      email:  process.env.VERIFIED_SENDER_ON_SENDGRID,
+  },
     // Change to your verified sender
     trackingSettings: {
       clickTracking: {
@@ -488,7 +519,10 @@ export function send_email_for_payment_success(send_to: any, message: any) {
   const msg = {
     to: send_to, // Change to your recipient
     // to: "radhika.walkweltech@gmail.com",
-    from: process.env.VERIFIED_SENDER_ON_SENDGRID,
+     from: {
+      name: process.env.VERIFIED_SENDER_ON_SENDGRID_FROM_NAME,
+      email:  process.env.VERIFIED_SENDER_ON_SENDGRID,
+  },
     // Change to your verified sender
     trackingSettings: {
       clickTracking: {
@@ -525,7 +559,10 @@ export function send_email_for_payment_failure(send_to: any, message: any) {
   const msg = {
     to: send_to, // Change to your recipient
     // to: "radhika.walkweltech@gmail.com",
-    from: process.env.VERIFIED_SENDER_ON_SENDGRID,
+     from: {
+      name: process.env.VERIFIED_SENDER_ON_SENDGRID_FROM_NAME,
+      email:  process.env.VERIFIED_SENDER_ON_SENDGRID,
+  },
     // Change to your verified sender
     trackingSettings: {
       clickTracking: {

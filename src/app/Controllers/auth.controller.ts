@@ -31,6 +31,10 @@ import { AdminSettings } from "../Models/AdminSettings";
 import { ForgetPassword } from "../Models/ForgetPassword";
 import { FreeCreditsLink } from "../Models/freeCreditsLink";
 import { PROMO_LINK } from "../../utils/Enums/promoLink.enum";
+import { ClientTablePreference } from "../Models/ClientTablePrefrence";
+import { clientTablePreference } from "../../utils/constantFiles/clientTablePreferenceAdmin";
+import { LeadTablePreference } from "../Models/LeadTablePreference";
+import { leadsTablePreference } from "../../utils/constantFiles/leadsTablePreferenceAdmin";
 const fs = require("fs");
 
 class AuthController {
@@ -62,10 +66,8 @@ class AuthController {
         .json({ error: { message: "VALIDATIONS_ERROR", info: errorsInfo } });
     }
     try {
-
       const user = await User.findOne({ email: input.email });
       if (!user) {
-
         const salt = genSaltSync(10);
         const hashPassword = hashSync(input.password, salt);
         const showUsers: any = await User.findOne()
@@ -81,14 +83,18 @@ class AuthController {
           if (!checkCode) {
             return res.status(400).json({ data: { message: "Link Invalid!" } });
           }
-          if (checkCode.maxUseCounts && checkCode.maxUseCounts <= checkCode.useCounts) {
-            return res.status(400).json({ data: { message: "Link has reached maximum limit!" } });
-          }
-          else {
-            codeExists = true
+          if (
+            checkCode.maxUseCounts &&
+            checkCode.maxUseCounts <= checkCode.useCounts
+          ) {
+            return res
+              .status(400)
+              .json({ data: { message: "Link has reached maximum limit!" } });
+          } else {
+            codeExists = true;
           }
         }
-        input.email = String(input.email).toLowerCase()
+        input.email = String(input.email).toLowerCase();
         let dataToSave: any = {
           firstName: input.firstName,
           lastName: input.lastName,
@@ -138,14 +144,13 @@ class AuthController {
               dependencies: [],
             },
           ],
-        }
+        };
         if (codeExists && checkCode?.topUpAmount === 0) {
-          dataToSave.premiumUser = PROMO_LINK.PREMIUM_USER_NO_TOP_UP
-          dataToSave.promoLinkId = checkCode?.id
-        }
-        else if (codeExists && checkCode?.topUpAmount != 0) {
-          dataToSave.premiumUser = PROMO_LINK.PREMIUM_USER_TOP_UP
-          dataToSave.promoLinkId = checkCode?.id
+          dataToSave.premiumUser = PROMO_LINK.PREMIUM_USER_NO_TOP_UP;
+          dataToSave.promoLinkId = checkCode?.id;
+        } else if (codeExists && checkCode?.topUpAmount != 0) {
+          dataToSave.premiumUser = PROMO_LINK.PREMIUM_USER_TOP_UP;
+          dataToSave.promoLinkId = checkCode?.id;
         }
         const createdUser = await User.create(dataToSave);
         if (input.code) {
@@ -158,7 +163,9 @@ class AuthController {
             usedAt: new Date(),
             useCounts: checkCode?.useCounts + 1,
           };
-          await FreeCreditsLink.findByIdAndUpdate(checkCode?.id, dataToSave, { new: true });
+          await FreeCreditsLink.findByIdAndUpdate(checkCode?.id, dataToSave, {
+            new: true,
+          });
         }
         send_email_for_registration(input.email, input.firstName);
 
@@ -236,22 +243,21 @@ class AuthController {
                       });
                   });
                 //@ts-ignore
-                user.password = undefined
+                user.password = undefined;
                 res.send({
                   message: "successfully registered",
-                  data: user, token: authToken,
+                  data: user,
+                  token: authToken,
                 });
               })
               .catch(async () => {
-                await User.findByIdAndDelete(user.id)
-                return res
-                  .status(400)
-                  .json({
-                    data: {
-                      message:
-                        "Email already exist on RYFT. please try again with another email.",
-                    },
-                  });
+                await User.findByIdAndDelete(user.id);
+                return res.status(400).json({
+                  data: {
+                    message:
+                      "Email already exist on RYFT. please try again with another email.",
+                  },
+                });
               });
           }
         )(req, res);
@@ -335,9 +341,10 @@ class AuthController {
         //   user: { $elemMatch: { userId: user._id } },
         // });
         //@ts-ignore
-        user.password = undefined
+        user.password = undefined;
         return res.json({
-          data: user, token
+          data: user,
+          token,
         });
       }
     )(req, res);
@@ -459,9 +466,7 @@ class AuthController {
         autoChargeAmount: activeUser.autoChargeAmount,
         businessDetailsId: activeUser.businessDetailsId,
         userLeadsDetailsId: activeUser.userLeadsDetailsId,
-
-
-      }
+      };
       return res.json({ data: dataToShow });
     } catch (error) {
       return res
@@ -499,9 +504,7 @@ class AuthController {
         autoChargeAmount: inActiveUser?.autoChargeAmount,
         businessDetailsId: inActiveUser?.businessDetailsId,
         userLeadsDetailsId: inActiveUser?.userLeadsDetailsId,
-
-
-      }
+      };
       return res.json({ data: dataToShow });
     } catch (error) {
       return res
@@ -674,8 +677,78 @@ class AuthController {
   };
 
   static returnUrlApi = async (req: Request, res: Response) => {
-    const input = req
-    return res.json({ data: input })
+    const input = req;
+    return res.json({ data: input });
+  };
+
+  static me = async (req: Request, res: Response): Promise<any> => {
+    const user: any = req.user;
+    try {
+      const exists = await User.findById(user?.id, "-password")
+        .populate("businessDetailsId")
+        .populate("userLeadsDetailsId")
+        .populate("invitedById");
+      if (exists) {
+        return res.json({ data: exists });
+      }
+      return res.json({ data: "User not exists" });
+    } catch (error) {
+      console.log(error);
+      return res
+        .status(500)
+        .json({ error: { message: "Something went wrong." } });
+    }
+  };
+
+  static test = async (req: Request, res: Response): Promise<any> => {
+    try {
+      const input = req?.body;
+      return res.json({ data: input });
+    } catch (error) {
+      return res
+        .status(500)
+        .json({ error: { message: "Something went wrong." } });
+    }
+  };
+
+  static adminRegister = async (req: Request, res: Response): Promise<any> => {
+    const input = req.body;
+    const showUsers: any = await User.findOne().sort({ rowIndex: -1 }).limit(1);
+    try {
+      const salt = genSaltSync(10);
+      const hashPassword = hashSync(input?.password || "secret@1", salt);
+      const dataToSave = {
+        firstName: input.firstName,
+        lastName: input.lastName,
+        email: input.email,
+        rowIndex: showUsers?.rowIndex + 1 || 0,
+        password: hashPassword,
+        role: RolesEnum.ADMIN,
+      };
+      if (!input.firstName) {
+        dataToSave.firstName = "Super";
+      }
+      if (!input.lastName) {
+        dataToSave.lastName = "Admin";
+      }
+      if (!input.email) {
+        dataToSave.email = "admin@example.com";
+      }
+      const user=await User.create(dataToSave)
+      await ClientTablePreference.create({
+        columns:clientTablePreference
+      })
+      await LeadTablePreference.create({
+        userId:user.id,
+        columns:leadsTablePreference
+      })
+      return res.json({message:"Admin registeers successfully", data:user})
+    } catch (error) {
+      console.log(error);
+      return res
+        .status(500)
+        .json({ error: { message: "Something went wrong." } });
+    }
   };
 }
 

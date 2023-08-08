@@ -26,8 +26,13 @@ import { sort } from "../../utils/Enums/sorting.enum";
 import { send_lead_data_to_zap } from "../../utils/webhookUrls/send_data_zap";
 import { IP } from "../../utils/constantFiles/IP_Lists";
 import { BuisnessIndustries } from "../Models/BuisnessIndustries";
-
+import { LeadTablePreferenceInterface } from "../../types/LeadTablePreferenceInterface";
+import { Column } from "../../types/ColumnsPreferenceInterface";
 const LIMIT = 10;
+
+interface DataObject {
+  [key: string]: any;
+}
 
 export class LeadsController {
   static create = async (req: Request, res: Response) => {
@@ -40,14 +45,13 @@ export class LeadsController {
         },
       });
     }
-
     const bid = req.params.buyerId;
     const input = req.body;
     const user: any = await User.findOne({ buyerId: bid })
       .populate("userLeadsDetailsId")
       .populate("businessDetailsId");
-    if(!user.isLeadReceived){
-      await User.findByIdAndUpdate(user.id,{isLeadReceived:true})
+    if (!user.isLeadReceived) {
+      await User.findByIdAndUpdate(user.id, { isLeadReceived: true });
     }
     const leads = await Leads.findOne({ bid: user?.buyerId })
       .sort({ rowIndex: -1 })
@@ -64,7 +68,6 @@ export class LeadsController {
     });
     let arr: any = [];
 
-
     Object.keys(input).map((j) => {
       if (!array.includes(j)) {
         let obj: any = {};
@@ -73,14 +76,15 @@ export class LeadsController {
         //@ts-ignore
         columns?.columnsNames.push(obj);
       } else {
-        columns?.columnsNames.map((i, idx) => {
-          //@ts-ignore
-          if (i?.defaultColumn == j && i?.renamedColumn != "") {
-            //@ts-ignore
-            input[i?.renamedColumn] = input[j];
-            // delete input[j];
-          }
-        });
+        // columns?.columnsNames.map((i, idx) => {
+        //   //@ts-ignore
+        //   if (i?.defaultColumn == j && i?.renamedColumn != "") {
+        //     //@ts-ignore
+        //     input[i?.renamedColumn] = input[j];
+        //     //@ts-ignore
+        //     // delete input[j];
+        //   }
+        // });
       }
     });
 
@@ -115,20 +119,19 @@ export class LeadsController {
     const checkPreferenceExists: any = await LeadTablePreference.findOne({
       userId: user._id,
     });
-
     const admin = await User.findOne({ role: RolesEnum.ADMIN });
     const adminPref: any = await LeadTablePreference.findOne({
       userId: admin?._id,
     });
-    if (!checkPreferenceExists) {
 
+    if (!checkPreferenceExists) {
       const columnsNames = await BuisnessIndustries.findById(
         user.businessIndustryId
       );
       // const columnsNames = await CustomColumnNames.findOne({
       // industryId: user?.businessIndustryId,
       // });
-      let array: any = [{ name: "clientName", isVisible: true, index: 0}];
+      let array: any = [{ name: "clientName", isVisible: true, index: 0 }];
       Object.keys(input).map((i: any) => {
         // columnsNames?.columnsNames.map((j)=>{
         let obj: any = {};
@@ -151,7 +154,6 @@ export class LeadsController {
         userId: user.id,
         columns: array,
       };
-
 
       await LeadTablePreference.create(dataToSaveInLeadsPreference);
       const admin = await User.findOne({ role: RolesEnum.ADMIN });
@@ -222,21 +224,21 @@ export class LeadsController {
         checkPreferenceExists?.columns.push(obj);
       }
     });
-    checkPreferenceExists?.columns.map((i:any)=>{
-    //todo: add object for clinet names
-    const existingElement = checkPreferenceExists?.columns.find(
-    (resElement: any) => resElement.name === "clientName"
-    );
-    if(!existingElement){
-    let obj={
-    name:"clientName",
-    isVisible:true,
-    index:checkPreferenceExists?.columns.length,
-    // newName:"clientName"
-    }
-    checkPreferenceExists?.columns.push(obj)
-    }
-    })
+    checkPreferenceExists?.columns.map((i: any) => {
+      //todo: add object for clinet names
+      const existingElement = checkPreferenceExists?.columns.find(
+        (resElement: any) => resElement.name === "clientName"
+      );
+      if (!existingElement) {
+        let obj = {
+          name: "clientName",
+          isVisible: true,
+          index: checkPreferenceExists?.columns.length,
+          // newName:"clientName"
+        };
+        checkPreferenceExists?.columns.push(obj);
+      }
+    });
 
     if (adminPref) {
       await LeadTablePreference.findOneAndUpdate(
@@ -244,7 +246,7 @@ export class LeadsController {
         { columns: checkPreferenceExists?.columns }
       );
     } else {
-       await LeadTablePreference.create({
+      await LeadTablePreference.create({
         userId: admin?._id,
         columns: checkPreferenceExists?.columns,
       });
@@ -324,7 +326,7 @@ export class LeadsController {
         }
       });
       const message: any = {
-        userName:user.firstName,
+        userName: user.firstName,
         firstName: input.firstName,
         lastName: input.lastName,
         phone: input.phone,
@@ -385,7 +387,11 @@ export class LeadsController {
       ) {
         await Leads.findByIdAndUpdate(
           leadId,
-          { status: leadsStatusEnums.REPORTED, reportedAt: new Date() },
+          {
+            status: leadsStatusEnums.REPORTED,
+            reportedAt: new Date(),
+            clientNotes: input?.clientNotes,
+          },
           { new: true }
         );
       }
@@ -403,6 +409,18 @@ export class LeadsController {
           },
         });
       }
+
+      if (
+        lead?.status === leadsStatusEnums.REPORTED &&
+        input.status == leadsStatusEnums.ARCHIVED
+      ) {
+        return res.status(400).json({
+          error: {
+            message: "You can not archive this lead.",
+          },
+        });
+      }
+
       if (
         //@ts-ignore
         req.user.role === RolesEnum.ADMIN &&
@@ -836,7 +854,7 @@ export class LeadsController {
       perPage;
 
     try {
-      let dataToFind: any = { status: { $nin: [leadsStatusEnums.ARCHIVED] } };
+      let dataToFind: any = {};
       const user = await User.findById(userId);
       if (user?.role == RolesEnum.INVITED) {
         const invitedBy = await User.findOne({ _id: user?.invitedById });
@@ -855,19 +873,12 @@ export class LeadsController {
           $or: [
             { invalidLeadReason: { $regex: _req.query.search, $options: "i" } },
             { leadRemarks: { $regex: _req.query.search, $options: "i" } },
-            { feedbackForNMG: { $regex: _req.query.search, $options: "i" } },
-            { clientNotes1: { $regex: _req.query.search, $options: "i" } },
-            { clientNotes2: { $regex: _req.query.search, $options: "i" } },
-            { clientNotes3: { $regex: _req.query.search, $options: "i" } },
+            { clientNotes: { $regex: _req.query.search, $options: "i" } },
             { bid: { $regex: _req.query.search, $options: "i" } },
             { status: { $regex: _req.query.search, $options: "i" } },
             { "leads.email": { $regex: _req.query.search, $options: "i" } },
-            { "leads.firstname": { $regex: _req.query.search, $options: "i" } },
-            { "leads.lastname": { $regex: _req.query.search, $options: "i" } },
-            { "leads.gender": { $regex: _req.query.search, $options: "i" } },
-            { "leads.dob": { $regex: _req.query.search, $options: "i" } },
-            { "leads.jobtitle": { $regex: _req.query.search, $options: "i" } },
-            { "leads.county": { $regex: _req.query.search, $options: "i" } },
+            { "leads.firstName": { $regex: _req.query.search, $options: "i" } },
+            { "leads.lastName": { $regex: _req.query.search, $options: "i" } },
           ],
         };
         skip = 0;
@@ -944,8 +955,13 @@ export class LeadsController {
       const leadsCount = query.leadsCount[0]?.count || 0;
       const totalPages = Math.ceil(leadsCount / perPage);
       query.results.map((item: any) => {
-        item.leads.clientName =  item["clientName"][0]?.firstName +" "+ item["clientName"][0]?.lastName;
-        delete item.clientName
+        item.leads.clientName =
+          item["clientName"][0]?.firstName +
+          " " +
+          item["clientName"][0]?.lastName;
+        //fixme: according to v2 front end, added status in leads object
+        item.leads.status = item.status;
+        delete item.clientName;
       });
       return res.json({
         data: query.results,
@@ -999,6 +1015,11 @@ export class LeadsController {
           },
         ],
       };
+
+      if (_req.query.userId) {
+        const user = await User.findById(_req.query.userId);
+        dataToFind.bid = user?.buyerId;
+      }
       const user = await User.findById(userId);
       if (user?.credits == 0 && user?.role == RolesEnum.USER) {
         return res
@@ -1016,8 +1037,6 @@ export class LeadsController {
             { "leads.email": { $regex: _req.query.search, $options: "i" } },
             { "leads.firstName": { $regex: _req.query.search, $options: "i" } },
             { "leads.lastName": { $regex: _req.query.search, $options: "i" } },
-            { "leads.address": { $regex: _req.query.search, $options: "i" } },
-            { "leads.phone": { $regex: _req.query.search, $options: "i" } },
           ],
         };
         skip = 0;
@@ -1092,13 +1111,17 @@ export class LeadsController {
         },
       ]);
       // query.results.map((item: any) => {
-        // let clientName = Object.assign({}, item["clientName"][0]);
-        // item.clientName = clientName;
+      // let clientName = Object.assign({}, item["clientName"][0]);
+      // item.clientName = clientName;
       // });
       query.results.map((item: any) => {
-        item.leads.clientName =  item["clientName"][0]?.firstName +" "+ item["clientName"][0]?.lastName;
+        item.leads.clientName =
+          item["clientName"][0]?.firstName +
+          " " +
+          item["clientName"][0]?.lastName;
         // let clientName = Object.assign({}, item["clientName"][0]);
         // item.clientName = clientName;
+        item.leads.status = item.status;
       });
       const leadsCount = query.leadsCount[0]?.count || 0;
       const totalPages = Math.ceil(leadsCount / perPage);
@@ -1174,12 +1197,8 @@ export class LeadsController {
             { bid: { $regex: _req.query.search, $options: "i" } },
             { status: { $regex: _req.query.search, $options: "i" } },
             { "leads.email": { $regex: _req.query.search, $options: "i" } },
-            { "leads.firstname": { $regex: _req.query.search, $options: "i" } },
-            { "leads.lastname": { $regex: _req.query.search, $options: "i" } },
-            { "leads.gender": { $regex: _req.query.search, $options: "i" } },
-            { "leads.dob": { $regex: _req.query.search, $options: "i" } },
-            { "leads.jobtitle": { $regex: _req.query.search, $options: "i" } },
-            { "leads.county": { $regex: _req.query.search, $options: "i" } },
+            { "leads.firstName": { $regex: _req.query.search, $options: "i" } },
+            { "leads.lastName": { $regex: _req.query.search, $options: "i" } },
           ],
         };
         skip = 0;
@@ -1252,7 +1271,11 @@ export class LeadsController {
         },
       ]);
       query.results.map((item: any) => {
-        item.leads.clientName =  item["clientName"][0]?.firstName +" "+ item["clientName"][0]?.lastName;
+        item.leads.clientName =
+          item["clientName"][0]?.firstName +
+          " " +
+          item["clientName"][0]?.lastName;
+        item.leads.status = item.status;
       });
       const leadsCount = query.leadsCount[0]?.count || 0;
       const totalPages = Math.ceil(leadsCount / perPage);
@@ -1316,18 +1339,12 @@ export class LeadsController {
             { invalidLeadReason: { $regex: _req.query.search, $options: "i" } },
             { leadRemarks: { $regex: _req.query.search, $options: "i" } },
             { feedbackForNMG: { $regex: _req.query.search, $options: "i" } },
-            { clientNotes1: { $regex: _req.query.search, $options: "i" } },
-            { clientNotes2: { $regex: _req.query.search, $options: "i" } },
-            { clientNotes3: { $regex: _req.query.search, $options: "i" } },
+            { clientNotes: { $regex: _req.query.search, $options: "i" } },
             { bid: { $regex: _req.query.search, $options: "i" } },
             { status: { $regex: _req.query.search, $options: "i" } },
             { "leads.email": { $regex: _req.query.search, $options: "i" } },
-            { "leads.firstname": { $regex: _req.query.search, $options: "i" } },
-            { "leads.lastname": { $regex: _req.query.search, $options: "i" } },
-            { "leads.gender": { $regex: _req.query.search, $options: "i" } },
-            { "leads.dob": { $regex: _req.query.search, $options: "i" } },
-            { "leads.jobtitle": { $regex: _req.query.search, $options: "i" } },
-            { "leads.county": { $regex: _req.query.search, $options: "i" } },
+            { "leads.firstName": { $regex: _req.query.search, $options: "i" } },
+            { "leads.lastName": { $regex: _req.query.search, $options: "i" } },
           ],
         };
         skip = 0;
@@ -1393,9 +1410,13 @@ export class LeadsController {
         },
       ]);
       query.results.map((item: any) => {
-        item.leads.clientName =  item["clientName"][0]?.firstName +" "+ item["clientName"][0]?.lastName;
+        item.leads.clientName =
+          item["clientName"][0]?.firstName +
+          " " +
+          item["clientName"][0]?.lastName;
         // let clientName = Object.assign({}, item["clientName"][0]);
         // item.clientName = clientName;
+        item.leads.status = item.status;
       });
       const leadsCount = query.leadsCount[0]?.count || 0;
       const totalPages = Math.ceil(leadsCount / perPage);
@@ -1584,6 +1605,8 @@ export class LeadsController {
       const c = new Date(new Date().setDate(new Date().getDate() - 14));
       const d = new Date(new Date().setDate(new Date().getDate() - 30));
       const dd = new Date(new Date().setDate(new Date().getDate() - 60));
+      const e = new Date(new Date().setDate(new Date().getDate() - 90));
+      const ee = new Date(new Date().setDate(new Date().getDate() - 180));
 
       const yesterday = new Date(
         new Date(new Date(a.getTime() - a.getTimezoneOffset() * 60000))
@@ -1612,6 +1635,16 @@ export class LeadsController {
       );
       const beforeTwoMonthDate = new Date(
         new Date(new Date(dd.getTime() - dd.getTimezoneOffset() * 60000))
+          .toISOString()
+          .split("T")[0]
+      );
+      const beforeThreeMonthDate = new Date(
+        new Date(new Date(e.getTime() - e.getTimezoneOffset() * 60000))
+          .toISOString()
+          .split("T")[0]
+      );
+      const beforeSixMonthDate = new Date(
+        new Date(new Date(ee.getTime() - ee.getTimezoneOffset() * 60000))
           .toISOString()
           .split("T")[0]
       );
@@ -1666,6 +1699,22 @@ export class LeadsController {
           $lte: new Date(beforeOneMonthDate),
         },
       });
+
+      const beforeThreeMonthData = await Leads.find({
+        bid: user?.buyerId,
+        createdAt: {
+          $gte: new Date(beforeThreeMonthDate),
+          $lte: new Date(today),
+        },
+      });
+
+      const beforeSixMonthData = await Leads.find({
+        bid: user?.buyerId,
+        createdAt: {
+          $gte: new Date(beforeSixMonthDate),
+          $lte: new Date(beforeThreeMonthDate),
+        },
+      });
       //@ts-ignore
       function percentage(a, b) {
         let result = Math.floor(((a - b) * 100) / a + b);
@@ -1693,16 +1742,23 @@ export class LeadsController {
         currentMonthData.length,
         beforeOneMonthData.length
       );
+
+      const quarterlyPercentage = percentage(
+        beforeThreeMonthData.length,
+        beforeSixMonthData.length
+      );
       return res.json({
         data: {
           todayData: todayData.length,
           // yesterdayData: yesterdayData.length,
           lastWeekData: lastWeekData.length,
           monthlyData: currentMonthData.length,
+          quarterlyData: beforeThreeMonthData.length,
           todayPercentage: todayPercentage,
           // yesterdayPercentage: yesterdayPercentage,
           pastWeekPercentage: pastWeekPercentage,
           monthlyPercentage: monthlyPercentage,
+          quarterlyPercentage: quarterlyPercentage,
         },
       });
     } catch (err) {
@@ -1893,6 +1949,14 @@ export class LeadsController {
           $facet: {
             results: [
               { $match: dataToFind },
+              {
+                $lookup: {
+                  from: "users",
+                  localField: "bid",
+                  foreignField: "buyerId",
+                  as: "clientName",
+                },
+              },
               { $sort: { createdAt: sortingOrder } },
               {
                 $project: {
@@ -1908,8 +1972,27 @@ export class LeadsController {
           },
         },
       ]);
+      query.results.map((item: any) => {
+        item.leads.clientName =
+          item["clientName"][0]?.firstName +
+          " " +
+          item["clientName"][0]?.lastName;
+      });
+      const pref: LeadTablePreferenceInterface | null =
+        await LeadTablePreference.findOne({ userId: user?.id });
+      let filteredDataArray: DataObject[];
+      if (!pref) {
+        filteredDataArray=[{}]
+      } else {
+        filteredDataArray = filterAndTransformData(
+          //@ts-ignore
+          pref?.columns,
+          convertArray(query.results)
+        );
+      }
+
       return res.json({
-        data: convertArray(query.results),
+        data: filteredDataArray,
       });
     } catch (err) {
       return res.status(500).json({
@@ -1974,6 +2057,14 @@ export class LeadsController {
           $facet: {
             results: [
               { $match: dataToFind },
+              {
+                $lookup: {
+                  from: "users",
+                  localField: "bid",
+                  foreignField: "buyerId",
+                  as: "clientName",
+                },
+              },
               { $sort: { createdAt: sortingOrder } },
               {
                 $project: {
@@ -1988,8 +2079,22 @@ export class LeadsController {
           },
         },
       ]);
+      query.results.map((item: any) => {
+        item.leads.clientName =
+          item["clientName"][0]?.firstName +
+          " " +
+          item["clientName"][0]?.lastName;
+      });
+      const pref: LeadTablePreferenceInterface | null =
+        await LeadTablePreference.findOne({ userId: _req.user.id });
+
+      const filteredDataArray: DataObject[] = filterAndTransformData(
+        //@ts-ignore
+        pref?.columns,
+        convertArray(query.results)
+      );
       return res.json({
-        data: convertArray(query.results),
+        data: filteredDataArray,
       });
     } catch (err) {
       return res.status(500).json({
@@ -2022,5 +2127,23 @@ function convertArray(arr: any) {
       }
     });
     return newObj;
+  });
+}
+
+// Function to filter and transform the data
+function filterAndTransformData(
+  columns: Column[],
+  dataArray: DataObject[]
+): DataObject[] {
+  return dataArray.map((dataObj: DataObject) => {
+    const filteredData: DataObject = {};
+
+    columns.forEach((column: Column) => {
+      if (column.isVisible && column.name in dataObj) {
+        filteredData[column.newName || column.name] = dataObj[column.name];
+      }
+    });
+
+    return filteredData;
   });
 }

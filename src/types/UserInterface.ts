@@ -10,7 +10,6 @@ export interface UserInterface extends Document {
   email: string;
   password: string;
   role: RolesEnum;
-  autoCharge: boolean;
   paymentMethod: string;
   phoneNumber:string;
   credits: number;
@@ -39,4 +38,6 @@ export interface UserInterface extends Document {
   premiumUser:string
   promoLinkId:Types.ObjectId;
   isLeadReceived:boolean;
+  promoCodeUsed:boolean
+  onBoardingPercentage:number;
 }

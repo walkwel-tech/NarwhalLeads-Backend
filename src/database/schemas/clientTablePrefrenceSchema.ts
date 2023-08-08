@@ -1,12 +1,12 @@
 import { Schema } from "mongoose";
 
 const ClientTablePreferenceSchema = new Schema(
-    {
-      columns:{
-        type:Array
-      }
+  {
+    columns: {
+      type: Array,
     },
-    { timestamps: true }
-  );
-  
-  export { ClientTablePreferenceSchema };
+  },
+  { timestamps: true }
+);
+
+export { ClientTablePreferenceSchema };

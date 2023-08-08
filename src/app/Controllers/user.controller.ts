@@ -18,9 +18,17 @@ import { Invoice } from "../Models/Invoice";
 import { Transaction } from "../Models/Transaction";
 import { User } from "../Models/User";
 import { UserLeadsDetails } from "../Models/UserLeadsDetails";
+import { ClientTablePreferenceInterface } from "../../types/clientTablePrefrenceInterface";
+import { ClientTablePreference } from "../Models/ClientTablePrefrence";
+import { Column } from "../../types/ColumnsPreferenceInterface";
 const ObjectId = mongoose.Types.ObjectId;
 
 const LIMIT = 10;
+
+
+interface DataObject {
+  [key: string]: any;
+}
 
 export class UsersControllers {
   static create = async (req: Request, res: Response): Promise<Response> => {
@@ -114,6 +122,7 @@ export class UsersControllers {
       if (isActive === "undefined" || isActive === "null") {
         isActive = "true";
       }
+
       const perPage =
         _req.query && _req.query.perPage > 0
           ? parseInt(_req.query.perPage)
@@ -127,9 +136,15 @@ export class UsersControllers {
         role: { $nin: [RolesEnum.ADMIN, RolesEnum.INVITED] },
         // role:{$ne: RolesEnum.INVITED },
         isDeleted: false,
-        isArchived: JSON.parse(isArchived?.toLowerCase()),
-        // isActive: JSON.parse(isActive?.toLowerCase()),
+        // isArchived: JSON.parse(isArchived?.toLowerCase()),
       };
+      if(_req.query.isActive){
+        dataToFind.isActive=JSON.parse(isActive?.toLowerCase())
+        dataToFind.isArchived=false
+      }
+      if(_req.query.isArchived){
+        dataToFind.isArchived=JSON.parse(isArchived?.toLowerCase())
+      }
       if (_req.query.search) {
         dataToFind = {
           ...dataToFind,
@@ -149,7 +164,6 @@ export class UsersControllers {
         };
         skip = 0;
       }
-
       const [query]: any = await User.aggregate([
         {
           $facet: {
@@ -277,8 +291,8 @@ export class UsersControllers {
                   as: "cardDetailsId",
                 },
               },
-              { $match: { _id: new ObjectId(id) } },
-            ],
+              { $match: { _id: new ObjectId(id) } }
+                        ],
           },
         },
       ]);
@@ -325,7 +339,8 @@ export class UsersControllers {
       const user = await User.find(
         { role: { $nin: [RolesEnum.ADMIN, RolesEnum.INVITED] } },
         "firstName lastName email buyerId"
-      );
+      ).sort("firstName")
+      ;
 
       if (user) {
         return res.json({ data: user });
@@ -383,7 +398,8 @@ export class UsersControllers {
       }
       if (
         input.paymentMethod &&
-        checkUser?.paymentMethod == paymentMethodEnum.WEEKLY_PAYMENT_METHOD
+         // @ts-ignore
+        checkUser?.paymentMethod == paymentMethodEnum.WEEKLY_PAYMENT_METHOD && req.user?.role===RolesEnum.USER
       ) {
         return res
           .status(403)
@@ -411,6 +427,9 @@ export class UsersControllers {
           .json({ error: { message: "Card Details not found!" } });
       }
       if (input.businessName) {
+        if(!checkUser.businessDetailsId){
+          return res.status(400).json({error:{message:"business details not found"}})
+        }
         await BusinessDetails.findByIdAndUpdate(
           checkUser?.businessDetailsId,
           { businessName: input.businessName },
@@ -419,6 +438,9 @@ export class UsersControllers {
         );
       }
       if (input.businessAddress) {
+        if(!checkUser.businessDetailsId){
+          return res.status(400).json({error:{message:"business details not found"}})
+        }
         await BusinessDetails.findByIdAndUpdate(
           checkUser?.businessDetailsId,
           { businessAddress: input.businessAddress },
@@ -427,6 +449,9 @@ export class UsersControllers {
         );
       }
       if (input.businessCity) {
+        if(!checkUser.businessDetailsId){
+          return res.status(400).json({error:{message:"business details not found"}})
+        }
         await BusinessDetails.findByIdAndUpdate(
           checkUser?.businessDetailsId,
           { businessCity: input.businessCity },
@@ -435,6 +460,9 @@ export class UsersControllers {
         );
       }
       if (input.businessCountry) {
+        if(!checkUser.businessDetailsId){
+          return res.status(400).json({error:{message:"business details not found"}})
+        }
         await BusinessDetails.findByIdAndUpdate(
           checkUser?.businessDetailsId,
           { businessCountry: input.businessCountry },
@@ -443,6 +471,9 @@ export class UsersControllers {
         );
       }
       if (input.businessPostCode) {
+        if(!checkUser.businessDetailsId){
+          return res.status(400).json({error:{message:"business details not found"}})
+        }
         await BusinessDetails.findByIdAndUpdate(
           checkUser?.businessDetailsId,
           { businessPostCode: input.businessPostCode },
@@ -451,6 +482,9 @@ export class UsersControllers {
         );
       }
       if (input.businessIndustry) {
+        if(!checkUser.businessDetailsId){
+          return res.status(400).json({error:{message:"business details not found"}})
+        }
         await BusinessDetails.findByIdAndUpdate(
           checkUser?.businessDetailsId,
           { businessIndustry: input.businessIndustry },
@@ -459,6 +493,9 @@ export class UsersControllers {
         );
       }
       if (input.businessOpeningHours) {
+        if(!checkUser.businessDetailsId){
+          return res.status(400).json({error:{message:"business details not found"}})
+        }
         await BusinessDetails.findByIdAndUpdate(
           checkUser?.businessDetailsId,
           { businessOpeningHours: input.businessOpeningHours },
@@ -467,6 +504,9 @@ export class UsersControllers {
         );
       }
       if (input.total) {
+        if(!checkUser.userLeadsDetailsId){
+          return res.status(400).json({error:{message:"lead details not found"}})
+        }
         await UserLeadsDetails.findByIdAndUpdate(
           checkUser?.userLeadsDetailsId,
           { total: input.total },
@@ -475,6 +515,9 @@ export class UsersControllers {
         );
       }
       if (input.weekly) {
+        if(!checkUser.userLeadsDetailsId){
+          return res.status(400).json({error:{message:"lead details not found"}})
+        }
         await UserLeadsDetails.findByIdAndUpdate(
           checkUser?.userLeadsDetailsId,
           { weekly: input.weekly },
@@ -483,6 +526,9 @@ export class UsersControllers {
         );
       }
       if (input.monthly) {
+        if(!checkUser.userLeadsDetailsId){
+          return res.status(400).json({error:{message:"lead details not found"}})
+        }
         await UserLeadsDetails.findByIdAndUpdate(
           checkUser?.userLeadsDetailsId,
           { monthly: input.monthly },
@@ -491,6 +537,9 @@ export class UsersControllers {
         );
       }
       if (input.leadSchedule) {
+        if(!checkUser.userLeadsDetailsId){
+          return res.status(400).json({error:{message:"lead details not found"}})
+        }
         await UserLeadsDetails.findByIdAndUpdate(
           checkUser?.userLeadsDetailsId,
           { leadSchedule: input.leadSchedule },
@@ -499,6 +548,9 @@ export class UsersControllers {
         );
       }
       if (input.postCodeTargettingList) {
+        if(!checkUser.userLeadsDetailsId){
+          return res.status(400).json({error:{message:"lead details not found"}})
+        }
         await UserLeadsDetails.findByIdAndUpdate(
           checkUser?.userLeadsDetailsId,
           { postCodeTargettingList: input.postCodeTargettingList },
@@ -507,6 +559,9 @@ export class UsersControllers {
         );
       }
       if (input.leadAlertsFrequency) {
+        if(!checkUser.userLeadsDetailsId){
+          return res.status(400).json({error:{message:"lead details not found"}})
+        }
         await UserLeadsDetails.findByIdAndUpdate(
           checkUser?.userLeadsDetailsId,
           { leadAlertsFrequency: input.leadAlertsFrequency },
@@ -515,6 +570,9 @@ export class UsersControllers {
         );
       }
       if (input.zapierUrl) {
+        if(!checkUser.userLeadsDetailsId){
+          return res.status(400).json({error:{message:"lead details not found"}})
+        }
         await UserLeadsDetails.findByIdAndUpdate(
           checkUser?.userLeadsDetailsId,
           { zapierUrl: input.zapierUrl, sendDataToZapier: true },
@@ -523,6 +581,10 @@ export class UsersControllers {
         );
       }
       if (input.daily) {
+        if(!checkUser.userLeadsDetailsId){
+          return res.status(400).json({error:{message:"lead details not found"}})
+        }
+        input.daily=parseInt(input.daily)
         await UserLeadsDetails.findByIdAndUpdate(
           checkUser?.userLeadsDetailsId,
           { daily: input.daily },
@@ -647,7 +709,6 @@ export class UsersControllers {
         const result = await User.findById(id, "-password -__v");
         const buinessData= await BusinessDetails.findById(result?.businessDetailsId)
         const leadData= await UserLeadsDetails.findById(result?.userLeadsDetailsId)
-        console.log(" leadData?.postCodeTargettingList", leadData?.postCodeTargettingList)
         const formattedPostCodes=leadData?.postCodeTargettingList.map((item:any) => item.postalCode).flat();
 
         const message = {
@@ -755,7 +816,22 @@ export class UsersControllers {
       sortingOrder = -1;
     }
     try {
-      let dataToFind: any = {};
+      let dataToFind: any = {  role:{$nin: [RolesEnum.ADMIN, RolesEnum.INVITED]},  isDeleted: false, };
+      if(_req.query.invited){
+        dataToFind.role={$nin: [RolesEnum.ADMIN]}
+      }
+      if(_req.query.isActive){
+        dataToFind.isActive=true
+        dataToFind.isArchived=false
+      }
+      
+      if(_req.query.isInActive){
+        dataToFind.isActive=false
+      }
+
+      if(_req.query.isArchived){
+        dataToFind.isArchived=true
+      }
       if (_req.query.search) {
         dataToFind = {
           ...dataToFind,
@@ -817,12 +893,18 @@ export class UsersControllers {
           {},
           item["userLeadsDetailsId"][0]
         );
-        // let businessOpeningHours=Object.assign({}, item["businessDetailsId"][0]?.businessOpeningHours)
         item.userLeadsDetailsId = userLeadsDetailsId;
         item.businessDetailsId = businessDetailsId;
-        // item.open = businessOpeningHours;
       });
-      const arr = convertArray(query.results)
+      const pref: ClientTablePreferenceInterface | null =
+      await ClientTablePreference.findOne({ userId: _req.user.id });
+
+    const filteredDataArray: DataObject[] = filterAndTransformData(
+            //@ts-ignore
+      pref?.columns,
+      convertArray(query.results)
+    );
+      const arr = filteredDataArray
       return res.json({
         data: arr,
       });
@@ -858,5 +940,21 @@ function convertArray(arr: any) {
       }
     });
     return newObj;
+  });
+}
+function filterAndTransformData(
+  columns: Column[],
+  dataArray: DataObject[]
+): DataObject[] {
+  return dataArray.map((dataObj: DataObject) => {
+    const filteredData: DataObject = {};
+
+    columns.forEach((column: Column) => {
+      if (column.isVisible && column.name in dataObj) {
+        filteredData[column.newName || column.name] = dataObj[column.name];
+      }
+    });
+
+    return filteredData;
   });
 }

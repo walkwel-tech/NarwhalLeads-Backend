@@ -217,6 +217,7 @@ export const autoChargePayment = async () => {
   });
 };
 
+//weekl deduct credits, not payment.
 export const weeklypayment = async () => {
   cron.schedule("00 09 * * MON", async () => {
     console.log("Monday 9am Cron Job started.");
