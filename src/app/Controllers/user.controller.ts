@@ -820,6 +820,15 @@ export class UsersControllers {
       if(_req.query.invited){
         dataToFind.role={$nin: [RolesEnum.ADMIN]}
       }
+      if(_req.query.isActive){
+        dataToFind.isActive=true
+      }
+      if(_req.query.isInActive){
+        dataToFind.isActive=false
+      }
+      if(_req.query.isArchived){
+        dataToFind.isArchived=true
+      }
       if (_req.query.search) {
         dataToFind = {
           ...dataToFind,

@@ -30,7 +30,6 @@ import { LeadTablePreferenceInterface } from "../../types/LeadTablePreferenceInt
 import { Column } from "../../types/ColumnsPreferenceInterface";
 const LIMIT = 10;
 
-
 interface DataObject {
   [key: string]: any;
 }
@@ -46,7 +45,6 @@ export class LeadsController {
         },
       });
     }
-
     const bid = req.params.buyerId;
     const input = req.body;
     const user: any = await User.findOne({ buyerId: bid })
@@ -83,7 +81,8 @@ export class LeadsController {
           if (i?.defaultColumn == j && i?.renamedColumn != "") {
             //@ts-ignore
             input[i?.renamedColumn] = input[j];
-            // delete input[j];
+            //@ts-ignore
+            delete input[i?.renamedColumn];
           }
         });
       }
@@ -120,11 +119,11 @@ export class LeadsController {
     const checkPreferenceExists: any = await LeadTablePreference.findOne({
       userId: user._id,
     });
-
     const admin = await User.findOne({ role: RolesEnum.ADMIN });
     const adminPref: any = await LeadTablePreference.findOne({
       userId: admin?._id,
     });
+
     if (!checkPreferenceExists) {
       const columnsNames = await BuisnessIndustries.findById(
         user.businessIndustryId
@@ -388,7 +387,11 @@ export class LeadsController {
       ) {
         await Leads.findByIdAndUpdate(
           leadId,
-          { status: leadsStatusEnums.REPORTED, reportedAt: new Date(),clientNotes:input?.clientNotes },
+          {
+            status: leadsStatusEnums.REPORTED,
+            reportedAt: new Date(),
+            clientNotes: input?.clientNotes,
+          },
           { new: true }
         );
       }
@@ -409,12 +412,11 @@ export class LeadsController {
 
       if (
         lead?.status === leadsStatusEnums.REPORTED &&
-        
-        input.status == leadsStatusEnums.ARCHIVED){
+        input.status == leadsStatusEnums.ARCHIVED
+      ) {
         return res.status(400).json({
           error: {
-            message:
-              "You can not archive this lead.",
+            message: "You can not archive this lead.",
           },
         });
       }
@@ -852,7 +854,7 @@ export class LeadsController {
       perPage;
 
     try {
-      let dataToFind: any = { };
+      let dataToFind: any = {};
       const user = await User.findById(userId);
       if (user?.role == RolesEnum.INVITED) {
         const invitedBy = await User.findOne({ _id: user?.invitedById });
@@ -1978,12 +1980,16 @@ export class LeadsController {
       });
       const pref: LeadTablePreferenceInterface | null =
         await LeadTablePreference.findOne({ userId: user?.id });
-
-      const filteredDataArray: DataObject[] = filterAndTransformData(
-              //@ts-ignore
-        pref?.columns,
-        convertArray(query.results)
-      );
+      let filteredDataArray: DataObject[];
+      if (!pref) {
+        filteredDataArray=[{}]
+      } else {
+        filteredDataArray = filterAndTransformData(
+          //@ts-ignore
+          pref?.columns,
+          convertArray(query.results)
+        );
+      }
 
       return res.json({
         data: filteredDataArray,
@@ -2080,13 +2086,13 @@ export class LeadsController {
           item["clientName"][0]?.lastName;
       });
       const pref: LeadTablePreferenceInterface | null =
-      await LeadTablePreference.findOne({ userId: _req.user.id });
+        await LeadTablePreference.findOne({ userId: _req.user.id });
 
-    const filteredDataArray: DataObject[] = filterAndTransformData(
-            //@ts-ignore
-      pref?.columns,
-      convertArray(query.results)
-    );
+      const filteredDataArray: DataObject[] = filterAndTransformData(
+        //@ts-ignore
+        pref?.columns,
+        convertArray(query.results)
+      );
       return res.json({
         data: filteredDataArray,
       });
