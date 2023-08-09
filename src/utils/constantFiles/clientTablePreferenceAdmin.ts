@@ -1,14 +1,9 @@
 
    export const clientTablePreference=[
       {
-        name: "businessCountry",
-        isVisible: false,
-        index: 6
-      },
-      {
         name: "leadAlertsFrequency",
         isVisible: false,
-        index: 15
+        index: 6
       },
       {
         name: "businessCity",
