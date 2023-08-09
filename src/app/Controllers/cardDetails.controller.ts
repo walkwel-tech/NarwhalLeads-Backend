@@ -642,7 +642,7 @@ export class CardDetailsControllers {
               invoiceId: "",
               paymentSessionId: input.data.id,
               cardId: card?.cardId,
-              creditsLeft: (userId?.credits) || 0 - params.freeCredits,
+              creditsLeft: (userId?.credits) || 0 -( params.freeCredits || 0),
             });
             const transactionForVat = await Transaction.create({
               userId: userId?.id,
@@ -653,7 +653,7 @@ export class CardDetailsControllers {
               invoiceId: "",
               paymentSessionId: input.data.id,
               cardId: card?.cardId,
-              creditsLeft: (userId?.credits) || 0 - params.freeCredits,
+              creditsLeft: (userId?.credits) || 0 - (params.freeCredits || 0),
             });
             const message={
               firstName:userId?.firstName,

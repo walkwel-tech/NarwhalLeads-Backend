@@ -1531,7 +1531,7 @@ export class LeadsController {
       });
       if (!invoices) {
         return res.status(400).json({
-          data: { message: "you don't have access to to generate this pdf" },
+          data: { message: "you don't have access to generate this pdf" },
         });
       }
       const token = await AccessToken.findOne();
