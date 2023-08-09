@@ -505,7 +505,6 @@ export class CardDetailsControllers {
               message: "In progress",
               status: 200,
             };
-
             if (_res.data.status == "PendingAction") {
               response.message = "Further Action required";
               response.status = 302;
@@ -589,7 +588,7 @@ export class CardDetailsControllers {
         const message={
           firstName:userId?.firstName,
           amount:parseInt(input.data.amount)/100,
-          cardHolderName:cardDetailsExist?.cardHolderName,
+          cardHolderName:`${userId?.firstName} ${userId?.lastName}`,
           cardNumberEnd:cardDetailsExist?.cardNumber,
           credits:userId?.credits
         }
@@ -659,7 +658,7 @@ export class CardDetailsControllers {
             const message={
               firstName:userId?.firstName,
               amount:parseInt(input.data.amount)/100,
-              cardHolderName:cardDetails?.cardHolderName,
+              cardHolderName:`${userId?.firstName} ${userId?.lastName}`,
               cardNumberEnd:cardDetails?.cardNumber,
               credits:userId?.credits
             }
