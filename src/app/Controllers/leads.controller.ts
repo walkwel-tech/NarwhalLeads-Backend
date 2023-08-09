@@ -874,6 +874,9 @@ export class LeadsController {
           .status(200)
           .json({ message: "Insufficient credits!", data: [] });
       }
+      if (status) {
+        dataToFind.status = status;
+      }
       if (_req.query.search) {
         dataToFind = {
           ...dataToFind,
@@ -889,9 +892,6 @@ export class LeadsController {
           ],
         };
         skip = 0;
-      }
-      if (status) {
-        dataToFind.status = status;
       }
       const [query]: any = await Leads.aggregate([
         {
@@ -1049,8 +1049,8 @@ export class LeadsController {
         skip = 0;
       }
       if (status) {
-        // dataToFind.status = status;
-        dataToFind = { status: status };
+        dataToFind.status = status;
+        // dataToFind = { status: status };
       }
       const [query]: any = await Leads.aggregate([
         {
@@ -1191,6 +1191,9 @@ export class LeadsController {
         bid: user?.buyerId,
         status: { $nin: [leadsStatusEnums.ARCHIVED] },
       };
+      if (status) {
+        dataToFind.status = status;
+      }
       if (_req.query.search) {
         dataToFind = {
           ...dataToFind,
@@ -1210,9 +1213,7 @@ export class LeadsController {
         };
         skip = 0;
       }
-      if (status) {
-        dataToFind.status = status;
-      }
+
       const [query]: any = await Leads.aggregate([
         {
           $facet: {
@@ -1338,7 +1339,9 @@ export class LeadsController {
           },
         ],
       };
-
+      if (status) {
+        dataToFind = { status: status };
+      }
       if (_req.query.search) {
         dataToFind = {
           ...dataToFind,
@@ -1356,9 +1359,7 @@ export class LeadsController {
         };
         skip = 0;
       }
-      if (status) {
-        dataToFind = { status: status };
-      }
+
       const [query]: any = await Leads.aggregate([
         {
           $facet: {
