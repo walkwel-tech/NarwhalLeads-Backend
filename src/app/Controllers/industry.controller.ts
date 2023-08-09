@@ -120,7 +120,7 @@ export class IndustryController {
 
   static showIndustries = async (req: Request, res: Response) => {
     try {
-      const data = await BuisnessIndustries.find({}, { industry: 1 });
+      const data = await BuisnessIndustries.find({isActive:true}, { industry: 1 });
       if (data) {
         let array: any = [];
         data.map((i) => {
