@@ -16,10 +16,14 @@ import {
 import { BuisnessIndustries } from "../Models/BuisnessIndustries";
 import { BusinessDetails } from "../Models/BusinessDetails";
 
-import { addUserXeroId } from "../../utils/XeroApiIntegration/createContact";
+import {
+  createContactOnXero,
+  refreshToken,
+} from "../../utils/XeroApiIntegration/createContact";
 import { User } from "../Models/User";
 import { UserLeadsDetails } from "../Models/UserLeadsDetails";
 import { LeadTablePreference } from "../Models/LeadTablePreference";
+import { AccessToken } from "../Models/AccessToken";
 
 const ObjectId = mongoose.Types.ObjectId;
 
@@ -137,13 +141,56 @@ export class BusinessDetailsController {
         onBoardingPercentage: input?.onBoardingPercentage,
       });
       const user: any = await User.findById(input.userId);
-      if (!user?.xeroContactId) {
-        try {
-          await addUserXeroId(input.userId);
-        } catch (error) {
-          console.log("ERROR WHILE CREATING CUSTOMER!!");
-        }
-      }
+      const paramsToCreateContact = {
+        name: user.firstName + " " + user.lastName,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        emailAddress: user.email,
+        addressLine1: input.businessIndustry,
+        addressLine2: input.businessName,
+        city: input.businessCity,
+        postalCode: input.businessPostCode,
+      };
+      const token: any = await AccessToken.findOne();
+      createContactOnXero(paramsToCreateContact, token?.access_token)
+        .then(async (res: any) => {
+          await User.findOneAndUpdate(
+            { email: input.email },
+            {
+              $set: { xeroContactId: res.data.Contacts[0].ContactID },
+            }
+          );
+          console.log("success in creating contact");
+        })
+        .catch((err) => {
+          refreshToken()
+            .then(async (res: any) => {
+              console.log("Token updated while creating customer!!!");
+              createContactOnXero(paramsToCreateContact, res.data.access_token)
+                .then(async (res: any) => {
+                  await User.findOneAndUpdate(
+                    { email: input.email },
+                    {
+                      $set: {
+                        xeroContactId: res.data.Contacts[0].ContactID,
+                      },
+                    }
+                  );
+                  console.log("success in creating contact");
+                })
+                .catch((error) => {
+                  console.log(
+                    "ERROR IN CREATING CUSTOMER AFTER TOKEN UPDATION."
+                  );
+                });
+            })
+            .catch((err) => {
+              console.log(
+                "error in creating contact on xero",
+                err.response.data
+              );
+            });
+        });
       // if (checkOnbOardingComplete(user) && !user.registrationMailSentToAdmin) {
       //   const leadData = await UserLeadsDetails.findOne({
       //     userId: userData?._id,
@@ -235,11 +282,11 @@ export class BusinessDetailsController {
           .json({ error: { message: "details does not exists." } });
       }
       let userData = await User.findOne({ businessDetailsId: id });
-      if(input.businessOpeningHours){
-              input.businessOpeningHours= JSON.parse(input.businessOpeningHours)
+      if (input.businessOpeningHours) {
+        input.businessOpeningHours = JSON.parse(input.businessOpeningHours);
       }
-      if( (req.file || {}).filename){
-        input.businessLogo=`${FileEnum.PROFILEIMAGE}${req?.file?.filename}`
+      if ((req.file || {}).filename) {
+        input.businessLogo = `${FileEnum.PROFILEIMAGE}${req?.file?.filename}`;
       }
       //       ? //@ts-ignore
       //         `${FileEnum.PROFILEIMAGE}${req?.file.filename}`)
@@ -263,7 +310,9 @@ export class BusinessDetailsController {
           );
         }
       }
-const data=await BusinessDetails.findByIdAndUpdate(id,input,{new:true})
+      const data = await BusinessDetails.findByIdAndUpdate(id, input, {
+        new: true,
+      });
       // const data = await BusinessDetails.findByIdAndUpdate(
       //   id,
       //   {
