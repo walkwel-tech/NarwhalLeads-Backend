@@ -46,6 +46,7 @@ import { VAT } from "../../utils/constantFiles/Invoices";
 import mongoose from "mongoose";
 const ObjectId = mongoose.Types.ObjectId;
 import { PaymentResponse } from "../../types/PaymentResponseInterface";
+import { PREMIUM_PROMOLINK } from "../../utils/constantFiles/spotDif.offers.promoLink";
 
 
 export class CardDetailsControllers {
@@ -608,7 +609,7 @@ export class CardDetailsControllers {
         });
       } else if (input.eventType == "PaymentSession.captured") {
 
-     const cardDetails=   await CardDetails.findByIdAndUpdate(card?.cardId, {
+     const cardDetails= await CardDetails.findByIdAndUpdate(card?.cardId, {
           status: PAYMENT_SESSION.SUCCESS,
         },{new:true});
         // TODO: apply conditipon for user does not iuncludes in promo link.users
@@ -628,7 +629,9 @@ export class CardDetailsControllers {
           console.log("in 2")
 
         }
-        console.log("params",params)
+        else if(!userId.promoCodeUsed && parseInt(input?.data?.amount) >= PREMIUM_PROMOLINK.TOP_UP){
+          params.freeCredits = PREMIUM_PROMOLINK.FREE_CREDITS
+        }
         addCreditsToBuyer(params)
           .then(async (res: any) => {
             // console.log("WEBHOOK 3------->>>",res)

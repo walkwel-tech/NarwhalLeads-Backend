@@ -337,7 +337,7 @@ export class UsersControllers {
   static indexName = async (req: Request, res: Response): Promise<Response> => {
     try {
       const user = await User.find(
-        { role: { $nin: [RolesEnum.ADMIN, RolesEnum.INVITED] } },
+        { role: { $nin: [RolesEnum.ADMIN, RolesEnum.INVITED] } , isArchived:false},
         "firstName lastName email buyerId"
       ).sort("firstName")
       ;

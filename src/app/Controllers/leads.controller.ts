@@ -28,6 +28,7 @@ import { IP } from "../../utils/constantFiles/IP_Lists";
 import { BuisnessIndustries } from "../Models/BuisnessIndustries";
 import { LeadTablePreferenceInterface } from "../../types/LeadTablePreferenceInterface";
 import { Column } from "../../types/ColumnsPreferenceInterface";
+
 const LIMIT = 10;
 
 interface DataObject {
@@ -1099,7 +1100,6 @@ export class LeadsController {
                   "clientName.isVerified": 0,
                   "clientName.isActive": 0,
                   "clientName.businessDetailsId": 0,
-                  "clientName.businessIndustryId": 0,
                   "clientName.userLeadsDetailsId": 0,
                   "clientName.onBoarding": 0,
                   "clientName.registrationMailSentToAdmin": 0,
@@ -1130,7 +1130,17 @@ export class LeadsController {
         // item.clientName = clientName;
         item.leads.status = item.status;
       });
-      const leadsCount = query.leadsCount[0]?.count || 0;
+            
+      let leadsCount;
+      if(_req.query.industryId){
+        let a= query.results
+        let b=_req.query.industryId
+        query.results= filterDataByBusinessDetailsIdOrClientName(a, b);
+        leadsCount = query.results.length|| 0;
+      }
+      else{
+         leadsCount = query.leadsCount[0]?.count || 0;
+      }
       const totalPages = Math.ceil(leadsCount / perPage);
       return res.json({
         data: query.results,
@@ -1399,7 +1409,6 @@ export class LeadsController {
                   "clientName.isVerified": 0,
                   "clientName.isActive": 0,
                   "clientName.businessDetailsId": 0,
-                  "clientName.businessIndustryId": 0,
                   "clientName.userLeadsDetailsId": 0,
                   "clientName.onBoarding": 0,
                   "clientName.registrationMailSentToAdmin": 0,
@@ -1426,7 +1435,20 @@ export class LeadsController {
         // item.clientName = clientName;
         item.leads.status = item.status;
       });
-      const leadsCount = query.leadsCount[0]?.count || 0;
+
+
+      
+      let leadsCount;
+      if(_req.query.industryId){
+        let a= query.results
+        let b=_req.query.industryId
+        query.results= filterDataByBusinessDetailsIdOrClientName(a, b);
+        leadsCount = query.results.length|| 0;
+      }
+      else{
+         leadsCount = query.leadsCount[0]?.count || 0;
+      }
+      
       const totalPages = Math.ceil(leadsCount / perPage);
       return res.json({
         data: query.results,
@@ -2145,13 +2167,25 @@ function filterAndTransformData(
 ): DataObject[] {
   return dataArray.map((dataObj: DataObject) => {
     const filteredData: DataObject = {};
-
     columns.forEach((column: Column) => {
-      if (column.isVisible && column.name in dataObj) {
+      if (column.isVisible) {
         filteredData[column.newName || column.name] = dataObj[column.name];
       }
     });
 
     return filteredData;
   });
+}
+
+function filterDataByBusinessDetailsIdOrClientName(inputData:any, searchTerm:any) {
+  const filteredData = inputData.filter((item:any) => {
+    // Check if businessDetailsId matches the searchTerm
+    if ( item.clientName && String(item.clientName[0]?.businessIndustryId) === searchTerm) {
+      console.log("herererer")
+      return true;
+    }
+    // Check if any clientName matches the searchTerm
+    return false;
+  });
+  return filteredData;
 }
