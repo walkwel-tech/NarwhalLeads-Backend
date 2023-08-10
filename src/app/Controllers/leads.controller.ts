@@ -28,6 +28,8 @@ import { IP } from "../../utils/constantFiles/IP_Lists";
 import { BuisnessIndustries } from "../Models/BuisnessIndustries";
 import { LeadTablePreferenceInterface } from "../../types/LeadTablePreferenceInterface";
 import { Column } from "../../types/ColumnsPreferenceInterface";
+import mongoose from "mongoose";
+const ObjectId = mongoose.Types.ObjectId;
 
 const LIMIT = 10;
 
@@ -105,7 +107,7 @@ export class LeadsController {
         obj.name = i?.defaultColumn;
         obj.isVisible = true;
         obj.index = idx;
-           //@ts-ignore
+        //@ts-ignore
         obj.newName = i?.defaultColumn;
         arr.push(obj);
       }
@@ -136,7 +138,14 @@ export class LeadsController {
       // const columnsNames = await CustomColumnNames.findOne({
       // industryId: user?.businessIndustryId,
       // });
-      let array: any = [{ name: "clientName", isVisible: true, index: 0,newName:"clientName" }];
+      let array: any = [
+        {
+          name: "clientName",
+          isVisible: true,
+          index: 0,
+          newName: "clientName",
+        },
+      ];
       Object.keys(input).map((i: any) => {
         // columnsNames?.columnsNames.map((j)=>{
         let obj: any = {};
@@ -144,14 +153,14 @@ export class LeadsController {
           (obj.name = i),
             (obj.isVisible = true),
             (obj.index = array[array?.length - 1]?.index + 1 || 0);
-            (obj.newName = i),
-          columnsNames?.columnsNames.map((j: any) => {
-            if (j?.defaultColumn == i) {
-              if (j.renamedColumn?.length != 0) {
-                obj.newName = j.renamedColumn;
+          (obj.newName = i),
+            columnsNames?.columnsNames.map((j: any) => {
+              if (j?.defaultColumn == i) {
+                if (j.renamedColumn?.length != 0) {
+                  obj.newName = j.renamedColumn;
+                }
               }
-            }
-          });
+            });
           array.push(obj);
         }
       });
@@ -199,7 +208,12 @@ export class LeadsController {
       if (!adminPref) {
         await LeadTablePreference.create({
           userId: admin?._id,
-          columns: { name: "clientName", isVisible: true, index: 0 , newName:"clientName"},
+          columns: {
+            name: "clientName",
+            isVisible: true,
+            index: 0,
+            newName: "clientName",
+          },
         });
       }
     }
@@ -242,7 +256,7 @@ export class LeadsController {
           name: "clientName",
           isVisible: true,
           index: checkPreferenceExists?.columns.length,
-          newName:"clientName"
+          newName: "clientName",
         };
         checkPreferenceExists?.columns.push(obj);
       }
@@ -267,6 +281,7 @@ export class LeadsController {
       leadsCost: user.leadCost,
       leads: input,
       status: leadsStatusEnums.VALID,
+      industryId: user.businessIndustryId,
       // @ts-ignore
       rowIndex: leads?.rowIndex + 1 || 0,
     });
@@ -1023,7 +1038,9 @@ export class LeadsController {
           },
         ],
       };
-
+      if (_req.query.industryId) {
+        dataToFind.industryId = new ObjectId(_req.query.industryId);;
+      }
       if (_req.query.userId) {
         const user = await User.findById(_req.query.userId);
         dataToFind.bid = user?.buyerId;
@@ -1130,17 +1147,9 @@ export class LeadsController {
         // item.clientName = clientName;
         item.leads.status = item.status;
       });
-            
-      let leadsCount;
-      if(_req.query.industryId){
-        let a= query.results
-        let b=_req.query.industryId
-        query.results= filterDataByBusinessDetailsIdOrClientName(a, b);
-        leadsCount = query.results.length|| 0;
-      }
-      else{
-         leadsCount = query.leadsCount[0]?.count || 0;
-      }
+
+       const leadsCount = query.leadsCount[0]?.count || 0;
+      
       const totalPages = Math.ceil(leadsCount / perPage);
       return res.json({
         data: query.results,
@@ -1203,6 +1212,9 @@ export class LeadsController {
       };
       if (status) {
         dataToFind.status = status;
+      }
+      if (_req.query.industryId) {
+        dataToFind.industryId = new ObjectId(_req.query.industryId);;
       }
       if (_req.query.search) {
         dataToFind = {
@@ -1270,7 +1282,7 @@ export class LeadsController {
                   "clientName.isVerified": 0,
                   "clientName.isActive": 0,
                   "clientName.businessDetailsId": 0,
-                  "clientName.businessIndustryId": 0,
+                  // "clientName.businessIndustryId": 0,
                   "clientName.userLeadsDetailsId": 0,
                   "clientName.onBoarding": 0,
                   "clientName.registrationMailSentToAdmin": 0,
@@ -1295,7 +1307,10 @@ export class LeadsController {
           item["clientName"][0]?.lastName;
         item.leads.status = item.status;
       });
-      const leadsCount = query.leadsCount[0]?.count || 0;
+
+  
+      const  leadsCount = query.leadsCount[0]?.count || 0;
+ 
       const totalPages = Math.ceil(leadsCount / perPage);
       return res.json({
         data: query.results,
@@ -1352,6 +1367,9 @@ export class LeadsController {
       if (status) {
         dataToFind = { status: status };
       }
+      if (_req.query.industryId) {
+        dataToFind.industryId =new ObjectId(_req.query.industryId);
+      }
       if (_req.query.search) {
         dataToFind = {
           ...dataToFind,
@@ -1369,7 +1387,7 @@ export class LeadsController {
         };
         skip = 0;
       }
-
+console.log("hheheheheh",dataToFind)
       const [query]: any = await Leads.aggregate([
         {
           $facet: {
@@ -1436,19 +1454,12 @@ export class LeadsController {
         item.leads.status = item.status;
       });
 
+      // let leadsCount;
 
-      
-      let leadsCount;
-      if(_req.query.industryId){
-        let a= query.results
-        let b=_req.query.industryId
-        query.results= filterDataByBusinessDetailsIdOrClientName(a, b);
-        leadsCount = query.results.length|| 0;
-      }
-      else{
-         leadsCount = query.leadsCount[0]?.count || 0;
-      }
-      
+      // else{
+      // }
+      const leadsCount = query.leadsCount[0]?.count || 0;
+
       const totalPages = Math.ceil(leadsCount / perPage);
       return res.json({
         data: query.results,
@@ -2012,7 +2023,7 @@ export class LeadsController {
         await LeadTablePreference.findOne({ userId: user?.id });
       let filteredDataArray: DataObject[];
       if (!pref) {
-        filteredDataArray=[{}]
+        filteredDataArray = [{}];
       } else {
         filteredDataArray = filterAndTransformData(
           //@ts-ignore
@@ -2177,15 +2188,3 @@ function filterAndTransformData(
   });
 }
 
-function filterDataByBusinessDetailsIdOrClientName(inputData:any, searchTerm:any) {
-  const filteredData = inputData.filter((item:any) => {
-    // Check if businessDetailsId matches the searchTerm
-    if ( item.clientName && String(item.clientName[0]?.businessIndustryId) === searchTerm) {
-      console.log("herererer")
-      return true;
-    }
-    // Check if any clientName matches the searchTerm
-    return false;
-  });
-  return filteredData;
-}

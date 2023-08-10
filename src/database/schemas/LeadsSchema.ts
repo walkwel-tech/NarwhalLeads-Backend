@@ -1,4 +1,4 @@
-import { Schema } from "mongoose";
+import { Schema, Types } from "mongoose";
 
 const LeadsSchema = new Schema(
   {
@@ -46,6 +46,10 @@ const LeadsSchema = new Schema(
     clientNotes: {
       type: String,
       default: "",
+    },
+    industryId: {
+      type: Types.ObjectId,
+      ref: "BuisnessIndustries",
     },
 
   },
