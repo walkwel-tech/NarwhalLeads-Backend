@@ -11,10 +11,6 @@ import { UserInterface } from "../../types/UserInterface";
 
 import { RolesEnum } from "../../types/RolesEnum";
 import { paymentMethodEnum } from "../../utils/Enums/payment.method.enum";
-import {
-  createContactOnXero,
-  refreshToken,
-} from "../../utils/XeroApiIntegration/createContact";
 import { ONBOARDING_KEYS } from "../../utils/constantFiles/OnBoarding.keys";
 import { createCustomerOnRyft } from "../../utils/createCustomer/createOnRyft";
 import { generateAuthToken } from "../../utils/jwt";
@@ -25,7 +21,6 @@ import {
   send_email_for_registration,
   send_email_forget_password,
 } from "../Middlewares/mail";
-import { AccessToken } from "../Models/AccessToken";
 import { AdminSettings } from "../Models/AdminSettings";
 // import { BusinessDetails } from "../Models/BusinessDetails";
 import { ForgetPassword } from "../Models/ForgetPassword";
@@ -201,47 +196,7 @@ class AuthController {
 
             createCustomerOnRyft(params)
               .then(async () => {
-                const token: any = await AccessToken.findOne();
-                const fullName = input.firstName + " " + input.lastName;
-                createContactOnXero(fullName, token?.access_token)
-                  .then(async (res: any) => {
-                    await User.findOneAndUpdate(
-                      { email: input.email },
-                      {
-                        $set: { xeroContactId: res.data.Contacts[0].ContactID },
-                      }
-                    );
-                    console.log("success in creating contact");
-                  })
-                  .catch((err) => {
-                    refreshToken()
-                      .then(async (res: any) => {
-                        console.log("Token updated while creating customer!!!");
-                        createContactOnXero(fullName, res.data.access_token)
-                          .then(async (res: any) => {
-                            await User.findOneAndUpdate(
-                              { email: input.email },
-                              {
-                                $set: {
-                                  xeroContactId: res.data.Contacts[0].ContactID,
-                                },
-                              }
-                            );
-                            console.log("success in creating contact");
-                          })
-                          .catch((error) => {
-                            console.log(
-                              "ERROR IN CREATING CUSTOMER AFTER TOKEN UPDATION."
-                            );
-                          });
-                      })
-                      .catch((err) => {
-                        console.log(
-                          "error in creating contact on xero",
-                          err.response.data
-                        );
-                      });
-                  });
+
                 //@ts-ignore
                 user.password = undefined;
                 res.send({

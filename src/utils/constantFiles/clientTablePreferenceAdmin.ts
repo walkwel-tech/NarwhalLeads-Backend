@@ -74,6 +74,12 @@
         name: "businessPostCode",
         isVisible: true,
         index: 5
+      },
+      {
+        name: "userSignupStatus",
+        isVisible: true,
+        index: 15
       }
+    
     
     ]
