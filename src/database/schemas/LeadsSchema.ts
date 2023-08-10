@@ -2,7 +2,6 @@ import { Schema } from "mongoose";
 
 const LeadsSchema = new Schema(
   {
-   
     bid: {
       type: String,
       required: true,
