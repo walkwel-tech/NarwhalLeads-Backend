@@ -31,7 +31,7 @@ export const createContactOnXero = (
         "xero-tenant-id": process.env.XERO_TETANT_ID,
         Authorization: `Bearer ${token}`,
       },
-      data: data,
+      data: JSON.stringify(data),
     };
     axios(config)
       .then((data) => {
