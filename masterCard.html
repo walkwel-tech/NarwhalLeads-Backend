@@ -1,0 +1,96 @@
+<html>
+    <!-- 
+        This page performs the 3DS device fingerprinting (method URL) by opening
+        a hidden iframe which POSTS to ACS and the response is a page that collects
+        the device information and sends it to ACS. The fingerprint iframe posts
+        a message to the window (threeds-method-notification) when it is complete.
+
+        Once fingerprinting is complete we start the authentication.
+    -->
+    <head>
+        <script>
+            window.onload = function() {
+                doFingerprint(
+                    'https://staging.gate.e-comprocessing.net/threeds/threeds_method',
+                    'https://staging.gate.e-comprocessing.net/threeds/threeds_method',
+                    '999c9011fd4baaceac366d390a605d08',
+                    '5ea315a6f5e65914fa0709e2ab1e1ba4fa5e05c18e89751cef43f5ede58b12ca1ea40bad2670ff51c43da89245bebb03fac970eae5132072d8bc0ba45a21698e');
+            }
+            // This listener receives events from the window.
+// On the arrival of threeds-method-notification event, it forwards 
+// the required data to the server to start authentication.
+function fingerprintCompleteListener(m) {
+    if (m.data.type === 'threeds-method-notification') {
+        console.log('fingerprintCompleteListener called');
+        proceedAfterFingerprint('complete');
+    }
+};
+
+// Next step after fingerprinting (either when it is completed or it was not needed)
+function proceedAfterFingerprint(fingerprintStatus) {
+    // Below mentioned parameters controls the looks of ACS challenge window. Values differs as per device configuration.
+    // For simplicity we have hardcoded some of them.
+    const params = {
+        fingerprintStatus: fingerprintStatus,
+        challengeWindowSize: '04', // 600x400
+        browserAcceptHeader: 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+        browserColorDepth: window.screen.colorDepth,
+        browserJavaEnabled: true,
+        browserLanguage: navigator.language,
+        browserScreenHeight: window.screen.height,
+        browserScreenWidth: window.screen.width,
+        browserTZ: new Date().getTimezoneOffset(),
+        browserUserAgent: window.navigator.userAgent,
+    }
+    post("/start-3ds-authentication", params);
+};
+
+// Opens a hidden fingerprint iframe to collect the browser specific information and forwards it to the 3DS ACS.
+function doFingerprint(threeDsMethodUrl, threeDSMethodNotificationURL, threeDSMethodData, threeDSServerTransID) {
+    if (threeDsMethodUrl) {
+        const html = `<script>
+                document.addEventListener("DOMContentLoaded", function () {
+                    var form = document.createElement("form");
+                    form.method = "POST";
+                    form.action = "${threeDsMethodUrl}";
+                    form.appendChild(createInput("threeDSMethodNotificationURL", "${threeDSMethodNotificationURL}"));
+                    form.appendChild(createInput("threeDSMethodData", "${threeDSMethodData}"));
+                    form.appendChild(createInput("threeDSServerTransID", "${threeDSServerTransID}"));
+                    document.body.appendChild(form);
+                    form.submit();
+                    document.body.removeChild(form);
+                });
+                function createInput(name, value) {
+                    var result = document.createElement("input");
+                    result.name = name;
+                    result.value = value;
+                    return result;
+                }
+        `
+
+        const iframe = document.createElement("iframe");
+        iframe.id = '3ds-fingerprint';
+        document.body.appendChild(iframe);
+        iframe.style.display = "none";
+        const win = iframe.contentWindow;
+        if (win != null) {
+            const doc = win.document;
+            win.name = "3DS Fingerprint";
+            doc.open();
+            doc.write(html);
+            doc.close();
+        }
+        window.addEventListener("message", fingerprintCompleteListener);
+    } else {
+        // Fingerprinting skipped due to absence of threeDsMethodUrl
+        proceedAfterFingerprint('unavailable');
+    }
+};
+
+        </script>
+    </head>
+    <body>
+        Performing 3DS fingerprinting in hidden iframe. Once that is done we will move 
+        on to 3DS challenge.
+    </body>
+</html>

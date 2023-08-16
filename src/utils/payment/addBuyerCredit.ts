@@ -4,7 +4,6 @@ import { User } from "../../app/Models/User";
 import { RolesEnum } from "../../types/RolesEnum";
 
 export const addCreditsToBuyer = (params:any) => {
-  console.log(params)
   return new Promise((resolve, reject) => {
     const config = {
       method: "post",

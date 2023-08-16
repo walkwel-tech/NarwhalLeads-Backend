@@ -173,7 +173,6 @@ export class LeadsController {
       await LeadTablePreference.create(dataToSaveInLeadsPreference);
       const admin = await User.findOne({ role: RolesEnum.ADMIN });
 
-      console.log(adminPref);
 
       if (adminPref) {
         let key = Object.keys(input).map((i) => i);
@@ -288,11 +287,8 @@ export class LeadsController {
 
     if (user?.userLeadsDetailsId?.sendDataToZapier) {
       send_lead_data_to_zap(user.userLeadsDetailsId.zapierUrl, input)
-        .then((res) => {
-          console.log("data send to zapier", res);
-        })
+        .then((res) => {        })
         .catch((err) => {
-          console.log("error during sending data to zapier", err);
         });
     }
     let leadcpl;
@@ -1387,7 +1383,6 @@ export class LeadsController {
         };
         skip = 0;
       }
-console.log("hheheheheh",dataToFind)
       const [query]: any = await Leads.aggregate([
         {
           $facet: {
@@ -1584,7 +1579,6 @@ console.log("hheheheheh",dataToFind)
       const pdfRequest = await https.request(
         options,
         function (apiResponse: any) {
-          console.log("api req", apiResponse);
           if (apiResponse.rawHeaders.includes("Bearer error=invalid_token")) {
             refreshToken().then(() => {
               LeadsController.generateInvoicePdf(_req, res);

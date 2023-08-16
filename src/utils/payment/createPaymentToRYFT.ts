@@ -109,7 +109,6 @@ export const attemptToPayment = (response: any, params: any) => {
           });
           resolve(res);
         } else {
-          console.log("Exception Occur")
           throw new Error("Payment Pending");
         }
       })
@@ -120,11 +119,11 @@ export const attemptToPayment = (response: any, params: any) => {
   });
 };
 
-export const customerPaymentMethods = (response: any) => {
+export const customerPaymentMethods = (id: string) => {
   return new Promise((resolve, reject) => {
     const config = {
       method: "get",
-      url: `${process.env.RYFT_CUSTOMER_PAYMENT_METHOD}/${response.data?.customerDetails?.id}/payment-methods`,
+      url: `${process.env.RYFT_CUSTOMER_PAYMENT_METHOD}/${id}/payment-methods`,
       headers: {
         // Account: process.env.ACCOUNT_ID,
         "Content-Type": "application/json",
@@ -134,7 +133,6 @@ export const customerPaymentMethods = (response: any) => {
     };
     axios(config)
       .then(async function (res) {
-        console.log("this is", res.data);
         resolve(res);
       })
       .catch(function (error) {
@@ -203,7 +201,6 @@ export const refundPayment = (params: any) => {
     };
     axios(config)
       .then(async function (res) {
-        console.log("refunded", res.data);
         resolve(res);
       })
       .catch(function (error) {
@@ -227,7 +224,6 @@ export const getPaymentMethodByPaymentSessionID = (
   
     axios(config)
       .then(function (response) {
-        console.log(JSON.stringify(response.data));
         resolve(response.data);
       })
       .catch(function (error) {

@@ -160,7 +160,6 @@ export class UserLeadsController {
       }
       return res.json({ data: details });
     } catch (error) {
-      console.log(error);
       return res
         .status(500)
         .json({ error: { message: "Something went wrong." } });
@@ -195,7 +194,6 @@ export class UserLeadsController {
       }
       return res.json({ data: data });
     } catch (err) {
-      console.log(err);
       return res
         .status(500)
         .json({ error: { message: "something went wrong" } });
@@ -207,7 +205,6 @@ export class UserLeadsController {
       const data = await UserLeadsDetails.find({ isDeleted: false });
       return res.json({ data: data });
     } catch (err) {
-      console.log(err);
       return res
         .status(500)
         .json({ error: { message: "something went wrong" } });
@@ -237,7 +234,6 @@ export class UserLeadsController {
 
       return res.json({ message: "details deleted successfully." });
     } catch (err) {
-      console.log(err);
       return res
         .status(500)
         .json({ error: { message: "Something went wrong." } });
@@ -321,7 +317,6 @@ export class UserLeadsController {
         });
       }
     } catch (error) {
-      console.log(error);
       return res
         .status(500)
         .json({ error: { message: "Something went wrong." } });

@@ -19,7 +19,7 @@ cardDetails.patch("/toggleForCard/:id",Auth,CardDetailsControllers.toggleForCard
 cardDetails.post("/",CardDetailsControllers.create);
 cardDetails.get("/", CardDetailsControllers.show);
 cardDetails.get("/:id", CardDetailsControllers.showById);
-
+    
 
 
 

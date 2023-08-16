@@ -36,7 +36,6 @@ export const createCustomerOnLeadByte = (params: CreateCustomerInput) => {
         resolve(response);
       })
       .catch((err) => {
-        console.log('LEAD BYTE ERROR',err.response?.data);
         
         reject(err.response?.data);
       });

@@ -22,7 +22,7 @@
   </div>
 </body>
 <script type="text/javascript">
-  const clientSecret = "ps_01H5A5V5K7VAAPDY42XKNKBQWE_secret_048724a2-41a5-453e-9287-6723f37fd8ca"; // fetch from your backend
+  const clientSecret = "ps_01H7HQHP05NCKX5NVNRVEWPBHZ_secret_c02c79b0-3b5c-40f5-a01a-7da0283d093a"; // fetch from your backend
   Ryft.init({
    
         // publicKey: "pk_mdVWR4Kn8Cr+mx/Wy6xhnmRAf8A8oSPrJ0drdWIXKDGfqAEuxeiJ6m8PiX+XESps",
@@ -32,7 +32,69 @@
     usage: 'payment', //default, the customer is paying
     customerPaymentMethods: {
       allowStorage: true ,// defaults to true
-      store:true
+      store:true,
+      rawJson:{  "items": [
+                {
+                    "id": "pmt_01H7HF1YK61GS9DD8TRE2ETFQC",
+                    "type": "Card",
+                    "card": {
+                        "scheme": "Visa",
+                        "last4": "0004",
+                        "expiryMonth": "10",
+                        "expiryYear": "2025"
+                    },
+                    "customerId": "cus_01H68APAJ6PFMJP45ZEWEBT8EB",
+                    "createdTimestamp": 1691729590
+                },
+                {
+                    "id": "pmt_01H7HETCWJBP00MA30ZAV7GFSX",
+                    "type": "Card",
+                    "card": {
+                        "scheme": "Visa",
+                        "last4": "0004",
+                        "expiryMonth": "11",
+                        "expiryYear": "2025"
+                    },
+                    "customerId": "cus_01H68APAJ6PFMJP45ZEWEBT8EB",
+                    "createdTimestamp": 1691729343
+                },
+                {
+                    "id": "pmt_01H7FA37PTHRRQA3QE53QPFJ85",
+                    "type": "Card",
+                    "card": {
+                        "scheme": "Visa",
+                        "last4": "0001",
+                        "expiryMonth": "10",
+                        "expiryYear": "2025"
+                    },
+                    "customerId": "cus_01H68APAJ6PFMJP45ZEWEBT8EB",
+                    "createdTimestamp": 1691657281
+                },
+                {
+                    "id": "pmt_01H7CC4C95313QVHYYKYS1TMKT",
+                    "type": "Card",
+                    "card": {
+                        "scheme": "Visa",
+                        "last4": "0004",
+                        "expiryMonth": "10",
+                        "expiryYear": "2025"
+                    },
+                    "customerId": "cus_01H68APAJ6PFMJP45ZEWEBT8EB",
+                    "createdTimestamp": 1691558752
+                },
+                {
+                    "id": "pmt_01H68ARMBGVWDJAT9D0RZQTE7D",
+                    "type": "Card",
+                    "card": {
+                        "scheme": "Visa",
+                        "last4": "0085",
+                        "expiryMonth": "12",
+                        "expiryYear": "2029"
+                    },
+                    "customerId": "cus_01H68APAJ6PFMJP45ZEWEBT8EB",
+                    "createdTimestamp": 1690349359
+                }
+            ]}
     }
     // Note for marketplaces: Add a sub account id here as `accountId`
   });
