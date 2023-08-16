@@ -50,7 +50,7 @@ const TransactionSchema = new Schema(
       },
       paymentSessionId:{
         type:String,
-        required:true
+        required:false
       }
     },
     { timestamps: true }

@@ -500,6 +500,7 @@ export class CardDetailsControllers {
         cardId: card.id,
       });
 
+  
       // const paymentMethods = await RyftPaymentMethods.find({
       //   ryftClientId: user?.ryftClientId,
       // });
