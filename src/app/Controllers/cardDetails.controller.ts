@@ -33,7 +33,7 @@ import { RolesEnum } from "../../types/RolesEnum";
 import axios from "axios";
 // import { ONBOARDING_KEYS } from "../../utils/constantFiles/OnBoarding.keys";
 import { ONBOARDING_KEYS } from "../../utils/constantFiles/OnBoarding.keys";
-import { createSessionInitial } from "../../utils/payment/createPaymentToRYFT";
+import { createSessionInitial, customerPaymentMethods } from "../../utils/payment/createPaymentToRYFT";
 import { BusinessDetails } from "../Models/BusinessDetails";
 import { RyftPaymentMethods } from "../Models/RyftPaymentMethods";
 import { UserLeadsDetails } from "../Models/UserLeadsDetails";
@@ -47,7 +47,6 @@ import mongoose from "mongoose";
 const ObjectId = mongoose.Types.ObjectId;
 import { PaymentResponse } from "../../types/PaymentResponseInterface";
 import { PREMIUM_PROMOLINK } from "../../utils/constantFiles/spotDif.offers.promoLink";
-
 
 export class CardDetailsControllers {
   //FIXME:not in use
@@ -89,10 +88,10 @@ export class CardDetailsControllers {
         object = object.map((obj: any) =>
           obj.key === existLead.key
             ? (existLead = {
-              key: ONBOARDING_KEYS.CARD_DETAILS,
-              pendingFields: arr,
-              dependencies: existBusinessDetails?.pendingFields,
-            })
+                key: ONBOARDING_KEYS.CARD_DETAILS,
+                pendingFields: arr,
+                dependencies: existBusinessDetails?.pendingFields,
+              })
             : obj
         );
       } else {
@@ -140,7 +139,9 @@ export class CardDetailsControllers {
         const businessDeatilsData = await BusinessDetails.findById(
           user?.businessDetailsId
         );
-        const formattedPostCodes=leadData?.postCodeTargettingList.map((item:any) => item.postalCode).flat();
+        const formattedPostCodes = leadData?.postCodeTargettingList
+          .map((item: any) => item.postalCode)
+          .flat();
 
         const message = {
           firstName: user?.firstName,
@@ -191,7 +192,7 @@ export class CardDetailsControllers {
     const input = req.body;
     const id = Object(req.user).id;
     try {
-      const user :any= await User.findById(id);
+      const user: any = await User.findById(id);
       await User.findByIdAndUpdate(user?.id, {
         onBoarding: [
           {
@@ -233,15 +234,18 @@ export class CardDetailsControllers {
         }
         let userData: any;
         const cardExist = await CardDetails.findOne({ userId: user?.id });
-        const cardExists = await CardDetails.find({ userId: user?.id, isDeleted: false });
+        const cardExists = await CardDetails.find({
+          userId: user?.id,
+          isDeleted: false,
+        });
 
         if (!cardExist) {
           dataToSaveIncard.isDefault = true;
         }
-        let existingCardNumbers: Array<string> = []
+        let existingCardNumbers: Array<string> = [];
         cardExists.map((i) => {
-          existingCardNumbers.push(i.cardNumber)
-        })
+          existingCardNumbers.push(i.cardNumber);
+        });
         if (!existingCardNumbers.includes((input?.cardNumber).toString())) {
           userData = await CardDetails.create(dataToSaveIncard);
           let dataToSave = {
@@ -251,8 +255,7 @@ export class CardDetailsControllers {
             cardId: userData.id,
           };
           await RyftPaymentMethods.create(dataToSave);
-        }
-        else {
+        } else {
           return res
             .status(422)
             .json({ error: { message: "Card Already Exist" } });
@@ -261,7 +264,12 @@ export class CardDetailsControllers {
           data: { data: userData, message: "Card added successfully!" },
         });
       } else {
-        return res.json({ data: { message: "Card Verified!" } });
+        return res.json({
+          data: {
+            message:
+              "Card Verified! Please wait few minutes, Card will be added shortly.",
+          },
+        });
       }
     } catch (error) {
       return res
@@ -448,9 +456,7 @@ export class CardDetailsControllers {
       if (!user?.xeroContactId) {
         try {
           user = await addUserXeroId(userId);
-        } catch (error) {
-          console.log("error");
-        }
+        } catch (error) {}
       }
 
       if (
@@ -471,7 +477,9 @@ export class CardDetailsControllers {
       }
       const adminSettings: any = await AdminSettings.findOne();
       const params: any = {
-        fixedAmount: parseInt(input?.amount) + parseInt(input?.amount)*VAT/100  || adminSettings?.minimumUserTopUpAmount,
+        fixedAmount:
+          parseInt(input?.amount) + (parseInt(input?.amount) * VAT) / 100 ||
+          adminSettings?.minimumUserTopUpAmount,
         email: user?.email,
         cardNumber: card?.cardNumber,
         expiryMonth: card?.expiryMonth,
@@ -492,14 +500,15 @@ export class CardDetailsControllers {
         cardId: card.id,
       });
 
+      const paymentMethods = await RyftPaymentMethods.find({
+        ryftClientId: user?.ryftClientId,
+      });
       if (!paymentMethodsExists) {
         return res
           .status(404)
           .json({ data: { message: "Payment methods does not found." } });
       } else {
-        params.paymentId =
-          //@ts-ignore
-          paymentMethodsExists?.paymentMethod;
+        params.paymentId = paymentMethodsExists?.paymentMethod;
         managePaymentsByPaymentMethods(params)
           .then(async (_res: any) => {
             let response: PaymentResponse = {
@@ -507,31 +516,31 @@ export class CardDetailsControllers {
               status: 200,
             };
             if (_res.data.status == "PendingAction") {
-              response.message = "Further Action required";
-              response.status = 302;
-              response.url = _res.data.requiredAction.url;
-              response.sessionID = _res.data?.id;
-              // {
-              //   message:
-              //     ,
-
-              //   status: 302,
-              //   url: _res.data.requiredAction.url
-              // }
+              const sessionInformation:any = await createSessionInitial(params)
+              response.message='Further Action Required'
+              response.manualPaymentConfig={
+                clientSecret : sessionInformation?.data?.clientSecret,
+                publicKey : process.env.RYFT_PUBLIC_KEY,
+                customerPaymentMethods : _res.data.paymentMethod
+              }
+         
+              response.status = "manual_payment_required";
+        
             } else {
-              response.message = "Payment has been initiated, will be update within few minutes.";
+              response.message =
+                "Your payment was successful, please refresh in few minutes to see your new balance";
               response.status = 200;
               response.sessionID = _res.data?.id;
             }
 
-            // res.status(302).redirect(_res.data.requiredAction.url)
-            return res.json({
-              data: response,
-            });
+              return res.json({
+                data: response,
+              });
+
           })
           .catch(async (err) => {
             return res.status(400).json({
-              error: { message: "Error occured in payment." ,err},
+              error: { message: "Error occured in payment.", err },
             });
           });
       }
@@ -550,16 +559,34 @@ export class CardDetailsControllers {
     let sessionObject: any = {};
 
     createSessionInitial(input)
-      .then((response: any) => {
+      .then(async (response: any) => {
         (sessionObject.clientSecret = response.data.clientSecret),
           (sessionObject.publicKey = process.env.RYFT_PUBLIC_KEY);
         sessionObject.status = response.data.status;
+        console.log("reponse data",response.data)
+        const paymentMethods :any = await customerPaymentMethods(response.data.customerDetails.id)
+        console.log(" paymentMethods.data", paymentMethods.data)
+        sessionObject.paymentMethods= paymentMethods.data
+        // console.log("theryher",sessionObject,response.data.customerDetails.id)
+        // const user :any =await User.findOne({ryftClientId:response.data.customerDetails.id})
+       
+        // const dataToSave={
+        //   userId:user.id,
+        //   // cardId: "",
+        //   amount: input.amount,
+        //   title:transactionTitle.SESSION_CREATED,
+        //   status:response.data.status,
+        //   invoiceId:"",
+        //   paymentSessionID:response.data.id
+
+        // }
+        // await Transaction.create(dataToSave)            
         return res.json({ data: sessionObject });
       })
       .catch((error) => {
         return res
           .status(400)
-          .json({ data: { message: "Error in creating session" } });
+          .json({ data: { message: "Error in creating session",error } });
       });
   };
 
@@ -568,7 +595,6 @@ export class CardDetailsControllers {
     res: Response
   ): Promise<any> => {
     const input = req.body;
-    console.log("WEBHOOK START------->>>", input);
     const customerId = input.data.customer?.id;
     let userId = await User.findOne({
       ryftClientId: customerId,
@@ -577,24 +603,23 @@ export class CardDetailsControllers {
     const card = await RyftPaymentMethods.findOne({
       paymentMethod: input.data?.paymentMethod?.id,
     });
-    
-    const cardDetailsExist=   await CardDetails.findById(card?.cardId);
-    let originalAmount=(parseInt(input.data.amount)/100)/(1+VAT/100)
+
+    const cardDetailsExist = await CardDetails.findById(card?.cardId);
+    let originalAmount = parseInt(input.data.amount) / 100 / (1 + VAT / 100);
     if (userId) {
       if (input.eventType == "PaymentSession.declined") {
         userId = await User.findById(userId?.id);
         const card = await RyftPaymentMethods.findOne({
           paymentMethod: input.data?.paymentMethod?.id,
         });
-        const message={
-          firstName:userId?.firstName,
-          amount:parseInt(input.data.amount)/100,
-          cardHolderName:`${userId?.firstName} ${userId?.lastName}`,
-          cardNumberEnd:cardDetailsExist?.cardNumber,
-          credits:userId?.credits
-        }
-        console.log("EMAIL SENT FOR PAYMENT FAIL",message)
-        send_email_for_payment_failure(userId?.email,message)
+        const message = {
+          firstName: userId?.firstName,
+          amount: parseInt(input.data.amount) / 100,
+          cardHolderName: `${userId?.firstName} ${userId?.lastName}`,
+          cardNumberEnd: cardDetailsExist?.cardNumber,
+          credits: userId?.credits,
+        };
+        send_email_for_payment_failure(userId?.email, message);
         await Transaction.create({
           userId: userId?.id,
           amount: input?.data?.amount / 100,
@@ -608,29 +633,44 @@ export class CardDetailsControllers {
           creditsLeft: userId?.credits,
         });
       } else if (input.eventType == "PaymentSession.captured") {
-
-     const cardDetails= await CardDetails.findByIdAndUpdate(card?.cardId, {
-          status: PAYMENT_SESSION.SUCCESS,
-        },{new:true});
+        const cardDetails = await CardDetails.findByIdAndUpdate(
+          card?.cardId,
+          {
+            status: PAYMENT_SESSION.SUCCESS,
+          },
+          { new: true }
+        );
         // TODO: apply conditipon for user does not iuncludes in promo link.users
-        userId.id=new ObjectId(userId?.id)
-        const promoLink = await FreeCreditsLink.findOne({_id:new ObjectId(userId?.promoLinkId)})
+        userId.id = new ObjectId(userId?.id);
+        const promoLink = await FreeCreditsLink.findOne({
+          _id: new ObjectId(userId?.promoLinkId),
+        });
         let params: any = {
           buyerId: userId?.buyerId,
-          fixedAmount:originalAmount,
-        }
+          fixedAmount: originalAmount,
+        };
         //TODO: THIS WILL BE ONLY ON 1 TRANSATION
-        if (promoLink && !userId.promoCodeUsed && userId?.promoLinkId && userId.premiumUser == PROMO_LINK.PREMIUM_USER_TOP_UP && parseInt(input?.data?.amount) >= promoLink?.topUpAmount) {
-          params.freeCredits = promoLink?.freeCredits
-          console.log("in 1")
-        }
-        else if (promoLink?.spotDiffPremiumPlan && parseInt(input?.data?.amount) >= promoLink?.topUpAmount && userId.promoCodeUsed) {
-          params.freeCredits = promoLink?.freeCredits
-          console.log("in 2")
-
-        }
-        else if(!userId.promoCodeUsed && parseInt(input?.data?.amount) >= PREMIUM_PROMOLINK.TOP_UP){
-          params.freeCredits = PREMIUM_PROMOLINK.FREE_CREDITS
+        if (
+          promoLink &&
+          !userId.promoCodeUsed &&
+          userId?.promoLinkId &&
+          userId.premiumUser == PROMO_LINK.PREMIUM_USER_TOP_UP &&
+          parseInt(input?.data?.amount) >= promoLink?.topUpAmount
+        ) {
+          params.freeCredits = promoLink?.freeCredits;
+          console.log("in 1");
+        } else if (
+          promoLink?.spotDiffPremiumPlan &&
+          parseInt(input?.data?.amount) >= promoLink?.topUpAmount &&
+          userId.promoCodeUsed
+        ) {
+          params.freeCredits = promoLink?.freeCredits;
+          console.log("in 2");
+        } else if (
+          !userId.promoCodeUsed &&
+          parseInt(input?.data?.amount) >= PREMIUM_PROMOLINK.TOP_UP
+        ) {
+          params.freeCredits = PREMIUM_PROMOLINK.FREE_CREDITS;
         }
         addCreditsToBuyer(params)
           .then(async (res: any) => {
@@ -645,28 +685,27 @@ export class CardDetailsControllers {
               invoiceId: "",
               paymentSessionId: input.data.id,
               cardId: card?.cardId,
-              creditsLeft: (userId?.credits) || 0 -( params.freeCredits || 0),
+              creditsLeft: userId?.credits || 0 - (params.freeCredits || 0),
             });
             const transactionForVat = await Transaction.create({
               userId: userId?.id,
-              amount: (input?.data?.amount / 100) - originalAmount,
+              amount: input?.data?.amount / 100 - originalAmount,
               status: PAYMENT_STATUS.CAPTURED,
               title: transactionTitle.INVOICES_VAT,
               isCredited: true,
               invoiceId: "",
               paymentSessionId: input.data.id,
               cardId: card?.cardId,
-              creditsLeft: (userId?.credits) || 0 - (params.freeCredits || 0),
+              creditsLeft: userId?.credits || 0 - (params.freeCredits || 0),
             });
-            const message={
-              firstName:userId?.firstName,
-              amount:parseInt(input.data.amount)/100,
-              cardHolderName:`${userId?.firstName} ${userId?.lastName}`,
-              cardNumberEnd:cardDetails?.cardNumber,
-              credits:userId?.credits
-            }
-            console.log("EMAIL SENT FOR PAYMENT SUCCESS",message)
-            send_email_for_payment_success(userId?.email,message)
+            const message = {
+              firstName: userId?.firstName,
+              amount: parseInt(input.data.amount) / 100,
+              cardHolderName: `${userId?.firstName} ${userId?.lastName}`,
+              cardNumberEnd: cardDetails?.cardNumber,
+              credits: userId?.credits,
+            };
+            send_email_for_payment_success(userId?.email, message);
             if (userId?.xeroContactId) {
               generatePDF(
                 userId?.xeroContactId,
@@ -781,28 +820,29 @@ export class CardDetailsControllers {
           .catch((error) => {
             console.log("ERROR IN WEBHOOK", error);
           });
-      }
-      else if (input.eventType == "PaymentSession.approved") {
+      } else if (input.eventType == "PaymentSession.approved") {
         const card = await RyftPaymentMethods.findOne({
           paymentMethod: input.data?.paymentMethod?.id,
         });
-        await CardDetails.findByIdAndUpdate(card?.cardId, {
-          status: PAYMENT_SESSION.SUCCESS,
-        }, { new: true });
+        await CardDetails.findByIdAndUpdate(
+          card?.cardId,
+          {
+            status: PAYMENT_SESSION.SUCCESS,
+          },
+          { new: true }
+        );
       }
     }
     const dataToShow: any = {
-      message: 'success',
-      sessionId: input?.data?.id
-    }
+      message: "success",
+      sessionId: input?.data?.id,
+    };
     if (input.eventType === "PaymentSession.captured") {
-      dataToShow.status = PAYMENT_STATUS.CAPTURED
-    }
-    else if (input.eventType === "PaymentSession.approved") {
-      dataToShow.status = PAYMENT_STATUS.APPROVED
-    }
-    else if (input.eventType === "PaymentSession.declined") {
-      dataToShow.status = PAYMENT_STATUS.DECLINE
+      dataToShow.status = PAYMENT_STATUS.CAPTURED;
+    } else if (input.eventType === "PaymentSession.approved") {
+      dataToShow.status = PAYMENT_STATUS.APPROVED;
+    } else if (input.eventType === "PaymentSession.declined") {
+      dataToShow.status = PAYMENT_STATUS.DECLINE;
     }
     res.status(200).json({ data: dataToShow });
   };
@@ -832,7 +872,10 @@ export class CardDetailsControllers {
           (!paymentMthods || paymentMthods.length == 0) &&
           paymentMethod?.tokenizedDetails?.id
         ) {
-          const cardExist = await CardDetails.find({ userId: user?.id, isDeleted: false });
+          const cardExist = await CardDetails.find({
+            userId: user?.id,
+            isDeleted: false,
+          });
           let dataToSave: Record<string, any> = {
             cardNumber: paymentMethod?.card?.last4,
             userId: user?.id,
@@ -849,11 +892,15 @@ export class CardDetailsControllers {
           if (cardExist.length == 0) {
             dataToSave.isDefault = true;
           }
-          let existingCardNumbers: Array<string> = []
+          let existingCardNumbers: Array<string> = [];
           cardExist.map((i) => {
-            existingCardNumbers.push(i.cardNumber)
-          })
-          if (!existingCardNumbers.includes((paymentMethod?.card?.last4).toString())) {
+            existingCardNumbers.push(i.cardNumber);
+          });
+          if (
+            !existingCardNumbers.includes(
+              (paymentMethod?.card?.last4).toString()
+            )
+          ) {
             const card = await CardDetails.create(dataToSave);
             await RyftPaymentMethods.create({
               userId: user?.id,
@@ -882,7 +929,6 @@ export class CardDetailsControllers {
               },
             ],
           });
-
         }
 
         if (shouldReturnJson) {
@@ -926,13 +972,11 @@ export class CardDetailsControllers {
         const sessionData = response.data;
         const dataToShow = {
           sessionId: sessionData.id,
-          status: sessionData.status
-        }
+          status: sessionData.status,
+        };
         return res.status(200).json({ data: dataToShow });
-
       })
       .catch(function (error: any) {
-
         return res.status(400).json({ error: { message: "Fail" } });
       });
   };
