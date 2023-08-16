@@ -9,7 +9,6 @@ export const createCustomersOnRyftAndLeadByte = (params: CreateCustomerInput) =>
   ];
  return Promise.all(allPromises)
     .then((res) => {
-      console.log("DONE....",res);
     })
     .catch(async (err) => {
       console.log("ERRRORRRR",err.response?.data);

@@ -243,7 +243,6 @@ if( message.leadsHours){
       area:message?.area
   }
   };
-console.log("new regsitration", msg.dynamic_template_data)
   sgMail
     .send(msg)
     .then(() => {
@@ -509,7 +508,6 @@ export function send_email_for_updated_details(message: any) {
       console.log("Email sent");
     })
     .catch((error: any) => {
-      console.log('ERROR SEND EMAIL FOR UPDATED DETAILS',error);
       
       console.error(error);
     });

@@ -222,7 +222,6 @@ class AuthController {
           .json({ data: { message: "User already exists with same email." } });
       }
     } catch (error) {
-      console.log(error);
       return res
         .status(500)
         .json({ error: { message: "Something went wrong." } });
@@ -241,7 +240,7 @@ class AuthController {
       }
       return res.json({ data: "User not exists" });
     } catch (error) {
-      console.log(error);
+      
       return res
         .status(500)
         .json({ error: { message: "Something went wrong." } });
@@ -648,7 +647,6 @@ class AuthController {
       }
       return res.json({ data: "User not exists" });
     } catch (error) {
-      console.log(error);
       return res
         .status(500)
         .json({ error: { message: "Something went wrong." } });
@@ -699,7 +697,6 @@ class AuthController {
       })
       return res.json({message:"Admin registeers successfully", data:user})
     } catch (error) {
-      console.log(error);
       return res
         .status(500)
         .json({ error: { message: "Something went wrong." } });

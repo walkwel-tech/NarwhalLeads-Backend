@@ -4,5 +4,6 @@ export const transactionTitle={
   LEAD_REJECTION_APPROVED:"Refund - Lead Rejection Approved",
   PAYMNET_FAILED:"Payment Declined",
   FREE_CREDITS:"Free Credits",
-  INVOICES_VAT:"VAT"
+  INVOICES_VAT:"VAT",
+  SESSION_CREATED:"session created"
     }

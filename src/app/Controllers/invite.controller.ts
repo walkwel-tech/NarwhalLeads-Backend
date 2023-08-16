@@ -42,7 +42,6 @@ export class invitedUsersController {
             //@ts-ignore
           businessName:user?.businessDetailsId?.businessName
         };
-        console.log("EMAIL MESSAGE FOR INVITATON",credentials)
         send_email_to_invited_user(input.email, credentials);
         const hashPassword = hashSync(text, salt);
         //@ts-ignore
