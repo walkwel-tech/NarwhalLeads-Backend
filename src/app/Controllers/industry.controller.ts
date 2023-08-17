@@ -4,6 +4,7 @@ import { order } from "../../utils/constantFiles/businessIndustry.orderList";
 import { BuisnessIndustries } from "../Models/BuisnessIndustries";
 import { CustomColumnNames } from "../Models/CustomColumns.leads";
 import { User } from "../Models/User";
+import { UserInterface } from "../../types/UserInterface";
 
 export class IndustryController {
   static create = async (req: Request, res: Response) => {
@@ -43,7 +44,7 @@ export class IndustryController {
           if (i.defaultColumn == "") {
             i.defaultColumn = i.renamedColumn;
           }
-          return i
+          return i;
         });
       }
       const updatedData = await BuisnessIndustries.findByIdAndUpdate(
@@ -117,7 +118,10 @@ export class IndustryController {
   static delete = async (req: Request, res: Response) => {
     try {
       const data = await BuisnessIndustries.findByIdAndDelete(req.params.id);
-
+      const users = await User.find({ businessIndustryId: req.params.id });
+      users.map(async (i: UserInterface) => {
+        await User.findByIdAndUpdate(i.id, { businessIndustryId: null });
+      });
       return res.json({ data: data });
     } catch (error) {
       return res

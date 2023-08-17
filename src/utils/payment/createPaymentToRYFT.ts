@@ -16,6 +16,7 @@ export const createSession = (params: any) => {
       customerDetails: {
         id: params.clientId || null
       },
+
       returnUrl: process.env.RETURN_URL,
     }
      
@@ -238,17 +239,20 @@ export const getPaymentMethodByPaymentSessionID = (
 export const createSessionInitial = (params: any) => {
   return new Promise((resolve, reject) => {
     let body = {
-      amount: (params?.fixedAmount * 100) || 0,
+      //@ts-ignore
+      amount: parseInt(params?.fixedAmount * 100) || 0,
       currency: process.env.CURRENCY,
       customerEmail: params.email,
       customerDetails: {
         id: params.clientId || null
       },
       returnUrl: process.env.RYFT_RETURN_URL,
-      verifyAccount: true
+      verifyAccount: true,
+      paymentType:"Unscheduled"
     }
     if(params?.fixedAmount && params.fixedAmount >0){
-      body.verifyAccount=false
+      body.verifyAccount=false,
+      body.paymentType="Standard"
     }
      
     const data = JSON.stringify(body);    
@@ -323,6 +327,49 @@ export const attemptToPaymentInitial = ( params: any) => {
       .catch(function (error) {
         reject(error);
         // console.log("attempt payment error", error.response.data);
+      });
+  });
+};
+
+export const createSessionUnScheduledPayment= (params: any) => {
+  return new Promise((resolve, reject) => {
+    let body = {
+      amount: (params?.fixedAmount * 100) || 0,
+      currency: process.env.CURRENCY,
+      customerEmail: params.email,
+      customerDetails: {
+        id: params.clientId || null
+      },
+      paymentType: "Unscheduled",
+      previousPayment: { // must reference an initial 3DS mandated payment in the series
+          id: params.paymentSessionId
+      },
+      attemptPayment: { // immediately charge the card on creation of this payment session
+          paymentMethod: {
+              id: params.paymentMethodId // must match the card used on the initial payment
+          }
+      }
+    }
+     
+    const data = JSON.stringify(body);    
+    const config = {
+      method: POST,
+      url: process.env.CREATE_SESSION_URL,
+      headers: {
+        // Account: process.env.ACCOUNT_ID,
+        "Content-Type": "application/json",
+        Accept: "application/json",
+        Authorization: process.env.RYFT_SECRET_KEY,
+      },
+      data: data,
+    };
+    axios(config)
+      .then((response) => {
+        resolve(response);
+      })
+      .catch((err) => {
+        reject(err);
+        // console.log("Create session error", err.response.data);
       });
   });
 };
