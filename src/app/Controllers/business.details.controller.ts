@@ -402,7 +402,6 @@ export class BusinessDetailsController {
         });
       }
     } catch (error) {
-      console.log("errrorroro", error);
       return res
         .status(500)
         .json({ error: { message: "Something went wrong.", error } });

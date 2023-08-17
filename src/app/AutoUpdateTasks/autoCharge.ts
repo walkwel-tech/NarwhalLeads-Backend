@@ -2,11 +2,6 @@
 // import { deliveryEnums } from "../../utils/Enums/delivery.enum";
 import moment from "moment-timezone";
 import { paymentMethodEnum } from "../../utils/Enums/payment.method.enum";
-import {
-  managePayments,
-  managePaymentsByPaymentMethods,
-  managePaymentsForWeeklyPayment,
-} from "../../utils/payment";
 import { addCreditsToBuyer } from "../../utils/payment/addBuyerCredit";
 import { generatePDF } from "../../utils/XeroApiIntegration/generatePDF";
 import {
@@ -23,7 +18,8 @@ import { UserLeadsDetails } from "../Models/UserLeadsDetails";
 import { refreshToken } from "../../utils/XeroApiIntegration/createContact";
 import { transactionTitle } from "../../utils/Enums/transaction.title.enum";
 import { BuisnessIndustries } from "../Models/BuisnessIndustries";
-import { RyftPaymentMethods } from "../Models/RyftPaymentMethods";
+import { VAT } from "../../utils/constantFiles/Invoices";
+import { createSessionUnScheduledPayment } from "../../utils/payment/createPaymentToRYFT";
 
 const cron = require("node-cron");
 export const autoChargePayment = async () => {
@@ -35,7 +31,6 @@ export const autoChargePayment = async () => {
     const value = fixedAmount.amount / fixedAmount.thresholdValue;
     const data = await User.find({
       credits: { $lt: value },
-      // autoCharge: true,
       paymentMethod: paymentMethodEnum.AUTOCHARGE_METHOD,
     }).populate("businessDetailsId")
     .populate("userLeadsDetailsId");
@@ -47,12 +42,13 @@ export const autoChargePayment = async () => {
           isDeleted: false,
         });
         const params: any = {
-          fixedAmount: i?.autoChargeAmount || fixedAmount.amount ,
+          fixedAmount: i?.autoChargeAmount+ (i?.autoChargeAmount)*VAT/100 || fixedAmount.amount ,
           email: i.email,
           cardNumber: card?.cardNumber,
           buyerId: i.buyerId,
           clientId:i?.ryftClientId,
-          cardId:card.id
+          cardId:card?.id,
+          paymentSessionId:card.paymentSessionID
         };
         const text = {
           firstName: i.firstName,
@@ -68,131 +64,60 @@ export const autoChargePayment = async () => {
           cardHolderName:card?.cardHolderName,
         };
         send_email_for_autocharge(i.email, text);
-        const paymentMethodsExists=await RyftPaymentMethods.findOne({cardId:card.id,userId:i.id})
-        if(!paymentMethodsExists){
-        
-           managePayments(params)
+          params.paymentMethodId=card?.paymentMethod
+          createSessionUnScheduledPayment(params)
           .then(async (res) => {
-            if (!i.xeroContactId) {
-              console.log("xeroContact ID not found. Failed to generate pdf.");
-            }
-            const dataToSave: any = {
-              userId: i.id,
-              cardId: card?.id,
-              amount: i?.autoChargeAmount,
-              title: transactionTitle.CREDITS_ADDED,
-              isCredited: true,
-              status: "success",
-            };
-            const transaction = await Transaction.create(dataToSave);
-            if (i.xeroContactId) {
-              generatePDF(
-                i?.xeroContactId,
-                transactionTitle.CREDITS_ADDED,
-                i?.autoChargeAmount
-              )
-                .then(async (res:any) => {
-                  const dataToSaveInInvoice: any = {
-                    userId: i.id,
-                    transactionId: transaction.id,
-                    price: i?.autoChargeAmount,
-                    invoiceId: res.data.Invoices[0].InvoiceID,
-                  };
-                  await Invoice.create(dataToSaveInInvoice);
-                  console.log("payment success!!!!!!!!!!!!!");
-                })
-                .catch((error) => {
-                  refreshToken().then(async (res) => {
-                    generatePDF(
-                      i?.xeroContactId,
-                      transactionTitle.CREDITS_ADDED,
-                      i?.autoChargeAmount
-                    ).then(async (res:any) => {
-                      const dataToSaveInInvoice: any = {
-                        userId: i.id,
-                        transactionId: transaction.id,
-                        price:i?.autoChargeAmount,
-                        invoiceId: res.data.Invoices[0].InvoiceID,
-                      };
-                      await Invoice.create(dataToSaveInInvoice);
-                      console.log("payment success!!!!!!!!!!!!!");
-                    });
-                  });
-                });
-            }
-          })
-          .catch(async (err) => {
-            send_email_for_failed_autocharge(i.email, text);
-            console.log("error in payment Api");
-            const dataToSave: any = {
-              userId: i.id,
-              cardId: card?.id,
-              amount: i?.autoChargeAmount,
-              title: transactionTitle.CREDITS_ADDED,
-              isCredited: true,
-              status: "error",
-            };
-            await Transaction.create(dataToSave);
-          });
-        }
-        else{
-         
-          //@ts-ignore
-          params.paymentId=paymentMethodsExists?.paymentMethod
-
-          managePaymentsByPaymentMethods(params)
-          .then(async (res) => {
-            addCreditsToBuyer(params).then(async (res)=>{
-              console.log("credits added")
+            // addCreditsToBuyer(params).then(async (res)=>{
+              console.log("payment initiated!")
               if (!i.xeroContactId) {
                 console.log("xeroContact ID not found. Failed to generate pdf.");
               }
-              const dataToSave: any = {
-                userId: i.id,
-                cardId: card?.id,
-                amount: i?.autoChargeAmount || fixedAmount.amount,
-                title: transactionTitle.CREDITS_ADDED,
-                isCredited: true,
-                status: "success",
-              };
-              const transaction = await Transaction.create(dataToSave);
-              if (i.xeroContactId) {
-                generatePDF(
-                  i?.xeroContactId,
-                  transactionTitle.CREDITS_ADDED,
-                  (i?.autoChargeAmount || fixedAmount.amount)
-                )
-                  .then(async (res:any) => {
-                    const dataToSaveInInvoice: any = {
-                      userId: i.id,
-                      transactionId: transaction.id,
-                      price: i?.autoChargeAmount || fixedAmount.amount,
-                      invoiceId: res.data.Invoices[0].InvoiceID,
-                    };
-                    await Invoice.create(dataToSaveInInvoice);
-                    console.log("payment success!!!!!!!!!!!!!");
-                  })
-                  .catch((error) => {
-                    refreshToken().then(async (res) => {
-                      generatePDF(
-                        i?.xeroContactId,
-                        transactionTitle.CREDITS_ADDED,
-                        i?.autoChargeAmount
-                      ).then(async (res:any) => {
-                        const dataToSaveInInvoice: any = {
-                          userId: i.id,
-                          transactionId: transaction.id,
-                          price:i?.autoChargeAmount || fixedAmount.amount,
-                          invoiceId: res.data.Invoices[0].InvoiceID,
-                        };
-                        await Invoice.create(dataToSaveInInvoice);
-                        console.log("payment success!!!!!!!!!!!!!");
-                      });
-                    });
-                  });
-              }
-            }).catch((err)=>{
-            })
+            //   const dataToSave: any = {
+            //     userId: i.id,
+            //     cardId: card?.id,
+            //     amount: i?.autoChargeAmount || fixedAmount.amount,
+            //     title: transactionTitle.CREDITS_ADDED,
+            //     isCredited: true,
+            //     status: "success",
+            //   };
+            //   const transaction = await Transaction.create(dataToSave);
+            //   if (i.xeroContactId) {
+            //     generatePDF(
+            //       i?.xeroContactId,
+            //       transactionTitle.CREDITS_ADDED,
+            //       (i?.autoChargeAmount || fixedAmount.amount)
+            //     )
+            //       .then(async (res:any) => {
+            //         const dataToSaveInInvoice: any = {
+            //           userId: i.id,
+            //           transactionId: transaction.id,
+            //           price: i?.autoChargeAmount || fixedAmount.amount,
+            //           invoiceId: res.data.Invoices[0].InvoiceID,
+            //         };
+            //         await Invoice.create(dataToSaveInInvoice);
+            //         console.log("payment success!!!!!!!!!!!!!");
+            //       })
+            //       .catch((error) => {
+            //         refreshToken().then(async (res) => {
+            //           generatePDF(
+            //             i?.xeroContactId,
+            //             transactionTitle.CREDITS_ADDED,
+            //             i?.autoChargeAmount
+            //           ).then(async (res:any) => {
+            //             const dataToSaveInInvoice: any = {
+            //               userId: i.id,
+            //               transactionId: transaction.id,
+            //               price:i?.autoChargeAmount || fixedAmount.amount,
+            //               invoiceId: res.data.Invoices[0].InvoiceID,
+            //             };
+            //             await Invoice.create(dataToSaveInInvoice);
+            //             console.log("payment success!!!!!!!!!!!!!");
+            //           });
+            //         });
+            //       });
+            //   }
+            // }).catch((err)=>{
+            // })
             
           })
           .catch(async (err) => {
@@ -208,7 +133,6 @@ export const autoChargePayment = async () => {
             };
             await Transaction.create(dataToSave);
           });
-        }
        
       });
     } else {
@@ -268,15 +192,12 @@ export const weeklypayment = async () => {
             fixedAmount: amountToCharge,
             email: i.email,
             cardNumber: card?.cardNumber,
-            expiryMonth: card?.expiryMonth,
-            expiryYear: card?.expiryYear,
-            cvc: card?.cvc,
-            buyerId: i.buyerId,
-            addCredits: addCredits,
-            clientId:i?.ryftClientId,
-            cardId:card?.id
+          buyerId: i.buyerId,
+          clientId:i?.ryftClientId,
+          cardId:card?.id,
+          paymentSessionId:card?.paymentSessionID
           };
-          managePaymentsForWeeklyPayment(params)
+          createSessionUnScheduledPayment(params)
             .then(async (res) => {
               const dataToSaveDeduction: any = {
                 userId: i.id,

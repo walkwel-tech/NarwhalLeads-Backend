@@ -63,7 +63,11 @@ export class LeadsController {
     const industry = await BuisnessIndustries.findOne({
       industry: user.businessDetailsId.businessIndustry,
     });
-
+if(!industry){
+  return res
+  .status(404)
+  .json({ error: { message: "Your Business Industry has been deleted by admin. please choose anoher industry." } });
+}
     const columns = await BuisnessIndustries.findById(industry?.id);
     const array: any = [];
     columns?.columnsNames.map((i) => {
@@ -173,7 +177,6 @@ export class LeadsController {
       await LeadTablePreference.create(dataToSaveInLeadsPreference);
       const admin = await User.findOne({ role: RolesEnum.ADMIN });
 
-      console.log(adminPref);
 
       if (adminPref) {
         let key = Object.keys(input).map((i) => i);
@@ -288,11 +291,8 @@ export class LeadsController {
 
     if (user?.userLeadsDetailsId?.sendDataToZapier) {
       send_lead_data_to_zap(user.userLeadsDetailsId.zapierUrl, input)
-        .then((res) => {
-          console.log("data send to zapier", res);
-        })
+        .then((res) => {        })
         .catch((err) => {
-          console.log("error during sending data to zapier", err);
         });
     }
     let leadcpl;
@@ -305,8 +305,10 @@ export class LeadsController {
       const credits = user?.credits;
       let leftCredits;
       if (user.isLeadCostCheck) {
+
         leadcpl = user.leadCost;
         leftCredits = credits - user?.leadCost;
+       
       } else {
         const industry: any = await BuisnessIndustries.findById(
           user.businessIndustryId
@@ -328,7 +330,7 @@ export class LeadsController {
         title: transactionTitle.NEW_LEAD,
         amount: leadcpl,
         status: "success",
-        creditsLeft: user.credits - leadcpl,
+        creditsLeft: user?.credits - leadcpl,
       };
       await Transaction.create(dataToSave);
     } else {
@@ -1387,7 +1389,6 @@ export class LeadsController {
         };
         skip = 0;
       }
-console.log("hheheheheh",dataToFind)
       const [query]: any = await Leads.aggregate([
         {
           $facet: {
@@ -1584,7 +1585,6 @@ console.log("hheheheheh",dataToFind)
       const pdfRequest = await https.request(
         options,
         function (apiResponse: any) {
-          console.log("api req", apiResponse);
           if (apiResponse.rawHeaders.includes("Bearer error=invalid_token")) {
             refreshToken().then(() => {
               LeadsController.generateInvoicePdf(_req, res);

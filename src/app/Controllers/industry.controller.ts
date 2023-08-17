@@ -4,6 +4,7 @@ import { order } from "../../utils/constantFiles/businessIndustry.orderList";
 import { BuisnessIndustries } from "../Models/BuisnessIndustries";
 import { CustomColumnNames } from "../Models/CustomColumns.leads";
 import { User } from "../Models/User";
+import { UserInterface } from "../../types/UserInterface";
 
 export class IndustryController {
   static create = async (req: Request, res: Response) => {
@@ -38,6 +39,14 @@ export class IndustryController {
   static update = async (req: Request, res: Response) => {
     const input = req.body;
     try {
+      if (input.columnsNames) {
+        input.columnsNames.forEach((i: any) => {
+          if (i.defaultColumn == "") {
+            i.defaultColumn = i.renamedColumn;
+          }
+          return i;
+        });
+      }
       const updatedData = await BuisnessIndustries.findByIdAndUpdate(
         req.params.id,
         {
@@ -109,7 +118,10 @@ export class IndustryController {
   static delete = async (req: Request, res: Response) => {
     try {
       const data = await BuisnessIndustries.findByIdAndDelete(req.params.id);
-
+      const users = await User.find({ businessIndustryId: req.params.id });
+      users.map(async (i: UserInterface) => {
+        await User.findByIdAndUpdate(i.id, { businessIndustryId: null });
+      });
       return res.json({ data: data });
     } catch (error) {
       return res
@@ -120,7 +132,10 @@ export class IndustryController {
 
   static showIndustries = async (req: Request, res: Response) => {
     try {
-      const data = await BuisnessIndustries.find({isActive:true}, { industry: 1 });
+      const data = await BuisnessIndustries.find(
+        { isActive: true },
+        { industry: 1 }
+      );
       if (data) {
         let array: any = [];
         data.map((i) => {

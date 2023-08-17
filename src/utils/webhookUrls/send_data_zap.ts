@@ -12,7 +12,6 @@ export const send_lead_data_to_zap = (url: string, data: any) => {
     };
     axios(config)
       .then(async (response) => {
-        console.log(response);
       })
       .catch((err) => {
         console.log(err.response?.data);

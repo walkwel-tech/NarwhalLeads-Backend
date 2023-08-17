@@ -47,6 +47,10 @@ const TransactionSchema = new Schema(
       creditsLeft:{
         type:Number,
         default:0
+      },
+      paymentSessionId:{
+        type:String,
+        required:false
       }
     },
     { timestamps: true }
