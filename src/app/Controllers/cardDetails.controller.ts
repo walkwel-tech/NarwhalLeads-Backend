@@ -33,7 +33,7 @@ import { RolesEnum } from "../../types/RolesEnum";
 import axios from "axios";
 // import { ONBOARDING_KEYS } from "../../utils/constantFiles/OnBoarding.keys";
 import { ONBOARDING_KEYS } from "../../utils/constantFiles/OnBoarding.keys";
-import { createSessionInitial, customerPaymentMethods } from "../../utils/payment/createPaymentToRYFT";
+import { createSessionInitial, customerPaymentMethods, getPaymentMethodByPaymentSessionID } from "../../utils/payment/createPaymentToRYFT";
 import { BusinessDetails } from "../Models/BusinessDetails";
 import { RyftPaymentMethods } from "../Models/RyftPaymentMethods";
 import { UserLeadsDetails } from "../Models/UserLeadsDetails";
@@ -215,7 +215,8 @@ export class CardDetailsControllers {
       if (input?.isUserSignup) {
         await User.findByIdAndUpdate(id, { isUserSignup: true });
       }
-
+const paymentMethodFromRYFT:any= await getPaymentMethodByPaymentSessionID(input.paymentSessionID)
+console.log("-----",paymentMethodFromRYFT,paymentMethodFromRYFT?.paymentMethod?.tokenizedDetails?.id)
       if (input?.paymentMethod) {
         let dataToSaveIncard: any = {
           userId: user,
@@ -225,7 +226,7 @@ export class CardDetailsControllers {
           cardNumber: input?.cardNumber,
           cvc: input?.cvc,
           isDefault: input?.isDefault,
-          paymentMethod: input?.paymentMethod,
+          paymentMethod: input?.paymentMethod || paymentMethodFromRYFT?.paymentMethod?.tokenizedDetails?.id,
           status: PAYMENT_SESSION.SUCCESS, //should be false
         };
         if (input?.cardNumber?.length > 4) {
@@ -937,7 +938,7 @@ export class CardDetailsControllers {
 
         if (shouldReturnJson) {
           res.json({
-            data: { message: "Session validated" },
+            data: { message: "Card added successfully. please wait for few minutes." },
           });
         } else {
           //need to change here in url
