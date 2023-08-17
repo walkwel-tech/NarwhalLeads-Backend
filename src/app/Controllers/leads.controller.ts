@@ -63,7 +63,11 @@ export class LeadsController {
     const industry = await BuisnessIndustries.findOne({
       industry: user.businessDetailsId.businessIndustry,
     });
-
+if(!industry){
+  return res
+  .status(404)
+  .json({ error: { message: "Your Business Industry has been deleted by admin. please choose anoher industry." } });
+}
     const columns = await BuisnessIndustries.findById(industry?.id);
     const array: any = [];
     columns?.columnsNames.map((i) => {
@@ -301,8 +305,10 @@ export class LeadsController {
       const credits = user?.credits;
       let leftCredits;
       if (user.isLeadCostCheck) {
+
         leadcpl = user.leadCost;
         leftCredits = credits - user?.leadCost;
+       
       } else {
         const industry: any = await BuisnessIndustries.findById(
           user.businessIndustryId
@@ -324,7 +330,7 @@ export class LeadsController {
         title: transactionTitle.NEW_LEAD,
         amount: leadcpl,
         status: "success",
-        creditsLeft: user.credits - leadcpl,
+        creditsLeft: user?.credits - leadcpl,
       };
       await Transaction.create(dataToSave);
     } else {
