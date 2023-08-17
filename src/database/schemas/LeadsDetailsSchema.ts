@@ -32,7 +32,7 @@ const UserLeadsDetailsSchema = new Schema(
     },
     leadAlertsFrequency: {
       type: String,
-      default: "",
+      default: "instant",
     },
     zapierUrl: {
       type: String,

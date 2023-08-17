@@ -220,6 +220,7 @@ export class CardDetailsControllers {
         let dataToSaveIncard: any = {
           userId: user,
           cardHolderName: user?.firstName + user?.lastName,
+          paymentSessionID:input?.paymentSessionID,
           //to trim the space between card number
           cardNumber: input?.cardNumber,
           cvc: input?.cvc,
@@ -521,6 +522,7 @@ export class CardDetailsControllers {
               response.message='Further Action Required'
               response.manualPaymentConfig={
                 clientSecret : sessionInformation?.data?.clientSecret,
+                paymentType:sessionInformation?.data?.paymentType,
                 publicKey : process.env.RYFT_PUBLIC_KEY,
                 customerPaymentMethods : _res.data.paymentMethod
               }
@@ -564,6 +566,7 @@ export class CardDetailsControllers {
         (sessionObject.clientSecret = response.data.clientSecret),
           (sessionObject.publicKey = process.env.RYFT_PUBLIC_KEY);
         sessionObject.status = response.data.status;
+        sessionObject.paymentType=response.data.paymentType;
         console.log("reponse data",response.data)
         const paymentMethods :any = await customerPaymentMethods(response.data.customerDetails.id)
         console.log(" paymentMethods.data", paymentMethods.data)
