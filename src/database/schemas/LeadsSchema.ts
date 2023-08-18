@@ -51,7 +51,10 @@ const LeadsSchema = new Schema(
       type: Types.ObjectId,
       ref: "BuisnessIndustries",
     },
-
+    contactStatus:{
+      type: String,
+      default: "",
+    }
   },
   { timestamps: true }
 );
