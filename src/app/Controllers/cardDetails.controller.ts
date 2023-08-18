@@ -7,7 +7,7 @@ import {
   refreshToken,
 } from "../../utils/XeroApiIntegration/createContact";
 import { generatePDF } from "../../utils/XeroApiIntegration/generatePDF";
-import { managePaymentsByPaymentMethods } from "../../utils/payment";
+// import { managePaymentsByPaymentMethods } from "../../utils/payment";
 import { UpdateCardInput } from "../Inputs/UpdateCard.input";
 import {
   send_email_for_new_registration,
@@ -36,6 +36,7 @@ import axios from "axios";
 import { ONBOARDING_KEYS } from "../../utils/constantFiles/OnBoarding.keys";
 import {
   createSessionInitial,
+  createSessionUnScheduledPayment,
   customerPaymentMethods,
   getPaymentMethodByPaymentSessionID,
 } from "../../utils/payment/createPaymentToRYFT";
@@ -489,6 +490,7 @@ export class CardDetailsControllers {
         freeCredits: 0,
         clientId: user?.ryftClientId,
         cardId: card.id,
+        paymentSessionId:card?.paymentSessionID
       };
       // let amount:any
       // if (input.amount) {
@@ -508,10 +510,15 @@ export class CardDetailsControllers {
           .status(404)
           .json({ data: { message: "Payment methods does not found." } });
       } else {
-        params.paymentId = paymentMethodsExists?.paymentMethod;
-        managePaymentsByPaymentMethods(params)
-          .then(async (_res: any) => {
-            let response: PaymentResponse = {
+        params.paymentMethodId = paymentMethodsExists?.paymentMethod;
+        createSessionUnScheduledPayment(params)
+        .then(async (_res:any) => {
+          // addCreditsToBuyer(params).then(async (res)=>{
+            console.log("payment initiated!")
+            if (!user?.xeroContactId) {
+              console.log("xeroContact ID not found. Failed to generate pdf.");
+            }
+                 let response: PaymentResponse = {
               message: "In progress",
               status: 200,
             };
@@ -540,11 +547,46 @@ export class CardDetailsControllers {
               data: response,
             });
           })
-          .catch(async (err) => {
-            return res.status(400).json({
-              error: { message: "Error occured in payment.", err },
-            });
-          });
+        // })
+        .catch(async (err) => {
+          console.log("error in payment Api",err.response.data);
+        });
+        // managePaymentsByPaymentMethods(params)
+        //   .then(async (_res: any) => {
+        //     let response: PaymentResponse = {
+        //       message: "In progress",
+        //       status: 200,
+        //     };
+        //     if (_res.data.status == "PendingAction") {
+        //       const sessionInformation: any = await createSessionInitial(
+        //         params
+        //       );
+        //       response.message = "Further Action Required";
+        //       response.manualPaymentConfig = {
+        //         clientSecret: sessionInformation?.data?.clientSecret,
+        //         paymentType: sessionInformation?.data?.paymentType,
+        //         publicKey: process.env.RYFT_PUBLIC_KEY,
+        //         customerPaymentMethods: _res.data.paymentMethod,
+        //       };
+        //       response.sessionID = _res.data?.id;
+
+        //       response.status = "manual_payment_required";
+        //     } else {
+        //       response.message =
+        //         "Your payment was successful, please refresh in few minutes to see your new balance";
+        //       response.status = 200;
+        //       response.sessionID = _res.data?.id;
+        //     }
+
+        //     return res.json({
+        //       data: response,
+        //     });
+        //   })
+        //   .catch(async (err) => {
+        //     return res.status(400).json({
+        //       error: { message: "Error occured in payment.", err },
+        //     });
+        //   });
       }
     } catch (err) {
       return res

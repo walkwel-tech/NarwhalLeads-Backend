@@ -251,8 +251,7 @@ export const createSessionInitial = (params: any) => {
       paymentType:"Unscheduled"
     }
     if(params?.fixedAmount && params.fixedAmount >0){
-      body.verifyAccount=false,
-      body.paymentType="Standard"
+      body.verifyAccount=false      
     }
      
     const data = JSON.stringify(body);    
