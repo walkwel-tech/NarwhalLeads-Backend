@@ -14,5 +14,6 @@ export interface LeadsInterface extends Document {
   reportAcceptedAt:Date;
   reportRejectedAt:Date;
   clientNotes:string;
-  industryId:Types.ObjectId
+  industryId:Types.ObjectId;
+  contactStatus:string
 }

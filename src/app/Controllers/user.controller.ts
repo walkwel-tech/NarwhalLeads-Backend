@@ -136,7 +136,7 @@ export class UsersControllers {
         role: { $nin: [RolesEnum.ADMIN, RolesEnum.INVITED] },
         // role:{$ne: RolesEnum.INVITED },
         isDeleted: false,
-        // isArchived: JSON.parse(isArchived?.toLowerCase()),
+        isArchived: JSON.parse(isArchived?.toLowerCase()),
       };
       if(_req.query.isActive){
         dataToFind.isActive=JSON.parse(isActive?.toLowerCase())
@@ -367,7 +367,7 @@ export class UsersControllers {
       delete input.credits;
     }
     // @ts-ignore
-    if ((input.email || input.email =="") && req.user?.role == RolesEnum.USER) {
+    if ((input.email || input.email =="")) {
       // @ts-ignore
       input.email = req.user?.email
       // return res

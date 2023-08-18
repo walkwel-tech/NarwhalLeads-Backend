@@ -13,6 +13,7 @@ import {
   send_email_for_new_registration,
   send_email_for_payment_failure,
   send_email_for_payment_success,
+  send_email_for_payment_success_to_admin,
   send_email_for_registration,
 } from "../Middlewares/mail";
 import { AdminSettings } from "../Models/AdminSettings";
@@ -33,7 +34,11 @@ import { RolesEnum } from "../../types/RolesEnum";
 import axios from "axios";
 // import { ONBOARDING_KEYS } from "../../utils/constantFiles/OnBoarding.keys";
 import { ONBOARDING_KEYS } from "../../utils/constantFiles/OnBoarding.keys";
-import { createSessionInitial, customerPaymentMethods, getPaymentMethodByPaymentSessionID } from "../../utils/payment/createPaymentToRYFT";
+import {
+  createSessionInitial,
+  customerPaymentMethods,
+  getPaymentMethodByPaymentSessionID,
+} from "../../utils/payment/createPaymentToRYFT";
 import { BusinessDetails } from "../Models/BusinessDetails";
 import { RyftPaymentMethods } from "../Models/RyftPaymentMethods";
 import { UserLeadsDetails } from "../Models/UserLeadsDetails";
@@ -49,7 +54,7 @@ import { PaymentResponse } from "../../types/PaymentResponseInterface";
 import { PREMIUM_PROMOLINK } from "../../utils/constantFiles/spotDif.offers.promoLink";
 
 export class CardDetailsControllers {
-  //FIXME:not in use
+  //not in use
   static create = async (req: Request, res: Response): Promise<any> => {
     const input = req.body;
 
@@ -63,15 +68,6 @@ export class CardDetailsControllers {
       if (input.amount == null) {
         input.amount = fixAmount.amount;
       }
-
-      // if (input.amount < fixAmount?.amount) {
-      //   return res.status(500).json({
-      //     error: {
-      //       message: "Enter amount greater than " + fixAmount?.amount,
-      //     },
-      //   });
-      // }
-
       const { onBoarding }: any = await User.findById(input.userId);
       let object = onBoarding || [];
       let arr: any = [];
@@ -215,18 +211,20 @@ export class CardDetailsControllers {
       if (input?.isUserSignup) {
         await User.findByIdAndUpdate(id, { isUserSignup: true });
       }
-const paymentMethodFromRYFT:any= await getPaymentMethodByPaymentSessionID(input.paymentSessionID)
-console.log("-----",paymentMethodFromRYFT,paymentMethodFromRYFT?.paymentMethod?.tokenizedDetails?.id)
+      const paymentMethodFromRYFT: any =
+        await getPaymentMethodByPaymentSessionID(input.paymentSessionID);
       if (input?.paymentMethod) {
         let dataToSaveIncard: any = {
           userId: user,
           cardHolderName: user?.firstName + user?.lastName,
-          paymentSessionID:input?.paymentSessionID,
+          paymentSessionID: input?.paymentSessionID,
           //to trim the space between card number
           cardNumber: input?.cardNumber,
           cvc: input?.cvc,
           isDefault: input?.isDefault,
-          paymentMethod: input?.paymentMethod || paymentMethodFromRYFT?.paymentMethod?.tokenizedDetails?.id,
+          paymentMethod:
+            input?.paymentMethod ||
+            paymentMethodFromRYFT?.paymentMethod?.tokenizedDetails?.id,
           status: PAYMENT_SESSION.SUCCESS, //should be false
         };
         if (input?.cardNumber?.length > 4) {
@@ -502,7 +500,6 @@ console.log("-----",paymentMethodFromRYFT,paymentMethodFromRYFT?.paymentMethod?.
         cardId: card.id,
       });
 
-  
       // const paymentMethods = await RyftPaymentMethods.find({
       //   ryftClientId: user?.ryftClientId,
       // });
@@ -519,17 +516,19 @@ console.log("-----",paymentMethodFromRYFT,paymentMethodFromRYFT?.paymentMethod?.
               status: 200,
             };
             if (_res.data.status == "PendingAction") {
-              const sessionInformation:any = await createSessionInitial(params)
-              response.message='Further Action Required'
-              response.manualPaymentConfig={
-                clientSecret : sessionInformation?.data?.clientSecret,
-                paymentType:sessionInformation?.data?.paymentType,
-                publicKey : process.env.RYFT_PUBLIC_KEY,
-                customerPaymentMethods : _res.data.paymentMethod
-              }
-         
+              const sessionInformation: any = await createSessionInitial(
+                params
+              );
+              response.message = "Further Action Required";
+              response.manualPaymentConfig = {
+                clientSecret: sessionInformation?.data?.clientSecret,
+                paymentType: sessionInformation?.data?.paymentType,
+                publicKey: process.env.RYFT_PUBLIC_KEY,
+                customerPaymentMethods: _res.data.paymentMethod,
+              };
+              response.sessionID = _res.data?.id;
+
               response.status = "manual_payment_required";
-        
             } else {
               response.message =
                 "Your payment was successful, please refresh in few minutes to see your new balance";
@@ -537,10 +536,9 @@ console.log("-----",paymentMethodFromRYFT,paymentMethodFromRYFT?.paymentMethod?.
               response.sessionID = _res.data?.id;
             }
 
-              return res.json({
-                data: response,
-              });
-
+            return res.json({
+              data: response,
+            });
           })
           .catch(async (err) => {
             return res.status(400).json({
@@ -567,31 +565,18 @@ console.log("-----",paymentMethodFromRYFT,paymentMethodFromRYFT?.paymentMethod?.
         (sessionObject.clientSecret = response.data.clientSecret),
           (sessionObject.publicKey = process.env.RYFT_PUBLIC_KEY);
         sessionObject.status = response.data.status;
-        sessionObject.paymentType=response.data.paymentType;
-        console.log("reponse data",response.data)
-        const paymentMethods :any = await customerPaymentMethods(response.data.customerDetails.id)
-        console.log(" paymentMethods.data", paymentMethods.data)
-        sessionObject.paymentMethods= paymentMethods.data
-        // console.log("theryher",sessionObject,response.data.customerDetails.id)
-        // const user :any =await User.findOne({ryftClientId:response.data.customerDetails.id})
-       
-        // const dataToSave={
-        //   userId:user.id,
-        //   // cardId: "",
-        //   amount: input.amount,
-        //   title:transactionTitle.SESSION_CREATED,
-        //   status:response.data.status,
-        //   invoiceId:"",
-        //   paymentSessionID:response.data.id
+        sessionObject.paymentType = response.data.paymentType;
+        const paymentMethods: any = await customerPaymentMethods(
+          response.data.customerDetails.id
+        );
+        sessionObject.paymentMethods = paymentMethods.data;
 
-        // }
-        // await Transaction.create(dataToSave)            
         return res.json({ data: sessionObject });
       })
       .catch((error) => {
         return res
           .status(400)
-          .json({ data: { message: "Error in creating session",error } });
+          .json({ data: { message: "Error in creating session", error } });
       });
   };
 
@@ -711,6 +696,7 @@ console.log("-----",paymentMethodFromRYFT,paymentMethodFromRYFT?.paymentMethod?.
               credits: userId?.credits,
             };
             send_email_for_payment_success(userId?.email, message);
+            send_email_for_payment_success_to_admin(message);
             if (userId?.xeroContactId) {
               generatePDF(
                 userId?.xeroContactId,
@@ -938,7 +924,10 @@ console.log("-----",paymentMethodFromRYFT,paymentMethodFromRYFT?.paymentMethod?.
 
         if (shouldReturnJson) {
           res.json({
-            data: { message: "Card added successfully. please wait for few minutes." },
+            data: {
+              message:
+                "we have received your request. please wait for few minutes.",
+            },
           });
         } else {
           //need to change here in url

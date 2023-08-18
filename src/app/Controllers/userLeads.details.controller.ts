@@ -16,6 +16,7 @@ import { UserLeadsDetails } from "../Models/UserLeadsDetails";
 import { FreeCreditsLink } from "../Models/freeCreditsLink";
 import { PROMO_LINK } from "../../utils/Enums/promoLink.enum";
 import { addCreditsToBuyer } from "../../utils/payment/addBuyerCredit";
+import { UserService } from "../Models/UserService";
 
 export class UserLeadsController {
   static create = async (req: Request, res: Response) => {
@@ -66,7 +67,8 @@ export class UserLeadsController {
       );
     }
     await User.findByIdAndUpdate(input.userId, { onBoarding: object });
-
+    const serviceData=await UserService.findOne({userId:input.userId})
+    const service = await UserService.findByIdAndUpdate(serviceData?.id,input,{new:true})
     const leadDetails = object.find(
       (item: any) => item.key === ONBOARDING_KEYS.LEAD_DETAILS
     );
@@ -158,11 +160,11 @@ export class UserLeadsController {
 
 
       }
-      return res.json({ data: details });
+      return res.json({ data: details,service });
     } catch (error) {
       return res
         .status(500)
-        .json({ error: { message: "Something went wrong." } });
+        .json({ error: { message: "Something went wrong.",error } });
     }
   };
 
@@ -269,6 +271,8 @@ export class UserLeadsController {
           new: true,
         }
       );
+      const serviceData=await UserService.findOne({userId:user.id})
+      const service = await UserService.findByIdAndUpdate(serviceData?.id,input,{new:true})
       if (input.daily) {
         await UserLeadsDetails.findByIdAndUpdate(id, {
           dailyLeadCost: user?.leadCost * input.daily,
@@ -308,7 +312,7 @@ export class UserLeadsController {
         return res.json({
           data: {
             message: "UserLeadsDetails updated successfully.",
-            data: updatedDetails,
+            data: updatedDetails,service
           },
         });
       } else {

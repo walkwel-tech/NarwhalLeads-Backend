@@ -24,6 +24,8 @@ import { User } from "../Models/User";
 import { UserLeadsDetails } from "../Models/UserLeadsDetails";
 import { LeadTablePreference } from "../Models/LeadTablePreference";
 import { AccessToken } from "../Models/AccessToken";
+import { UserService } from "../Models/UserService";
+import { business_details_submission } from "../../utils/webhookUrls/business_details_submission";
 
 const ObjectId = mongoose.Types.ObjectId;
 
@@ -191,6 +193,25 @@ export class BusinessDetailsController {
               );
             });
         });
+     const service=await UserService.create(input)
+
+     const messageToSendInBusinessSubmission={
+       businessName: input?.businessName,
+       phone: input?.businessSalesNumber,
+       industry: input?.businessIndustry,
+       address: input?.address1 + " " + input?.address2,
+       city: input?.businessCity,
+       country: input?.businessCountry,
+       // openingHours: formattedOpeningHours,
+       openingHours: input?.businessOpeningHours,
+       logo: input?.businessLogo,
+       financeOffers: service?.financeOffers,
+       prices:service?.prices,
+       accreditations:service?.accreditations,
+       avgInstallTime: service?.avgInstallTime,
+       criteria: service?.criteria
+     }
+     business_details_submission(messageToSendInBusinessSubmission)
       // if (checkOnbOardingComplete(user) && !user.registrationMailSentToAdmin) {
       //   const leadData = await UserLeadsDetails.findOne({
       //     userId: userData?._id,
@@ -230,7 +251,7 @@ export class BusinessDetailsController {
       //   });
       // }
       res.json({
-        data: userData,
+        data: userData,service,
         leadCost: user?.leadCost,
       });
       const params: any = {
@@ -313,47 +334,8 @@ export class BusinessDetailsController {
       const data = await BusinessDetails.findByIdAndUpdate(id, input, {
         new: true,
       });
-      // const data = await BusinessDetails.findByIdAndUpdate(
-      //   id,
-      //   {
-      //     businessIndustry: input.businessIndustry
-      //       ? input.businessIndustry
-      //       : details.businessIndustry,
-      //     businessName: input.businessName
-      //       ? input.businessName
-      //       : details.businessName,
-      //     businessSalesNumber: input.businessSalesNumber
-      //       ? input.businessSalesNumber
-      //       : details.businessSalesNumber,
-      //     businessAddress: input.businessAddress
-      //       ? input.businessAddress
-      //       : details.businessAddress,
-      //     businessDescription: input.businessDescription
-      //       ? input.businessDescription
-      //       : details.businessDescription,
-      //     address1: input.address1 ? input.address1 : details.address1,
-      //     address2: input.address2 ? input.address2 : details.address2,
-      //     businessCity: input.businessCity
-      //       ? input.businessCity
-      //       : details.businessCity,
-      //     businessCountry: input?.businessCountry
-      //       ? input?.businessCountry
-      //       : details.businessCountry,
-      //     businessPostCode: input.businessPostCode
-      //       ? input.businessPostCode
-      //       : details.businessPostCode,
-      //     businessOpeningHours: input.businessOpeningHours
-      //       ? JSON.parse(input.businessOpeningHours)
-      //       : details.businessOpeningHours,
-      //     businessLogo: (req.file || {}).filename
-      //       ? //@ts-ignore
-      //         `${FileEnum.PROFILEIMAGE}${req?.file.filename}`
-      //       : details.businessLogo,
-      //   },
-      //   {
-      //     new: true,
-      //   }
-      // );
+      const serviceData=await UserService.findOne({userId:userData?.id})
+      const service = await UserService.findByIdAndUpdate(serviceData?.id,input,{new:true})
 
       if (data) {
         const updatedDetails = await BusinessDetails.findById(id);
@@ -386,13 +368,32 @@ export class BusinessDetailsController {
           area: `${formattedPostCodes}`,
         };
         send_email_for_updated_details(message);
+
+        const messageToSendInBusinessSubmission={
+          businessName: updatedDetails?.businessName,
+          phone: updatedDetails?.businessSalesNumber,
+          email: userData?.email,
+          industry: updatedDetails?.businessIndustry,
+          address: updatedDetails?.address1 + " " + updatedDetails?.address2,
+          city: updatedDetails?.businessCity,
+          country: updatedDetails?.businessCountry,
+          // openingHours: formattedOpeningHours,
+          openingHours: updatedDetails?.businessOpeningHours,
+          logo: updatedDetails?.businessLogo,
+          financeOffers: service?.financeOffers,
+          prices:service?.prices,
+          accreditations:service?.accreditations,
+          avgInstallTime: service?.avgInstallTime,
+          criteria: service?.criteria
+        }
+        business_details_submission(messageToSendInBusinessSubmission)
         if (req.file && details.businessLogo) {
           DeleteFile(`${details.businessLogo}`);
         }
         return res.json({
           data: {
             message: "businessDetails updated successfully.",
-            data: updatedDetails,
+            data: updatedDetails,service,
             leadCost: userData?.leadCost,
           },
         });
