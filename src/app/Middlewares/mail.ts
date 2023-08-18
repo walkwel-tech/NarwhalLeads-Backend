@@ -592,3 +592,43 @@ export function send_email_for_payment_failure(send_to: any, message: any) {
       console.error(error);
     });
 }
+
+export function send_email_for_payment_success_to_admin( message: any) {
+  const msg = {
+    to: "leads@nmg.group", // Change to your recipient
+    // to: "radhika.walkweltech@gmail.com",
+     from: {
+      name: process.env.VERIFIED_SENDER_ON_SENDGRID_FROM_NAME,
+      email:  process.env.VERIFIED_SENDER_ON_SENDGRID,
+  },
+    // Change to your verified sender
+    trackingSettings: {
+      clickTracking: {
+        enable: false,
+        enableText: false,
+      },
+      openTracking: {
+        enable: false,
+      },
+    },
+    // html: "<strong>and easy to do anywhere, even with Node.js</strong>",
+    // templateId: "d-69dcead271404a1d8a90aab2416bdc42",
+    templateId:"d-f341f49885964b52a0523e1e083aa2d7",
+    dynamic_template_data: {
+      firstName: message?.firstName,
+      credit:`£${message?.credits}`,
+      paymentAmount: `£${message?.amount}`,
+      cardNumberEnd:message?.cardNumberEnd,
+      cardHolderName:message?.cardHolderName
+  }
+  };
+
+  sgMail
+    .send(msg)
+    .then(() => {
+      console.log("Email sent");
+    })
+    .catch((error: any) => {
+      console.error(error);
+    });
+}

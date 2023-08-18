@@ -24,6 +24,7 @@ export class freeCreditsLinkController {
         topUpAmount: input.topUpAmount,
         maxUseCounts: input.maxUseCounts,
         useCounts: 0,
+        name:input.name
       };
       if (input.spotDiffPremiumPlan) {
         dataToSave.code = 'SPOTDIFF_' + randomString(10)
@@ -66,7 +67,7 @@ export class freeCreditsLinkController {
 
         .populate("user.userId", "_id firstName lastName createdAt")
         .sort({ createdAt: -1 })
-        .select("_id code freeCredits useCounts maxUseCounts isDisabled isUsed usedAt topUpAmount user createdAt updatedAt __v")
+        .select("_id code freeCredits useCounts maxUseCounts name isDisabled isUsed usedAt topUpAmount user createdAt updatedAt __v")
         .lean();
 
       const transformedArray = query.map((item: any) => {
