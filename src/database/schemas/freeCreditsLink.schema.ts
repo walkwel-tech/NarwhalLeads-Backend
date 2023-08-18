@@ -1,49 +1,57 @@
 import { Schema, Types } from "mongoose";
 
-const FreeCreditsLinkSchema = new Schema({
+const FreeCreditsLinkSchema = new Schema(
+  {
     code: {
-        type: String,
-        required: true,
-        unique:true
+      type: String,
+      required: true,
+      unique: true,
     },
     freeCredits: {
-        type: Number,
-        required: true,
+      type: Number,
+      required: true,
     },
     useCounts: {
-        type: Number,
-    }, 
+      type: Number,
+    },
     maxUseCounts: {
-        type: Number,
-        required: false,
+      type: Number,
+      required: false,
     },
     isDisabled: {
-        type: Boolean,
-        default:false,
+      type: Boolean,
+      default: false,
     },
     isUsed: {
-        type: Boolean,
-        default:false,
+      type: Boolean,
+      default: false,
     },
-    user:[{
+    user: [
+      {
         userId: {
-            type: Types.ObjectId,
-            ref: 'User'
+          type: Types.ObjectId,
+          ref: "User",
         },
         userCount: Number,
-    }],
+      },
+    ],
     usedAt: {
-        type: Date,
-        default: null
+      type: Date,
+      default: null,
     },
     topUpAmount: {
-        type: Number,
-        default: 0
+      type: Number,
+      default: 0,
     },
-    spotDiffPremiumPlan:{
-        type: Boolean
-        }
+    spotDiffPremiumPlan: {
+      type: Boolean,
+    },
+    name: {
+      type: String,
+      required: true,
+    },
+  },
+  { timestamps: true }
+);
 
-}, {timestamps: true});
-
-export {FreeCreditsLinkSchema};
+export { FreeCreditsLinkSchema };

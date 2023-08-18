@@ -27,6 +27,7 @@ import { autoUpdateTasks } from "./app/AutoUpdateTasks";
 import TermsAndConditionsRoutes from "./routes/termsAndConditions.routes";
 import freeCreditsLinkRoutes from "./routes/FreeCreditsLink.routes";
 import path from "path";
+import serviceRoutes from "./routes/userService.routes";
 // import {  dataCleaning } from "./dataCleaning";
 const swaggerDocument = require('../swagger.json'); // Replace with the path to your actual Swagger document
 const swaggerUi = require('swagger-ui-express');
@@ -97,6 +98,7 @@ export class Server {
         this.app.use("/api/v1/termsAndConditions",TermsAndConditionsRoutes)
         this.app.use("/api/v1/freeCredits",freeCreditsLinkRoutes)
         this.app.use("/api/v1/businessIndustry",BusinessIndustriesRoutes)
+        this.app.use("/api/v1/service",Auth,serviceRoutes)
 
         this.app.get("/api/v1/version", (req: Request, res: Response) => {
             res.status(200).json({message: `App running on version ${version}`});

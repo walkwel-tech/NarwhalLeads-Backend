@@ -8,7 +8,7 @@ import BusinessDetailsRoutes from "./business.routes";
 import userLeadsDetailsRoutes from "./userLeadsDetails.routes";
 import invitedUserRoutes from "./invite.routes";
 import BusinessIndustriesRoutes from "./buisnessIndustries.routes"
-
+import userServiceRoutes from "./userService.routes";
 
 
 export {
@@ -21,5 +21,6 @@ export {
     BusinessDetailsRoutes,
     userLeadsDetailsRoutes,
     invitedUserRoutes,
-    BusinessIndustriesRoutes
+    BusinessIndustriesRoutes,
+    userServiceRoutes
 };
