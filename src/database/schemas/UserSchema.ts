@@ -110,6 +110,11 @@ const UserSchema = new Schema(
       ref: "User",
       default: null,
     },
+    userServiceId:{
+      type: Types.ObjectId,
+      ref: "UserService",
+      default: null,
+    },
     paymentMethod: {
       type: String,
       // default: false,
