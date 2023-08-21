@@ -65,7 +65,7 @@ const UserSchema = new Schema(
     autoChargeAmount: {
       type: Number,
       required: false,
-      default: 50,
+      default: 100,
     },
     verifiedAt: {
       type: Date,
