@@ -53,6 +53,7 @@ import mongoose from "mongoose";
 const ObjectId = mongoose.Types.ObjectId;
 import { PaymentResponse } from "../../types/PaymentResponseInterface";
 import { PREMIUM_PROMOLINK } from "../../utils/constantFiles/spotDif.offers.promoLink";
+// import { managePaymentsByPaymentMethods } from "../../utils/payment";
 
 export class CardDetailsControllers {
   //not in use
@@ -511,6 +512,7 @@ export class CardDetailsControllers {
           .json({ data: { message: "Payment methods does not found." } });
       } else {
         params.paymentMethodId = paymentMethodsExists?.paymentMethod;
+        //fixme:
         createSessionUnScheduledPayment(params)
         .then(async (_res:any) => {
           // addCreditsToBuyer(params).then(async (res)=>{
@@ -547,26 +549,32 @@ export class CardDetailsControllers {
               data: response,
             });
           })
-        // })
-        .catch(async (err) => {
-          console.log("error in payment Api",err.response.data);
-        });
+        // .catch(async (err) => {
+        //   console.log("error in payment Api",err.response.data);
+        // });
         // managePaymentsByPaymentMethods(params)
         //   .then(async (_res: any) => {
+
+        //     const paymentMethods: any = await customerPaymentMethods(
+        //       params.clientId
+        //     );
         //     let response: PaymentResponse = {
         //       message: "In progress",
         //       status: 200,
         //     };
+        //     response.paymentMethods = paymentMethods.data;
         //     if (_res.data.status == "PendingAction") {
-        //       const sessionInformation: any = await createSessionInitial(
-        //         params
-        //       );
+        //       // const sessionInformation: any = await createSessionInitial(
+        //       //   params
+        //       // );
         //       response.message = "Further Action Required";
         //       response.manualPaymentConfig = {
-        //         clientSecret: sessionInformation?.data?.clientSecret,
-        //         paymentType: sessionInformation?.data?.paymentType,
+        //         // clientSecret: sessionInformation?.data?.clientSecret,
+        //         // paymentType: sessionInformation?.data?.paymentType,
         //         publicKey: process.env.RYFT_PUBLIC_KEY,
         //         customerPaymentMethods: _res.data.paymentMethod,
+        //          clientSecret: _res.data?.clientSecret,
+        //         paymentType: _res?.data?.paymentType,
         //       };
         //       response.sessionID = _res.data?.id;
 
@@ -681,26 +689,29 @@ export class CardDetailsControllers {
           buyerId: userId?.buyerId,
           fixedAmount: originalAmount,
         };
+        console.log( "-----???????????",originalAmount,originalAmount >= PREMIUM_PROMOLINK.TOP_UP) 
+
         //TODO: THIS WILL BE ONLY ON 1 TRANSATION
         if (
           promoLink &&
           !userId.promoCodeUsed &&
           userId?.promoLinkId &&
           userId.premiumUser == PROMO_LINK.PREMIUM_USER_TOP_UP &&
-          parseInt(input?.data?.amount) >= promoLink?.topUpAmount
+          originalAmount >= promoLink?.topUpAmount
         ) {
           params.freeCredits = promoLink?.freeCredits;
           console.log("in 1");
         } else if (
           promoLink?.spotDiffPremiumPlan &&
-          parseInt(input?.data?.amount) >= promoLink?.topUpAmount &&
+          originalAmount >= promoLink?.topUpAmount &&
           userId.promoCodeUsed
         ) {
           params.freeCredits = promoLink?.freeCredits;
           console.log("in 2");
-        } else if (
+        }
+        else if (
           !userId.promoCodeUsed &&
-          parseInt(input?.data?.amount) >= PREMIUM_PROMOLINK.TOP_UP
+          originalAmount >= PREMIUM_PROMOLINK.TOP_UP
         ) {
           params.freeCredits = PREMIUM_PROMOLINK.FREE_CREDITS;
         }

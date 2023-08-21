@@ -7,6 +7,6 @@ export interface PaymentResponse {
     // clientSecret?:string;
     // publicKey?:string;
     optionalData?:Object;
-    // customerPaymentMethods?:Object;
+    paymentMethods?:Object;
     manualPaymentConfig?:Object
   }
