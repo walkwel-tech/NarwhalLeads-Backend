@@ -31,7 +31,6 @@ import { clientTablePreference } from "../../utils/constantFiles/clientTablePref
 import { LeadTablePreference } from "../Models/LeadTablePreference";
 import { leadsTablePreference } from "../../utils/constantFiles/leadsTablePreferenceAdmin";
 const fs = require("fs");
-
 class AuthController {
   static register = async (req: Request, res: Response): Promise<any> => {
     const input = req.body;
@@ -641,7 +640,9 @@ class AuthController {
       const exists = await User.findById(user?.id, "-password")
         .populate("businessDetailsId")
         .populate("userLeadsDetailsId")
-        .populate("invitedById");
+        .populate("invitedById")
+        .populate("userServiceId");
+
       if (exists) {
         return res.json({ data: exists });
       }

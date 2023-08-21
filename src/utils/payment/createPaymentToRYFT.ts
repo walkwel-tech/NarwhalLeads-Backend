@@ -151,7 +151,7 @@ export const attemptToPaymentBy_PaymentMethods = (
     const paymentData = JSON.stringify({
       clientSecret: clientSecret,
       paymentMethod: {
-        id: response,
+        id: response.paymentId || response.paymentMethodId,
       },
     });
     const config = {
@@ -331,6 +331,7 @@ export const attemptToPaymentInitial = ( params: any) => {
 };
 
 export const createSessionUnScheduledPayment= (params: any) => {
+  console.log("here is its==================================================")
   return new Promise((resolve, reject) => {
     let body = {
       amount: (params?.fixedAmount * 100) || 0,

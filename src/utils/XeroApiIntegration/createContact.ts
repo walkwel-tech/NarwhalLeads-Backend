@@ -16,8 +16,7 @@ export const createContactOnXero = (
     Addresses: [
       {
         AddressType: "POBOX",
-        AddressLine1: paramsToCreateContact.addressLine1,
-        AddressLine2: paramsToCreateContact.addressLine2,
+        AddressLine1: paramsToCreateContact.addressLine2,
         City: paramsToCreateContact.city,
         PostalCode: paramsToCreateContact.postalCode,
       },
