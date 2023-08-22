@@ -2,6 +2,7 @@ import axios from "axios";
 import { AccessToken } from "../../app/Models/AccessToken";
 import { User } from "../../app/Models/User";
 import { BusinessDetails } from "../../app/Models/BusinessDetails";
+import { createNotesOnXero } from "./addNotesToCustomer";
 let FormData = require("form-data");
 const POST = "post";
 export const createContactOnXero = (
@@ -16,8 +17,7 @@ export const createContactOnXero = (
     Addresses: [
       {
         AddressType: "POBOX",
-        AddressLine1: paramsToCreateContact.addressLine1,
-        AddressLine2: paramsToCreateContact.addressLine2,
+        AddressLine1: paramsToCreateContact.addressLine2,
         City: paramsToCreateContact.city,
         PostalCode: paramsToCreateContact.postalCode,
       },
@@ -35,6 +35,8 @@ export const createContactOnXero = (
     };
     axios(config)
       .then((data) => {
+        const params={contactID:data.data.Contacts[0].ContactID,email:paramsToCreateContact.emailAddress}
+        createNotesOnXero(params,token).then(()=>console.log("notes added on xero")).catch(()=>console.log("error while adding notes on xero."))
         resolve(data);
       })
       .catch(async (err) => {

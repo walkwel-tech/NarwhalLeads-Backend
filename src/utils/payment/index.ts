@@ -51,11 +51,10 @@ export const fetchPaymentSessionById = (id:string)=>{
 
 
   export const  managePaymentsByPaymentMethods = (params:any) => {
-
     return new Promise((resolve, reject) => {
       createSessionInitial(params)
         .then(async(res: any) => {
-              attemptToPaymentBy_PaymentMethods(params?.paymentId,res.data.clientSecret)
+              attemptToPaymentBy_PaymentMethods(params,res.data.clientSecret)
             .then((data:any) => {
               data.data.clientSecret=res.data.clientSecret
               data.data.optionalData=res.data

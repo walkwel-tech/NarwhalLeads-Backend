@@ -148,7 +148,7 @@ export class BusinessDetailsController {
         firstName: user.firstName,
         lastName: user.lastName,
         emailAddress: user.email,
-        addressLine1: input.businessIndustry,
+        // addressLine1: input.businessIndustry,
         addressLine2: input.businessName,
         city: input.businessCity,
         postalCode: input.businessPostCode,
@@ -193,25 +193,35 @@ export class BusinessDetailsController {
               );
             });
         });
-     const service=await UserService.create(input)
+      if (input.accreditations) {
+        input.accreditations = JSON.parse(input.accreditations);
+      }
+      if (input.financeOffers && input.financeOffers == "yes") {
+        input.financeOffers = true;
+      }
+      if (input.financeOffers && input.financeOffers == "no") {
+        input.financeOffers = false;
+      }
+      const service = await UserService.create(input);
+      await User.findByIdAndUpdate(user.id, { userServiceId: service.id });
 
-     const messageToSendInBusinessSubmission={
-       businessName: input?.businessName,
-       phone: input?.businessSalesNumber,
-       industry: input?.businessIndustry,
-       address: input?.address1 + " " + input?.address2,
-       city: input?.businessCity,
-       country: input?.businessCountry,
-       // openingHours: formattedOpeningHours,
-       openingHours: input?.businessOpeningHours,
-       logo: input?.businessLogo,
-       financeOffers: service?.financeOffers,
-       prices:service?.prices,
-       accreditations:service?.accreditations,
-       avgInstallTime: service?.avgInstallTime,
-       criteria: service?.criteria
-     }
-     business_details_submission(messageToSendInBusinessSubmission)
+      const messageToSendInBusinessSubmission = {
+        businessName: input?.businessName,
+        phone: input?.businessSalesNumber,
+        industry: input?.businessIndustry,
+        address: input?.address1 + " " + input?.address2,
+        city: input?.businessCity,
+        country: input?.businessCountry,
+        // openingHours: formattedOpeningHours,
+        openingHours: input?.businessOpeningHours,
+        logo: input?.businessLogo,
+        financeOffers: service?.financeOffers,
+        prices: service?.prices,
+        accreditations: service?.accreditations,
+        avgInstallTime: service?.avgInstallTime,
+        criteria: service?.criteria,
+      };
+      business_details_submission(messageToSendInBusinessSubmission);
       // if (checkOnbOardingComplete(user) && !user.registrationMailSentToAdmin) {
       //   const leadData = await UserLeadsDetails.findOne({
       //     userId: userData?._id,
@@ -251,7 +261,8 @@ export class BusinessDetailsController {
       //   });
       // }
       res.json({
-        data: userData,service,
+        data: userData,
+        service,
         leadCost: user?.leadCost,
       });
       const params: any = {
@@ -334,8 +345,21 @@ export class BusinessDetailsController {
       const data = await BusinessDetails.findByIdAndUpdate(id, input, {
         new: true,
       });
-      const serviceData=await UserService.findOne({userId:userData?.id})
-      const service = await UserService.findByIdAndUpdate(serviceData?.id,input,{new:true})
+      const serviceData = await UserService.findOne({ userId: userData?.id });
+      if (input.accreditations) {
+        input.accreditations = JSON.parse(input.accreditations);
+      }
+      if (input.financeOffers && input.financeOffers == "yes") {
+        input.financeOffers = true;
+      }
+      if (input.financeOffers && input.financeOffers == "no") {
+        input.financeOffers = false;
+      }
+      const service = await UserService.findByIdAndUpdate(
+        serviceData?.id,
+        input,
+        { new: true }
+      );
 
       if (data) {
         const updatedDetails = await BusinessDetails.findById(id);
@@ -369,7 +393,7 @@ export class BusinessDetailsController {
         };
         send_email_for_updated_details(message);
 
-        const messageToSendInBusinessSubmission={
+        const messageToSendInBusinessSubmission = {
           businessName: updatedDetails?.businessName,
           phone: updatedDetails?.businessSalesNumber,
           email: userData?.email,
@@ -381,19 +405,20 @@ export class BusinessDetailsController {
           openingHours: updatedDetails?.businessOpeningHours,
           logo: updatedDetails?.businessLogo,
           financeOffers: service?.financeOffers,
-          prices:service?.prices,
-          accreditations:service?.accreditations,
+          prices: service?.prices,
+          accreditations: service?.accreditations,
           avgInstallTime: service?.avgInstallTime,
-          criteria: service?.criteria
-        }
-        business_details_submission(messageToSendInBusinessSubmission)
+          criteria: service?.criteria,
+        };
+        business_details_submission(messageToSendInBusinessSubmission);
         if (req.file && details.businessLogo) {
           DeleteFile(`${details.businessLogo}`);
         }
         return res.json({
           data: {
             message: "businessDetails updated successfully.",
-            data: updatedDetails,service,
+            data: updatedDetails,
+            service,
             leadCost: userData?.leadCost,
           },
         });
