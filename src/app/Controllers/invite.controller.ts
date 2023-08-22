@@ -184,6 +184,8 @@ export class invitedUsersController {
         .json({ error: { message: "Something went wrong." } });
     }
   };
+
+  
 }
 
 function randomString(length: number, isSpecial: any) {

@@ -237,9 +237,11 @@ if( message.leadsHours){
       address:message?.address,
       city:message?.city,
       country:message?.country,
+      businessLogo: message?.businessLogo,
       openingHours:message?.openingHours,
       dailyLeads:message?.dailyLeads,
       leadsHours:message?.leadsHours,
+      leadApiUrl:message?.leadApiUrl,
       area:message?.area
   }
   };
