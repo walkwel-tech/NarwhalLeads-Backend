@@ -145,6 +145,9 @@ export class UsersControllers {
       if(_req.query.isArchived){
         dataToFind.isArchived=JSON.parse(isArchived?.toLowerCase())
       }
+      if (_req.query.industryId) {
+        dataToFind.businessIndustryId = new ObjectId(_req.query.industryId);
+      }
       if (_req.query.search) {
         dataToFind = {
           ...dataToFind,
@@ -184,6 +187,14 @@ export class UsersControllers {
                   as: "userLeadsDetailsId",
                 },
               },
+              // {
+              //   $lookup: {
+              //     from: "buisnessindustries",
+              //     localField: "businessIndustryId",
+              //     foreignField: "_id",
+              //     as: "businessIndustryId",
+              //   },
+              // },
               { $match: dataToFind },
 
               //@ts-ignore

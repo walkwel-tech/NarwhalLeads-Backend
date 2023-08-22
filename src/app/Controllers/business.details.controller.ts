@@ -196,10 +196,10 @@ export class BusinessDetailsController {
       if (input.accreditations) {
         input.accreditations = JSON.parse(input.accreditations);
       }
-      if (input.financeOffers && input.financeOffers == "yes") {
+      if (input.financeOffers && input.financeOffers == "Yes") {
         input.financeOffers = true;
       }
-      if (input.financeOffers && input.financeOffers == "no") {
+      if (input.financeOffers && input.financeOffers == "No") {
         input.financeOffers = false;
       }
       const service = await UserService.create(input);
@@ -349,10 +349,10 @@ export class BusinessDetailsController {
       if (input.accreditations) {
         input.accreditations = JSON.parse(input.accreditations);
       }
-      if (input.financeOffers && input.financeOffers == "yes") {
+      if (input.financeOffers && input.financeOffers == "Yes") {
         input.financeOffers = true;
       }
-      if (input.financeOffers && input.financeOffers == "no") {
+      if (input.financeOffers && input.financeOffers == "No") {
         input.financeOffers = false;
       }
       const service = await UserService.findByIdAndUpdate(
