@@ -1,7 +1,10 @@
 import { AccessToken } from "../../app/Models/AccessToken";
+import { User } from "../../app/Models/User";
 
 export const generatePDF = (ContactID:string,desc:string,amount:number) => {
+
   return new Promise(async (resolve, reject) => {
+    const industry:any=await User.findOne({xeroContactId:ContactID}).populate("businessDetailsId")
     var axios = require("axios");
     var data = JSON.stringify({
       Invoices: [
@@ -12,16 +15,17 @@ export const generatePDF = (ContactID:string,desc:string,amount:number) => {
           },
           LineItems: [
             {
-              Description: desc,
+              Description: `${industry?.businessDetailsId?.businessIndustry} - ${desc}`,
               Quantity: 1,
               UnitAmount: amount,
-              AccountCode: "200",
+              AccountCode: "214",
               LineAmount: amount,
+              LeadDepartment: industry?.businessDetailsId?.businessIndustry
             },
           ],
           Date: new Date(),
           DueDate: new Date(new Date().setDate(new Date().getDate() + 7)),
-          Reference: "Website Design",
+          Reference: "",
           Status: "AUTHORISED",
         },
       ],
