@@ -1,3 +1,5 @@
+import { SubscriberList } from "../Models/SubscriberList";
+
 const sgMail = require("@sendgrid/mail");
 sgMail.setApiKey(process.env.SENDGRID_API_KEY);
 sgMail.setSubstitutionWrappers("{{", "}}");
@@ -7,10 +9,10 @@ export function send_email_forget_password(send_to: any, message: any) {
     to: send_to, // Change to your recipient
     // to: "radhika.walkweltech@gmail.com",
 
-     from: {
+    from: {
       name: process.env.VERIFIED_SENDER_ON_SENDGRID_FROM_NAME,
-      email:  process.env.VERIFIED_SENDER_ON_SENDGRID,
-  },
+      email: process.env.VERIFIED_SENDER_ON_SENDGRID,
+    },
     // Change to your verified sender
     trackingSettings: {
       clickTracking: {
@@ -41,10 +43,10 @@ export function send_email_for_autocharge(send_to: any, message: any) {
   const msg = {
     to: send_to, /// Change to your recipient
     // to: "radhika.walkweltech@gmail.com",
-     from: {
+    from: {
       name: process.env.VERIFIED_SENDER_ON_SENDGRID_FROM_NAME,
-      email:  process.env.VERIFIED_SENDER_ON_SENDGRID,
-  },
+      email: process.env.VERIFIED_SENDER_ON_SENDGRID,
+    },
     // Change to your verified sender
     trackingSettings: {
       clickTracking: {
@@ -57,20 +59,20 @@ export function send_email_for_autocharge(send_to: any, message: any) {
     },
     // html: "<strong>and easy to do anywhere, even with Node.js</strong>",
     // templateId: "d-69dcead271404a1d8a90aab2416bdc42",
-    templateId:"d-7265bc9729b34fcb98cd0c081ddcb39f",
+    templateId: "d-7265bc9729b34fcb98cd0c081ddcb39f",
     dynamic_template_data: {
       firstName: message?.firstName,
-      lastName:message?.lastName,
+      lastName: message?.lastName,
       //@ts-ignore
-      businessName:message?.businessName,
-          //@ts-ignore
-      phone:message?.phone,
-      email:message?.email,
-      credit:`£${message?.credits}`,
+      businessName: message?.businessName,
+      //@ts-ignore
+      phone: message?.phone,
+      email: message?.email,
+      credit: `£${message?.credits}`,
       paymentAmount: `£${message?.amount}`,
-      cardNumberEnd:message?.cardNumberEnd,
-      cardHolderName:message?.cardHolderName
-  }
+      cardNumberEnd: message?.cardNumberEnd,
+      cardHolderName: message?.cardHolderName,
+    },
   };
 
   sgMail
@@ -87,10 +89,10 @@ export function send_email_for_failed_autocharge(send_to: any, message: any) {
   const msg = {
     to: send_to, // Change to your recipient
     // to: "radhika.walkweltech@gmail.com",
-     from: {
+    from: {
       name: process.env.VERIFIED_SENDER_ON_SENDGRID_FROM_NAME,
-      email:  process.env.VERIFIED_SENDER_ON_SENDGRID,
-  },
+      email: process.env.VERIFIED_SENDER_ON_SENDGRID,
+    },
     // Change to your verified sender
     trackingSettings: {
       clickTracking: {
@@ -103,20 +105,20 @@ export function send_email_for_failed_autocharge(send_to: any, message: any) {
     },
     // html: "<strong>and easy to do anywhere, even with Node.js</strong>",
     // templateId: "d-5ec8ce254e7d4fb08db52f7bbecac652",
-    templateId:"d-3bf15874bf854794b411dc470699bc6b",
+    templateId: "d-3bf15874bf854794b411dc470699bc6b",
     dynamic_template_data: {
       firstName: message?.firstName,
-      lastName:message?.lastName,
+      lastName: message?.lastName,
       //@ts-ignore
-      businessName:message?.businessName,
-          //@ts-ignore
-      phone:message?.phone,
-      email:message?.email,
-      credit:`£${message?.credits}`,
+      businessName: message?.businessName,
+      //@ts-ignore
+      phone: message?.phone,
+      email: message?.email,
+      credit: `£${message?.credits}`,
       paymentAmount: `£${message?.amount}`,
-      cardNumberEnd:message?.cardNumberEnd,
-      cardHolderName:message?.cardHolderName
-  }
+      cardNumberEnd: message?.cardNumberEnd,
+      cardHolderName: message?.cardHolderName,
+    },
   };
 
   sgMail
@@ -133,10 +135,10 @@ export function send_email_for_registration(send_to: any, message: any) {
   const msg = {
     to: send_to, // Change to your recipient
     // to: "radhika.walkweltech@gmail.com",
-     from: {
+    from: {
       name: process.env.VERIFIED_SENDER_ON_SENDGRID_FROM_NAME,
-      email:  process.env.VERIFIED_SENDER_ON_SENDGRID,
-  },
+      email: process.env.VERIFIED_SENDER_ON_SENDGRID,
+    },
     // Change to your verified sender
     trackingSettings: {
       clickTracking: {
@@ -167,10 +169,10 @@ export function send_email_for_add_credits(send_to: any, message: any) {
   const msg = {
     to: send_to, // Change to your recipient
     // to: "radhika.walkweltech@gmail.com",
-     from: {
+    from: {
       name: process.env.VERIFIED_SENDER_ON_SENDGRID_FROM_NAME,
-      email:  process.env.VERIFIED_SENDER_ON_SENDGRID,
-  },
+      email: process.env.VERIFIED_SENDER_ON_SENDGRID,
+    },
     // Change to your verified sender
     trackingSettings: {
       clickTracking: {
@@ -181,11 +183,11 @@ export function send_email_for_add_credits(send_to: any, message: any) {
         enable: false,
       },
     },
-    templateId:"d-3045292d88954e578d2ba9a875724b90",
-    dynamic_template_data: { 
+    templateId: "d-3045292d88954e578d2ba9a875724b90",
+    dynamic_template_data: {
       firstName: message?.firstName,
-      credits:`£${message?.credits}`,
-     },
+      credits: `£${message?.credits}`,
+    },
   };
 
   sgMail
@@ -198,22 +200,23 @@ export function send_email_for_add_credits(send_to: any, message: any) {
     });
 }
 
-export function send_email_for_new_registration(message: any) {
-if(message.openingHours){
-    message.openingHours = mapHours(message.openingHours)
-
-}
-if( message.leadsHours){
-    message.leadsHours = mapHours(message.leadsHours)
-
-}
+export async function send_email_for_new_registration(message: any) {
+  if (message.openingHours) {
+    message.openingHours = mapHours(message.openingHours);
+  }
+  if (message.leadsHours) {
+    message.leadsHours = mapHours(message.leadsHours);
+  }
+  let Subscriber: string[] = ["leads@nmg.group"];
+  const data = await SubscriberList.find();
+  data.map((i) => Subscriber.push(i.email));
   const msg = {
-    to: "leads@nmg.group", // Change to your recipient
-// to: "radhika.walkweltech@gmail.com",    // to:message.email,
-     from: {
+    // to: "leads@nmg.group", // Change to your recipient
+    to: Subscriber,
+    from: {
       name: process.env.VERIFIED_SENDER_ON_SENDGRID_FROM_NAME,
-      email:  process.env.VERIFIED_SENDER_ON_SENDGRID,
-  },
+      email: process.env.VERIFIED_SENDER_ON_SENDGRID,
+    },
     // Change to your verified sender
     trackingSettings: {
       clickTracking: {
@@ -224,29 +227,31 @@ if( message.leadsHours){
         enable: false,
       },
     },
+    isMultiple :true,
+
     // html: "<strong>and easy to do anywhere, even with Node.js</strong>",
     // templateId: "d-4fffc73a3ca34d69a10b68d02c4b8c22",
-    templateId:"d-5871c5d48a8f477bb025a29961a17ebc",
+    templateId: "d-5871c5d48a8f477bb025a29961a17ebc",
     dynamic_template_data: {
-      firstName:message?.firstName,
-      lastName:message?.lastName,
-      businessName:message?.businessName,
-      phone:message?.phone,
-      email:message?.email,
-      industry:message?.industry,
-      address:message?.address,
-      city:message?.city,
-      country:message?.country,
+      firstName: message?.firstName,
+      lastName: message?.lastName,
+      businessName: message?.businessName,
+      phone: message?.phone,
+      email: message?.email,
+      industry: message?.industry,
+      address: message?.address,
+      city: message?.city,
+      country: message?.country,
       businessLogo: message?.businessLogo,
-      openingHours:message?.openingHours,
-      dailyLeads:message?.dailyLeads,
-      leadsHours:message?.leadsHours,
-      leadApiUrl:message?.leadApiUrl,
-      area:message?.area
-  }
+      openingHours: message?.openingHours,
+      dailyLeads: message?.dailyLeads,
+      leadsHours: message?.leadsHours,
+      leadApiUrl: message?.leadApiUrl,
+      area: message?.area,
+    },
   };
   sgMail
-    .send(msg)
+    .sendMultiple(msg)
     .then(() => {
       console.log("Email sent");
     })
@@ -260,8 +265,8 @@ export function send_email_to_invited_user(send_to: string, message: any) {
     to: send_to, // Change to your recipient
     from: {
       name: process.env.VERIFIED_SENDER_ON_SENDGRID_FROM_NAME,
-      email:  process.env.VERIFIED_SENDER_ON_SENDGRID,
-  },
+      email: process.env.VERIFIED_SENDER_ON_SENDGRID,
+    },
     // Change to your verified sender
     trackingSettings: {
       clickTracking: {
@@ -274,12 +279,12 @@ export function send_email_to_invited_user(send_to: string, message: any) {
     },
     // html: "<strong>and easy to do anywhere, even with Node.js</strong>",
     // templateId: "d-dad1bae4e3454fa8afea119f9de08b45",
-    templateId:"d-36df0c800ea548218686a17005b78c6c",
+    templateId: "d-36df0c800ea548218686a17005b78c6c",
     dynamic_template_data: {
       name: message.name,
       password: message.password,
-      businessName:message.businessName,
-  }
+      businessName: message.businessName,
+    },
   };
 
   sgMail
@@ -293,14 +298,13 @@ export function send_email_to_invited_user(send_to: string, message: any) {
 }
 
 export function send_email_for_new_lead(send_to: string, message: any) {
-  
   const msg = {
     to: send_to, // Change to your recipient
     // to: "radhika.walkweltech@gmail.com",
-     from: {
+    from: {
       name: process.env.VERIFIED_SENDER_ON_SENDGRID_FROM_NAME,
-      email:  process.env.VERIFIED_SENDER_ON_SENDGRID,
-  },
+      email: process.env.VERIFIED_SENDER_ON_SENDGRID,
+    },
     // Change to your verified sender
     trackingSettings: {
       clickTracking: {
@@ -314,13 +318,13 @@ export function send_email_for_new_lead(send_to: string, message: any) {
     // html: "<strong>and easy to do anywhere, even with Node.js</strong>",
     // templateId: "d-ca4e694d81ce4b3c8738b304a7a2368e",
     templateId: "d-ee68c14cdeb143e487467d8f3224c781",
-    dynamic_template_data:{
-      userName:message.userName,
-      firstName:message.firstName,
-        lastName: message.lastName,
-        phone: message.phone,
-        email: message.email
-  }
+    dynamic_template_data: {
+      userName: message.userName,
+      firstName: message.firstName,
+      lastName: message.lastName,
+      phone: message.phone,
+      email: message.email,
+    },
   };
 
   sgMail
@@ -338,9 +342,9 @@ export function send_email_for_new_lead(send_to: string, message: any) {
 //     // to: "leads@nmg.group", // Change to your recipient
 //     to: "radhika.walkweltech@gmail.com",
 //      from: {
-  //     name: process.env.VERIFIED_SENDER_ON_SENDGRID_FROM_NAME,
-  //     email:  process.env.VERIFIED_SENDER_ON_SENDGRID,
-  // },
+//     name: process.env.VERIFIED_SENDER_ON_SENDGRID_FROM_NAME,
+//     email:  process.env.VERIFIED_SENDER_ON_SENDGRID,
+// },
 //     // Change to your verified sender
 //     trackingSettings: {
 //       clickTracking: {
@@ -374,10 +378,10 @@ export function send_email_for_total_lead(send_to: string, message: any) {
   const msg = {
     to: send_to, // Change to your recipient
     // to: "radhika.walkweltech@gmail.com",
-     from: {
+    from: {
       name: process.env.VERIFIED_SENDER_ON_SENDGRID_FROM_NAME,
-      email:  process.env.VERIFIED_SENDER_ON_SENDGRID,
-  },
+      email: process.env.VERIFIED_SENDER_ON_SENDGRID,
+    },
     // Change to your verified sender
     trackingSettings: {
       clickTracking: {
@@ -410,10 +414,10 @@ export function send_email_for_lead_status(send_to: string, message: any) {
   const msg = {
     to: send_to, // Change to your recipient
     // to: "radhika.walkweltech@gmail.com",
-     from: {
+    from: {
       name: process.env.VERIFIED_SENDER_ON_SENDGRID_FROM_NAME,
-      email:  process.env.VERIFIED_SENDER_ON_SENDGRID,
-  },
+      email: process.env.VERIFIED_SENDER_ON_SENDGRID,
+    },
     // Change to your verified sender
     trackingSettings: {
       clickTracking: {
@@ -443,34 +447,41 @@ export function send_email_for_lead_status(send_to: string, message: any) {
 }
 
 const mapHours = (hours: any) => {
-  if(hours.openingHours){
-      hours.openingHours = hours?.openingHours?.map((item: any,idx:number) => {
-    const days = ["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"]
-    if(item.day === ""){
-      item.day = days[idx]
-    }
-    return item
-  });
+  if (hours.openingHours) {
+    hours.openingHours = hours?.openingHours?.map((item: any, idx: number) => {
+      const days = [
+        "Monday",
+        "Tuesday",
+        "Wednesday",
+        "Thursday",
+        "Friday",
+        "Saturday",
+        "Sunday",
+      ];
+      if (item.day === "") {
+        item.day = days[idx];
+      }
+      return item;
+    });
   }
 
-  return hours || []
-}
+  return hours || [];
+};
 
 export function send_email_for_updated_details(message: any) {
-  if(message.openingHours){
-      message.openingHours = mapHours(message.openingHours)
+  if (message.openingHours) {
+    message.openingHours = mapHours(message.openingHours);
   }
-  if(message.leadsHours){
-      message.leadsHours = mapHours(message.leadsHours)
+  if (message.leadsHours) {
+    message.leadsHours = mapHours(message.leadsHours);
+  }
 
-  }
-  
   const msg = {
     to: "leads@nmg.group", // Change to your recipient
-     from: {
+    from: {
       name: process.env.VERIFIED_SENDER_ON_SENDGRID_FROM_NAME,
-      email:  process.env.VERIFIED_SENDER_ON_SENDGRID,
-  },
+      email: process.env.VERIFIED_SENDER_ON_SENDGRID,
+    },
     // Change to your verified sender
     trackingSettings: {
       clickTracking: {
@@ -483,26 +494,25 @@ export function send_email_for_updated_details(message: any) {
     },
     // html: "<strong>and easy to do anywhere, even with Node.js</strong>",
     // templateId: "d-ee02048102ac4a2eb4e7f48a8527ea32",
-    templateId:"d-1ee9557d980d454cb250643d201308b6",
+    templateId: "d-1ee9557d980d454cb250643d201308b6",
     dynamic_template_data: {
-      firstName:message?.firstName,
-      lastName:message?.lastName,
-      businessName:message?.businessName,
-      phone:message?.phone,
-      email:message?.email,
-      industry:message?.industry,
-      address:message?.address,
-      city:message?.city,
-      country:message?.country,
-      openingHours:message?.openingHours,
-      totalLeads:message?.totalLeads,
-      monthlyLeads:message?.monthlyLeads,
-      weeklyLeads:message?.weeklyLeads,
-      dailyLeads:message?.dailyLeads,
-      leadsHours:message?.leadsHours,
-      area:message?.area
-    }
-
+      firstName: message?.firstName,
+      lastName: message?.lastName,
+      businessName: message?.businessName,
+      phone: message?.phone,
+      email: message?.email,
+      industry: message?.industry,
+      address: message?.address,
+      city: message?.city,
+      country: message?.country,
+      openingHours: message?.openingHours,
+      totalLeads: message?.totalLeads,
+      monthlyLeads: message?.monthlyLeads,
+      weeklyLeads: message?.weeklyLeads,
+      dailyLeads: message?.dailyLeads,
+      leadsHours: message?.leadsHours,
+      area: message?.area,
+    },
   };
   sgMail
     .send(msg)
@@ -510,7 +520,6 @@ export function send_email_for_updated_details(message: any) {
       console.log("Email sent");
     })
     .catch((error: any) => {
-      
       console.error(error);
     });
 }
@@ -519,10 +528,10 @@ export function send_email_for_payment_success(send_to: any, message: any) {
   const msg = {
     to: send_to, // Change to your recipient
     // to: "radhika.walkweltech@gmail.com",
-     from: {
+    from: {
       name: process.env.VERIFIED_SENDER_ON_SENDGRID_FROM_NAME,
-      email:  process.env.VERIFIED_SENDER_ON_SENDGRID,
-  },
+      email: process.env.VERIFIED_SENDER_ON_SENDGRID,
+    },
     // Change to your verified sender
     trackingSettings: {
       clickTracking: {
@@ -535,14 +544,14 @@ export function send_email_for_payment_success(send_to: any, message: any) {
     },
     // html: "<strong>and easy to do anywhere, even with Node.js</strong>",
     // templateId: "d-69dcead271404a1d8a90aab2416bdc42",
-    templateId:"d-7265bc9729b34fcb98cd0c081ddcb39f",
+    templateId: "d-7265bc9729b34fcb98cd0c081ddcb39f",
     dynamic_template_data: {
       firstName: message?.firstName,
-      credit:`£${message?.credits}`,
+      credit: `£${message?.credits}`,
       paymentAmount: `£${message?.amount}`,
-      cardNumberEnd:message?.cardNumberEnd,
-      cardHolderName:message?.cardHolderName
-  }
+      cardNumberEnd: message?.cardNumberEnd,
+      cardHolderName: message?.cardHolderName,
+    },
   };
 
   sgMail
@@ -559,10 +568,10 @@ export function send_email_for_payment_failure(send_to: any, message: any) {
   const msg = {
     to: send_to, // Change to your recipient
     // to: "radhika.walkweltech@gmail.com",
-     from: {
+    from: {
       name: process.env.VERIFIED_SENDER_ON_SENDGRID_FROM_NAME,
-      email:  process.env.VERIFIED_SENDER_ON_SENDGRID,
-  },
+      email: process.env.VERIFIED_SENDER_ON_SENDGRID,
+    },
     // Change to your verified sender
     trackingSettings: {
       clickTracking: {
@@ -575,14 +584,14 @@ export function send_email_for_payment_failure(send_to: any, message: any) {
     },
     // html: "<strong>and easy to do anywhere, even with Node.js</strong>",
     // templateId: "d-69dcead271404a1d8a90aab2416bdc42",
-    templateId:"d-3bf15874bf854794b411dc470699bc6b ",
+    templateId: "d-3bf15874bf854794b411dc470699bc6b ",
     dynamic_template_data: {
       firstName: message?.firstName,
-      credit:`£${message?.credits}`,
+      credit: `£${message?.credits}`,
       paymentAmount: `£${message?.amount}`,
-      cardNumberEnd:message?.cardNumberEnd,
-      cardHolderName:message?.cardHolderName
-  }
+      cardNumberEnd: message?.cardNumberEnd,
+      cardHolderName: message?.cardHolderName,
+    },
   };
 
   sgMail
@@ -595,14 +604,14 @@ export function send_email_for_payment_failure(send_to: any, message: any) {
     });
 }
 
-export function send_email_for_payment_success_to_admin( message: any) {
+export function send_email_for_payment_success_to_admin(message: any) {
   const msg = {
     to: "leads@nmg.group", // Change to your recipient
     // to: "radhika.walkweltech@gmail.com",
-     from: {
+    from: {
       name: process.env.VERIFIED_SENDER_ON_SENDGRID_FROM_NAME,
-      email:  process.env.VERIFIED_SENDER_ON_SENDGRID,
-  },
+      email: process.env.VERIFIED_SENDER_ON_SENDGRID,
+    },
     // Change to your verified sender
     trackingSettings: {
       clickTracking: {
@@ -615,14 +624,14 @@ export function send_email_for_payment_success_to_admin( message: any) {
     },
     // html: "<strong>and easy to do anywhere, even with Node.js</strong>",
     // templateId: "d-69dcead271404a1d8a90aab2416bdc42",
-    templateId:"d-f341f49885964b52a0523e1e083aa2d7",
+    templateId: "d-f341f49885964b52a0523e1e083aa2d7",
     dynamic_template_data: {
       firstName: message?.firstName,
-      credit:`£${message?.credits}`,
+      credit: `£${message?.credits}`,
       paymentAmount: `£${message?.amount}`,
-      cardNumberEnd:message?.cardNumberEnd,
-      cardHolderName:message?.cardHolderName
-  }
+      cardNumberEnd: message?.cardNumberEnd,
+      cardHolderName: message?.cardHolderName,
+    },
   };
 
   sgMail
