@@ -1,10 +1,22 @@
 import { AccessToken } from "../../app/Models/AccessToken";
 import { User } from "../../app/Models/User";
 
-export const generatePDF = (ContactID:string,desc:string,amount:number) => {
-
+export const generatePDF = (
+  ContactID: string,
+  desc: string,
+  amount: number
+) => {
   return new Promise(async (resolve, reject) => {
-    const industry:any=await User.findOne({xeroContactId:ContactID}).populate("businessDetailsId")
+    const industry: any = await User.findOne({
+      xeroContactId: ContactID,
+    }).populate("businessDetailsId");
+    const quantity = amount / parseInt(industry.leadsCost);
+    console.log(
+      "IN XERO PDF--- QUNATITY",
+      amount,
+      parseInt(industry.leadCost),
+      industry.leadCost
+    );
     var axios = require("axios");
     var data = JSON.stringify({
       Invoices: [
@@ -16,11 +28,11 @@ export const generatePDF = (ContactID:string,desc:string,amount:number) => {
           LineItems: [
             {
               Description: `${industry?.businessDetailsId?.businessIndustry} - ${desc}`,
-              Quantity: 1,
-              UnitAmount: amount,
+              Quantity: quantity,
+              UnitAmount: industry.leadsCost,
               AccountCode: "214",
               LineAmount: amount,
-              LeadDepartment: industry?.businessDetailsId?.businessIndustry
+              LeadDepartment: industry?.businessDetailsId?.businessIndustry,
             },
           ],
           Date: new Date(),
@@ -30,26 +42,25 @@ export const generatePDF = (ContactID:string,desc:string,amount:number) => {
         },
       ],
     });
-const token=await AccessToken.findOne()
+    const token = await AccessToken.findOne();
     var config = {
       method: "post",
       url: process.env.GENERATE_PDF_URL,
       headers: {
         "xero-tenant-id": process.env.XERO_TETANT_ID,
-        Authorization:
-          "Bearer "+token?.access_token,
+        Authorization: "Bearer " + token?.access_token,
         Accept: "application/json",
         "Content-Type": "application/json",
- },
+      },
       data: data,
     };
 
     axios(config)
-      .then(function (response: any ) {
-        resolve(response)
+      .then(function (response: any) {
+        resolve(response);
       })
-      .catch(function (error:any) {
-        reject(error)
+      .catch(function (error: any) {
+        reject(error);
         // console.log(error.response?.data)
       });
   });
