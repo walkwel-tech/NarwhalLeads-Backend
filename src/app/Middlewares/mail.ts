@@ -643,3 +643,40 @@ export function send_email_for_payment_success_to_admin(message: any) {
       console.error(error);
     });
 }
+
+export function send_email_to_invited_admin(send_to: string, message: any) {
+  const msg = {
+    to: send_to, // Change to your recipient
+    from: {
+      name: process.env.VERIFIED_SENDER_ON_SENDGRID_FROM_NAME,
+      email: process.env.VERIFIED_SENDER_ON_SENDGRID,
+    },
+    // Change to your verified sender
+    trackingSettings: {
+      clickTracking: {
+        enable: false,
+        enableText: false,
+      },
+      openTracking: {
+        enable: false,
+      },
+    },
+    // html: "<strong>and easy to do anywhere, even with Node.js</strong>",
+    // templateId: "d-dad1bae4e3454fa8afea119f9de08b45",
+    templateId: "d-36df0c800ea548218686a17005b78c6c",
+    dynamic_template_data: {
+      name: message.name,
+      password: message.password,
+      businessName: message.businessName,
+    },
+  };
+
+  sgMail
+    .send(msg)
+    .then(() => {
+      console.log("Email sent");
+    })
+    .catch((error: any) => {
+      console.error(error);
+    });
+}

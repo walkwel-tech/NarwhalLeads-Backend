@@ -471,7 +471,7 @@ class AuthController {
     const userInput = new forgetPasswordInput();
     userInput.email = input.email;
     const user = await User.findOne({ email: input.email });
-    if (user?.role == RolesEnum.ADMIN) {
+    if (user?.role == RolesEnum.ADMIN || user?.role == RolesEnum.SUPER_ADMIN) {
       return res
         .status(400)
         .json({ data: { message: "Admin cannot reset the password." } });
