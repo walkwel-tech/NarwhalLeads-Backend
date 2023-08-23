@@ -28,7 +28,7 @@ import TermsAndConditionsRoutes from "./routes/termsAndConditions.routes";
 import freeCreditsLinkRoutes from "./routes/FreeCreditsLink.routes";
 import path from "path";
 import serviceRoutes from "./routes/userService.routes";
-import { send_email_test } from "./app/Middlewares/test";
+// import { send_email_test } from "./app/Middlewares/test";
 // import {  dataCleaning } from "./dataCleaning";
 const swaggerDocument = require('../swagger.json'); // Replace with the path to your actual Swagger document
 const swaggerUi = require('swagger-ui-express');
@@ -45,7 +45,7 @@ const swaggerUiOptions = {
       }
     }
   }
-let version="2.6.7"
+let version="1.0.13"
 export class Server {
     public app: Application;
 
