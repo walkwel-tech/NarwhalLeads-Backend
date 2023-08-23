@@ -12,6 +12,10 @@ invites.delete('/:id',Auth, invitedUsersController.delete);
 invites.patch('/:id',Auth, invitedUsersController.update);
 invites.post('/:id',Auth, invitedUsersController.update);
 invites.get('/subscriber',Auth, invitedUsersController.indexSubscriber);
+invites.post('/admin',Auth, invitedUsersController.addAdmins);
+invites.delete('/admin/:id',Auth, invitedUsersController.deleteAdmin);
+invites.get('/admin',Auth, invitedUsersController.indexAdmin);
+
 
 
 
