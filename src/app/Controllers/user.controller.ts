@@ -133,7 +133,7 @@ export class UsersControllers {
           : 0) * perPage;
 
       let dataToFind: any = {
-        role: { $nin: [RolesEnum.ADMIN, RolesEnum.INVITED] },
+        role: { $nin: [RolesEnum.ADMIN, RolesEnum.INVITED, RolesEnum.SUPER_ADMIN] },
         // role:{$ne: RolesEnum.INVITED },
         isDeleted: false,
         isArchived: JSON.parse(isArchived?.toLowerCase()),
@@ -144,6 +144,9 @@ export class UsersControllers {
       }
       if(_req.query.isArchived){
         dataToFind.isArchived=JSON.parse(isArchived?.toLowerCase())
+      }
+      if (_req.query.industryId) {
+        dataToFind.businessIndustryId = new ObjectId(_req.query.industryId);
       }
       if (_req.query.search) {
         dataToFind = {
@@ -184,6 +187,14 @@ export class UsersControllers {
                   as: "userLeadsDetailsId",
                 },
               },
+              // {
+              //   $lookup: {
+              //     from: "buisnessindustries",
+              //     localField: "businessIndustryId",
+              //     foreignField: "_id",
+              //     as: "businessIndustryId",
+              //   },
+              // },
               { $match: dataToFind },
 
               //@ts-ignore
@@ -337,7 +348,7 @@ export class UsersControllers {
   static indexName = async (req: Request, res: Response): Promise<Response> => {
     try {
       const user = await User.find(
-        { role: { $nin: [RolesEnum.ADMIN, RolesEnum.INVITED] } , isArchived:false},
+        { role: { $nin: [RolesEnum.ADMIN, RolesEnum.INVITED,RolesEnum.SUPER_ADMIN] } , isArchived:false},
         "firstName lastName email buyerId"
       ).sort("firstName")
       ;
@@ -420,7 +431,7 @@ export class UsersControllers {
         !cardExist &&
         input.credits &&
         //@ts-ignore
-        (req?.user.role == RolesEnum.USER || req?.user.role == RolesEnum.ADMIN)
+        (req?.user.role == RolesEnum.USER || req?.user.role == RolesEnum.ADMIN || req?.user.role == RolesEnum.SUPER_ADMIN)
       ) {
         return res
           .status(404)
@@ -593,7 +604,7 @@ export class UsersControllers {
         );
       }
       // @ts-ignore
-      if (input.credits && req?.user.role == RolesEnum.ADMIN) {
+      if (input.credits && (req?.user.role == RolesEnum.ADMIN || req?.user.role == RolesEnum.SUPER_ADMIN )) {
         const params: any = {
           fixedAmount: input.credits,
           email: checkUser?.email,
@@ -816,7 +827,7 @@ export class UsersControllers {
       sortingOrder = -1;
     }
     try {
-      let dataToFind: any = {  role:{$nin: [RolesEnum.ADMIN, RolesEnum.INVITED]},  isDeleted: false, };
+      let dataToFind: any = {  role:{$nin: [RolesEnum.ADMIN, RolesEnum.INVITED,RolesEnum.SUPER_ADMIN]},  isDeleted: false, };
       if(_req.query.invited){
         dataToFind.role={$nin: [RolesEnum.ADMIN]}
       }

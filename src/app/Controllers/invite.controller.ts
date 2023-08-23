@@ -4,6 +4,8 @@ import { RolesEnum } from "../../types/RolesEnum";
 import { send_email_to_invited_user } from "../Middlewares/mail";
 import { LeadTablePreference } from "../Models/LeadTablePreference";
 import { User } from "../Models/User";
+import { SubscriberList } from "../Models/SubscriberList";
+import { Admins } from "../Models/Admins";
 
 const LIMIT = 10;
 export class invitedUsersController {
@@ -182,6 +184,168 @@ export class invitedUsersController {
       return res
         .status(500)
         .json({ error: { message: "Something went wrong." } });
+    }
+  };
+
+  static addSubscribers = async (_req: Request, res: Response) => {
+    const input = _req.body;
+
+    try {
+   const data=await SubscriberList.find({email:input.email})
+   if(data.length>0){
+    return res.status(400).json({error:{message:"Subscriber already exist"}})
+   }
+   else{
+   const data= await SubscriberList.create(input)
+   return res.json({data:data})
+   }
+    } catch (error) {
+      return res
+        .status(500)
+        .json({ error: { message: "Something went wrong." ,error} });
+    }
+  };
+
+  static deleteSubscriber = async (_req: Request, res: Response) => {
+    //@ts-ignore
+    const id = _req.params.id;
+
+    try {
+      const invitedUsers = await SubscriberList.find({
+        _id: id,
+        isDeleted: false,
+      });
+
+      if (invitedUsers.length == 0) {
+        return res.status(400).json({ error: { message: "No Subscriber Found" } });
+      } else {
+        await SubscriberList.findByIdAndUpdate(id, { isDeleted: true });
+        return res.json({ data: { message: "Subscriber Deleted!" } });
+      }
+    } catch (error) {
+      return res
+        .status(500)
+        .json({ error: { message: "Something went wrong." } });
+    }
+  };
+
+  static indexSubscriber = async (_req: Request, res: Response) => {
+    //@ts-ignore
+    const user = _req.user?._id;
+    //@ts-ignore
+    const perPage = _req.query && _req.query.perPage > 0 ? parseInt(_req.query.perPage) : LIMIT;
+          //@ts-ignore
+    let skip = (_req.query && _req.query.page > 0 ? parseInt(_req.query.page) - 1 : 0) * perPage;
+      let dataToFind: any = {
+        isDeleted: false,
+        // isActive: JSON.parse(isActive?.toLowerCase()),
+      };
+      if (_req.query.search) {
+        dataToFind = {
+          ...dataToFind,
+          $or: [
+            //$options : 'i' used for case insensitivity search
+            { email: { $regex: _req.query.search, $options: "i" } },
+            { firstName: { $regex: _req.query.search, $options: "i" } },
+            { lastName: { $regex: _req.query.search, $options: "i" } },
+          ],
+        };
+        skip = 0;
+      }
+    try {
+      const invitedUsers = await SubscriberList.find(dataToFind).sort({createdAt:-1}).skip(skip).limit(perPage);
+
+      // if (invitedUsers.length == 0) {
+        // return res.json({ error: { message: "No Data Found" } });
+      // } else {
+        return res.json({ data: invitedUsers });
+      // }
+    } catch (error) {
+      return res
+        .status(500)
+        .json({ error: { message: "Something went wrong." ,error} });
+    }
+  };
+
+  static addAdmins = async (_req: Request, res: Response) => {
+    const input = _req.body;
+
+    try {
+   const data=await Admins.find({email:input.email})
+   if(data.length>0){
+    return res.status(400).json({error:{message:"Admin already exist"}})
+   }
+   else{
+    // const data={}
+    // send_email_to_invited_admin(input.email,{})
+   const data= await Admins.create(input)
+   return res.json({data:data})
+   }
+    } catch (error) {
+      return res
+        .status(500)
+        .json({ error: { message: "Something went wrong." ,error} });
+    }
+  };
+
+  static deleteAdmin = async (_req: Request, res: Response) => {
+    //@ts-ignore
+    const id = _req.params.id;
+
+    try {
+      const invitedUsers = await Admins.find({
+        _id: id,
+        isDeleted: false,
+      });
+
+      if (invitedUsers.length == 0) {
+        return res.status(400).json({ error: { message: "No Admin Found" } });
+      } else {
+        await Admins.findByIdAndUpdate(id, { isDeleted: true });
+        return res.json({ data: { message: "Admin Deleted!" } });
+      }
+    } catch (error) {
+      return res
+        .status(500)
+        .json({ error: { message: "Something went wrong." } });
+    }
+  };
+
+  static indexAdmin = async (_req: Request, res: Response) => {
+    //@ts-ignore
+    const user = _req.user?._id;
+    //@ts-ignore
+    const perPage = _req.query && _req.query.perPage > 0 ? parseInt(_req.query.perPage) : LIMIT;
+          //@ts-ignore
+    let skip = (_req.query && _req.query.page > 0 ? parseInt(_req.query.page) - 1 : 0) * perPage;
+      let dataToFind: any = {
+        isDeleted: false,
+        // isActive: JSON.parse(isActive?.toLowerCase()),
+      };
+      if (_req.query.search) {
+        dataToFind = {
+          ...dataToFind,
+          $or: [
+            //$options : 'i' used for case insensitivity search
+            { email: { $regex: _req.query.search, $options: "i" } },
+            { firstName: { $regex: _req.query.search, $options: "i" } },
+            { lastName: { $regex: _req.query.search, $options: "i" } },
+          ],
+        };
+        skip = 0;
+      }
+    try {
+      const invitedUsers = await Admins.find(dataToFind).sort({createdAt:-1}).skip(skip).limit(perPage);
+
+      // if (invitedUsers.length == 0) {
+        // return res.json({ error: { message: "No Data Found" } });
+      // } else {
+        return res.json({ data: invitedUsers });
+      // }
+    } catch (error) {
+      return res
+        .status(500)
+        .json({ error: { message: "Something went wrong." ,error} });
     }
   };
 
