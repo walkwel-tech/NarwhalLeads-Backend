@@ -423,7 +423,7 @@ if(!industry){
       if (
         lead?.status != leadsStatusEnums.REPORTED &&
         //@ts-ignore
-        req.user.role === RolesEnum.ADMIN &&
+       ( req.user.role === RolesEnum.ADMIN || req.user.role == RolesEnum.SUPER_ADMIN )&&
         (input.status == leadsStatusEnums.REPORT_ACCEPTED ||
           input.status == leadsStatusEnums.REPORT_REJECTED)
       ) {
@@ -448,7 +448,7 @@ if(!industry){
 
       if (
         //@ts-ignore
-        req.user.role === RolesEnum.ADMIN &&
+        (req.user.role === RolesEnum.ADMIN || req.user.role === RolesEnum.SUPER_ADMIN) && 
         input.status == leadsStatusEnums.REPORT_REJECTED
       ) {
         const leadUser: any = await User.findOne({ buyerId: lead?.bid });
@@ -464,7 +464,7 @@ if(!industry){
       }
       if (
         //@ts-ignore
-        req.user.role === RolesEnum.ADMIN &&
+        (req.user.role === RolesEnum.ADMIN || req.user.role === RolesEnum.SUPER_ADMIN) &&
         input.status == leadsStatusEnums.REPORT_ACCEPTED
       ) {
         const user = await User.findOne({ buyerId: lead?.bid });
