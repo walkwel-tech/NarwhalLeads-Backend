@@ -35,16 +35,16 @@ const swaggerUi = require('swagger-ui-express');
 
 const swaggerUiOptions = {
     swaggerOptions: {
-      basicAuth: {
-        name:   'Authorization',
-        schema: {
-          type: 'basic',
-          in:   'header'
-        },
-        value:  'Basic admin:secret@7'
-      }
+        basicAuth: {
+            name:   'Authorization',
+            schema: {
+                type: 'basic',
+                in:   'header'
+            },
+            value:  'Basic admin:secret@7'
+        }
     }
-  }
+}
 let version="1.0.13"
 export class Server {
     public app: Application;
@@ -58,7 +58,7 @@ export class Server {
         this.registerMiddlewares();
         this.initializePassportAndStrategies();
         this.regsiterRoutes();
-      
+
 
         connectDatabase();
         // this.start()
@@ -74,7 +74,7 @@ export class Server {
         this.app.use(cors());
         this.app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument,swaggerUiOptions));
 
-       
+
     }
 
     regsiterRoutes() {
@@ -84,7 +84,7 @@ export class Server {
         //     console.log("---------------------")
         //     res.sendFile(path.join(__dirname, "../build", "index.html"));
         //   });
-       
+
         this.app.use("/api/v1/auth", AuthRoutes);
         this.app.use("/api/v1/auth/business",BusinessDetailsRoutes)
         this.app.use("/api/v1/profile", Auth, ProfileRoutes);
