@@ -196,6 +196,9 @@ export class BusinessDetailsController {
       if (input.accreditations) {
         input.accreditations = JSON.parse(input.accreditations);
       }
+      if (input.accreditations=="") {
+     delete input.accreditations 
+      }
       if (input.financeOffers && input.financeOffers == "Yes") {
         input.financeOffers = true;
       }
@@ -349,6 +352,9 @@ export class BusinessDetailsController {
       if (input.accreditations) {
         input.accreditations = JSON.parse(input.accreditations);
       }
+      if (input.accreditations=="") {
+        delete input.accreditations 
+         }
       if (input.financeOffers && input.financeOffers == "Yes") {
         input.financeOffers = true;
       }
