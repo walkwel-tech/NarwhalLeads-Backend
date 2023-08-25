@@ -10,6 +10,10 @@ const AdminSchema = new Schema({
         type: String,
         required: true,
     },
+    password: {
+        type: String,
+        required: true,
+    },
     email: {
         type: String,
         required: true,
@@ -21,6 +25,10 @@ const AdminSchema = new Schema({
     isDeleted:{
         type:Boolean,
         default:false
+    },
+    isActive:{
+        type:Boolean,
+        default:true
     }
 }, {timestamps: true});
 

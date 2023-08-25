@@ -30,6 +30,7 @@ import { ClientTablePreference } from "../Models/ClientTablePrefrence";
 import { clientTablePreference } from "../../utils/constantFiles/clientTablePreferenceAdmin";
 import { LeadTablePreference } from "../Models/LeadTablePreference";
 import { leadsTablePreference } from "../../utils/constantFiles/leadsTablePreferenceAdmin";
+import { Admins } from "../Models/Admins";
 const fs = require("fs");
 class AuthController {
   static register = async (req: Request, res: Response): Promise<any> => {
@@ -234,8 +235,15 @@ class AuthController {
         .populate("businessDetailsId")
         .populate("userLeadsDetailsId")
         .populate("invitedById");
+        const existsAdmin = await Admins.findById(user?.id, "-password")
+        .populate("businessDetailsId")
+        .populate("userLeadsDetailsId")
+        .populate("invitedById");
       if (exists) {
         return res.json({ data: exists });
+      }
+      else if(existsAdmin){
+        return res.json({ data: existsAdmin });
       }
       return res.json({ data: "User not exists" });
     } catch (error) {
@@ -277,7 +285,7 @@ class AuthController {
           return res.status(401).json({
             error: { message: "User not active.Please contact admin." },
           });
-        } else if (!user.isVerified) {
+        } else if (!user.isVerified && user.role===RolesEnum.USER) {
           return res.status(401).json({
             error: {
               message: "User not verified.Please verify your account",
@@ -642,9 +650,12 @@ class AuthController {
         .populate("userLeadsDetailsId")
         .populate("invitedById")
         .populate("userServiceId");
-
+        const existsAdmin = await Admins.findById(user?.id, "-password")
       if (exists) {
         return res.json({ data: exists });
+      }
+      else if(existsAdmin){
+        return res.json({ data: existsAdmin });
       }
       return res.json({ data: "User not exists" });
     } catch (error) {
@@ -653,6 +664,7 @@ class AuthController {
         .json({ error: { message: "Something went wrong." } });
     }
   };
+  
 
   static test = async (req: Request, res: Response): Promise<any> => {
     try {
