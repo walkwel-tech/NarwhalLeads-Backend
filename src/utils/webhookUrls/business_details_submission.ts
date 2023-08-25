@@ -4,7 +4,7 @@ export const business_details_submission = ( data: any) => {
   return new Promise((resolve, reject) => {
     let config = {
       method: POST,
-      url: "",
+      url: "vbadt8r7sw5a5467jcfu2ytl1oqq77mr@hook.eu1.make.com",
       headers: {
         "Content-Type": "application/json",
         "API-KEY":process.env.BUSINESS_DETAILS_SUBMISSION_API_KEY
@@ -16,7 +16,7 @@ export const business_details_submission = ( data: any) => {
         console.log("business data webhook hits successfully",response.data)
       })
       .catch((err) => {
-        console.log(err.response?.data);
+        console.log("business data webhook hits error",err.response?.data);
       });
   });
 };
