@@ -270,7 +270,7 @@ export class invitedUsersController {
 
   static addAdmins = async (_req: Request, res: Response) => {
     const input = _req.body;
-
+    input.email = String(input.email).toLowerCase();
     try {
    const data=await Admins.find({email:input.email})
    const user=await User.find({email:input.email})
@@ -353,7 +353,7 @@ export class invitedUsersController {
         skip = 0;
       }
     try {
-      const invitedUsers = await Admins.find(dataToFind).sort({createdAt:-1}).skip(skip).limit(perPage);
+      const invitedUsers = await Admins.find(dataToFind,'-password').sort({createdAt:-1}).skip(skip).limit(perPage);
 
       // if (invitedUsers.length == 0) {
         // return res.json({ error: { message: "No Data Found" } });
