@@ -5,7 +5,7 @@ import { ChangePasswordInput } from "../Inputs/ChangePassword.input";
 import { UpdateUserInput } from "../Inputs/UpdateUser.input";
 import { ValidationErrorResponse } from "../../types/ValidationErrorResponse";
 import { User } from "../Models/User";
-
+import { Admins } from "../Models/Admins";
 
 export class ProfileController {
   static changePassword = async (
@@ -34,38 +34,61 @@ export class ProfileController {
         .status(400)
         .json({ error: { message: "VALIDATION_ERROR", info: { errorsInfo } } });
     }
-    if(!(input.newPassword==input.confirmPassword)){
+    if (!(input.newPassword == input.confirmPassword)) {
       return res
-          .status(400)
-          .json({ error: { message: "newPassword and confirmPassword doesn't match." } });
+        .status(400)
+        .json({
+          error: { message: "newPassword and confirmPassword doesn't match." },
+        });
     }
     try {
       const user = await User.findById(id);
+      const admin = await Admins.findById(id);
 
-      if (!user) {
+      if (!user && !admin) {
         return res
           .status(400)
           .json({ error: { message: "User to update does not exists." } });
       }
-
-      if (!compareSync(input.currentPassword, user.password)) {
-        return res
-          .status(400)
-          .json({ error: { message: "Invalid current password" } });
-      }
-
-      const salt = genSaltSync(10);
-      const password = input.newPassword;
-      const hashPassword = hashSync(password, salt);
-      await User.findByIdAndUpdate(
-        id,
-        {
-          password: hashPassword,
-        },
-        {
-          new: true,
+      if (user) {
+        if (!compareSync(input.currentPassword, user.password)) {
+          return res
+            .status(400)
+            .json({ error: { message: "Invalid current password" } });
         }
-      );
+
+        const salt = genSaltSync(10);
+        const password = input.newPassword;
+        const hashPassword = hashSync(password, salt);
+        await User.findByIdAndUpdate(
+          id,
+          {
+            password: hashPassword,
+          },
+          {
+            new: true,
+          }
+        );
+      } else if (admin) {
+        if (!compareSync(input.currentPassword, admin.password)) {
+          return res
+            .status(400)
+            .json({ error: { message: "Invalid current password" } });
+        }
+
+        const salt = genSaltSync(10);
+        const password = input.newPassword;
+        const hashPassword = hashSync(password, salt);
+        await Admins.findByIdAndUpdate(
+          id,
+          {
+            password: hashPassword,
+          },
+          {
+            new: true,
+          }
+        );
+      }
 
       return res.json({ data: { message: "Password reset successfully." } });
     } catch (error) {
@@ -74,10 +97,9 @@ export class ProfileController {
         .json({ error: { message: "Something went wrong." } });
     }
   };
-  
+
   static updateProfile = async (req: any, res: Response): Promise<Response> => {
     const input: UpdateUserInput = req.body;
-  
 
     const { id } = req.user;
 
@@ -112,7 +134,7 @@ export class ProfileController {
         {
           firstName: input.firstName ? input.firstName : user.firstName,
           lastName: input.lastName ? input.lastName : user.lastName,
-          leadCost:input.leadCost ? input.leadCost : user.leadCost,
+          leadCost: input.leadCost ? input.leadCost : user.leadCost,
         },
         {
           new: true,
@@ -129,4 +151,3 @@ export class ProfileController {
     }
   };
 }
-
