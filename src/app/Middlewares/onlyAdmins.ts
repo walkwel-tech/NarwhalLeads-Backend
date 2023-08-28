@@ -2,6 +2,7 @@ import { Request, Response, NextFunction } from 'express';
 import passport from 'passport';
 
 import { UserInterface } from '../../types/UserInterface';
+import { RolesEnum } from '../../types/RolesEnum';
 
 export default function OnlyAdmins(req: Request, res: Response, next: NextFunction) {
   return passport.authenticate('jwt', { session: false }, (err:any, payload: UserInterface) => {
@@ -13,7 +14,7 @@ export default function OnlyAdmins(req: Request, res: Response, next: NextFuncti
       return res.status(401).json({ error: { message: 'Invalid Token. Access Denied!' } });
     }
 
-    if(payload.role !== 'admin') {
+    if(payload.role !== 'admin' && payload.role !== RolesEnum.SUPER_ADMIN) {
       return res.status(401).json({ error: { message: 'You dont\'t have access to this resource.!' } });
     }
 
