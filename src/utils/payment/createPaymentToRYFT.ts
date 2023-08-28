@@ -331,7 +331,6 @@ export const attemptToPaymentInitial = ( params: any) => {
 };
 
 export const createSessionUnScheduledPayment= (params: any) => {
-  console.log("here is its==================================================")
   return new Promise((resolve, reject) => {
     let body = {
       amount: (params?.fixedAmount * 100) || 0,

@@ -21,6 +21,7 @@ import { UserLeadsDetails } from "../Models/UserLeadsDetails";
 import { ClientTablePreferenceInterface } from "../../types/clientTablePrefrenceInterface";
 import { ClientTablePreference } from "../Models/ClientTablePrefrence";
 import { Column } from "../../types/ColumnsPreferenceInterface";
+import { Admins } from "../Models/Admins";
 const ObjectId = mongoose.Types.ObjectId;
 
 const LIMIT = 10;
@@ -273,8 +274,9 @@ export class UsersControllers {
 
   static show = async (req: Request, res: Response): Promise<Response> => {
     const { id } = req.params;
+    let query;
     try {
-      const [query]: any = await User.aggregate([
+       [query] = await User.aggregate([
         {
           $facet: {
             results: [
@@ -307,14 +309,6 @@ export class UsersControllers {
           },
         },
       ]);
-
-      // if (query.results[0]?.businessDetailsId?.length>0) {
-      //   //@ts-ignore
-      //   query.results[0]?.businessDetailsId[0]?.businessOpeningHours = JSON.parse(
-      //     //@ts-ignore
-      //     query.results[0]?.businessDetailsId[0]?.businessOpeningHours
-      //   );
-      // }
       query.results.map((item: any) => {
         delete item.password
         let businessDetailsId = Object.assign({}, item["businessDetailsId"][0]);
@@ -327,17 +321,18 @@ export class UsersControllers {
         item.businessDetailsId = businessDetailsId;
         item.cardDetailsId = cardDetailsId;
       });
-
-      // const user = await User.findById(
-      //   id,
-      //   "-password -__v -verifiedAt -isVerified  -isActive -activatedAt -isDeleted -deletedAt -isRyftCustomer -isLeadbyteCustomer -signUpFlowStatus -invitedById -isArchived -createdAt -updatedAt"
-      // )
-      //   .populate("businessDetailsId")
-      //   .populate("userLeadsDetailsId");
-      // console.log("query",query,query.results[0]?.businessDetailsId==null)
-
+      if(query.results.length==0){
+        [query] = await Admins.aggregate([
+          {
+            $facet: {
+              results: [
+                { $match: { _id: new ObjectId(id) } }
+                          ],
+            },
+          },
+        ]);
+      }
       return res.json({ data: query.results[0] });
-      // return res.status(404).json({ error: { message: "User not found." } });
     } catch (err) {
       return res
         .status(500)

@@ -67,58 +67,10 @@ export const autoChargePayment = async () => {
           params.paymentMethodId=card?.paymentMethod
           createSessionUnScheduledPayment(params)
           .then(async (res) => {
-            // addCreditsToBuyer(params).then(async (res)=>{
               console.log("payment initiated!")
               if (!i.xeroContactId) {
                 console.log("xeroContact ID not found. Failed to generate pdf.");
               }
-            //   const dataToSave: any = {
-            //     userId: i.id,
-            //     cardId: card?.id,
-            //     amount: i?.autoChargeAmount || fixedAmount.amount,
-            //     title: transactionTitle.CREDITS_ADDED,
-            //     isCredited: true,
-            //     status: "success",
-            //   };
-            //   const transaction = await Transaction.create(dataToSave);
-            //   if (i.xeroContactId) {
-            //     generatePDF(
-            //       i?.xeroContactId,
-            //       transactionTitle.CREDITS_ADDED,
-            //       (i?.autoChargeAmount || fixedAmount.amount)
-            //     )
-            //       .then(async (res:any) => {
-            //         const dataToSaveInInvoice: any = {
-            //           userId: i.id,
-            //           transactionId: transaction.id,
-            //           price: i?.autoChargeAmount || fixedAmount.amount,
-            //           invoiceId: res.data.Invoices[0].InvoiceID,
-            //         };
-            //         await Invoice.create(dataToSaveInInvoice);
-            //         console.log("payment success!!!!!!!!!!!!!");
-            //       })
-            //       .catch((error) => {
-            //         refreshToken().then(async (res) => {
-            //           generatePDF(
-            //             i?.xeroContactId,
-            //             transactionTitle.CREDITS_ADDED,
-            //             i?.autoChargeAmount
-            //           ).then(async (res:any) => {
-            //             const dataToSaveInInvoice: any = {
-            //               userId: i.id,
-            //               transactionId: transaction.id,
-            //               price:i?.autoChargeAmount || fixedAmount.amount,
-            //               invoiceId: res.data.Invoices[0].InvoiceID,
-            //             };
-            //             await Invoice.create(dataToSaveInInvoice);
-            //             console.log("payment success!!!!!!!!!!!!!");
-            //           });
-            //         });
-            //       });
-            //   }
-            // }).catch((err)=>{
-            // })
-            
           })
           .catch(async (err) => {
             send_email_for_failed_autocharge(i.email, text);
