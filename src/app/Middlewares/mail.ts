@@ -340,7 +340,6 @@ export function send_email_for_new_lead(send_to: string, message: any) {
 // export function send_email_for_new_lead_to_admin(message: any) {
 //   const msg = {
 //     // to: "leads@nmg.group", // Change to your recipient
-//     to: "radhika.walkweltech@gmail.com",
 //      from: {
 //     name: process.env.VERIFIED_SENDER_ON_SENDGRID_FROM_NAME,
 //     email:  process.env.VERIFIED_SENDER_ON_SENDGRID,
