@@ -2,6 +2,7 @@ import { Request, Response, NextFunction } from "express";
 import passport from "passport";
 
 import { UserInterface } from "../../types/UserInterface";
+import { RolesEnum } from "../../types/RolesEnum";
 
 export default function OnlyAdminOrUserLogin(
   req: Request,
@@ -25,7 +26,7 @@ export default function OnlyAdminOrUserLogin(
           .json({ error: { message: "Invalid Token. Access Denied!" } });
       }
 
-      if (payload.role !== "admin" && payload.id !== userId) {
+      if (payload.role !== "admin" && payload.id !== userId && payload.role !== RolesEnum.SUPER_ADMIN) {
         return res
           .status(401)
           .json({
