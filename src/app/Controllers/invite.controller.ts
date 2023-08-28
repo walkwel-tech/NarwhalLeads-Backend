@@ -273,8 +273,12 @@ export class invitedUsersController {
 
     try {
    const data=await Admins.find({email:input.email})
+   const user=await User.find({email:input.email})
    if(data.length>0){
     return res.status(400).json({error:{message:"Admin already exist"}})
+   }
+   else if(user.length>0){
+    return res.status(400).json({error:{message:"Email already registered with an User."}})
    }
    else{
     const salt = genSaltSync(10);
