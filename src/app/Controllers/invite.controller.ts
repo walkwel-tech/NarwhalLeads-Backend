@@ -287,8 +287,7 @@ export class invitedUsersController {
     input.password=hashPassword
     send_email_to_invited_admin(input.email,dataToSend)
      const data= await Admins.create(input)
-     //fixme: admin to super_admin---------------------???????????????
-     const adminExist:any=await User.findOne({role:RolesEnum.ADMIN})
+     const adminExist:any=await User.findOne({role:RolesEnum.SUPER_ADMIN})
      const adminPref:any= await LeadTablePreference.findOne({userId:adminExist.id})
      const adminClientPref:any= await ClientTablePreference.findOne({userId:adminExist._id})
      await LeadTablePreference.create({userId:data.id,columns:adminPref.columns})
