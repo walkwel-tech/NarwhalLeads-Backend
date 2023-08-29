@@ -4,6 +4,7 @@ import { Request, Response, NextFunction } from "express";
 
 import { UserInterface } from "../../types/UserInterface";
 import { User } from "../Models/User";
+import { Admins } from "../Models/Admins";
 
 export default function Auth(req: Request, res: Response, next: NextFunction) {
   return passport.authenticate(
@@ -15,33 +16,24 @@ export default function Auth(req: Request, res: Response, next: NextFunction) {
           .status(500)
           .json({ error: { message: "Something went wrong" } });
       }
-      const tokenUser=await User.findById(payload.id)
-      if (!payload || !tokenUser) {
+      const tokenUser:any=await User.findById(payload.id)
+      const tokenAdmin=await Admins.findById(payload.id)
+      if (!payload || (!tokenUser && !tokenAdmin)) {
         return res
           .status(401)
           .json({ error: { message: "Invalid Token. Access Denied!" } });
       }
-      if (!tokenUser.isActive) {
+      if (!tokenUser?.isActive && !tokenAdmin?.isActive) {
         return res.status(401).json({ error: { message: "User not Active!" } });
       }
-      if (tokenUser.isDeleted) {
+      if (tokenUser?.isDeleted  && !tokenAdmin?.isDeleted) {
         return res
           .status(401)
           .json({
             error: { message: "User is deleted.Please contact admin!" },
           });
       }
-      if (!tokenUser.isActive || !tokenUser.isVerified) {
-        return res
-          .status(401)
-          .json({
-            error: {
-              message:
-                "User is not verified or not active.Please contact admin!",
-            },
-          });
-      }
-      req.user = tokenUser || undefined;
+      req.user = tokenUser ||tokenAdmin || undefined;
       return next();
     }
   )(req, res, next);

@@ -1,11 +1,12 @@
 import { genSaltSync, hashSync } from "bcryptjs";
 import { Request, Response } from "express";
 import { RolesEnum } from "../../types/RolesEnum";
-import { send_email_to_invited_user } from "../Middlewares/mail";
+import { send_email_to_invited_admin, send_email_to_invited_user } from "../Middlewares/mail";
 import { LeadTablePreference } from "../Models/LeadTablePreference";
 import { User } from "../Models/User";
 import { SubscriberList } from "../Models/SubscriberList";
 import { Admins } from "../Models/Admins";
+import { ClientTablePreference } from "../Models/ClientTablePrefrence";
 
 const LIMIT = 10;
 export class invitedUsersController {
@@ -269,17 +270,34 @@ export class invitedUsersController {
 
   static addAdmins = async (_req: Request, res: Response) => {
     const input = _req.body;
-
+    input.email = String(input.email).toLowerCase();
     try {
-   const data=await Admins.find({email:input.email})
+   const data=await Admins.find({email:input.email, isDeleted:false})
+   const user=await User.find({email:input.email,isDeleted:false})
    if(data.length>0){
     return res.status(400).json({error:{message:"Admin already exist"}})
    }
+   else if(user.length>0){
+    return res.status(400).json({error:{message:"Email already registered with an User."}})
+   }
    else{
-    // const data={}
-    // send_email_to_invited_admin(input.email,{})
-   const data= await Admins.create(input)
-   return res.json({data:data})
+    const salt = genSaltSync(10);
+    const text = randomString(8, true);
+    const dataToSend={
+      name:input.firstName + " " + input.lastName,
+      password:text
+    }
+    const hashPassword = hashSync(text, salt);
+    input.password=hashPassword
+    send_email_to_invited_admin(input.email,dataToSend)
+     const data= await Admins.create(input)
+     const adminExist:any=await User.findOne({role:RolesEnum.SUPER_ADMIN})
+     const adminPref:any= await LeadTablePreference.findOne({userId:adminExist.id})
+     const adminClientPref:any= await ClientTablePreference.findOne({userId:adminExist._id})
+     await LeadTablePreference.create({userId:data.id,columns:adminPref.columns})
+ await ClientTablePreference.create({columns:adminClientPref.columns})
+   const show=await Admins.findById(data.id,'-password')
+   return res.json({data:show})
    }
     } catch (error) {
       return res
@@ -335,7 +353,7 @@ export class invitedUsersController {
         skip = 0;
       }
     try {
-      const invitedUsers = await Admins.find(dataToFind).sort({createdAt:-1}).skip(skip).limit(perPage);
+      const invitedUsers = await Admins.find(dataToFind,'-password').sort({createdAt:-1}).skip(skip).limit(perPage);
 
       // if (invitedUsers.length == 0) {
         // return res.json({ error: { message: "No Data Found" } });
@@ -349,6 +367,29 @@ export class invitedUsersController {
     }
   };
 
+  static updateAdmin = async (_req: Request, res: Response) => {
+    //@ts-ignore
+    const id = _req.params.id;
+const input=_req.body
+    try {
+      const invitedUsers = await Admins.find({
+        _id: id,
+        isDeleted: false,
+      });
+
+      if (invitedUsers.length == 0) {
+        return res.status(400).json({ error: { message: "No Admin Found" } });
+      } else {
+        await Admins.findByIdAndUpdate(id, input,{new:true});
+        const data=await Admins.findById(id,'-password')
+        return res.json({ data: { message: "Admin Updated!", data:data } });
+      }
+    } catch (error) {
+      return res
+        .status(500)
+        .json({ error: { message: "Something went wrong." } });
+    }
+  };
   
 }
 

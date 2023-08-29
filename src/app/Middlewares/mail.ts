@@ -340,7 +340,6 @@ export function send_email_for_new_lead(send_to: string, message: any) {
 // export function send_email_for_new_lead_to_admin(message: any) {
 //   const msg = {
 //     // to: "leads@nmg.group", // Change to your recipient
-//     to: "radhika.walkweltech@gmail.com",
 //      from: {
 //     name: process.env.VERIFIED_SENDER_ON_SENDGRID_FROM_NAME,
 //     email:  process.env.VERIFIED_SENDER_ON_SENDGRID,
@@ -663,7 +662,7 @@ export function send_email_to_invited_admin(send_to: string, message: any) {
     },
     // html: "<strong>and easy to do anywhere, even with Node.js</strong>",
     // templateId: "d-dad1bae4e3454fa8afea119f9de08b45",
-    templateId: "d-36df0c800ea548218686a17005b78c6c",
+    templateId: "d-6d0be07496084fdcbf78a0be22651fb3",
     dynamic_template_data: {
       name: message.name,
       password: message.password,
