@@ -272,8 +272,8 @@ export class invitedUsersController {
     const input = _req.body;
     input.email = String(input.email).toLowerCase();
     try {
-   const data=await Admins.find({email:input.email})
-   const user=await User.find({email:input.email})
+   const data=await Admins.find({email:input.email, isDeleted:false})
+   const user=await User.find({email:input.email,isDeleted:false})
    if(data.length>0){
     return res.status(400).json({error:{message:"Admin already exist"}})
    }

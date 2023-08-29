@@ -656,7 +656,7 @@ if(!industry){
     }
     try {
       //@ts-ignore
-      if (_req.user?.role == RolesEnum["ADMIN"]) {
+      if (_req.user?.role == RolesEnum["ADMIN"] || _req.user?.role == RolesEnum.SUPER_ADMIN) {
         const leads = await Leads.aggregate([
           {
             $facet: {
@@ -772,7 +772,7 @@ if(!industry){
 
     try {
       //@ts-ignore
-      if (_req.user?.role == RolesEnum["ADMIN"]) {
+      if (_req.user?.role == RolesEnum["ADMIN"] || _req.user?.role == RolesEnum.SUPER_ADMIN) {
         const leads = await Leads.aggregate([
           {
             $facet: {

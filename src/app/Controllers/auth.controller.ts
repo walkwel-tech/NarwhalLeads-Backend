@@ -281,9 +281,14 @@ class AuthController {
             return res.status(400).json({ error: err });
           }
           return res.status(401).json({ error: message });
-        } else if (!user.isActive) {
+        } else if (!user.isActive && user.role===RolesEnum.USER) {
           return res.status(401).json({
             error: { message: "User not active.Please contact admin." },
+          });
+        } 
+        else if (!user.isActive && user.role===RolesEnum.ADMIN) {
+          return res.status(401).json({
+            error: { message: "Admin not active.Please contact super admin." },
           });
         } else if (!user.isVerified && user.role===RolesEnum.USER) {
           return res.status(401).json({
@@ -291,9 +296,14 @@ class AuthController {
               message: "User not verified.Please verify your account",
             },
           });
-        } else if (user.isDeleted) {
+        } else if (user.isDeleted && user.role===RolesEnum.USER) {
           return res.status(401).json({
             error: { message: "User is deleted.Please contact admin" },
+          });
+        }
+        else if (user.isDeleted && user.role===RolesEnum.ADMIN) {
+          return res.status(401).json({
+            error: { message: "Admin is deleted.Please contact super admin" },
           });
         }
         const token = generateAuthToken(user);
@@ -479,11 +489,13 @@ class AuthController {
     const userInput = new forgetPasswordInput();
     userInput.email = input.email;
     const user = await User.findOne({ email: input.email });
-    if (user?.role == RolesEnum.ADMIN || user?.role == RolesEnum.SUPER_ADMIN) {
-      return res
-        .status(400)
-        .json({ data: { message: "Admin cannot reset the password." } });
-    }
+    const admin = await Admins.findOne({ email: input.email });
+
+    // if (user?.role == RolesEnum.SUPER_ADMIN) {
+    //   return res
+    //     .status(400)
+    //     .json({ data: { message: "Admin cannot reset the password." } });
+    // }
 
     if (user) {
       const salt = genSaltSync(10);
@@ -503,7 +515,26 @@ class AuthController {
       await User.findOneAndUpdate({ _id: user }, { password: hashPassword });
 
       return res.json({ data: { message: "Email sent please verify!" } });
-    } else {
+    }else if(admin){
+      const salt = genSaltSync(10);
+      const text = randomString(8, true);
+      const hashPassword = hashSync(text, salt);
+      let message = {
+        name: admin.firstName,
+        password: text,
+      };
+      console.log("FORGET PASSWORD", text);
+      send_email_forget_password(input.email, message);
+      await ForgetPassword.create({
+        userId: admin.id,
+        email: input.email,
+        password: hashPassword,
+      });
+      await Admins.findOneAndUpdate({ _id: admin }, { password: hashPassword });
+
+      return res.json({ data: { message: "Email sent please verify!" } });
+    }
+     else {
       return res
         .status(400)
         .json({ data: { message: "User does not exist." } });
