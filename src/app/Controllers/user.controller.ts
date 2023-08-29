@@ -412,9 +412,21 @@ export class UsersControllers {
           .json({ error: { message: "Please contact admin to change payment method" } });
       }
       if (!checkUser) {
-        return res
+        const admin=await Admins.findById(id)
+        if(!admin){
+          return res
+          .status(404)
+          .json({ error: { message: "Admin to update does not exists." } });
+        } else if(!checkUser && !admin){
+          return res
           .status(404)
           .json({ error: { message: "User to update does not exists." } });
+        }
+        else{
+          const data=await Admins.findByIdAndUpdate(id,input,{new:true})
+          return res.json({ data: data });
+        }
+       
       }
 
       const cardExist = await CardDetails.findOne({
