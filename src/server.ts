@@ -28,6 +28,7 @@ import TermsAndConditionsRoutes from "./routes/termsAndConditions.routes";
 import freeCreditsLinkRoutes from "./routes/FreeCreditsLink.routes";
 import path from "path";
 import serviceRoutes from "./routes/userService.routes";
+// import { generatePDF } from "./utils/XeroApiIntegration/generatePDF";
 // import { send_email_test } from "./app/Middlewares/test";
 // import {  dataCleaning } from "./dataCleaning";
 const swaggerDocument = require('../swagger.json'); // Replace with the path to your actual Swagger document
@@ -124,6 +125,6 @@ export class Server {
             console.log(`:rocket: HTTP Server started at port ${this.port}`);
         });
         autoUpdateTasks()
-        // send_email_test()
+
     }
 }

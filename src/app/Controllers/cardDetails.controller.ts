@@ -54,6 +54,7 @@ import mongoose from "mongoose";
 const ObjectId = mongoose.Types.ObjectId;
 import { PaymentResponse } from "../../types/PaymentResponseInterface";
 import { PREMIUM_PROMOLINK } from "../../utils/constantFiles/spotDif.offers.promoLink";
+import { PAYMENT_TYPE_ENUM } from "../../utils/Enums/paymentType.enum";
 // import { managePaymentsByPaymentMethods } from "../../utils/payment";
 // import { managePaymentsByPaymentMethods } from "../../utils/payment";
 
@@ -660,7 +661,8 @@ export class CardDetailsControllers {
           credits: userId?.credits,
         };
         send_email_for_payment_failure(userId?.email, message);
-        await Transaction.create({
+        let dataToSaveInTransaction:any=
+          {
           userId: userId?.id,
           amount: input?.data?.amount / 100,
           status: PAYMENT_STATUS.DECLINE,
@@ -671,7 +673,12 @@ export class CardDetailsControllers {
           paymentSessionId: input.data.id,
           cardId: card?.cardId,
           creditsLeft: userId?.credits,
-        });
+          paymentMethod:input.data?.paymentMethod?.id
+        }
+        if(userId?.paymentMethod===paymentMethodEnum.AUTOCHARGE_METHOD){
+          dataToSaveInTransaction.paymentType=PAYMENT_TYPE_ENUM.AUTO_CHARGE
+        }
+        await Transaction.create(dataToSaveInTransaction);
       } else if (input.eventType == "PaymentSession.captured") {
         const cardDetails = await CardDetails.findByIdAndUpdate(
           card?.cardId,
@@ -719,7 +726,7 @@ export class CardDetailsControllers {
           .then(async (res: any) => {
             // console.log("WEBHOOK 3------->>>",res)
             userId = await User.findById(userId?.id);
-            const transaction = await Transaction.create({
+            let dataToSaveInTransaction:any={
               userId: userId?.id,
               amount: originalAmount,
               status: PAYMENT_STATUS.CAPTURED,
@@ -729,8 +736,13 @@ export class CardDetailsControllers {
               paymentSessionId: input.data.id,
               cardId: card?.cardId,
               creditsLeft: userId?.credits || 0 - (params.freeCredits || 0),
-            });
-            const transactionForVat = await Transaction.create({
+              paymentMethod:input.data?.paymentMethod?.id,
+            }
+            if(userId?.paymentMethod===paymentMethodEnum.AUTOCHARGE_METHOD){
+              dataToSaveInTransaction.paymentType=PAYMENT_TYPE_ENUM.AUTO_CHARGE
+            }
+            const transaction = await Transaction.create(dataToSaveInTransaction);
+            const save:any={
               userId: userId?.id,
               amount: input?.data?.amount / 100 - originalAmount,
               status: PAYMENT_STATUS.CAPTURED,
@@ -740,7 +752,12 @@ export class CardDetailsControllers {
               paymentSessionId: input.data.id,
               cardId: card?.cardId,
               creditsLeft: userId?.credits || 0 - (params.freeCredits || 0),
-            });
+              paymentMethod:input.data?.paymentMethod?.id
+            }
+            if(userId?.paymentMethod===paymentMethodEnum.AUTOCHARGE_METHOD){
+              save.paymentType=PAYMENT_TYPE_ENUM.AUTO_CHARGE
+            }
+            const transactionForVat = await Transaction.create(save);
             const message = {
               firstName: userId?.firstName,
               amount: parseInt(input.data.amount) / 100,

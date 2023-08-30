@@ -14,4 +14,6 @@ export interface TransactionInterface extends Document {
   createdAt: Date;
   paymentSessionId:string;
   creditsLeft:number;
+  paymentType:string;
+  paymentMethod:string;
 }

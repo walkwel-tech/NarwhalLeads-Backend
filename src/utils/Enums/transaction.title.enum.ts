@@ -5,5 +5,6 @@ export const transactionTitle={
   PAYMNET_FAILED:"Payment Declined",
   FREE_CREDITS:"Free Credits",
   INVOICES_VAT:"VAT",
-  SESSION_CREATED:"session created"
+  SESSION_CREATED:"session created",
+  
     }
