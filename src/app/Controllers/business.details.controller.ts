@@ -203,11 +203,24 @@ export class BusinessDetailsController {
       if (input.financeOffers && input.financeOffers == "Yes") {
         input.financeOffers = true;
       }
-      if (input.financeOffers==null) {
+      if (input.financeOffers==null || input.financeOffers=="") {
         delete input.financeOffers 
       }
       if (input.financeOffers && input.financeOffers == "No") {
         input.financeOffers = false;
+      }
+
+      if(input.prices==null){
+        delete input.prices
+      }
+      if(input.avgInstallTime==null){
+        delete input.avgInstallTime
+      }
+      if(input.trustpilotReviews==null){
+        delete input.trustpilotReviews
+      }
+      if(input.criteria==null){
+        delete input.criteria
       }
       const service = await UserService.create(input);
       await User.findByIdAndUpdate(user.id, { userServiceId: service.id });
@@ -368,12 +381,31 @@ export class BusinessDetailsController {
       if (input.financeOffers && input.financeOffers == "No") {
         input.financeOffers = false;
       }
-      const service = await UserService.findByIdAndUpdate(
+      if(input.prices==null){
+        delete input.prices
+      }
+      if(input.avgInstallTime==null){
+        delete input.avgInstallTime
+      }
+      if(input.trustpilotReviews==null){
+        delete input.trustpilotReviews
+      }
+      if(input.criteria==null){
+        delete input.criteria
+      }
+      let service
+      if(serviceData){
+          service = await UserService.findByIdAndUpdate(
         serviceData?.id,
         input,
         { new: true }
       );
 
+      }
+      else{
+        await UserService.create(input)
+      }
+     
       if (data) {
         const updatedDetails = await BusinessDetails.findById(id);
         const leadData = await UserLeadsDetails.findOne({
