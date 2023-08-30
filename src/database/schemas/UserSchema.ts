@@ -166,6 +166,9 @@ const UserSchema = new Schema(
       type: Number,
       required: false,
     },
+    triggerAmount:{
+      type:Number,  
+    }
   },
   { timestamps: true }
 );

@@ -41,4 +41,5 @@ export interface UserInterface extends Document {
   promoCodeUsed:boolean
   onBoardingPercentage:number;
   userServiceId: Types.ObjectId;
+  triggerAmount:number;
 }
