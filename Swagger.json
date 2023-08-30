@@ -7208,6 +7208,434 @@
           }
         }
       },
+      "/invitedUsers/admin": {
+        "post": {
+          "tags": [
+            "Authenticated Routes > Invitation Folder"
+          ],
+          "summary": "Invite admin",
+          "requestBody": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "example": {
+                    "firstName": "alina",
+                    "lastName": "smith",
+                    "email": "alina@gmail.com"
+                }
+                }
+              }
+            }
+          },
+          "security": [
+            {
+              "bearerAuth": []
+            }
+          ],
+          "responses": {
+            "200": {
+              "description": "OK",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "type": "object"
+                  },
+                  "example": {
+                    "data": {
+                      "_id": "64e73accede584325d2d0a74",
+                      "firstName": "alina",
+                      "lastName": "smith",
+                      "email": "alina@gmail.com",
+                      "role": "admin",
+                      "isDeleted": false,
+                      "isActive": true,
+                      "createdAt": "2023-08-24T11:11:08.435Z",
+                      "updatedAt": "2023-08-24T11:11:08.435Z",
+                      "__v": 0
+                  }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "get": {
+          "tags": [
+            "Authenticated Routes > Invitation Folder"
+          ],
+          "summary": "Get Invited admin",
+          "security": [
+            {
+              "bearerAuth": []
+            }
+          ],
+          "parameters": [
+            {
+              "name": "perPage",
+              "in": "query",
+              "schema": {
+                "type": "integer"
+              },
+              "example": "20"
+            },
+            {
+              "name": "page",
+              "in": "query",
+              "schema": {
+                "type": "integer"
+              },
+              "example": "1"
+            },
+            {
+              "name": "search",
+              "in": "query",
+              "schema": {
+                "type": "string"
+              },
+              "example": "abc"
+            }
+          ],
+          "responses": {
+            "200": {
+              "description": "OK",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "type": "object"
+                  },
+                  "example": {
+                    "data":  [
+                      {
+                          "_id": "64e73accede584325d2d0a74",
+                          "firstName": "alina",
+                          "lastName": "smith",
+                          "password": "$2a$10$Pbb8SayS8.WO8/QqlSx3nOEmoVviCDKDDPagoopgMarfEFpuuLVgK",
+                          "email": "alina@gmail.com",
+                          "role": "admin",
+                          "isDeleted": false,
+                          "isActive": true,
+                          "createdAt": "2023-08-24T11:11:08.435Z",
+                          "updatedAt": "2023-08-24T11:11:08.435Z",
+                          "__v": 0
+                      }
+                  ]
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "/invitedUsers/admin/{adminId}": {
+        "patch": {
+          "tags": [
+            "Authenticated Routes > Invitation Folder"
+          ],
+          "summary": "Update Invited admin",
+          "parameters": [
+            {
+              "name": "adminId",
+              "in": "path",
+              "schema": {
+                "type": "string"
+              },
+              "example": "63aed277bf2d3eda4e0edcc0"
+            }
+          ],
+          "requestBody": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "example": {
+                   "isActive":true
+                }
+                }
+              }
+            }
+          },
+          "security": [
+            {
+              "bearerAuth": []
+            }
+          ],
+          "responses": {
+            "200": {
+              "description": "OK",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "type": "object"
+                  },
+                  "example": {
+                    "data": {
+                      "message": "Admin Updated!",
+                      "data": {
+                          "_id": "64e73accede584325d2d0a74",
+                          "firstName": "alina",
+                          "lastName": "smith",
+                          "email": "radhika.walkweltech@gmail.com",
+                          "role": "admin",
+                          "isDeleted": false,
+                          "isActive": true,
+                          "createdAt": "2023-08-24T11:11:08.435Z",
+                          "updatedAt": "2023-08-24T11:24:52.108Z",
+                          "__v": 0
+                      }
+                  }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "delete": {
+          "tags": [
+            "Authenticated Routes > Invitation Folder"
+          ],
+          "summary": "Delete Invited admin",
+          "security": [
+            {
+              "bearerAuth": []
+            }
+          ],
+
+          "responses": {
+            "200": {
+              "description": "OK",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "type": "object"
+                  },
+                  "example": {
+                    "data":  {
+                      "message": "Admin Deleted!"
+                  }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+
+      "/invitedUsers/subscriber": {
+        "post": {
+          "tags": [
+            "Authenticated Routes > Invitation Folder"
+          ],
+          "summary": "Invite subscriber",
+          "requestBody": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "example": {
+                    "firstName": "alina",
+                    "lastName": "smith",
+                    "email": "alina@gmail.com"
+                }
+                }
+              }
+            }
+          },
+          "security": [
+            {
+              "bearerAuth": []
+            }
+          ],
+          "responses": {
+            "200": {
+              "description": "OK",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "type": "object"
+                  },
+                  "example": {
+                    "data": {
+                      "firstName": "alina",
+                      "lastName": "smith",
+                      "email": "alina@gmail.com",
+                      "isDeleted": false,
+                      "_id": "64e73ec4f2da959dae15df10",
+                      "createdAt": "2023-08-24T11:28:04.239Z",
+                      "updatedAt": "2023-08-24T11:28:04.239Z",
+                      "__v": 0
+                  }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "get": {
+          "tags": [
+            "Authenticated Routes > Invitation Folder"
+          ],
+          "summary": "Get Invited subscriber",
+          "security": [
+            {
+              "bearerAuth": []
+            }
+          ],
+          "parameters": [
+            {
+              "name": "perPage",
+              "in": "query",
+              "schema": {
+                "type": "integer"
+              },
+              "example": "20"
+            },
+            {
+              "name": "page",
+              "in": "query",
+              "schema": {
+                "type": "integer"
+              },
+              "example": "20"
+            },
+            {
+              "name": "search",
+              "in": "query",
+              "schema": {
+                "type": "string"
+              },
+              "example": "abc"
+            }
+          ],
+          "responses": {
+            "200": {
+              "description": "OK",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "type": "object"
+                  },
+                  "example": {
+                    "data":  [
+                      {
+                          "_id": "64e73ec4f2da959dae15df10",
+                          "firstName": "alina",
+                          "lastName": "smith",
+                          "email": "alina@gmail.com",
+                          "isDeleted": false,
+                          "createdAt": "2023-08-24T11:28:04.239Z",
+                          "updatedAt": "2023-08-24T11:28:04.239Z",
+                          "__v": 0
+                      },
+                      {
+                          "_id": "64e5a5709847cbb39f11025e",
+                          "firstName": "subscriber",
+                          "lastName": "subscriber",
+                          "email": "subscriber@yupmail.com",
+                          "isDeleted": false,
+                          "createdAt": "2023-08-23T06:21:36.502Z",
+                          "updatedAt": "2023-08-23T06:21:36.502Z",
+                          "__v": 0
+                      }
+                  ]
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "/invitedUsers/subscriber/{subscriberId}": {
+        "patch": {
+          "tags": [
+            "Authenticated Routes > Invitation Folder"
+          ],
+          "summary": "Invite subscriber",
+          "parameters": [
+            {
+              "name": "subscriberId",
+              "in": "path",
+              "schema": {
+                "type": "string"
+              },
+              "example": "63aed277bf2d3eda4e0edcc0"
+            }
+          ],
+          "requestBody": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "example": {
+                   "isActive":true
+                }
+                }
+              }
+            }
+          },
+          "security": [
+            {
+              "bearerAuth": []
+            }
+          ],
+          "responses": {
+            "200": {
+              "description": "OK",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "type": "object"
+                  },
+                  "example": {
+                    "data": {
+                      "message": "Subscriber Updated!",
+                      "data":  {
+                        "_id": "64e5a5709847cbb39f11025e",
+                        "firstName": "subscriber",
+                        "lastName": "subscriber",
+                        "email": "subscriber@yupmail.com",
+                        "isDeleted": false,
+                        "createdAt": "2023-08-23T06:21:36.502Z",
+                        "updatedAt": "2023-08-23T06:21:36.502Z",
+                        "__v": 0
+                    }
+                  }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "delete": {
+          "tags": [
+            "Authenticated Routes > Invitation Folder"
+          ],
+          "summary": "Delete Invited subscriber",
+          "security": [
+            {
+              "bearerAuth": []
+            }
+          ],
+
+          "responses": {
+            "200": {
+              "description": "OK",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "type": "object"
+                  },
+                  "example": {
+                    "data":  {
+                      "message": "Subscriber Deleted!"
+                  }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
       "/termsAndConditions": {
         "patch": {
           "tags": [
