@@ -331,6 +331,8 @@ export const attemptToPaymentInitial = ( params: any) => {
 };
 
 export const createSessionUnScheduledPayment= (params: any) => {
+  console.log("params",params)
+  params.fixedAmount=parseInt(params?.fixedAmount)
   return new Promise((resolve, reject) => {
     let body = {
       amount: (params?.fixedAmount * 100) || 0,
@@ -364,11 +366,12 @@ export const createSessionUnScheduledPayment= (params: any) => {
     };
     axios(config)
       .then((response) => {
+        console.log("data here")
         resolve(response);
       })
       .catch((err) => {
+        console.log("Create session err/or", err.response.data);
         reject(err);
-        // console.log("Create session error", err.response.data);
       });
   });
 };

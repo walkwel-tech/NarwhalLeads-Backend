@@ -156,11 +156,12 @@ export class BusinessDetailsController {
       const token: any = await AccessToken.findOne();
       createContactOnXero(paramsToCreateContact, token?.access_token)
         .then(async (res: any) => {
-          await User.findOneAndUpdate(
-            { email: input.email },
+        await User.findOneAndUpdate(
+            { email: user.email },
             {
-              $set: { xeroContactId: res.data.Contacts[0].ContactID },
-            }
+              xeroContactId: res.data.Contacts[0].ContactID ,
+            },
+            {new:true}
           );
           console.log("success in creating contact");
         })
@@ -196,11 +197,14 @@ export class BusinessDetailsController {
       if (input.accreditations) {
         input.accreditations = JSON.parse(input.accreditations);
       }
-      if (input.accreditations=="") {
+      if (input.accreditations==null || input.accreditations=="") {
      delete input.accreditations 
       }
       if (input.financeOffers && input.financeOffers == "Yes") {
         input.financeOffers = true;
+      }
+      if (input.financeOffers==null) {
+        delete input.financeOffers 
       }
       if (input.financeOffers && input.financeOffers == "No") {
         input.financeOffers = false;
@@ -352,9 +356,12 @@ export class BusinessDetailsController {
       if (input.accreditations) {
         input.accreditations = JSON.parse(input.accreditations);
       }
-      if (input.accreditations=="") {
+      if (input.accreditations=="" || input.accreditations==null) {
         delete input.accreditations 
          }
+         if (input.financeOffers=="" || input.financeOffers==null) {
+          delete input.financeOffers 
+           }
       if (input.financeOffers && input.financeOffers == "Yes") {
         input.financeOffers = true;
       }
