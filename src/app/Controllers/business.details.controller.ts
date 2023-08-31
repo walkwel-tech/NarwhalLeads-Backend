@@ -225,23 +225,23 @@ export class BusinessDetailsController {
       const service = await UserService.create(input);
       await User.findByIdAndUpdate(user.id, { userServiceId: service.id });
 
-      const messageToSendInBusinessSubmission = {
-        businessName: input?.businessName,
-        phone: input?.businessSalesNumber,
-        industry: input?.businessIndustry,
-        address: input?.address1 + " " + input?.address2,
-        city: input?.businessCity,
-        country: input?.businessCountry,
-        // openingHours: formattedOpeningHours,
-        openingHours: input?.businessOpeningHours,
-        logo: input?.businessLogo,
-        financeOffers: service?.financeOffers,
-        prices: service?.prices,
-        accreditations: service?.accreditations,
-        avgInstallTime: service?.avgInstallTime,
-        criteria: service?.criteria,
-      };
-      business_details_submission(messageToSendInBusinessSubmission);
+      // const messageToSendInBusinessSubmission = {
+      //   businessName: input?.businessName,
+      //   phone: input?.businessSalesNumber,
+      //   industry: input?.businessIndustry,
+      //   address: input?.address1 + " " + input?.address2,
+      //   city: input?.businessCity,
+      //   country: input?.businessCountry,
+      //   // openingHours: formattedOpeningHours,
+      //   openingHours: input?.businessOpeningHours,
+      //   logo: input?.businessLogo,
+      //   financeOffers: service?.financeOffers,
+      //   prices: service?.prices,
+      //   accreditations: service?.accreditations,
+      //   avgInstallTime: service?.avgInstallTime,
+      //   criteria: service?.criteria,
+      // };
+      // business_details_submission(messageToSendInBusinessSubmission);
       // if (checkOnbOardingComplete(user) && !user.registrationMailSentToAdmin) {
       //   const leadData = await UserLeadsDetails.findOne({
       //     userId: userData?._id,
@@ -453,7 +453,9 @@ export class BusinessDetailsController {
           prices: service?.prices,
           accreditations: service?.accreditations,
           avgInstallTime: service?.avgInstallTime,
-          criteria: service?.criteria,
+          criteria: JSON.stringify(service?.criteria),
+          dailyLeads: leadData?.daily,
+          postCodes:leadData?.postCodeTargettingList,
         };
         business_details_submission(messageToSendInBusinessSubmission);
         if (req.file && details.businessLogo) {
