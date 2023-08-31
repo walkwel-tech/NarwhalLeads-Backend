@@ -16,7 +16,8 @@ import { Invoice } from "../Models/Invoice";
 import { refreshToken } from "../../utils/XeroApiIntegration/createContact";
 import { DeleteFile } from "../../utils/removeFile";
 import {
-  send_email_for_lead_status,
+  send_email_for_lead_status_accept,
+  send_email_for_lead_status_reject,
   send_email_for_new_lead,
 } from "../Middlewares/mail";
 import { transactionTitle } from "../../utils/Enums/transaction.title.enum";
@@ -453,8 +454,8 @@ if(!industry){
       ) {
         const leadUser: any = await User.findOne({ buyerId: lead?.bid });
 
-        const message: any = { name: leadUser.firstName, status: "Rejected" };
-        send_email_for_lead_status(leadUser?.email, message);
+        const message: any = { name: leadUser.firstName + " " + leadUser.lastName};
+        send_email_for_lead_status_reject(leadUser?.email, message);
         const leadsUpdate = await Leads.findByIdAndUpdate(
           leadId,
           { ...input, reportRejectedAt: new Date() },
@@ -479,8 +480,8 @@ if(!industry){
         };
         const leadUser: any = await User.findOne({ buyerId: lead?.bid });
 
-        const message: any = { name: leadUser.firstName, status: "Approved" };
-        send_email_for_lead_status(leadUser?.email, message);
+        const message: any = { name: leadUser.firstName + " " + leadUser.lastName};
+        send_email_for_lead_status_accept(leadUser?.email, message);
         addCreditsToBuyer(payment)
           .then(async () => {
             const dataToSave: any = {
