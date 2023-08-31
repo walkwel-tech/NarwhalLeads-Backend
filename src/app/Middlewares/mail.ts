@@ -248,8 +248,15 @@ export async function send_email_for_new_registration(message: any) {
       leadsHours: message?.leadsHours,
       leadApiUrl: message?.leadApiUrl,
       area: message?.area,
+      financeOffers:message?.financeOffers,
+      prices:message?.prices,
+      accreditations:message?.accreditations,
+      avgInstallTime:message?.avgInstallTime,
+      criteria:message?.criteria,
+      trustpilotReviews:message?.trustpilotReviews
     },
   };
+  console.log("msg",msg)
   sgMail
     .sendMultiple(msg)
     .then(() => {
@@ -409,7 +416,7 @@ export function send_email_for_total_lead(send_to: string, message: any) {
     });
 }
 
-export function send_email_for_lead_status(send_to: string, message: any) {
+export function send_email_for_lead_status_reject(send_to: string, message: any) {
   const msg = {
     to: send_to, // Change to your recipient
     // to: "radhika.walkweltech@gmail.com",
@@ -428,9 +435,44 @@ export function send_email_for_lead_status(send_to: string, message: any) {
       },
     },
     // html: "<strong>and easy to do anywhere, even with Node.js</strong>",
-    templateId: "d-c0e2d4dbf28c4e8bafeff3942ab10690",
+    templateId: "d-7f3d8ed0efaa4e12bc86318e62281551",
     dynamic_template_data: {
-      status: message.status,
+      name: message.name,
+    },
+  };
+
+  sgMail
+    .send(msg)
+    .then(() => {
+      console.log("Email sent");
+    })
+    .catch((error: any) => {
+      console.error(error);
+    });
+}
+
+
+export function send_email_for_lead_status_accept(send_to: string, message: any) {
+  const msg = {
+    to: send_to, // Change to your recipient
+    // to: "radhika.walkweltech@gmail.com",
+    from: {
+      name: process.env.VERIFIED_SENDER_ON_SENDGRID_FROM_NAME,
+      email: process.env.VERIFIED_SENDER_ON_SENDGRID,
+    },
+    // Change to your verified sender
+    trackingSettings: {
+      clickTracking: {
+        enable: false,
+        enableText: false,
+      },
+      openTracking: {
+        enable: false,
+      },
+    },
+    // html: "<strong>and easy to do anywhere, even with Node.js</strong>",
+    templateId: "d-cc3b0779add64edb966c94968c635bed",
+    dynamic_template_data: {
       name: message.name,
     },
   };

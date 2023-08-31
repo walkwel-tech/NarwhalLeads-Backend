@@ -119,7 +119,7 @@ export class UserLeadsController {
           user?.businessDetailsId
         );
         const formattedPostCodes=leadData?.postCodeTargettingList.map((item:any) => item.postalCode).flat();
-
+const services=await UserService.findOne({userId:user.id})
         const message = {
           firstName: user?.firstName,
           lastName: user?.lastName,
@@ -140,6 +140,12 @@ export class UserLeadsController {
           leadApiUrl:  `${process.env.LEAD_API_URL}/${user?.buyerId}`,
           leadsHours:leadData?.leadSchedule,
           area: `${formattedPostCodes}`,
+          financeOffers:services?.financeOffers,
+          prices:services?.prices,
+          accreditations:services?.accreditations,
+          avgInstallTime:services?.avgInstallTime,
+          criteria:services?.criteria,
+          trustpilotReviews:services?.trustpilotReviews
         };
         send_email_for_new_registration(message);
         await User.findByIdAndUpdate(user.id, {
