@@ -17,6 +17,7 @@ import { FreeCreditsLink } from "../Models/freeCreditsLink";
 import { PROMO_LINK } from "../../utils/Enums/promoLink.enum";
 import { addCreditsToBuyer } from "../../utils/payment/addBuyerCredit";
 import { UserService } from "../Models/UserService";
+import { business_details_submission } from "../../utils/webhookUrls/business_details_submission";
 
 export class UserLeadsController {
   static create = async (req: Request, res: Response) => {
@@ -151,7 +152,27 @@ const services=await UserService.findOne({userId:user.id})
         await User.findByIdAndUpdate(user.id, {
           registrationMailSentToAdmin: true,
         });
-      }
+      const messageToSendInBusinessSubmission = {
+        businessName: businessDeatilsData?.businessName,
+        phone: businessDeatilsData?.businessSalesNumber,
+        industry: businessDeatilsData?.businessIndustry,
+        address: businessDeatilsData?.address1 + " " + businessDeatilsData?.address2,
+        city: businessDeatilsData?.businessCity,
+        country: businessDeatilsData?.businessCountry,
+        // openingHours: formattedOpeningHours,
+        openingHours: businessDeatilsData?.businessOpeningHours,
+        logo: businessDeatilsData?.businessLogo,
+        financeOffers: service?.financeOffers,
+        prices: service?.prices,
+        accreditations: service?.accreditations,
+        avgInstallTime: service?.avgInstallTime,
+        criteria:JSON.stringify( service?.criteria),
+        dailyLeads: leadData?.daily,
+        postCodes:leadData?.postCodeTargettingList,
+      };
+      business_details_submission(messageToSendInBusinessSubmission); 
+    }
+     
       if(user.premiumUser && user.premiumUser==PROMO_LINK.PREMIUM_USER_NO_TOP_UP){
               const promoLink=await FreeCreditsLink.findById(user?.promoLinkId)
               const params={
@@ -315,6 +336,25 @@ const services=await UserService.findOne({userId:user.id})
           area: `${formattedPostCodes}`,
         };
         send_email_for_updated_details(message);
+        // const messageToSendInBusinessSubmission = {
+        //   businessName: businessDeatilsData?.businessName,
+        //   phone: businessDeatilsData?.businessSalesNumber,
+        //   industry: businessDeatilsData?.businessIndustry,
+        //   address: businessDeatilsData?.address1 + " " + businessDeatilsData?.address2,
+        //   city: businessDeatilsData?.businessCity,
+        //   country: businessDeatilsData?.businessCountry,
+        //   // openingHours: formattedOpeningHours,
+        //   openingHours: businessDeatilsData?.businessOpeningHours,
+        //   logo: businessDeatilsData?.businessLogo,
+        //   financeOffers: service?.financeOffers,
+        //   prices: service?.prices,
+        //   accreditations: service?.accreditations,
+        //   avgInstallTime: service?.avgInstallTime,
+        //   criteria:JSON.stringify( service?.criteria),
+        //   dailyLeads: updatedDetails?.daily,
+        //   postCodes:updatedDetails?.postCodeTargettingList,
+        // };
+        // business_details_submission(messageToSendInBusinessSubmission); 
         return res.json({
           data: {
             message: "UserLeadsDetails updated successfully.",
