@@ -10,7 +10,7 @@ export const createContactOnXero = (
   token: string
 ) => {
   const data = {
-    Name: paramsToCreateContact.name,
+    Name: paramsToCreateContact.addressLine2,
     FirstName: paramsToCreateContact.firstName,
     LastName: paramsToCreateContact.lastName,
     // EmailAddress: paramsToCreateContact.emailAddress,

@@ -112,6 +112,13 @@ export class BusinessDetailsController {
 
     // input.businessOpeningHours=JSON.parse(input.businessOpeningHours)
     try {
+      const isBusinessNameExist=await BusinessDetails.find({businessName:input.businessName})
+      console.log("isBusinessNameExist",isBusinessNameExist)
+      if(isBusinessNameExist.length>0){
+        return res
+        .status(400)
+        .json({ error: { message: "Business Name Already Exists."} });
+      }
       let dataToSave: any = {
         userId: input?.userId,
         businessIndustry: Business?.businessIndustry,
