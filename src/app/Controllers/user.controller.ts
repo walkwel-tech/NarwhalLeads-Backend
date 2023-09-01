@@ -751,8 +751,16 @@ export class UsersControllers {
           area: `${formattedPostCodes}`
         }
         send_email_for_updated_details(message)
+if(input.triggerAmount || input.autoChargeAmount){
+  return res.json({message:"Auto Top-Up Settings Updated Successfully",data:result})
+}
+else if(input.paymentMethod){
+  return res.json({message:"Payment Mode Changed Successfully",data:result});
+}
 
-        return res.json({ data: result });
+else {
+  return res.json({message:"Updated Successfully",data:result});
+}
       }  
     } catch (err) {
       return res
