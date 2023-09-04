@@ -399,11 +399,12 @@ if(!industry){
           error: { message: "Only admin can reject or accept the status." },
         });
       }
+
       if (input?.invalidLeadReason == "Select Option") {
         input.invalidLeadReason = "";
         await Leads.findByIdAndUpdate(
           leadId,
-          { status: leadsStatusEnums.VALID },
+          { status: leadsStatusEnums.VALID,statusUpdatedAt:new Date() },
           { new: true }
         );
       }
@@ -416,6 +417,7 @@ if(!industry){
           {
             status: leadsStatusEnums.REPORTED,
             reportedAt: new Date(),
+            statusUpdatedAt:new Date() ,
             clientNotes: input?.clientNotes,
           },
           { new: true }
@@ -458,10 +460,17 @@ if(!industry){
         send_email_for_lead_status_reject(leadUser?.email, message);
         const leadsUpdate = await Leads.findByIdAndUpdate(
           leadId,
-          { ...input, reportRejectedAt: new Date() },
+          { ...input, reportRejectedAt: new Date(),statusUpdatedAt:new Date()  },
           { new: true }
         );
         return res.json({ data: leadsUpdate });
+      }
+      if(input.status){
+        await Leads.findByIdAndUpdate(
+          leadId,
+          { webhookHits:false,webhookHitsCounts:0 },
+          { new: true }
+        );
       }
       if (
         //@ts-ignore
@@ -497,7 +506,7 @@ if(!industry){
             await Transaction.create(dataToSave);
             const leadsUpdate = await Leads.findByIdAndUpdate(
               leadId,
-              { ...input, reportAcceptedAt: new Date() },
+              { ...input, reportAcceptedAt: new Date() , statusUpdatedAt:new Date() },
               { new: true }
             );
             return res.json({ data: leadsUpdate });
@@ -518,11 +527,12 @@ if(!industry){
       } else {
         const leadsUpdate = await Leads.findByIdAndUpdate(
           leadId,
-          { ...input },
+          { ...input,statusUpdatedAt:new Date() },
           { new: true }
         );
         return res.json({ data: leadsUpdate });
       }
+
     } catch (error) {
       return res
         .status(500)

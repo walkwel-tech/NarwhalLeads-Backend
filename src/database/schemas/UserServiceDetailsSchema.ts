@@ -9,7 +9,6 @@ const UserServiceSchema = new Schema(
       },
       financeOffers: {
         type: Boolean,
-        default: false,
       },
       prices: {
         type: String,

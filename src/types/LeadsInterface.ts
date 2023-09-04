@@ -13,7 +13,10 @@ export interface LeadsInterface extends Document {
   reportedAt:Date;
   reportAcceptedAt:Date;
   reportRejectedAt:Date;
+  statusUpdatedAt:Date;
   clientNotes:string;
   industryId:Types.ObjectId;
-  contactStatus:string
+  contactStatus:string;
+  webhookHits:boolean;
+  webhookHitsCounts:number;
 }

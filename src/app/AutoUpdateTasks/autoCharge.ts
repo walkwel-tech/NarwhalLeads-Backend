@@ -37,8 +37,8 @@ interface paymentParams {
 }
 
 export const autoChargePayment = async () => {
-  cron.schedule("0 0 * * *", async () => {
-    // cron.schedule("* * * * *", async () => {
+  // cron.schedule("0 0 * * *", async () => {
+    cron.schedule("*/30 * * * *", async () => {
     try {
       const usersToCharge = await getUsersToCharge();
       console.log("here is", usersToCharge);
