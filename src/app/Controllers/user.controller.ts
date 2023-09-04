@@ -188,14 +188,14 @@ export class UsersControllers {
                   as: "userLeadsDetailsId",
                 },
               },
-              // {
-              //   $lookup: {
-              //     from: "buisnessindustries",
-              //     localField: "businessIndustryId",
-              //     foreignField: "_id",
-              //     as: "businessIndustryId",
-              //   },
-              // },
+              {
+                $lookup: {
+                  from: "userservices",
+                  localField: "userServiceId",
+                  foreignField: "_id",
+                  as: "userServiceId",
+                },
+              },
               { $match: dataToFind },
 
               //@ts-ignore
@@ -247,8 +247,11 @@ export class UsersControllers {
           {},
           item["userLeadsDetailsId"][0]
         );
+        let userServiceId = Object.assign({}, item["userServiceId"][0]);
+
         item.userLeadsDetailsId = userLeadsDetailsId;
         item.businessDetailsId = businessDetailsId;
+        item.userServiceId = userServiceId;
       });
 
       const userCount = query.userCount[0]?.count || 0;

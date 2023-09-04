@@ -37,6 +37,9 @@ const LeadsSchema = new Schema(
     reportedAt:{
       type:Date
     },
+    statusUpdatedAt:{
+      type:Date
+    },
     reportAcceptedAt:{
       type:Date
     },
@@ -46,6 +49,14 @@ const LeadsSchema = new Schema(
     clientNotes: {
       type: String,
       default: "",
+    },
+    webhookHits: {
+      type: Boolean,
+      default: false,
+    },
+    webhookHitsCounts: {
+      type: Number,
+      default:0
     },
     industryId: {
       type: Types.ObjectId,
