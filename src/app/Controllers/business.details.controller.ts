@@ -22,7 +22,7 @@ import {
 } from "../../utils/XeroApiIntegration/createContact";
 import { User } from "../Models/User";
 import { UserLeadsDetails } from "../Models/UserLeadsDetails";
-import { LeadTablePreference } from "../Models/LeadTablePreference";
+// import { LeadTablePreference } from "../Models/LeadTablePreference";
 import { AccessToken } from "../Models/AccessToken";
 import { UserService } from "../Models/UserService";
 import { business_details_submission } from "../../utils/webhookUrls/business_details_submission";
@@ -347,28 +347,47 @@ export class BusinessDetailsController {
       if ((req.file || {}).filename) {
         input.businessLogo = `${FileEnum.PROFILEIMAGE}${req?.file?.filename}`;
       }
-      //       ? //@ts-ignore
-      //         `${FileEnum.PROFILEIMAGE}${req?.file.filename}`)
-      if (input.businessIndustry) {
-        const industry = await BuisnessIndustries.findOne({
-          industry: input.businessIndustry,
-        });
-        userData = await User.findByIdAndUpdate(
-          userData?.id,
-          { leadCost: industry?.leadCost, businessIndustryId: industry?.id },
 
-          { new: true }
-        );
-        const prefExist = await LeadTablePreference.find({
-          userId: userData?.id,
-        });
-        if (!prefExist) {
-          await LeadTablePreference.findOneAndUpdate(
-            { userId: userData?.id },
-            { $set: { columns: industry?.columns } }
-          );
-        }
-      }
+  
+
+      // if (input.businessName) {
+      //    await BusinessDetails.findByIdAndUpdate(id, input, {
+      //     new: true,
+      //   });
+      //   const params={
+      //     ContactID:userData?.xeroContactId,
+      //     addressLine2:input.businessName
+      //   }
+      //   const token: any = await AccessToken.findOne();
+      //   createContactOnXero(params, token?.access_token)
+      //     .then(async (res: any) => {
+         
+      //       console.log("success in updating contact");
+      //     })
+      //     .catch((err) => {
+      //       refreshToken()
+      //         .then(async (res: any) => {
+      //           console.log("Token updated while updating customer!!!");
+      //           createContactOnXero(params, res.data.access_token)
+      //             .then(async (res: any) => {
+                
+      //               console.log("success in updating contact");
+      //             })
+      //             .catch((error) => {
+      //               console.log(
+      //                 "ERROR IN CREATING CUSTOMER AFTER TOKEN UPDATION."
+      //               );
+      //             });
+      //         })
+      //         .catch((err) => {
+      //           console.log(
+      //             "error in updating contact on xero",
+      //             err.response.data
+      //           );
+      //         });
+      //     });
+       
+      // }
       const data = await BusinessDetails.findByIdAndUpdate(id, input, {
         new: true,
       });

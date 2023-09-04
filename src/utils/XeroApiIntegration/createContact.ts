@@ -9,20 +9,23 @@ export const createContactOnXero = (
   paramsToCreateContact: any,
   token: string
 ) => {
-  const data = {
-    Name: paramsToCreateContact.addressLine2,
-    FirstName: paramsToCreateContact.firstName,
-    LastName: paramsToCreateContact.lastName,
+  let data:any = {
+    Name: paramsToCreateContact?.addressLine2,
+    FirstName: paramsToCreateContact?.firstName,
+    LastName: paramsToCreateContact?.lastName,
     // EmailAddress: paramsToCreateContact.emailAddress,
     Addresses: [
       {
         AddressType: "POBOX",
-        AddressLine1: paramsToCreateContact.addressLine2,
-        City: paramsToCreateContact.city,
-        PostalCode: paramsToCreateContact.postalCode,
+        AddressLine1: paramsToCreateContact?.addressLine2,
+        City: paramsToCreateContact?.city,
+        PostalCode: paramsToCreateContact?.postalCode,
       },
     ],
   };
+  if(paramsToCreateContact.ContactID){
+    data.ContactID=paramsToCreateContact.ContactID
+  }
   return new Promise(async (resolve, reject) => {
     const config = {
       method: POST,
