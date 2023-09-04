@@ -32,7 +32,7 @@ export const createNotesOnXero = (
         resolve(data);
       })
       .catch(async (err) => {
-        console.log("Xero Error whilte adding notes", err.response.data.Elements[0].ValidationErrors);
+        console.log("Xero Error whilte adding notes", err.response.data.Elements);
         reject(err);
       });
   });
