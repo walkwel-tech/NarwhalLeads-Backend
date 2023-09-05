@@ -37,8 +37,8 @@ interface paymentParams {
 }
 
 export const autoChargePayment = async () => {
-  // cron.schedule("0 0 * * *", async () => {
-    cron.schedule("*/30 * * * *", async () => {
+  cron.schedule("0 0 * * *", async () => {
+    // cron.schedule("*/2 * * * *", async () => {
     try {
       const usersToCharge = await getUsersToCharge();
       console.log("here is", usersToCharge);
@@ -58,87 +58,7 @@ export const autoChargePayment = async () => {
   });
 };
 
-// const autoPayment = async (user: UserInterface, card:CardDetailsInterface) => {
-// console.log("here 1")
-//   const params: any = {
-//     fixedAmount: user?.autoChargeAmount + (user?.autoChargeAmount * VAT) / 100,
-//     email: user.email,
-//     cardNumber: card?.cardNumber,
-//     buyerId: user.buyerId,
-//     clientId: user?.ryftClientId,
-//     cardId: card?.id,
-//     paymentSessionId: card.paymentSessionID,
-//   };
-//   const text = {
-//     firstName: user.firstName,
-//     lastName: user.lastName,
-//     //@ts-ignore
-//     businessName: user.businessDetailsId?.businessName,
-//     //@ts-ignore
-//     phone: user.businessDetailsId?.businessSalesNumber,
-//     email: user.email,
-//     credits: user.credits,
-//     amount: user?.autoChargeAmount,
-//     cardNumberEnd: card?.cardNumber?.substr(-4),
-//     cardHolderName: card?.cardHolderName,
-//   };
-//   send_email_for_autocharge(user.email, text);
-//   params.paymentMethodId = card?.paymentMethod;
-//   console.log("here reavhedddd")
-//   createSessionUnScheduledPayment(params)
-//     .then(async (res:any) => {
-//       console.log("payment initiated!");
-//       if (!user.xeroContactId) {
-//         console.log("xeroContact ID not found. Failed to generate pdf.");
-//       }
-//       return res
 
-//     })
-//     .catch(async (err) => {
-//       console.log("check 2")
-//       const transactions=await Transaction.findOne({userId:user.id,status:PAYMENT_STATUS.CAPTURED,cardId: { $ne: card.id }})
-//     console.log("transaction",transactions)
-//       if(!transactions){
-//          send_email_for_failed_autocharge(user.email, text);
-//       console.log("error in payment Api");
-//       const dataToSave: any = {
-//         userId: user.id,
-//         cardId: card?.id,
-//         amount: user?.autoChargeAmount,
-//         title: transactionTitle.CREDITS_ADDED,
-//         isCredited: true,
-//         status: "error",
-//       };
-//       await Transaction.create(dataToSave);
-//       }
-//       else{
-//         console.log("check 3")
-//         const SecCard=await CardDetails.findOne({id:transactions.cardId,isDeleted:false})
-//         console.log("secondary card",SecCard)
-//         if(SecCard){
-//           const data=await autoPayment(user,SecCard)
-//           console.log("data in auto payment",data)
-//           return data
-//         }
-//         else{
-//           send_email_for_failed_autocharge(user.email, text);
-//       console.log("error in payment Api");
-//       const dataToSave: any = {
-//         userId: user.id,
-//         cardId: card?.id,
-//         amount: user?.autoChargeAmount,
-//         title: transactionTitle.CREDITS_ADDED,
-//         isCredited: true,
-//         status: "error",
-//       };
-//       await Transaction.create(dataToSave);
-//         }
-
-//       }
-
-//     });
-// };
-//weekl deduct credits, not payment.
 export const weeklypayment = async () => {
   cron.schedule("00 09 * * MON", async () => {
     console.log("Monday 9am Cron Job started.");
@@ -386,6 +306,7 @@ const autoTopUp = async (
   user: UserInterface,
   paymentMethod: CardDetailsInterface
 ) => {
+  
   const params: paymentParams = {
     fixedAmount: user.autoChargeAmount + (user.autoChargeAmount * VAT) / 100,
     email: user.email,
@@ -396,6 +317,7 @@ const autoTopUp = async (
     paymentSessionId: paymentMethod?.paymentSessionID,
     paymentMethodId: paymentMethod?.paymentMethod,
   };
+  console.log("params",params)
   const success: any = await chargeUser(params);
 
   if (success) {
