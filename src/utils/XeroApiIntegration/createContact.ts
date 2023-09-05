@@ -10,14 +10,15 @@ export const createContactOnXero = (
   token: string
 ) => {
   let data:any = {
-    Name: paramsToCreateContact?.addressLine2,
+    Name: paramsToCreateContact?.businessName,
     FirstName: paramsToCreateContact?.firstName,
     LastName: paramsToCreateContact?.lastName,
     // EmailAddress: paramsToCreateContact.emailAddress,
     Addresses: [
       {
         AddressType: "POBOX",
-        AddressLine1: paramsToCreateContact?.addressLine2,
+        AddressLine1: paramsToCreateContact?.addressLine1,
+        AddressLine2: paramsToCreateContact?.addressLine2,
         City: paramsToCreateContact?.city,
         PostalCode: paramsToCreateContact?.postalCode,
       },

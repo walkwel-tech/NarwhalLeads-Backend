@@ -155,10 +155,11 @@ export class BusinessDetailsController {
         firstName: user.firstName,
         lastName: user.lastName,
         emailAddress: user.email,
-        // addressLine1: input.businessIndustry,
-        addressLine2: input.businessName,
+        addressLine1: input.businessName,
+        addressLine2: input.address1 + " " + input.address2,
         city: input.businessCity,
         postalCode: input.businessPostCode,
+        businessName:input.businessName
       };
       const token: any = await AccessToken.findOne();
       createContactOnXero(paramsToCreateContact, token?.access_token)
