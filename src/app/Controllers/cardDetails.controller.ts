@@ -653,12 +653,14 @@ export class CardDetailsControllers {
         const card = await RyftPaymentMethods.findOne({
           paymentMethod: input.data?.paymentMethod?.id,
         });
+        const business= await BusinessDetails.findById(userId?.businessDetailsId)
         const message = {
           firstName: userId?.firstName,
           amount: parseInt(input.data.amount) / 100,
           cardHolderName: `${userId?.firstName} ${userId?.lastName}`,
           cardNumberEnd: cardDetailsExist?.cardNumber,
           credits: userId?.credits,
+          businessName:business?.businessName
         };
         send_email_for_payment_failure(userId?.email, message);
         let dataToSaveInTransaction:any=
@@ -696,7 +698,6 @@ export class CardDetailsControllers {
           buyerId: userId?.buyerId,
           fixedAmount: originalAmount,
         };
-        console.log( "-----???????????",originalAmount,originalAmount >= PREMIUM_PROMOLINK.TOP_UP) 
 
         //TODO: THIS WILL BE ONLY ON 1 TRANSATION
         if (
@@ -704,18 +705,19 @@ export class CardDetailsControllers {
           !userId.promoCodeUsed &&
           userId?.promoLinkId &&
           userId.premiumUser == PROMO_LINK.PREMIUM_USER_TOP_UP &&
-          originalAmount >= promoLink?.topUpAmount
+          originalAmount >= (promoLink?.topUpAmount * parseInt(userId?.leadCost))
         ) {
-          params.freeCredits = promoLink?.freeCredits;
+          params.freeCredits = (promoLink?.freeCredits * parseInt(userId?.leadCost));
           console.log("in 1");
         } else if (
           promoLink?.spotDiffPremiumPlan &&
-          originalAmount >= promoLink?.topUpAmount &&
+          originalAmount >= (promoLink?.topUpAmount * parseInt(userId?.leadCost)) &&
           userId.promoCodeUsed
         ) {
-          params.freeCredits = promoLink?.freeCredits;
+          params.freeCredits = (promoLink?.freeCredits * parseInt(userId?.leadCost));
           console.log("in 2");
         }
+        //FIXME: also need ti appply *parseInt(userId?.leadCost)
         else if (
           !userId.promoCodeUsed &&
           originalAmount >= PREMIUM_PROMOLINK.TOP_UP
@@ -758,12 +760,14 @@ export class CardDetailsControllers {
               save.paymentType=PAYMENT_TYPE_ENUM.AUTO_CHARGE
             }
             const transactionForVat = await Transaction.create(save);
+            const business=await BusinessDetails.findById(userId?.businessDetailsId)
             const message = {
               firstName: userId?.firstName,
               amount: parseInt(input.data.amount) / 100,
               cardHolderName: `${userId?.firstName} ${userId?.lastName}`,
               cardNumberEnd: cardDetails?.cardNumber,
               credits: userId?.credits,
+              businessName:business?.businessName
             };
             send_email_for_payment_success(userId?.email, message);
             send_email_for_payment_success_to_admin(message);

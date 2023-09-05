@@ -22,6 +22,7 @@ import { ClientTablePreferenceInterface } from "../../types/clientTablePrefrence
 import { ClientTablePreference } from "../Models/ClientTablePrefrence";
 import { Column } from "../../types/ColumnsPreferenceInterface";
 import { Admins } from "../Models/Admins";
+import { deleteCustomerOnRyft } from "../../utils/createCustomer/deleteFromRyft";
 const ObjectId = mongoose.Types.ObjectId;
 
 const LIMIT = 10;
@@ -786,6 +787,8 @@ else {
         isDeleted: true,
         deletedAt: new Date(),
       });
+      //@ts-ignore
+    deleteCustomerOnRyft(user?.ryftClientId).then(()=>console.log("deleted customer")).catch(()=>console.log("error while deleting customer on ryft"))
 
       if (!user) {
         return res

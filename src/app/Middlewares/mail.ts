@@ -210,8 +210,14 @@ export async function send_email_for_new_registration(message: any) {
   let Subscriber: string[] = ["leads@nmg.group"];
   const data = await SubscriberList.find();
   data.map((i) => Subscriber.push(i.email));
+  if(message?.financeOffers===false){
+    message.financeOffers="No"
+  }
+  if(message?.financeOffers===true){
+    message.financeOffers="Yes"
+  }
   const msg = {
-    // to: "leads@nmg.group", // Change to your recipient
+    // to: "radhika.walkweltech@gmail.com", // Change to your recipient
     to: Subscriber,
     from: {
       name: process.env.VERIFIED_SENDER_ON_SENDGRID_FROM_NAME,
@@ -592,6 +598,7 @@ export function send_email_for_payment_success(send_to: any, message: any) {
       paymentAmount: `£${message?.amount}`,
       cardNumberEnd: message?.cardNumberEnd,
       cardHolderName: message?.cardHolderName,
+      businessName:message?.businessName
     },
   };
 
@@ -632,6 +639,7 @@ export function send_email_for_payment_failure(send_to: any, message: any) {
       paymentAmount: `£${message?.amount}`,
       cardNumberEnd: message?.cardNumberEnd,
       cardHolderName: message?.cardHolderName,
+      businessName:message?.businessName
     },
   };
 

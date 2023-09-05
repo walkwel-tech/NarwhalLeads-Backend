@@ -154,7 +154,7 @@ class AuthController {
           });
           const dataToSave: any = {
             isUsed: true,
-            $push: { user: { userId: createdUser.id } },
+            $push: { user: { userId: createdUser.id,businessDetailsId:createdUser.businessDetailsId } },
             usedAt: new Date(),
             useCounts: checkCode?.useCounts + 1,
           };
