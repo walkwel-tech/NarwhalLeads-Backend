@@ -61,7 +61,8 @@ class AuthController {
         .json({ error: { message: "VALIDATIONS_ERROR", info: errorsInfo } });
     }
     try {
-      const user = await User.findOne({ email: input.email });
+      const user = await User.findOne({ email: input.email, isDeleted:false });
+      console.log("user------",user)
       if (!user) {
         const salt = genSaltSync(10);
         const hashPassword = hashSync(input.password, salt);
