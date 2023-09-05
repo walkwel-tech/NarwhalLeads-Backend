@@ -28,6 +28,12 @@ export class freeCreditsLinkController {
       };
       if (input.code){
 dataToSave.code=input.code
+const code=await FreeCreditsLink.find({code:input.code})
+if(code.length>0){
+  res.status(400).json({ error: { message: "Duplicate codes are not allowed" } });
+
+}
+
       }
       if (input.spotDiffPremiumPlan) {
         dataToSave.code = 'SPOTDIFF_' + randomString(10)
@@ -69,14 +75,12 @@ dataToSave.code=input.code
         // .sort({ createdAt: -1 })
 
         .populate("user.userId", "_id firstName lastName createdAt")
-      //   .populate({
-      //     path: "user.businessDetailsId", // Populate the businessId field
-      //     model: "BusinessDetails", // The name of the Business model
-      //     select: "businessName businessIdField2", // Replace with actual fields from the Business model
-      // })
+        // .populate("user.businessDetailsId", "_id createdAt")
+    
         .sort({ createdAt: -1 })
         .select("_id code freeCredits useCounts maxUseCounts name isDisabled isUsed usedAt topUpAmount user createdAt updatedAt __v")
         .lean();
+        // console.log("wieuyue",query)
 
       const transformedArray = query.map((item: any) => {
         return {
