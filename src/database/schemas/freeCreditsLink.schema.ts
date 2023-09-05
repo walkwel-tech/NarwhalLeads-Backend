@@ -33,6 +33,10 @@ const FreeCreditsLinkSchema = new Schema(
           ref: "User",
         },
         userCount: Number,
+        businessDetailsId: {
+          type: Types.ObjectId,
+          ref: "BusinessDetails", // Reference to the Business model
+        },
       },
     ],
     usedAt: {
@@ -50,6 +54,13 @@ const FreeCreditsLinkSchema = new Schema(
       type: String,
       required: true,
     },
+    isDeleted:{
+      type:Boolean,
+      default:false
+    },
+    deletedAt:{
+      typ:Date
+    }
   },
   { timestamps: true }
 );

@@ -18,7 +18,7 @@ export class freeCreditsLinkController {
       if(input?.freeCredits <0 || input?.topUpAmount <0){
         res.status(400).json({ error: { message: "Invalid value" } });
       }
-      const dataToSave: any = {
+      let dataToSave: any = {
         code: randomString(10),
         freeCredits: input.freeCredits,
         topUpAmount: input.topUpAmount,
@@ -26,6 +26,9 @@ export class freeCreditsLinkController {
         useCounts: 0,
         name:input.name
       };
+      if (input.code){
+dataToSave.code=input.code
+      }
       if (input.spotDiffPremiumPlan) {
         dataToSave.code = 'SPOTDIFF_' + randomString(10)
         dataToSave.spotDiffPremiumPlan = true
@@ -41,7 +44,7 @@ export class freeCreditsLinkController {
   };
 
   static show = async (req: any, res: Response): Promise<any> => {
-    let dataToFind: any = {};
+    let dataToFind: any = {isDeleted:false};
     if (req.query.search) {
       dataToFind = {
         ...dataToFind,
@@ -66,6 +69,11 @@ export class freeCreditsLinkController {
         // .sort({ createdAt: -1 })
 
         .populate("user.userId", "_id firstName lastName createdAt")
+      //   .populate({
+      //     path: "user.businessDetailsId", // Populate the businessId field
+      //     model: "BusinessDetails", // The name of the Business model
+      //     select: "businessName businessIdField2", // Replace with actual fields from the Business model
+      // })
         .sort({ createdAt: -1 })
         .select("_id code freeCredits useCounts maxUseCounts name isDisabled isUsed usedAt topUpAmount user createdAt updatedAt __v")
         .lean();
@@ -86,12 +94,29 @@ export class freeCreditsLinkController {
     }
   };
 
-  static delete = async (req: Request, res: Response): Promise<any> => {
+  static expire = async (req: Request, res: Response): Promise<any> => {
     const id = req.params.id;
     try {
       const dataToSave: any = {
         isDisabled: true,
       };
+      const data = await FreeCreditsLink.findByIdAndUpdate(id, dataToSave, {
+        new: true,
+      });
+      return res.json({ data: data });
+    } catch (error) {
+      res.status(500).json({ error: { message: "something Went wrong." } });
+    }
+  };
+
+  static delete = async (req: Request, res: Response): Promise<any> => {
+    const id = req.params.id;
+    try {
+      const dataToSave: any = {
+        isDeleted: true,
+        deletedAt:new Date()
+      };
+
       const data = await FreeCreditsLink.findByIdAndUpdate(id, dataToSave, {
         new: true,
       });
