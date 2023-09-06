@@ -15,7 +15,7 @@ export class freeCreditsLinkController {
   static create = async (req: Request, res: Response): Promise<any> => {
     try {
       const input = req.body;
-      if(input?.freeCredits <0 || input?.topUpAmount <0){
+      if (input?.freeCredits < 0 || input?.topUpAmount < 0) {
         res.status(400).json({ error: { message: "Invalid value" } });
       }
       let dataToSave: any = {
@@ -24,23 +24,25 @@ export class freeCreditsLinkController {
         topUpAmount: input.topUpAmount,
         maxUseCounts: input.maxUseCounts,
         useCounts: 0,
-        name:input.name
+        name: input.name,
       };
-      if (input.code){
-dataToSave.code=input.code
-const code=await FreeCreditsLink.find({code:input.code})
-if(code.length>0){
-  res.status(400).json({ error: { message: "Duplicate codes are not allowed" } });
-
-}
-
+      if (input.code) {
+        dataToSave.code = input.code;
+        const code = await FreeCreditsLink.find({ code: input.code, isDeleted:false });
+        if (code.length > 0) {
+          res
+            .status(400)
+            .json({ error: { message: "Duplicate codes are not allowed" } });
+        }
       }
       if (input.spotDiffPremiumPlan) {
-        dataToSave.code = 'SPOTDIFF_' + randomString(10)
-        dataToSave.spotDiffPremiumPlan = true
+        dataToSave.code = "SPOTDIFF_" + randomString(10);
+        dataToSave.spotDiffPremiumPlan = true;
       }
       if (input.spotDiffPremiumPlan && !input.topUpAmount) {
-        res.status(400).json({ error: { message: "Top-up amount is required" } });
+        res
+          .status(400)
+          .json({ error: { message: "Top-up amount is required" } });
       }
       const data = await FreeCreditsLink.create(dataToSave);
       return res.json({ data: data });
@@ -50,7 +52,7 @@ if(code.length>0){
   };
 
   static show = async (req: any, res: Response): Promise<any> => {
-    let dataToFind: any = {isDeleted:false};
+    let dataToFind: any = { isDeleted: false };
     if (req.query.search) {
       dataToFind = {
         ...dataToFind,
@@ -58,36 +60,38 @@ if(code.length>0){
       };
     }
     if (!req.query.spotDiffPremiumPlan) {
-      dataToFind.spotDiffPremiumPlan = { $exists: false }
+      dataToFind.spotDiffPremiumPlan = { $exists: false };
     }
     if (req.query.spotDiffPremiumPlan) {
-      dataToFind.spotDiffPremiumPlan = true
+      dataToFind.spotDiffPremiumPlan = true;
     }
     if (req.query.expired) {
-      dataToFind.isDisabled = true
+      dataToFind.isDisabled = true;
     }
     if (req.query.live) {
-      dataToFind.isDisabled = false
+      dataToFind.isDisabled = false;
     }
     try {
-      let query = await FreeCreditsLink.find(dataToFind)
+      let query = await FreeCreditsLink.find({code:"monk"})
         // .populate("user.userId")
         // .sort({ createdAt: -1 })
 
         .populate("user.userId", "_id firstName lastName createdAt")
-        // .populate("user.businessDetailsId", "_id createdAt")
-    
+        .populate("user.businessDetailsId", "businessName")
+
         .sort({ createdAt: -1 })
-        .select("_id code freeCredits useCounts maxUseCounts name isDisabled isUsed usedAt topUpAmount user createdAt updatedAt __v")
+        .select(
+          "_id code freeCredits useCounts maxUseCounts name isDisabled isUsed usedAt topUpAmount user createdAt updatedAt __v"
+        )
         .lean();
-        // console.log("wieuyue",query)
+      // console.log("wieuyue",query)
 
       const transformedArray = query.map((item: any) => {
         return {
           ...item,
           user: item?.user.map((userItem: any) => {
-             return userItem.userId
-          })
+            return userItem.userId;
+          }),
         };
       });
       return res.json({
@@ -118,7 +122,7 @@ if(code.length>0){
     try {
       const dataToSave: any = {
         isDeleted: true,
-        deletedAt:new Date()
+        deletedAt: new Date(),
       };
 
       const data = await FreeCreditsLink.findByIdAndUpdate(id, dataToSave, {
@@ -129,5 +133,4 @@ if(code.length>0){
       res.status(500).json({ error: { message: "something Went wrong." } });
     }
   };
-
 }
