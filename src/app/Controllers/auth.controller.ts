@@ -148,14 +148,13 @@ class AuthController {
           dataToSave.premiumUser = PROMO_LINK.PREMIUM_USER_TOP_UP;
           dataToSave.promoLinkId = checkCode?.id;
         }
-        const createdUser = await User.create(dataToSave);
+        await User.create(dataToSave);
         if (input.code) {
           const checkCode: any = await FreeCreditsLink.findOne({
             code: input.code,
           });
           const dataToSave: any = {
             isUsed: true,
-            $push: { user: { userId: createdUser.id,businessDetailsId:createdUser.businessDetailsId } },
             usedAt: new Date(),
             useCounts: checkCode?.useCounts + 1,
           };
