@@ -80,7 +80,7 @@ export class IndustryController {
     try {
       const sortField: any = req.query.sort || "createdAt"; // Change this field name as needed
 
-      const sortOrder = 1; // Change this as needed
+      const sortOrder : any= req.query.order || 1; // Change this as needed
 
       const sortObject: Record<string, 1 | -1> = {};
       sortObject[sortField] = sortOrder;

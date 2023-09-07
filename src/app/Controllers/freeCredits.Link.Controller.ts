@@ -28,7 +28,10 @@ export class freeCreditsLinkController {
       };
       if (input.code) {
         dataToSave.code = input.code;
-        const code = await FreeCreditsLink.find({ code: input.code, isDeleted:false });
+        const code = await FreeCreditsLink.find({
+          code: input.code,
+          isDeleted: false,
+        });
         if (code.length > 0) {
           res
             .status(400)
@@ -47,8 +50,10 @@ export class freeCreditsLinkController {
       const data = await FreeCreditsLink.create(dataToSave);
       return res.json({ data: data });
     } catch (error) {
-      console.log(error)
-      res.status(500).json({ error: { message: "something Went wrong." ,error} });
+      console.log(error);
+      res
+        .status(500)
+        .json({ error: { message: "something Went wrong.", error } });
     }
   };
 
@@ -73,30 +78,91 @@ export class freeCreditsLinkController {
       dataToFind.isDisabled = false;
     }
     try {
-      let query = await FreeCreditsLink.find(dataToFind)
-        // .populate("user.userId")
-        // .sort({ createdAt: -1 })
-
-        .populate("user.userId", "_id firstName lastName createdAt")
-        // .populate("user.businessDetailsId", "businessName")
-
-        .sort({ createdAt: -1 })
-        .select(
-          "_id code freeCredits useCounts maxUseCounts name isDisabled isUsed usedAt topUpAmount user createdAt updatedAt __v"
-        )
-        .lean();
-      // console.log("wieuyue",query)
-
-      const transformedArray = query.map((item: any) => {
+      let query = await FreeCreditsLink.aggregate([
+        {
+          $lookup: {
+            from: "users", // Replace with the actual name of your "users" collection
+            localField: "users",
+            foreignField: "_id",
+            as: "usersData",
+          },
+        },
+        {
+          $lookup: {
+            from: "businessdetails", // Replace with the actual name of your "BusinessDetails" collection
+            localField: "usersData.businessDetailsId",
+            foreignField: "_id",
+            as: "businessDetails",
+          },
+        },
+        {
+          $sort: { createdAt: -1 },
+        },
+        {
+          $project: {
+            _id: 1,
+            code: 1,
+            freeCredits: 1,
+            useCounts: 1,
+            maxUseCounts: 1,
+            name: 1,
+            isDisabled: 1,
+            isUsed: 1,
+            usedAt: 1,
+            topUpAmount: 1,
+            createdAt: 1,
+            updatedAt: 1,
+            __v: 1,
+            users: {
+              $mergeObjects: [
+                {
+                  userData: "$usersData", // Replace with the actual path to the user's _id field
+                  // userCount: "$user.userCount"
+                },
+                {
+                  businessDetailsId: "$businessDetails" // Populate "businessDetailsId" with the "businessDetails" data
+                }
+              ]
+            },
+          },
+        },
+      ]);
+      const transformedData = query.map(item => {
+        const usersData = item.users.userData.map((user:any) => {
+            const businessDetails = item.users.businessDetailsId.find((business:any) => business._id.equals(user.businessDetailsId));
+            const businessName = businessDetails ? businessDetails.businessName : '';
+            
+            return {
+                "_id": user._id,
+                "firstName": user.firstName,
+                "lastName": user.lastName,
+                "email": user.email,
+                "businessName": businessName,
+                "createdAt":user.createdAt
+                // Add other properties you need from the user object
+            };
+        });
+    
         return {
-          ...item,
-          user: item?.user.map((userItem: any) => {
-            return userItem.userId;
-          }),
+            "_id": item._id,
+            "code": item.code,
+            "freeCredits": item.freeCredits,
+            "useCounts": item.useCounts,
+            "maxUseCounts": item.maxUseCounts,
+            "isDisabled": item.isDisabled,
+            "isUsed": item.isUsed,
+            "usedAt": item.usedAt,
+            "topUpAmount": item.topUpAmount,
+            "name": item.name,
+            "createdAt": item.createdAt,
+            "updatedAt": item.updatedAt,
+            "__v": item.__v,
+            "users": usersData,
         };
-      });
+    });
+
       return res.json({
-        data: transformedArray,
+        data: transformedData,
       });
     } catch (error) {
       res.status(500).json({ error: { message: "something Went wrong." } });
