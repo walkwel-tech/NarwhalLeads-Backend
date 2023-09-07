@@ -52,6 +52,14 @@ export class BusinessDetailsController {
       (Business.businessPostCode = input.businessPostCode);
     Business.businessOpeningHours = JSON.parse(input?.businessOpeningHours);
     const errors = await validate(Business);
+    const isBusinessNameExist = await BusinessDetails.find({
+      businessName: input.businessName,
+    });
+    if (isBusinessNameExist.length > 0) {
+      return res
+        .status(400)
+        .json({ error: { message: "Business Name Already Exists." } });
+    }
     // get onboarding value of user
     const { onBoarding }: any = await User.findById(input.userId);
     // if not exists we assign the empty array.
@@ -113,15 +121,7 @@ export class BusinessDetailsController {
 
     // input.businessOpeningHours=JSON.parse(input.businessOpeningHours)
     try {
-      const isBusinessNameExist = await BusinessDetails.find({
-        businessName: input.businessName,
-      });
-      console.log("isBusinessNameExist", isBusinessNameExist);
-      if (isBusinessNameExist.length > 0) {
-        return res
-          .status(400)
-          .json({ error: { message: "Business Name Already Exists." } });
-      }
+     
       let dataToSave: any = {
         userId: input?.userId,
         businessIndustry: Business?.businessIndustry,
@@ -247,62 +247,6 @@ export class BusinessDetailsController {
       }
       const service = await UserService.create(input);
       await User.findByIdAndUpdate(user.id, { userServiceId: service.id });
-
-      // const messageToSendInBusinessSubmission = {
-      //   businessName: input?.businessName,
-      //   phone: input?.businessSalesNumber,
-      //   industry: input?.businessIndustry,
-      //   address: input?.address1 + " " + input?.address2,
-      //   city: input?.businessCity,
-      //   country: input?.businessCountry,
-      //   // openingHours: formattedOpeningHours,
-      //   openingHours: input?.businessOpeningHours,
-      //   logo: input?.businessLogo,
-      //   financeOffers: service?.financeOffers,
-      //   prices: service?.prices,
-      //   accreditations: service?.accreditations,
-      //   avgInstallTime: service?.avgInstallTime,
-      //   criteria: service?.criteria,
-      // };
-      // business_details_submission(messageToSendInBusinessSubmission);
-      // if (checkOnbOardingComplete(user) && !user.registrationMailSentToAdmin) {
-      //   const leadData = await UserLeadsDetails.findOne({
-      //     userId: userData?._id,
-      //   });
-      //   const formattedPostCodes=leadData?.postCodeTargettingList.map((item:any) => item.postalCode).flat();
-
-      //   const message = {
-      //     firstName: user?.firstName,
-      //     lastName: user?.lastName,
-      //     businessName: userData?.businessName,
-      //     phone: userData?.businessSalesNumber,
-      //     email: user?.email,
-      //     industry: userData?.businessIndustry,
-      //     address: userData?.address1 + " " + userData?.address2,
-      //     city: userData?.businessCity,
-      //     country: userData?.businessCountry,
-      //     // openingHours: formattedOpeningHours,
-      //     openingHours: userData?.businessOpeningHours,
-      //     totalLeads: leadData?.total,
-      //     monthlyLeads: leadData?.monthly,
-      //     weeklyLeads: leadData?.weekly,
-      //     dailyLeads: leadData?.daily,
-      //     // leadsHours: formattedLeadSchedule,
-      //     leadsHours: leadData?.leadSchedule,
-      //     area: `${formattedPostCodes}`,
-
-      //   };
-      //   if (req?.file) {
-      //     //@ts-ignore
-      //     message.businessLogo = `${FileEnum.PROFILEIMAGE}${req?.file.filename}`;
-      //   }
-      //   console.log("in busniess details msg drtails",message,leadData,formattedPostCodes )
-
-      //   send_email_for_new_registration(message);
-      //   await User.findByIdAndUpdate(user.id, {
-      //     registrationMailSentToAdmin: true,
-      //   });
-      // }
       res.json({
         data: userData,
         service,
@@ -359,6 +303,11 @@ export class BusinessDetailsController {
       let userData = await User.findOne({ businessDetailsId: id });
       if (input.businessOpeningHours) {
         input.businessOpeningHours = JSON.parse(input.businessOpeningHours);
+      }
+      const businesses=await BusinessDetails.find({businessName:input.businessName})
+      if(businesses.length>0){
+        return res.status(400).json({error:{message:"Business Name Already Exists."}})
+
       }
       if ((req.file || {}).filename) {
         input.businessLogo = `${FileEnum.PROFILEIMAGE}${req?.file?.filename}`;
@@ -440,6 +389,7 @@ export class BusinessDetailsController {
           // leadsHours: formattedLeadSchedule,
           leadsHours: leadData?.leadSchedule,
           area: `${formattedPostCodes}`,
+          leadCost:userData?.leadCost
         };
         send_email_for_updated_details(message);
 

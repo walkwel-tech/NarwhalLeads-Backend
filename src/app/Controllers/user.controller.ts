@@ -452,6 +452,11 @@ export class UsersControllers {
         if(!checkUser.businessDetailsId){
           return res.status(400).json({error:{message:"business details not found"}})
         }
+        const businesses=await BusinessDetails.find({businessName:input.businessName})
+        if(businesses.length>0){
+          return res.status(400).json({error:{message:"Business Name Already Exists."}})
+
+        }
         await BusinessDetails.findByIdAndUpdate(
           checkUser?.businessDetailsId,
           { businessName: input.businessName },
@@ -463,6 +468,7 @@ export class UsersControllers {
         if(!checkUser.businessDetailsId){
           return res.status(400).json({error:{message:"business details not found"}})
         }
+
         await BusinessDetails.findByIdAndUpdate(
           checkUser?.businessDetailsId,
           { businessAddress: input.businessAddress },
@@ -752,7 +758,8 @@ export class UsersControllers {
           dailyLeads: leadData?.daily,
           // leadsHours:formattedLeadSchedule,
           leadsHours: leadData?.leadSchedule,
-          area: `${formattedPostCodes}`
+          area: `${formattedPostCodes}`,
+          leadCost:user?.leadCost
         }
         send_email_for_updated_details(message)
 if(input.triggerAmount || input.autoChargeAmount){

@@ -1587,6 +1587,8 @@ if(!industry){
         path: `${process.env.INVOICE_URL}${invoiceID}`,
         headers: {
           "xero-tenant-id": process.env.XERO_TETANT_ID,
+          // "xero-tenant-id": "f3d6705e-2e71-437f-807f-5d0893c0285b",
+
           Authorization: "Bearer " + token?.access_token,
           Accept: "application/pdf",
           "Content-Type": "application/json",
