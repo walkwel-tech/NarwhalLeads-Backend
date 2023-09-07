@@ -304,10 +304,13 @@ export class BusinessDetailsController {
       if (input.businessOpeningHours) {
         input.businessOpeningHours = JSON.parse(input.businessOpeningHours);
       }
-      const businesses=await BusinessDetails.find({businessName:input.businessName})
-      if(businesses.length>0){
-        return res.status(400).json({error:{message:"Business Name Already Exists."}})
+      // const businesses=await BusinessDetails.find({businessName:input.businessName})
+      // if(businesses.length>0){
+      //   return res.status(400).json({error:{message:"Business Name Already Exists."}})
 
+      // }
+      if(input.businessName){
+        delete input.businessName
       }
       if ((req.file || {}).filename) {
         input.businessLogo = `${FileEnum.PROFILEIMAGE}${req?.file?.filename}`;
