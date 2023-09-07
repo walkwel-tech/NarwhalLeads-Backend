@@ -25,18 +25,11 @@ const FreeCreditsLinkSchema = new Schema(
       type: Boolean,
       default: false,
     },
-    user: [
+    users: [
       {
-        userId: {
-          type: Types.ObjectId,
-          ref: "User",
-        },
-        userCount: Number,
-        businessDetailsId: {
-          type: Types.ObjectId,
-          ref: "BusinessDetails", // Reference to the Business model
-        },
-      },
+        type: Types.ObjectId,
+        ref: "User",
+      }
     ],
     usedAt: {
       type: Date,
