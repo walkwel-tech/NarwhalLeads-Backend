@@ -78,13 +78,13 @@ export class IndustryController {
 
   static view = async (req: Request, res: Response) => {
     try {
-      // const dataToFind={ $or: [
-      //   //$options : 'i' used for case insensitivity search
-      //   { industry: { $regex: req.query.search, $options: "i" } },
-      //   // { leadCost: { $regex: req.query.search } },
-      // ]}
-      // console.log(dataToFind)
-      const data = await BuisnessIndustries.find();
+      const sortField: any = req.query.sort || "createdAt"; // Change this field name as needed
+
+      const sortOrder = 1; // Change this as needed
+
+      const sortObject: Record<string, 1 | -1> = {};
+      sortObject[sortField] = sortOrder;
+      const data = await BuisnessIndustries.find().sort(sortObject);
       data.map((i) => {
         i?.columns.sort((a: any, b: any) => a.index - b.index);
       });

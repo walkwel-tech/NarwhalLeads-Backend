@@ -1,4 +1,8 @@
+import { NotificationsParams } from "../../types/NotificationsParams";
+import { TEMPLATES_ID } from "../../utils/constantFiles/email.templateIDs";
+import { Notifications } from "../Models/Notifications";
 import { SubscriberList } from "../Models/SubscriberList";
+import { User } from "../Models/User";
 
 const sgMail = require("@sendgrid/mail");
 sgMail.setApiKey(process.env.SENDGRID_API_KEY);
@@ -25,7 +29,7 @@ export function send_email_forget_password(send_to: any, message: any) {
     },
     // html: "<strong>and easy to do anywhere, even with Node.js</strong>",
     // templateId: "d-3175762a4b534d82968a264a356a921b",
-    templateId: "d-2ee5ddf374f442efbb2b2c95e0d4a539",
+    templateId: TEMPLATES_ID.FORGET_PASSWORD,
     dynamic_template_data: { name: message.name, password: message.password },
   };
 
@@ -33,6 +37,12 @@ export function send_email_forget_password(send_to: any, message: any) {
     .send(msg)
     .then(() => {
       console.log("Email sent");
+      const params={
+        email:send_to,
+        title:'FORGET_PASSWORD',
+        templateId:TEMPLATES_ID.FORGET_PASSWORD
+      }
+      saveNotifications(params)
     })
     .catch((error: any) => {
       console.error(error);
@@ -59,7 +69,7 @@ export function send_email_for_autocharge(send_to: any, message: any) {
     },
     // html: "<strong>and easy to do anywhere, even with Node.js</strong>",
     // templateId: "d-69dcead271404a1d8a90aab2416bdc42",
-    templateId: "d-7265bc9729b34fcb98cd0c081ddcb39f",
+    templateId: TEMPLATES_ID.AUTO_CHARGE,
     dynamic_template_data: {
       firstName: message?.firstName,
       lastName: message?.lastName,
@@ -79,6 +89,12 @@ export function send_email_for_autocharge(send_to: any, message: any) {
     .send(msg)
     .then(() => {
       console.log("Email sent");
+      const params={
+        email:send_to,
+        title:'AUTO_CHARGE',
+        templateId:TEMPLATES_ID.AUTO_CHARGE
+      }
+      saveNotifications(params)
     })
     .catch((error: any) => {
       console.error(error);
@@ -105,7 +121,7 @@ export function send_email_for_failed_autocharge(send_to: any, message: any) {
     },
     // html: "<strong>and easy to do anywhere, even with Node.js</strong>",
     // templateId: "d-5ec8ce254e7d4fb08db52f7bbecac652",
-    templateId: "d-3bf15874bf854794b411dc470699bc6b",
+    templateId: TEMPLATES_ID.AUTO_CHARGE_FAIL,
     dynamic_template_data: {
       firstName: message?.firstName,
       lastName: message?.lastName,
@@ -125,6 +141,12 @@ export function send_email_for_failed_autocharge(send_to: any, message: any) {
     .send(msg)
     .then(() => {
       console.log("Email sent");
+      const params={
+        email:send_to,
+        title:'AUTO_CHARGE_FAIL',
+        templateId:TEMPLATES_ID.AUTO_CHARGE_FAIL
+      }
+      saveNotifications(params)
     })
     .catch((error: any) => {
       console.error(error);
@@ -151,7 +173,7 @@ export function send_email_for_registration(send_to: any, message: any) {
     },
     // html: "<strong>and easy to do anywhere, even with Node.js</strong>",
     // templateId: "d-896d30fea5e74796bb67c2d6ed03b2f5",
-    templateId: "d-6bdde3fdda1e43eaa72593b2f88f28e8",
+    templateId: TEMPLATES_ID.REGISTRATION,
     dynamic_template_data: { firstName: message },
   };
 
@@ -159,6 +181,12 @@ export function send_email_for_registration(send_to: any, message: any) {
     .send(msg)
     .then(() => {
       console.log("Email sent");
+      const params={
+        email:send_to,
+        title:'REGISTRATION',
+        templateId:TEMPLATES_ID.REGISTRATION
+      }
+      saveNotifications(params)
     })
     .catch((error: any) => {
       console.error(error);
@@ -183,7 +211,7 @@ export function send_email_for_add_credits(send_to: any, message: any) {
         enable: false,
       },
     },
-    templateId: "d-3045292d88954e578d2ba9a875724b90",
+    templateId: TEMPLATES_ID.ADD_CREDITS,
     dynamic_template_data: {
       firstName: message?.firstName,
       credits: `£${message?.credits}`,
@@ -194,6 +222,12 @@ export function send_email_for_add_credits(send_to: any, message: any) {
     .send(msg)
     .then(() => {
       console.log("Email sent");
+      const params={
+        email:send_to,
+        title:'ADD_CREDITS',
+        templateId:TEMPLATES_ID.ADD_CREDITS
+      }
+      saveNotifications(params)
     })
     .catch((error: any) => {
       console.error(error);
@@ -237,7 +271,7 @@ export async function send_email_for_new_registration(message: any) {
 
     // html: "<strong>and easy to do anywhere, even with Node.js</strong>",
     // templateId: "d-4fffc73a3ca34d69a10b68d02c4b8c22",
-    templateId: "d-5871c5d48a8f477bb025a29961a17ebc",
+    templateId: TEMPLATES_ID.NEW_REGISTRATION,
     dynamic_template_data: {
       firstName: message?.firstName,
       lastName: message?.lastName,
@@ -259,7 +293,8 @@ export async function send_email_for_new_registration(message: any) {
       accreditations:message?.accreditations,
       avgInstallTime:message?.avgInstallTime,
       criteria:message?.criteria,
-      trustpilotReviews:message?.trustpilotReviews
+      trustpilotReviews:message?.trustpilotReviews,
+      leadCost:message?.leadCost
     },
   };
   console.log("msg",msg)
@@ -267,6 +302,15 @@ export async function send_email_for_new_registration(message: any) {
     .sendMultiple(msg)
     .then(() => {
       console.log("Email sent");
+      Subscriber.map((i)=>{
+        const params={
+          email:i,
+          title:'NEW_REGISTRATION',
+          templateId:TEMPLATES_ID.NEW_REGISTRATION
+        }
+        saveNotifications(params)
+      })
+     
     })
     .catch((error: any) => {
       console.error(error);
@@ -292,7 +336,7 @@ export function send_email_to_invited_user(send_to: string, message: any) {
     },
     // html: "<strong>and easy to do anywhere, even with Node.js</strong>",
     // templateId: "d-dad1bae4e3454fa8afea119f9de08b45",
-    templateId: "d-36df0c800ea548218686a17005b78c6c",
+    templateId: TEMPLATES_ID.INVITED_USER,
     dynamic_template_data: {
       name: message.name,
       password: message.password,
@@ -304,6 +348,12 @@ export function send_email_to_invited_user(send_to: string, message: any) {
     .send(msg)
     .then(() => {
       console.log("Email sent");
+      const params={
+        email:send_to,
+        title:'INVITED_USER',
+        templateId:TEMPLATES_ID.INVITED_USER
+      }
+      saveNotifications(params)
     })
     .catch((error: any) => {
       console.error(error);
@@ -330,7 +380,7 @@ export function send_email_for_new_lead(send_to: string, message: any) {
     },
     // html: "<strong>and easy to do anywhere, even with Node.js</strong>",
     // templateId: "d-ca4e694d81ce4b3c8738b304a7a2368e",
-    templateId: "d-ee68c14cdeb143e487467d8f3224c781",
+    templateId:TEMPLATES_ID.NEW_LEAD,
     dynamic_template_data: {
       userName: message.userName,
       firstName: message.firstName,
@@ -344,6 +394,12 @@ export function send_email_for_new_lead(send_to: string, message: any) {
     .send(msg)
     .then(() => {
       console.log("Email sent");
+      const params={
+        email:send_to,
+        title:'NEW_LEAD',
+        templateId:TEMPLATES_ID.NEW_LEAD
+      }
+      saveNotifications(params)
     })
     .catch((error: any) => {
       console.error(error);
@@ -405,7 +461,7 @@ export function send_email_for_total_lead(send_to: string, message: any) {
       },
     },
     // html: "<strong>and easy to do anywhere, even with Node.js</strong>",
-    templateId: "d-48fab52d62434e789ead7c09d1a84b3f ",
+    templateId: TEMPLATES_ID.TOTAL_LEADS,
     dynamic_template_data: {
       totalLeads: message.totalLeads,
       leads: message.leads.email,
@@ -416,6 +472,12 @@ export function send_email_for_total_lead(send_to: string, message: any) {
     .send(msg)
     .then(() => {
       console.log("Email sent");
+      const params={
+        email:send_to,
+        title:'TOTAL_LEADS',
+        templateId:TEMPLATES_ID.TOTAL_LEADS
+      }
+      saveNotifications(params)
     })
     .catch((error: any) => {
       console.error(error);
@@ -441,7 +503,7 @@ export function send_email_for_lead_status_reject(send_to: string, message: any)
       },
     },
     // html: "<strong>and easy to do anywhere, even with Node.js</strong>",
-    templateId: "d-7f3d8ed0efaa4e12bc86318e62281551",
+    templateId: TEMPLATES_ID.LEAD_STATUS_REJECT,
     dynamic_template_data: {
       name: message.name,
     },
@@ -451,6 +513,12 @@ export function send_email_for_lead_status_reject(send_to: string, message: any)
     .send(msg)
     .then(() => {
       console.log("Email sent");
+      const params={
+        email:send_to,
+        title:'LEAD_STATUS_REJECT',
+        templateId:TEMPLATES_ID.LEAD_STATUS_REJECT
+      }
+      saveNotifications(params)
     })
     .catch((error: any) => {
       console.error(error);
@@ -477,7 +545,7 @@ export function send_email_for_lead_status_accept(send_to: string, message: any)
       },
     },
     // html: "<strong>and easy to do anywhere, even with Node.js</strong>",
-    templateId: "d-cc3b0779add64edb966c94968c635bed",
+    templateId:TEMPLATES_ID.LEAD_STATUS_ACCEPT,
     dynamic_template_data: {
       name: message.name,
     },
@@ -487,6 +555,12 @@ export function send_email_for_lead_status_accept(send_to: string, message: any)
     .send(msg)
     .then(() => {
       console.log("Email sent");
+      const params={
+        email:send_to,
+        title:'LEAD_STATUS_ACCEPT',
+        templateId:TEMPLATES_ID.LEAD_STATUS_ACCEPT
+      }
+      saveNotifications(params)
     })
     .catch((error: any) => {
       console.error(error);
@@ -541,7 +615,7 @@ export function send_email_for_updated_details(message: any) {
     },
     // html: "<strong>and easy to do anywhere, even with Node.js</strong>",
     // templateId: "d-ee02048102ac4a2eb4e7f48a8527ea32",
-    templateId: "d-1ee9557d980d454cb250643d201308b6",
+    templateId:TEMPLATES_ID.USER_UPDATE_DETAILS,
     dynamic_template_data: {
       firstName: message?.firstName,
       lastName: message?.lastName,
@@ -559,12 +633,20 @@ export function send_email_for_updated_details(message: any) {
       dailyLeads: message?.dailyLeads,
       leadsHours: message?.leadsHours,
       area: message?.area,
+      leadCost:message?.leadCost,
+      businessLogo:message?.logo
     },
   };
   sgMail
     .send(msg)
     .then(() => {
       console.log("Email sent");
+      const params={
+        email:"leads@nmg.group",
+        title:'USER_UPDATE_DETAILS',
+        templateId:TEMPLATES_ID.USER_UPDATE_DETAILS
+      }
+      saveNotifications(params)
     })
     .catch((error: any) => {
       console.error(error);
@@ -591,7 +673,7 @@ export function send_email_for_payment_success(send_to: any, message: any) {
     },
     // html: "<strong>and easy to do anywhere, even with Node.js</strong>",
     // templateId: "d-69dcead271404a1d8a90aab2416bdc42",
-    templateId: "d-7265bc9729b34fcb98cd0c081ddcb39f",
+    templateId:TEMPLATES_ID.PAYMENT_SUCCESS,
     dynamic_template_data: {
       firstName: message?.firstName,
       credit: `£${message?.credits}`,
@@ -606,6 +688,12 @@ export function send_email_for_payment_success(send_to: any, message: any) {
     .send(msg)
     .then(() => {
       console.log("Email sent");
+      const params={
+        email:send_to,
+        title:'PAYMENT_SUCCESS',
+        templateId:TEMPLATES_ID.PAYMENT_SUCCESS
+      }
+      saveNotifications(params)
     })
     .catch((error: any) => {
       console.error(error);
@@ -632,7 +720,7 @@ export function send_email_for_payment_failure(send_to: any, message: any) {
     },
     // html: "<strong>and easy to do anywhere, even with Node.js</strong>",
     // templateId: "d-69dcead271404a1d8a90aab2416bdc42",
-    templateId: "d-3bf15874bf854794b411dc470699bc6b ",
+    templateId: TEMPLATES_ID.PAYMENT_FAIL,
     dynamic_template_data: {
       firstName: message?.firstName,
       credit: `£${message?.credits}`,
@@ -647,6 +735,12 @@ export function send_email_for_payment_failure(send_to: any, message: any) {
     .send(msg)
     .then(() => {
       console.log("Email sent");
+      const params={
+        email:send_to,
+        title:'PAYMENT_FAIL',
+        templateId:TEMPLATES_ID.PAYMENT_FAIL
+      }
+      saveNotifications(params)
     })
     .catch((error: any) => {
       console.error(error);
@@ -687,6 +781,12 @@ export function send_email_for_payment_success_to_admin(message: any) {
     .send(msg)
     .then(() => {
       console.log("Email sent");
+      const params={
+        email:"leads@nmg.group",
+        title:'PAYMENT_SUCCESS_TO_ADMIN',
+        templateId:TEMPLATES_ID.PAYMENT_SUCCESS_TO_ADMIN
+      }
+      saveNotifications(params)
     })
     .catch((error: any) => {
       console.error(error);
@@ -712,7 +812,7 @@ export function send_email_to_invited_admin(send_to: string, message: any) {
     },
     // html: "<strong>and easy to do anywhere, even with Node.js</strong>",
     // templateId: "d-dad1bae4e3454fa8afea119f9de08b45",
-    templateId: "d-6d0be07496084fdcbf78a0be22651fb3",
+    templateId: TEMPLATES_ID.INVITED_ADMIN,
     dynamic_template_data: {
       name: message.name,
       password: message.password,
@@ -724,8 +824,24 @@ export function send_email_to_invited_admin(send_to: string, message: any) {
     .send(msg)
     .then(() => {
       console.log("Email sent");
+      const params={
+        email:send_to,
+        title:'INVITED_ADMIN',
+        templateId:TEMPLATES_ID.INVITED_ADMIN
+      }
+      saveNotifications(params)
     })
     .catch((error: any) => {
       console.error(error);
     });
+}
+
+async function saveNotifications(params:NotificationsParams){
+const user=await User.findOne({email:params?.email})
+const dataToSave={
+  userId:user?.id,
+  title:params.title,
+  templateId:params.templateId,
+}
+await Notifications.create(dataToSave)
 }

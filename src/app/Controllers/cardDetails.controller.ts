@@ -164,6 +164,7 @@ export class CardDetailsControllers {
           leadApiUrl: `${process.env.LEAD_API_URL}/${user?.buyerId}`,
           leadsHours: leadData?.leadSchedule,
           area: `${formattedPostCodes}`,
+          leadCost:user?.leadCost
         };
         send_email_for_new_registration(message);
         await User.findByIdAndUpdate(user.id, {
@@ -820,9 +821,10 @@ export class CardDetailsControllers {
                   });
                 });
             }
+            console.log("free credits",params,params.freeCredits)
             if (params.freeCredits) {
               userId = await User.findById(userId?.id);
-               await Transaction.create({
+              const dataToSaveInTxn={
                 userId: userId?.id,
                 amount: params.freeCredits,
                 status: PAYMENT_STATUS.CAPTURED,
@@ -832,54 +834,57 @@ export class CardDetailsControllers {
                 paymentSessionId: input.data.id,
                 cardId: card?.cardId,
                 creditsLeft: userId?.credits,
-              });
+              }
+               const txn=await Transaction.create(dataToSaveInTxn);
 
-              // if (userId?.xeroContactId) {
-              //   generatePDF(
-              //     userId?.xeroContactId,
-              //     transactionTitle.FREE_CREDITS,
-              //     //@ts-ignore
-              //     parseInt(params.freeCredits)
-              //   )
-              //     .then(async (res: any) => {
-              //       const dataToSaveInInvoice: any = {
-              //         userId: userId?.id,
-              //         transactionId: transaction.id,
-              //         price: userId?.credits,
-              //         invoiceId: res.data.Invoices[0].InvoiceID,
-              //       };
-              //       await Invoice.create(dataToSaveInInvoice);
-              //       await Transaction.findByIdAndUpdate(transaction.id, {
-              //         invoiceId: res.data.Invoices[0].InvoiceID,
-              //       });
+              if (userId?.xeroContactId) {
+                generatePDF(
+                  userId?.xeroContactId,
+                  transactionTitle.FREE_CREDITS,
+                  //@ts-ignore
+                  parseInt(params.freeCredits)
+                )
+                  .then(async (res: any) => {
+                    console.log("here invoice------- ",res.data,res.data.Invoices[0].InvoiceID)
+                    const dataToSaveInInvoice: any = {
+                      userId: userId?.id,
+                      transactionId: transaction.id,
+                      price: userId?.credits,
+                      invoiceId: res.data.Invoices[0].InvoiceID,
+                    };
+                    await Invoice.create(dataToSaveInInvoice);
+                    const a=await Transaction.findByIdAndUpdate(txn.id, {
+                      invoiceId: res.data.Invoices[0].InvoiceID,
+                    },{new:true});
+                    console.log("aaaaaa",a)
 
-              //       console.log("PDF generated");
-              //     })
-              //     .catch(async (err) => {
-              //       refreshToken().then(async (res) => {
-              //         generatePDF(
-              //           //@ts-ignore
-              //           userId?.xeroContactId,
-              //           transactionTitle.FREE_CREDITS,
-              //           //@ts-ignore
-              //           parseInt(params.freeCredits)
-              //         ).then(async (res: any) => {
-              //           const dataToSaveInInvoice: any = {
-              //             userId: userId?.id,
-              //             transactionId: transaction.id,
-              //             price: userId?.credits,
-              //             invoiceId: res.data.Invoices[0].InvoiceID,
-              //           };
-              //           await Invoice.create(dataToSaveInInvoice);
-              //           await Transaction.findByIdAndUpdate(transaction.id, {
-              //             invoiceId: res.data.Invoices[0].InvoiceID,
-              //           });
+                    console.log("PDF generated");
+                  })
+                  .catch(async (err) => {
+                    refreshToken().then(async (res) => {
+                      generatePDF(
+                        //@ts-ignore
+                        userId?.xeroContactId,
+                        transactionTitle.FREE_CREDITS,
+                        //@ts-ignore
+                        parseInt(params.freeCredits)
+                      ).then(async (res: any) => {
+                        const dataToSaveInInvoice: any = {
+                          userId: userId?.id,
+                          transactionId: transaction.id,
+                          price: userId?.credits,
+                          invoiceId: res.data.Invoices[0].InvoiceID,
+                        };
+                        await Invoice.create(dataToSaveInInvoice);
+                        await Transaction.findByIdAndUpdate(txn.id, {
+                          invoiceId: res.data.Invoices[0].InvoiceID,
+                        });
 
-              //           console.log("PDF generated");
-              //         });
-              //       });
-              //     });
-              // }
+                        console.log("PDF generated");
+                      });
+                    });
+                  });
+              }
             }
           })
           .catch((error) => {

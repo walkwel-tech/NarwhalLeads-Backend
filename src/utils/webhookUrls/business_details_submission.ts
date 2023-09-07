@@ -1,4 +1,5 @@
 import axios from "axios";
+import { checkAccess } from "../../app/Middlewares/serverAccess";
 const POST = "post";
 export const business_details_submission = ( data: any) => {
   return new Promise((resolve, reject) => {
@@ -11,12 +12,17 @@ export const business_details_submission = ( data: any) => {
       },
       data: data,
     };
-    axios(config)
+    if(checkAccess()){
+          axios(config)
       .then(async (response) => {
         console.log("business data webhook hits successfully",response.data)
       })
       .catch((err) => {
         console.log("business data webhook hits error",err.response?.data);
       });
+    }
+    else{
+      console.log("No Access to this APP_ENV")
+    }
   });
 };
