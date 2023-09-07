@@ -5,7 +5,6 @@ const FreeCreditsLinkSchema = new Schema(
     code: {
       type: String,
       required: true,
-      unique: true,
     },
     freeCredits: {
       type: Number,

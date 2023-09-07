@@ -47,7 +47,8 @@ export class freeCreditsLinkController {
       const data = await FreeCreditsLink.create(dataToSave);
       return res.json({ data: data });
     } catch (error) {
-      res.status(500).json({ error: { message: "something Went wrong." } });
+      console.log(error)
+      res.status(500).json({ error: { message: "something Went wrong." ,error} });
     }
   };
 
@@ -72,12 +73,12 @@ export class freeCreditsLinkController {
       dataToFind.isDisabled = false;
     }
     try {
-      let query = await FreeCreditsLink.find({code:"monk"})
+      let query = await FreeCreditsLink.find(dataToFind)
         // .populate("user.userId")
         // .sort({ createdAt: -1 })
 
         .populate("user.userId", "_id firstName lastName createdAt")
-        .populate("user.businessDetailsId", "businessName")
+        // .populate("user.businessDetailsId", "businessName")
 
         .sort({ createdAt: -1 })
         .select(

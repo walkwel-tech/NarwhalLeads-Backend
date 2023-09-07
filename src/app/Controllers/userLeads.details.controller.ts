@@ -127,6 +127,7 @@ const services=await UserService.findOne({userId:user.id})
           businessName: businessDeatilsData?.businessName,
           phone: businessDeatilsData?.businessSalesNumber,
           email: user?.email,
+          leadCost:user?.leadCost,
           industry: businessDeatilsData?.businessIndustry,
           address:
             businessDeatilsData?.address1 + " " + businessDeatilsData?.address2,
@@ -334,6 +335,7 @@ const services=await UserService.findOne({userId:user.id})
           leadsHours:updatedDetails?.leadSchedule,
           // leadsHours:formattedLeadSchedule,
           area: `${formattedPostCodes}`,
+          leadCost:userData?.leadCost
         };
         send_email_for_updated_details(message);
         // const messageToSendInBusinessSubmission = {
