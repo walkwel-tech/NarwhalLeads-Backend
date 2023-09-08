@@ -12,9 +12,9 @@ const options: IStrategyOptions = {
 }
 export default new LocalStrategy(options, async (email, password, done)  => {
   try{
-    const user = await User.findOne({email});
+    const user = await User.findOne({email,isDeleted:false});
     if (!user) {
-      const admin = await Admins.findOne({email})
+      const admin = await Admins.findOne({email,isDeleted:false})
       if(admin){
         if (!compareSync(password, admin.password)) {
           return done(null, false, {message: 'Incorrect Password'});

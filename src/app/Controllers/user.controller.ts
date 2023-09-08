@@ -22,6 +22,7 @@ import { ClientTablePreferenceInterface } from "../../types/clientTablePrefrence
 import { ClientTablePreference } from "../Models/ClientTablePrefrence";
 import { Column } from "../../types/ColumnsPreferenceInterface";
 import { Admins } from "../Models/Admins";
+import { deleteCustomerOnRyft } from "../../utils/createCustomer/deleteFromRyft";
 const ObjectId = mongoose.Types.ObjectId;
 
 const LIMIT = 10;
@@ -451,6 +452,11 @@ export class UsersControllers {
         if(!checkUser.businessDetailsId){
           return res.status(400).json({error:{message:"business details not found"}})
         }
+        const businesses=await BusinessDetails.find({businessName:input.businessName})
+        if(businesses.length>0){
+          return res.status(400).json({error:{message:"Business Name Already Exists."}})
+
+        }
         await BusinessDetails.findByIdAndUpdate(
           checkUser?.businessDetailsId,
           { businessName: input.businessName },
@@ -462,6 +468,7 @@ export class UsersControllers {
         if(!checkUser.businessDetailsId){
           return res.status(400).json({error:{message:"business details not found"}})
         }
+
         await BusinessDetails.findByIdAndUpdate(
           checkUser?.businessDetailsId,
           { businessAddress: input.businessAddress },
@@ -646,7 +653,8 @@ export class UsersControllers {
                 checkUser?.xeroContactId,
                 transactionTitle.CREDITS_ADDED,
                 //@ts-ignore
-                input?.credits
+                input?.credits,
+                0
               )
                 .then(async (res: any) => {
                   const dataToSaveInInvoice: any = {
@@ -666,7 +674,8 @@ export class UsersControllers {
                       checkUser?.xeroContactId,
                       transactionTitle.CREDITS_ADDED,
                       //@ts-ignore
-                      input.credits
+                      input.credits,
+                      0
                     ).then(async (res: any) => {
                       const dataToSaveInInvoice: any = {
                         userId: checkUser?.id,
@@ -751,7 +760,8 @@ export class UsersControllers {
           dailyLeads: leadData?.daily,
           // leadsHours:formattedLeadSchedule,
           leadsHours: leadData?.leadSchedule,
-          area: `${formattedPostCodes}`
+          area: `${formattedPostCodes}`,
+          leadCost:user?.leadCost
         }
         send_email_for_updated_details(message)
 if(input.triggerAmount || input.autoChargeAmount){
@@ -786,6 +796,8 @@ else {
         isDeleted: true,
         deletedAt: new Date(),
       });
+      //@ts-ignore
+    deleteCustomerOnRyft(user?.ryftClientId).then(()=>console.log("deleted customer")).catch(()=>console.log("error while deleting customer on ryft"))
 
       if (!user) {
         return res

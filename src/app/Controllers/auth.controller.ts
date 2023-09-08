@@ -61,7 +61,7 @@ class AuthController {
         .json({ error: { message: "VALIDATIONS_ERROR", info: errorsInfo } });
     }
     try {
-      const user = await User.findOne({ email: input.email });
+      const user = await User.findOne({ email: input.email, isDeleted:false });
       if (!user) {
         const salt = genSaltSync(10);
         const hashPassword = hashSync(input.password, salt);
@@ -147,14 +147,13 @@ class AuthController {
           dataToSave.premiumUser = PROMO_LINK.PREMIUM_USER_TOP_UP;
           dataToSave.promoLinkId = checkCode?.id;
         }
-        const createdUser = await User.create(dataToSave);
+        await User.create(dataToSave);
         if (input.code) {
           const checkCode: any = await FreeCreditsLink.findOne({
             code: input.code,
           });
           const dataToSave: any = {
             isUsed: true,
-            $push: { user: { userId: createdUser.id } },
             usedAt: new Date(),
             useCounts: checkCode?.useCounts + 1,
           };

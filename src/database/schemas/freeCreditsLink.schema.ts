@@ -5,7 +5,6 @@ const FreeCreditsLinkSchema = new Schema(
     code: {
       type: String,
       required: true,
-      unique: true,
     },
     freeCredits: {
       type: Number,
@@ -26,14 +25,11 @@ const FreeCreditsLinkSchema = new Schema(
       type: Boolean,
       default: false,
     },
-    user: [
+    users: [
       {
-        userId: {
-          type: Types.ObjectId,
-          ref: "User",
-        },
-        userCount: Number,
-      },
+        type: Types.ObjectId,
+        ref: "User",
+      }
     ],
     usedAt: {
       type: Date,
@@ -50,6 +46,13 @@ const FreeCreditsLinkSchema = new Schema(
       type: String,
       required: true,
     },
+    isDeleted:{
+      type:Boolean,
+      default:false
+    },
+    deletedAt:{
+      typ:Date
+    }
   },
   { timestamps: true }
 );

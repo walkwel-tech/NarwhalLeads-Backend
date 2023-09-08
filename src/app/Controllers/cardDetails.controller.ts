@@ -164,6 +164,7 @@ export class CardDetailsControllers {
           leadApiUrl: `${process.env.LEAD_API_URL}/${user?.buyerId}`,
           leadsHours: leadData?.leadSchedule,
           area: `${formattedPostCodes}`,
+          leadCost: user?.leadCost,
         };
         send_email_for_new_registration(message);
         await User.findByIdAndUpdate(user.id, {
@@ -494,7 +495,7 @@ export class CardDetailsControllers {
         freeCredits: 0,
         clientId: user?.ryftClientId,
         cardId: card.id,
-        paymentSessionId:card?.paymentSessionID
+        paymentSessionId: card?.paymentSessionID,
       };
       // let amount:any
       // if (input.amount) {
@@ -516,12 +517,12 @@ export class CardDetailsControllers {
       } else {
         params.paymentMethodId = paymentMethodsExists?.paymentMethod;
         createSessionUnScheduledPayment(params)
-        .then(async (_res:any) => {
-            console.log("payment initiated!")
+          .then(async (_res: any) => {
+            console.log("payment initiated!");
             if (!user?.xeroContactId) {
               console.log("xeroContact ID not found. Failed to generate pdf.");
             }
-                 let response: PaymentResponse = {
+            let response: PaymentResponse = {
               message: "In progress",
               status: 200,
             };
@@ -550,9 +551,9 @@ export class CardDetailsControllers {
               data: response,
             });
           })
-        .catch(async (err) => {
-          console.log("error in payment Api",err.response.data);
-        });
+          .catch(async (err) => {
+            console.log("error in payment Api", err.response.data);
+          });
         // managePaymentsByPaymentMethods(params)
         //   .then(async (_res: any) => {
 
@@ -653,16 +654,19 @@ export class CardDetailsControllers {
         const card = await RyftPaymentMethods.findOne({
           paymentMethod: input.data?.paymentMethod?.id,
         });
+        const business = await BusinessDetails.findById(
+          userId?.businessDetailsId
+        );
         const message = {
           firstName: userId?.firstName,
           amount: parseInt(input.data.amount) / 100,
           cardHolderName: `${userId?.firstName} ${userId?.lastName}`,
           cardNumberEnd: cardDetailsExist?.cardNumber,
           credits: userId?.credits,
+          businessName: business?.businessName,
         };
         send_email_for_payment_failure(userId?.email, message);
-        let dataToSaveInTransaction:any=
-          {
+        let dataToSaveInTransaction: any = {
           userId: userId?.id,
           amount: input?.data?.amount / 100,
           status: PAYMENT_STATUS.DECLINE,
@@ -673,10 +677,10 @@ export class CardDetailsControllers {
           paymentSessionId: input.data.id,
           cardId: card?.cardId,
           creditsLeft: userId?.credits,
-          paymentMethod:input.data?.paymentMethod?.id
-        }
-        if(userId?.paymentMethod===paymentMethodEnum.AUTOCHARGE_METHOD){
-          dataToSaveInTransaction.paymentType=PAYMENT_TYPE_ENUM.AUTO_CHARGE
+          paymentMethod: input.data?.paymentMethod?.id,
+        };
+        if (userId?.paymentMethod === paymentMethodEnum.AUTOCHARGE_METHOD) {
+          dataToSaveInTransaction.paymentType = PAYMENT_TYPE_ENUM.AUTO_CHARGE;
         }
         await Transaction.create(dataToSaveInTransaction);
       } else if (input.eventType == "PaymentSession.captured") {
@@ -696,7 +700,6 @@ export class CardDetailsControllers {
           buyerId: userId?.buyerId,
           fixedAmount: originalAmount,
         };
-        console.log( "-----???????????",originalAmount,originalAmount >= PREMIUM_PROMOLINK.TOP_UP) 
 
         //TODO: THIS WILL BE ONLY ON 1 TRANSATION
         if (
@@ -704,29 +707,34 @@ export class CardDetailsControllers {
           !userId.promoCodeUsed &&
           userId?.promoLinkId &&
           userId.premiumUser == PROMO_LINK.PREMIUM_USER_TOP_UP &&
-          originalAmount >= promoLink?.topUpAmount
+          originalAmount >= promoLink?.topUpAmount * parseInt(userId?.leadCost)
         ) {
-          params.freeCredits = promoLink?.freeCredits;
+          params.freeCredits =
+            promoLink?.freeCredits * parseInt(userId?.leadCost);
           console.log("in 1");
         } else if (
           promoLink?.spotDiffPremiumPlan &&
-          originalAmount >= promoLink?.topUpAmount &&
+          originalAmount >=
+            promoLink?.topUpAmount * parseInt(userId?.leadCost) &&
           userId.promoCodeUsed
         ) {
-          params.freeCredits = promoLink?.freeCredits;
+          params.freeCredits =
+            promoLink?.freeCredits * parseInt(userId?.leadCost);
           console.log("in 2");
         }
         else if (
           !userId.promoCodeUsed &&
-          originalAmount >= PREMIUM_PROMOLINK.TOP_UP
+          originalAmount >=
+            PREMIUM_PROMOLINK.TOP_UP * parseInt(userId?.leadCost)
         ) {
-          params.freeCredits = PREMIUM_PROMOLINK.FREE_CREDITS;
+          params.freeCredits =
+            PREMIUM_PROMOLINK.FREE_CREDITS * parseInt(userId?.leadCost);
         }
         addCreditsToBuyer(params)
           .then(async (res: any) => {
             // console.log("WEBHOOK 3------->>>",res)
             userId = await User.findById(userId?.id);
-            let dataToSaveInTransaction:any={
+            let dataToSaveInTransaction: any = {
               userId: userId?.id,
               amount: originalAmount,
               status: PAYMENT_STATUS.CAPTURED,
@@ -736,13 +744,16 @@ export class CardDetailsControllers {
               paymentSessionId: input.data.id,
               cardId: card?.cardId,
               creditsLeft: userId?.credits || 0 - (params.freeCredits || 0),
-              paymentMethod:input.data?.paymentMethod?.id,
+              paymentMethod: input.data?.paymentMethod?.id,
+            };
+            if (userId?.paymentMethod === paymentMethodEnum.AUTOCHARGE_METHOD) {
+              dataToSaveInTransaction.paymentType =
+                PAYMENT_TYPE_ENUM.AUTO_CHARGE;
             }
-            if(userId?.paymentMethod===paymentMethodEnum.AUTOCHARGE_METHOD){
-              dataToSaveInTransaction.paymentType=PAYMENT_TYPE_ENUM.AUTO_CHARGE
-            }
-            const transaction = await Transaction.create(dataToSaveInTransaction);
-            const save:any={
+            const transaction = await Transaction.create(
+              dataToSaveInTransaction
+            );
+            const save: any = {
               userId: userId?.id,
               amount: input?.data?.amount / 100 - originalAmount,
               status: PAYMENT_STATUS.CAPTURED,
@@ -752,27 +763,40 @@ export class CardDetailsControllers {
               paymentSessionId: input.data.id,
               cardId: card?.cardId,
               creditsLeft: userId?.credits || 0 - (params.freeCredits || 0),
-              paymentMethod:input.data?.paymentMethod?.id
-            }
-            if(userId?.paymentMethod===paymentMethodEnum.AUTOCHARGE_METHOD){
-              save.paymentType=PAYMENT_TYPE_ENUM.AUTO_CHARGE
+              paymentMethod: input.data?.paymentMethod?.id,
+            };
+            if (userId?.paymentMethod === paymentMethodEnum.AUTOCHARGE_METHOD) {
+              save.paymentType = PAYMENT_TYPE_ENUM.AUTO_CHARGE;
             }
             const transactionForVat = await Transaction.create(save);
+            const business = await BusinessDetails.findById(
+              userId?.businessDetailsId
+            );
             const message = {
               firstName: userId?.firstName,
               amount: parseInt(input.data.amount) / 100,
               cardHolderName: `${userId?.firstName} ${userId?.lastName}`,
               cardNumberEnd: cardDetails?.cardNumber,
               credits: userId?.credits,
+              businessName: business?.businessName,
             };
             send_email_for_payment_success(userId?.email, message);
             send_email_for_payment_success_to_admin(message);
+            let invoice;
             if (userId?.xeroContactId) {
+              let freeCredits:number;
+              if (params.freeCredits) {
+                freeCredits = params.freeCredits;
+              } else {
+                freeCredits = params.freeCredits;
+              }
               generatePDF(
                 userId?.xeroContactId,
                 transactionTitle.CREDITS_ADDED,
                 //@ts-ignore
-                originalAmount
+                originalAmount,
+                //@ts-ignore
+                freeCredits
               )
                 .then(async (res: any) => {
                   const dataToSaveInInvoice: any = {
@@ -781,7 +805,7 @@ export class CardDetailsControllers {
                     price: userId?.credits,
                     invoiceId: res.data.Invoices[0].InvoiceID,
                   };
-                  await Invoice.create(dataToSaveInInvoice);
+                  invoice = await Invoice.create(dataToSaveInInvoice);
                   await Transaction.findByIdAndUpdate(transaction.id, {
                     invoiceId: res.data.Invoices[0].InvoiceID,
                   });
@@ -798,7 +822,9 @@ export class CardDetailsControllers {
                       userId?.xeroContactId,
                       transactionTitle.CREDITS_ADDED,
                       //@ts-ignore
-                      parseInt(input?.data?.amount) / 100
+                      parseInt(input?.data?.amount) / 100,
+                         //@ts-ignore
+                      freeCredits
                     ).then(async (res: any) => {
                       const dataToSaveInInvoice: any = {
                         userId: userId?.id,
@@ -806,7 +832,7 @@ export class CardDetailsControllers {
                         price: userId?.credits,
                         invoiceId: res.data.Invoices[0].InvoiceID,
                       };
-                      await Invoice.create(dataToSaveInInvoice);
+                      invoice = await Invoice.create(dataToSaveInInvoice);
                       await Transaction.findByIdAndUpdate(transaction.id, {
                         invoiceId: res.data.Invoices[0].InvoiceID,
                       });
@@ -816,66 +842,22 @@ export class CardDetailsControllers {
                   });
                 });
             }
+            console.log("free credits", params, params.freeCredits);
             if (params.freeCredits) {
               userId = await User.findById(userId?.id);
-               await Transaction.create({
+              const dataToSaveInTxn = {
                 userId: userId?.id,
                 amount: params.freeCredits,
                 status: PAYMENT_STATUS.CAPTURED,
                 title: transactionTitle.FREE_CREDITS,
                 isCredited: true,
-                invoiceId: "",
+                //@ts-ignore
+                invoiceId: invoice?.invoiceId,
                 paymentSessionId: input.data.id,
                 cardId: card?.cardId,
                 creditsLeft: userId?.credits,
-              });
-
-              // if (userId?.xeroContactId) {
-              //   generatePDF(
-              //     userId?.xeroContactId,
-              //     transactionTitle.FREE_CREDITS,
-              //     //@ts-ignore
-              //     parseInt(params.freeCredits)
-              //   )
-              //     .then(async (res: any) => {
-              //       const dataToSaveInInvoice: any = {
-              //         userId: userId?.id,
-              //         transactionId: transaction.id,
-              //         price: userId?.credits,
-              //         invoiceId: res.data.Invoices[0].InvoiceID,
-              //       };
-              //       await Invoice.create(dataToSaveInInvoice);
-              //       await Transaction.findByIdAndUpdate(transaction.id, {
-              //         invoiceId: res.data.Invoices[0].InvoiceID,
-              //       });
-
-              //       console.log("PDF generated");
-              //     })
-              //     .catch(async (err) => {
-              //       refreshToken().then(async (res) => {
-              //         generatePDF(
-              //           //@ts-ignore
-              //           userId?.xeroContactId,
-              //           transactionTitle.FREE_CREDITS,
-              //           //@ts-ignore
-              //           parseInt(params.freeCredits)
-              //         ).then(async (res: any) => {
-              //           const dataToSaveInInvoice: any = {
-              //             userId: userId?.id,
-              //             transactionId: transaction.id,
-              //             price: userId?.credits,
-              //             invoiceId: res.data.Invoices[0].InvoiceID,
-              //           };
-              //           await Invoice.create(dataToSaveInInvoice);
-              //           await Transaction.findByIdAndUpdate(transaction.id, {
-              //             invoiceId: res.data.Invoices[0].InvoiceID,
-              //           });
-
-              //           console.log("PDF generated");
-              //         });
-              //       });
-              //     });
-              // }
+              };
+              await Transaction.create(dataToSaveInTxn);
             }
           })
           .catch((error) => {
