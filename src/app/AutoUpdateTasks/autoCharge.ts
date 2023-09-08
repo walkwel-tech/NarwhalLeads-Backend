@@ -58,7 +58,6 @@ export const autoChargePayment = async () => {
   });
 };
 
-
 export const weeklypayment = async () => {
   cron.schedule("00 09 * * MON", async () => {
     console.log("Monday 9am Cron Job started.");
@@ -147,8 +146,7 @@ export const weeklypayment = async () => {
                   generatePDF(
                     i.xeroContactId,
                     transactionTitle.CREDITS_ADDED,
-                    addCredits,
-                      0
+                    addCredits,0
                   )
                     .then(async (res: any) => {
                       const dataToSaveInInvoice: any = {
@@ -165,8 +163,7 @@ export const weeklypayment = async () => {
                         generatePDF(
                           i.xeroContactId,
                           transactionTitle.CREDITS_ADDED,
-                          addCredits,
-                            0
+                          addCredits,0
                         ).then(async (res: any) => {
                           const dataToSaveInInvoice: any = {
                             userId: i.id,
