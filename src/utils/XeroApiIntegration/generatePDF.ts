@@ -1,29 +1,24 @@
 import { AccessToken } from "../../app/Models/AccessToken";
 import { User } from "../../app/Models/User";
+import { transactionTitle } from "../Enums/transaction.title.enum";
 // import { transactionTitle } from "../Enums/transaction.title.enum";
 var axios = require("axios");
 
 export const generatePDF = (
   ContactID: string,
   desc: string,
-  amount: number
+  amount: number,
+  freeCredits: number
 ) => {
   return new Promise(async (resolve, reject) => {
     const industry: any = await User.findOne({
       xeroContactId: ContactID,
     }).populate("businessDetailsId");
     const quantity = amount / parseInt(industry.leadCost);
-    console.log(
-      "IN XERO PDF--- QUNATITY",
-      amount,
-      parseInt(industry.leadCost),
-      industry.leadCost
-    );
-    let unitAmount=industry.leadCost
-    // if(desc===transactionTitle.FREE_CREDITS){
-    //   unitAmount=0
-    //       }
-    var data = JSON.stringify({
+
+    let unitAmount = industry.leadCost;
+  
+    let data = {
       Invoices: [
         {
           Type: "ACCREC",
@@ -47,8 +42,20 @@ export const generatePDF = (
           Status: "AUTHORISED",
         },
       ],
-    });
-
+    };
+    if (freeCredits > 0) {
+      const quantity = freeCredits / parseInt(industry.leadCost);
+      data.Invoices[0].LineItems[1] = {
+        Description: `${industry?.businessDetailsId?.businessIndustry} - ${transactionTitle.FREE_CREDITS}`,
+        //@ts-ignore
+        Quantity: parseInt(quantity),
+        UnitAmount: unitAmount,
+        AccountCode: "214",
+        //@ts-ignore
+        DiscountRate: "100",
+        LeadDepartment: industry?.businessDetailsId?.businessIndustry,
+      };
+    }
     const token = await AccessToken.findOne();
     var config = {
       method: "post",
@@ -61,17 +68,17 @@ export const generatePDF = (
         Accept: "application/json",
         "Content-Type": "application/json",
       },
-      data: data,
+      data: JSON.stringify(data),
     };
 
     axios(config)
       .then(function (response: any) {
-        console.log("data while getting response of invoices",response.data)
+        console.log("data while getting response of invoices", response.data);
 
         resolve(response);
       })
       .catch(function (error: any) {
-        console.log(error.response?.data)
+        console.log(error.response?.data);
 
         reject(error);
       });

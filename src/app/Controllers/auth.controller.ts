@@ -62,7 +62,6 @@ class AuthController {
     }
     try {
       const user = await User.findOne({ email: input.email, isDeleted:false });
-      console.log("user------",user)
       if (!user) {
         const salt = genSaltSync(10);
         const hashPassword = hashSync(input.password, salt);

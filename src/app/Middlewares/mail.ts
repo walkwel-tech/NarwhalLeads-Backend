@@ -3,6 +3,7 @@ import { TEMPLATES_ID } from "../../utils/constantFiles/email.templateIDs";
 import { Notifications } from "../Models/Notifications";
 import { SubscriberList } from "../Models/SubscriberList";
 import { User } from "../Models/User";
+import { checkAccess } from "./serverAccess";
 
 const sgMail = require("@sendgrid/mail");
 sgMail.setApiKey(process.env.SENDGRID_API_KEY);
@@ -32,8 +33,8 @@ export function send_email_forget_password(send_to: any, message: any) {
     templateId: TEMPLATES_ID.FORGET_PASSWORD,
     dynamic_template_data: { name: message.name, password: message.password },
   };
-
-  sgMail
+  if(checkAccess()){
+      sgMail
     .send(msg)
     .then(() => {
       console.log("Email sent");
@@ -47,6 +48,11 @@ export function send_email_forget_password(send_to: any, message: any) {
     .catch((error: any) => {
       console.error(error);
     });
+  }
+  else{
+    console.log("Emails access only on production")
+  }
+
 }
 
 export function send_email_for_autocharge(send_to: any, message: any) {
@@ -84,7 +90,7 @@ export function send_email_for_autocharge(send_to: any, message: any) {
       cardHolderName: message?.cardHolderName,
     },
   };
-
+if(checkAccess()){
   sgMail
     .send(msg)
     .then(() => {
@@ -99,6 +105,11 @@ export function send_email_for_autocharge(send_to: any, message: any) {
     .catch((error: any) => {
       console.error(error);
     });
+}
+else{
+  console.log("Emails access only on production")
+}
+  
 }
 
 export function send_email_for_failed_autocharge(send_to: any, message: any) {
@@ -136,8 +147,8 @@ export function send_email_for_failed_autocharge(send_to: any, message: any) {
       cardHolderName: message?.cardHolderName,
     },
   };
-
-  sgMail
+  if(checkAccess()){
+    sgMail
     .send(msg)
     .then(() => {
       console.log("Email sent");
@@ -151,6 +162,11 @@ export function send_email_for_failed_autocharge(send_to: any, message: any) {
     .catch((error: any) => {
       console.error(error);
     });
+  }
+  else{
+    console.log("Emails access only on production")
+  }
+  
 }
 
 export function send_email_for_registration(send_to: any, message: any) {
@@ -176,8 +192,8 @@ export function send_email_for_registration(send_to: any, message: any) {
     templateId: TEMPLATES_ID.REGISTRATION,
     dynamic_template_data: { firstName: message },
   };
-
-  sgMail
+  if(checkAccess()){
+     sgMail
     .send(msg)
     .then(() => {
       console.log("Email sent");
@@ -191,6 +207,10 @@ export function send_email_for_registration(send_to: any, message: any) {
     .catch((error: any) => {
       console.error(error);
     });
+  }
+  else{
+    console.log("Emails access only on production")
+  }
 }
 
 export function send_email_for_add_credits(send_to: any, message: any) {
@@ -217,8 +237,8 @@ export function send_email_for_add_credits(send_to: any, message: any) {
       credits: `£${message?.credits}`,
     },
   };
-
-  sgMail
+  if(checkAccess()){
+     sgMail
     .send(msg)
     .then(() => {
       console.log("Email sent");
@@ -232,6 +252,10 @@ export function send_email_for_add_credits(send_to: any, message: any) {
     .catch((error: any) => {
       console.error(error);
     });
+  }
+  else{
+    console.log("Emails access only on production")
+  }
 }
 
 export async function send_email_for_new_registration(message: any) {
@@ -297,8 +321,8 @@ export async function send_email_for_new_registration(message: any) {
       leadCost:message?.leadCost
     },
   };
-  console.log("msg",msg)
-  sgMail
+  if(checkAccess()){
+     sgMail
     .sendMultiple(msg)
     .then(() => {
       console.log("Email sent");
@@ -315,6 +339,10 @@ export async function send_email_for_new_registration(message: any) {
     .catch((error: any) => {
       console.error(error);
     });
+  } else{
+    console.log("Emails access only on production")
+  }
+ 
 }
 
 export function send_email_to_invited_user(send_to: string, message: any) {
@@ -343,8 +371,8 @@ export function send_email_to_invited_user(send_to: string, message: any) {
       businessName: message.businessName,
     },
   };
-
-  sgMail
+  if(checkAccess()){
+     sgMail
     .send(msg)
     .then(() => {
       console.log("Email sent");
@@ -358,6 +386,10 @@ export function send_email_to_invited_user(send_to: string, message: any) {
     .catch((error: any) => {
       console.error(error);
     });
+  }
+  else{
+    console.log("Emails access only on production")
+  }
 }
 
 export function send_email_for_new_lead(send_to: string, message: any) {
@@ -389,8 +421,8 @@ export function send_email_for_new_lead(send_to: string, message: any) {
       email: message.email,
     },
   };
-
-  sgMail
+  if(checkAccess()){
+      sgMail
     .send(msg)
     .then(() => {
       console.log("Email sent");
@@ -404,6 +436,10 @@ export function send_email_for_new_lead(send_to: string, message: any) {
     .catch((error: any) => {
       console.error(error);
     });
+  }
+  else{
+    console.log("Emails access only on production")
+  }
 }
 
 // export function send_email_for_new_lead_to_admin(message: any) {
@@ -467,8 +503,8 @@ export function send_email_for_total_lead(send_to: string, message: any) {
       leads: message.leads.email,
     },
   };
-
-  sgMail
+  if(checkAccess()){
+      sgMail
     .send(msg)
     .then(() => {
       console.log("Email sent");
@@ -482,6 +518,10 @@ export function send_email_for_total_lead(send_to: string, message: any) {
     .catch((error: any) => {
       console.error(error);
     });
+  }
+  else{
+    console.log("Emails access only on production")
+  }
 }
 
 export function send_email_for_lead_status_reject(send_to: string, message: any) {
@@ -508,8 +548,8 @@ export function send_email_for_lead_status_reject(send_to: string, message: any)
       name: message.name,
     },
   };
-
-  sgMail
+  if(checkAccess()){
+    sgMail
     .send(msg)
     .then(() => {
       console.log("Email sent");
@@ -522,7 +562,11 @@ export function send_email_for_lead_status_reject(send_to: string, message: any)
     })
     .catch((error: any) => {
       console.error(error);
-    });
+    });  
+  }
+  else{
+    console.log("Emails access only on production")
+  }
 }
 
 
@@ -550,8 +594,8 @@ export function send_email_for_lead_status_accept(send_to: string, message: any)
       name: message.name,
     },
   };
-
-  sgMail
+  if(checkAccess()){
+     sgMail
     .send(msg)
     .then(() => {
       console.log("Email sent");
@@ -564,7 +608,11 @@ export function send_email_for_lead_status_accept(send_to: string, message: any)
     })
     .catch((error: any) => {
       console.error(error);
-    });
+    }); 
+  }
+  else{
+    console.log("Emails access only on production")
+  }
 }
 
 const mapHours = (hours: any) => {
@@ -637,7 +685,8 @@ export function send_email_for_updated_details(message: any) {
       businessLogo:message?.logo
     },
   };
-  sgMail
+  if(checkAccess()){
+      sgMail
     .send(msg)
     .then(() => {
       console.log("Email sent");
@@ -651,6 +700,10 @@ export function send_email_for_updated_details(message: any) {
     .catch((error: any) => {
       console.error(error);
     });
+  }
+  else{
+    console.log("Emails access only on production")
+  }
 }
 
 export function send_email_for_payment_success(send_to: any, message: any) {
@@ -683,8 +736,8 @@ export function send_email_for_payment_success(send_to: any, message: any) {
       businessName:message?.businessName
     },
   };
-
-  sgMail
+  if(checkAccess()){
+    sgMail
     .send(msg)
     .then(() => {
       console.log("Email sent");
@@ -698,6 +751,10 @@ export function send_email_for_payment_success(send_to: any, message: any) {
     .catch((error: any) => {
       console.error(error);
     });
+  }
+  else{
+    console.log("Emails access only on production")
+  }
 }
 
 export function send_email_for_payment_failure(send_to: any, message: any) {
@@ -730,8 +787,8 @@ export function send_email_for_payment_failure(send_to: any, message: any) {
       businessName:message?.businessName
     },
   };
-
-  sgMail
+  if(checkAccess()){
+     sgMail
     .send(msg)
     .then(() => {
       console.log("Email sent");
@@ -745,6 +802,10 @@ export function send_email_for_payment_failure(send_to: any, message: any) {
     .catch((error: any) => {
       console.error(error);
     });
+  }
+  else{
+    console.log("Emails access only on production")
+  }
 }
 
 export function send_email_for_payment_success_to_admin(message: any) {
@@ -776,8 +837,8 @@ export function send_email_for_payment_success_to_admin(message: any) {
       cardHolderName: message?.cardHolderName,
     },
   };
-
-  sgMail
+  if(checkAccess()){
+      sgMail
     .send(msg)
     .then(() => {
       console.log("Email sent");
@@ -791,6 +852,10 @@ export function send_email_for_payment_success_to_admin(message: any) {
     .catch((error: any) => {
       console.error(error);
     });
+  }
+  else{
+    console.log("Emails access only on production")
+  }
 }
 
 export function send_email_to_invited_admin(send_to: string, message: any) {
@@ -819,8 +884,8 @@ export function send_email_to_invited_admin(send_to: string, message: any) {
       businessName: message.businessName,
     },
   };
-
-  sgMail
+  if(checkAccess()){
+     sgMail
     .send(msg)
     .then(() => {
       console.log("Email sent");
@@ -833,7 +898,11 @@ export function send_email_to_invited_admin(send_to: string, message: any) {
     })
     .catch((error: any) => {
       console.error(error);
-    });
+    }); 
+  }
+  else{
+    console.log("Emails access only on production")
+  }
 }
 
 async function saveNotifications(params:NotificationsParams){
