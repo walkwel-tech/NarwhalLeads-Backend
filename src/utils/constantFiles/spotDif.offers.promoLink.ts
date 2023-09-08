@@ -1,4 +1,4 @@
 export const PREMIUM_PROMOLINK = {
-  FREE_CREDITS: 100,
-  TOP_UP: 50,
+  FREE_CREDITS: 5,
+  TOP_UP: 10,
 };
