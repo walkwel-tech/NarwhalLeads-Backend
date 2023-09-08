@@ -653,7 +653,8 @@ export class UsersControllers {
                 checkUser?.xeroContactId,
                 transactionTitle.CREDITS_ADDED,
                 //@ts-ignore
-                input?.credits
+                input?.credits,
+                0
               )
                 .then(async (res: any) => {
                   const dataToSaveInInvoice: any = {
@@ -673,7 +674,8 @@ export class UsersControllers {
                       checkUser?.xeroContactId,
                       transactionTitle.CREDITS_ADDED,
                       //@ts-ignore
-                      input.credits
+                      input.credits,
+                      0
                     ).then(async (res: any) => {
                       const dataToSaveInInvoice: any = {
                         userId: checkUser?.id,

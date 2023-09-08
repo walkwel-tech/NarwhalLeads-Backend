@@ -12,7 +12,7 @@ export class TransactionController {
     try {
       let dataToFind: any = {
         userId: new ObjectId(userId),
-        title:{$ne:transactionTitle.INVOICES_VAT}
+        title:{$nin:[transactionTitle.INVOICES_VAT,transactionTitle.FREE_CREDITS]}
       };
       const [query]: any = await Transaction.aggregate([
         {
