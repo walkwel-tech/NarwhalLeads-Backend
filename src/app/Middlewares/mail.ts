@@ -1,5 +1,6 @@
 import { NotificationsParams } from "../../types/NotificationsParams";
 import { TEMPLATES_ID } from "../../utils/constantFiles/email.templateIDs";
+import { Admins } from "../Models/Admins";
 import { Notifications } from "../Models/Notifications";
 import { SubscriberList } from "../Models/SubscriberList";
 import { User } from "../Models/User";
@@ -33,26 +34,24 @@ export function send_email_forget_password(send_to: any, message: any) {
     templateId: TEMPLATES_ID.FORGET_PASSWORD,
     dynamic_template_data: { name: message.name, password: message.password },
   };
-  if(checkAccess()){
-      sgMail
-    .send(msg)
-    .then(() => {
-      console.log("Email sent");
-      const params={
-        email:send_to,
-        title:'FORGET_PASSWORD',
-        templateId:TEMPLATES_ID.FORGET_PASSWORD
-      }
-      saveNotifications(params)
-    })
-    .catch((error: any) => {
-      console.error(error);
-    });
+  if (checkAccess()) {
+    sgMail
+      .send(msg)
+      .then(() => {
+        console.log("Email sent");
+        const params = {
+          email: send_to,
+          title: "FORGET_PASSWORD",
+          templateId: TEMPLATES_ID.FORGET_PASSWORD,
+        };
+        saveNotifications(params);
+      })
+      .catch((error: any) => {
+        console.error(error);
+      });
+  } else {
+    console.log("Emails access only on production");
   }
-  else{
-    console.log("Emails access only on production")
-  }
-
 }
 
 export function send_email_for_autocharge(send_to: any, message: any) {
@@ -90,26 +89,24 @@ export function send_email_for_autocharge(send_to: any, message: any) {
       cardHolderName: message?.cardHolderName,
     },
   };
-if(checkAccess()){
-  sgMail
-    .send(msg)
-    .then(() => {
-      console.log("Email sent");
-      const params={
-        email:send_to,
-        title:'AUTO_CHARGE',
-        templateId:TEMPLATES_ID.AUTO_CHARGE
-      }
-      saveNotifications(params)
-    })
-    .catch((error: any) => {
-      console.error(error);
-    });
-}
-else{
-  console.log("Emails access only on production")
-}
-  
+  if (checkAccess()) {
+    sgMail
+      .send(msg)
+      .then(() => {
+        console.log("Email sent");
+        const params = {
+          email: send_to,
+          title: "AUTO_CHARGE",
+          templateId: TEMPLATES_ID.AUTO_CHARGE,
+        };
+        saveNotifications(params);
+      })
+      .catch((error: any) => {
+        console.error(error);
+      });
+  } else {
+    console.log("Emails access only on production");
+  }
 }
 
 export function send_email_for_failed_autocharge(send_to: any, message: any) {
@@ -147,26 +144,24 @@ export function send_email_for_failed_autocharge(send_to: any, message: any) {
       cardHolderName: message?.cardHolderName,
     },
   };
-  if(checkAccess()){
+  if (checkAccess()) {
     sgMail
-    .send(msg)
-    .then(() => {
-      console.log("Email sent");
-      const params={
-        email:send_to,
-        title:'AUTO_CHARGE_FAIL',
-        templateId:TEMPLATES_ID.AUTO_CHARGE_FAIL
-      }
-      saveNotifications(params)
-    })
-    .catch((error: any) => {
-      console.error(error);
-    });
+      .send(msg)
+      .then(() => {
+        console.log("Email sent");
+        const params = {
+          email: send_to,
+          title: "AUTO_CHARGE_FAIL",
+          templateId: TEMPLATES_ID.AUTO_CHARGE_FAIL,
+        };
+        saveNotifications(params);
+      })
+      .catch((error: any) => {
+        console.error(error);
+      });
+  } else {
+    console.log("Emails access only on production");
   }
-  else{
-    console.log("Emails access only on production")
-  }
-  
 }
 
 export function send_email_for_registration(send_to: any, message: any) {
@@ -192,24 +187,23 @@ export function send_email_for_registration(send_to: any, message: any) {
     templateId: TEMPLATES_ID.REGISTRATION,
     dynamic_template_data: { firstName: message },
   };
-  if(checkAccess()){
-     sgMail
-    .send(msg)
-    .then(() => {
-      console.log("Email sent");
-      const params={
-        email:send_to,
-        title:'REGISTRATION',
-        templateId:TEMPLATES_ID.REGISTRATION
-      }
-      saveNotifications(params)
-    })
-    .catch((error: any) => {
-      console.error(error);
-    });
-  }
-  else{
-    console.log("Emails access only on production")
+  if (checkAccess()) {
+    sgMail
+      .send(msg)
+      .then(() => {
+        console.log("Email sent");
+        const params = {
+          email: send_to,
+          title: "REGISTRATION",
+          templateId: TEMPLATES_ID.REGISTRATION,
+        };
+        saveNotifications(params);
+      })
+      .catch((error: any) => {
+        console.error(error);
+      });
+  } else {
+    console.log("Emails access only on production");
   }
 }
 
@@ -237,24 +231,23 @@ export function send_email_for_add_credits(send_to: any, message: any) {
       credits: `£${message?.credits}`,
     },
   };
-  if(checkAccess()){
-     sgMail
-    .send(msg)
-    .then(() => {
-      console.log("Email sent");
-      const params={
-        email:send_to,
-        title:'ADD_CREDITS',
-        templateId:TEMPLATES_ID.ADD_CREDITS
-      }
-      saveNotifications(params)
-    })
-    .catch((error: any) => {
-      console.error(error);
-    });
-  }
-  else{
-    console.log("Emails access only on production")
+  if (checkAccess()) {
+    sgMail
+      .send(msg)
+      .then(() => {
+        console.log("Email sent");
+        const params = {
+          email: send_to,
+          title: "ADD_CREDITS",
+          templateId: TEMPLATES_ID.ADD_CREDITS,
+        };
+        saveNotifications(params);
+      })
+      .catch((error: any) => {
+        console.error(error);
+      });
+  } else {
+    console.log("Emails access only on production");
   }
 }
 
@@ -268,11 +261,11 @@ export async function send_email_for_new_registration(message: any) {
   let Subscriber: string[] = ["leads@nmg.group"];
   const data = await SubscriberList.find();
   data.map((i) => Subscriber.push(i.email));
-  if(message?.financeOffers===false){
-    message.financeOffers="No"
+  if (message?.financeOffers === false) {
+    message.financeOffers = "No";
   }
-  if(message?.financeOffers===true){
-    message.financeOffers="Yes"
+  if (message?.financeOffers === true) {
+    message.financeOffers = "Yes";
   }
   const msg = {
     // to: "radhika.walkweltech@gmail.com", // Change to your recipient
@@ -291,7 +284,7 @@ export async function send_email_for_new_registration(message: any) {
         enable: false,
       },
     },
-    isMultiple :true,
+    isMultiple: true,
 
     // html: "<strong>and easy to do anywhere, even with Node.js</strong>",
     // templateId: "d-4fffc73a3ca34d69a10b68d02c4b8c22",
@@ -312,37 +305,35 @@ export async function send_email_for_new_registration(message: any) {
       leadsHours: message?.leadsHours,
       leadApiUrl: message?.leadApiUrl,
       area: message?.area,
-      financeOffers:message?.financeOffers,
-      prices:message?.prices,
-      accreditations:message?.accreditations,
-      avgInstallTime:message?.avgInstallTime,
-      criteria:message?.criteria,
-      trustpilotReviews:message?.trustpilotReviews,
-      leadCost:message?.leadCost
+      financeOffers: message?.financeOffers,
+      prices: message?.prices,
+      accreditations: message?.accreditations,
+      avgInstallTime: message?.avgInstallTime,
+      criteria: message?.criteria,
+      trustpilotReviews: message?.trustpilotReviews,
+      leadCost: message?.leadCost,
     },
   };
-  if(checkAccess()){
-     sgMail
-    .sendMultiple(msg)
-    .then(() => {
-      console.log("Email sent");
-      Subscriber.map((i)=>{
-        const params={
-          email:i,
-          title:'NEW_REGISTRATION',
-          templateId:TEMPLATES_ID.NEW_REGISTRATION
-        }
-        saveNotifications(params)
+  if (checkAccess()) {
+    sgMail
+      .sendMultiple(msg)
+      .then(() => {
+        console.log("Email sent");
+        Subscriber.map((i) => {
+          const params = {
+            email: i,
+            title: "NEW_REGISTRATION",
+            templateId: TEMPLATES_ID.NEW_REGISTRATION,
+          };
+          saveNotifications(params);
+        });
       })
-     
-    })
-    .catch((error: any) => {
-      console.error(error);
-    });
-  } else{
-    console.log("Emails access only on production")
+      .catch((error: any) => {
+        console.error(error);
+      });
+  } else {
+    console.log("Emails access only on production");
   }
- 
 }
 
 export function send_email_to_invited_user(send_to: string, message: any) {
@@ -371,24 +362,23 @@ export function send_email_to_invited_user(send_to: string, message: any) {
       businessName: message.businessName,
     },
   };
-  if(checkAccess()){
-     sgMail
-    .send(msg)
-    .then(() => {
-      console.log("Email sent");
-      const params={
-        email:send_to,
-        title:'INVITED_USER',
-        templateId:TEMPLATES_ID.INVITED_USER
-      }
-      saveNotifications(params)
-    })
-    .catch((error: any) => {
-      console.error(error);
-    });
-  }
-  else{
-    console.log("Emails access only on production")
+  if (checkAccess()) {
+    sgMail
+      .send(msg)
+      .then(() => {
+        console.log("Email sent");
+        const params = {
+          email: send_to,
+          title: "INVITED_USER",
+          templateId: TEMPLATES_ID.INVITED_USER,
+        };
+        saveNotifications(params);
+      })
+      .catch((error: any) => {
+        console.error(error);
+      });
+  } else {
+    console.log("Emails access only on production");
   }
 }
 
@@ -412,7 +402,7 @@ export function send_email_for_new_lead(send_to: string, message: any) {
     },
     // html: "<strong>and easy to do anywhere, even with Node.js</strong>",
     // templateId: "d-ca4e694d81ce4b3c8738b304a7a2368e",
-    templateId:TEMPLATES_ID.NEW_LEAD,
+    templateId: TEMPLATES_ID.NEW_LEAD,
     dynamic_template_data: {
       userName: message.userName,
       firstName: message.firstName,
@@ -421,24 +411,23 @@ export function send_email_for_new_lead(send_to: string, message: any) {
       email: message.email,
     },
   };
-  if(checkAccess()){
-      sgMail
-    .send(msg)
-    .then(() => {
-      console.log("Email sent");
-      const params={
-        email:send_to,
-        title:'NEW_LEAD',
-        templateId:TEMPLATES_ID.NEW_LEAD
-      }
-      saveNotifications(params)
-    })
-    .catch((error: any) => {
-      console.error(error);
-    });
-  }
-  else{
-    console.log("Emails access only on production")
+  if (checkAccess()) {
+    sgMail
+      .send(msg)
+      .then(() => {
+        console.log("Email sent");
+        const params = {
+          email: send_to,
+          title: "NEW_LEAD",
+          templateId: TEMPLATES_ID.NEW_LEAD,
+        };
+        saveNotifications(params);
+      })
+      .catch((error: any) => {
+        console.error(error);
+      });
+  } else {
+    console.log("Emails access only on production");
   }
 }
 
@@ -503,28 +492,30 @@ export function send_email_for_total_lead(send_to: string, message: any) {
       leads: message.leads.email,
     },
   };
-  if(checkAccess()){
-      sgMail
-    .send(msg)
-    .then(() => {
-      console.log("Email sent");
-      const params={
-        email:send_to,
-        title:'TOTAL_LEADS',
-        templateId:TEMPLATES_ID.TOTAL_LEADS
-      }
-      saveNotifications(params)
-    })
-    .catch((error: any) => {
-      console.error(error);
-    });
-  }
-  else{
-    console.log("Emails access only on production")
+  if (checkAccess()) {
+    sgMail
+      .send(msg)
+      .then(() => {
+        console.log("Email sent");
+        const params = {
+          email: send_to,
+          title: "TOTAL_LEADS",
+          templateId: TEMPLATES_ID.TOTAL_LEADS,
+        };
+        saveNotifications(params);
+      })
+      .catch((error: any) => {
+        console.error(error);
+      });
+  } else {
+    console.log("Emails access only on production");
   }
 }
 
-export function send_email_for_lead_status_reject(send_to: string, message: any) {
+export function send_email_for_lead_status_reject(
+  send_to: string,
+  message: any
+) {
   const msg = {
     to: send_to, // Change to your recipient
     // to: "radhika.walkweltech@gmail.com",
@@ -548,29 +539,30 @@ export function send_email_for_lead_status_reject(send_to: string, message: any)
       name: message.name,
     },
   };
-  if(checkAccess()){
+  if (checkAccess()) {
     sgMail
-    .send(msg)
-    .then(() => {
-      console.log("Email sent");
-      const params={
-        email:send_to,
-        title:'LEAD_STATUS_REJECT',
-        templateId:TEMPLATES_ID.LEAD_STATUS_REJECT
-      }
-      saveNotifications(params)
-    })
-    .catch((error: any) => {
-      console.error(error);
-    });  
-  }
-  else{
-    console.log("Emails access only on production")
+      .send(msg)
+      .then(() => {
+        console.log("Email sent");
+        const params = {
+          email: send_to,
+          title: "LEAD_STATUS_REJECT",
+          templateId: TEMPLATES_ID.LEAD_STATUS_REJECT,
+        };
+        saveNotifications(params);
+      })
+      .catch((error: any) => {
+        console.error(error);
+      });
+  } else {
+    console.log("Emails access only on production");
   }
 }
 
-
-export function send_email_for_lead_status_accept(send_to: string, message: any) {
+export function send_email_for_lead_status_accept(
+  send_to: string,
+  message: any
+) {
   const msg = {
     to: send_to, // Change to your recipient
     // to: "radhika.walkweltech@gmail.com",
@@ -589,29 +581,28 @@ export function send_email_for_lead_status_accept(send_to: string, message: any)
       },
     },
     // html: "<strong>and easy to do anywhere, even with Node.js</strong>",
-    templateId:TEMPLATES_ID.LEAD_STATUS_ACCEPT,
+    templateId: TEMPLATES_ID.LEAD_STATUS_ACCEPT,
     dynamic_template_data: {
       name: message.name,
     },
   };
-  if(checkAccess()){
-     sgMail
-    .send(msg)
-    .then(() => {
-      console.log("Email sent");
-      const params={
-        email:send_to,
-        title:'LEAD_STATUS_ACCEPT',
-        templateId:TEMPLATES_ID.LEAD_STATUS_ACCEPT
-      }
-      saveNotifications(params)
-    })
-    .catch((error: any) => {
-      console.error(error);
-    }); 
-  }
-  else{
-    console.log("Emails access only on production")
+  if (checkAccess()) {
+    sgMail
+      .send(msg)
+      .then(() => {
+        console.log("Email sent");
+        const params = {
+          email: send_to,
+          title: "LEAD_STATUS_ACCEPT",
+          templateId: TEMPLATES_ID.LEAD_STATUS_ACCEPT,
+        };
+        saveNotifications(params);
+      })
+      .catch((error: any) => {
+        console.error(error);
+      });
+  } else {
+    console.log("Emails access only on production");
   }
 }
 
@@ -663,7 +654,7 @@ export function send_email_for_updated_details(message: any) {
     },
     // html: "<strong>and easy to do anywhere, even with Node.js</strong>",
     // templateId: "d-ee02048102ac4a2eb4e7f48a8527ea32",
-    templateId:TEMPLATES_ID.USER_UPDATE_DETAILS,
+    templateId: TEMPLATES_ID.USER_UPDATE_DETAILS,
     dynamic_template_data: {
       firstName: message?.firstName,
       lastName: message?.lastName,
@@ -681,28 +672,27 @@ export function send_email_for_updated_details(message: any) {
       dailyLeads: message?.dailyLeads,
       leadsHours: message?.leadsHours,
       area: message?.area,
-      leadCost:message?.leadCost,
-      businessLogo:message?.logo
+      leadCost: message?.leadCost,
+      businessLogo: message?.logo,
     },
   };
-  if(checkAccess()){
-      sgMail
-    .send(msg)
-    .then(() => {
-      console.log("Email sent");
-      const params={
-        email:"leads@nmg.group",
-        title:'USER_UPDATE_DETAILS',
-        templateId:TEMPLATES_ID.USER_UPDATE_DETAILS
-      }
-      saveNotifications(params)
-    })
-    .catch((error: any) => {
-      console.error(error);
-    });
-  }
-  else{
-    console.log("Emails access only on production")
+  if (checkAccess()) {
+    sgMail
+      .send(msg)
+      .then(() => {
+        console.log("Email sent");
+        const params = {
+          email: "leads@nmg.group",
+          title: "USER_UPDATE_DETAILS",
+          templateId: TEMPLATES_ID.USER_UPDATE_DETAILS,
+        };
+        saveNotifications(params);
+      })
+      .catch((error: any) => {
+        console.error(error);
+      });
+  } else {
+    console.log("Emails access only on production");
   }
 }
 
@@ -726,34 +716,33 @@ export function send_email_for_payment_success(send_to: any, message: any) {
     },
     // html: "<strong>and easy to do anywhere, even with Node.js</strong>",
     // templateId: "d-69dcead271404a1d8a90aab2416bdc42",
-    templateId:TEMPLATES_ID.PAYMENT_SUCCESS,
+    templateId: TEMPLATES_ID.PAYMENT_SUCCESS,
     dynamic_template_data: {
       firstName: message?.firstName,
       credit: `£${message?.credits}`,
       paymentAmount: `£${message?.amount}`,
       cardNumberEnd: message?.cardNumberEnd,
       cardHolderName: message?.cardHolderName,
-      businessName:message?.businessName
+      businessName: message?.businessName,
     },
   };
-  if(checkAccess()){
+  if (checkAccess()) {
     sgMail
-    .send(msg)
-    .then(() => {
-      console.log("Email sent");
-      const params={
-        email:send_to,
-        title:'PAYMENT_SUCCESS',
-        templateId:TEMPLATES_ID.PAYMENT_SUCCESS
-      }
-      saveNotifications(params)
-    })
-    .catch((error: any) => {
-      console.error(error);
-    });
-  }
-  else{
-    console.log("Emails access only on production")
+      .send(msg)
+      .then(() => {
+        console.log("Email sent");
+        const params = {
+          email: send_to,
+          title: "PAYMENT_SUCCESS",
+          templateId: TEMPLATES_ID.PAYMENT_SUCCESS,
+        };
+        saveNotifications(params);
+      })
+      .catch((error: any) => {
+        console.error(error);
+      });
+  } else {
+    console.log("Emails access only on production");
   }
 }
 
@@ -784,27 +773,26 @@ export function send_email_for_payment_failure(send_to: any, message: any) {
       paymentAmount: `£${message?.amount}`,
       cardNumberEnd: message?.cardNumberEnd,
       cardHolderName: message?.cardHolderName,
-      businessName:message?.businessName
+      businessName: message?.businessName,
     },
   };
-  if(checkAccess()){
-     sgMail
-    .send(msg)
-    .then(() => {
-      console.log("Email sent");
-      const params={
-        email:send_to,
-        title:'PAYMENT_FAIL',
-        templateId:TEMPLATES_ID.PAYMENT_FAIL
-      }
-      saveNotifications(params)
-    })
-    .catch((error: any) => {
-      console.error(error);
-    });
-  }
-  else{
-    console.log("Emails access only on production")
+  if (checkAccess()) {
+    sgMail
+      .send(msg)
+      .then(() => {
+        console.log("Email sent");
+        const params = {
+          email: send_to,
+          title: "PAYMENT_FAIL",
+          templateId: TEMPLATES_ID.PAYMENT_FAIL,
+        };
+        saveNotifications(params);
+      })
+      .catch((error: any) => {
+        console.error(error);
+      });
+  } else {
+    console.log("Emails access only on production");
   }
 }
 
@@ -837,24 +825,23 @@ export function send_email_for_payment_success_to_admin(message: any) {
       cardHolderName: message?.cardHolderName,
     },
   };
-  if(checkAccess()){
-      sgMail
-    .send(msg)
-    .then(() => {
-      console.log("Email sent");
-      const params={
-        email:"leads@nmg.group",
-        title:'PAYMENT_SUCCESS_TO_ADMIN',
-        templateId:TEMPLATES_ID.PAYMENT_SUCCESS_TO_ADMIN
-      }
-      saveNotifications(params)
-    })
-    .catch((error: any) => {
-      console.error(error);
-    });
-  }
-  else{
-    console.log("Emails access only on production")
+  if (checkAccess()) {
+    sgMail
+      .send(msg)
+      .then(() => {
+        console.log("Email sent");
+        const params = {
+          email: "leads@nmg.group",
+          title: "PAYMENT_SUCCESS_TO_ADMIN",
+          templateId: TEMPLATES_ID.PAYMENT_SUCCESS_TO_ADMIN,
+        };
+        saveNotifications(params);
+      })
+      .catch((error: any) => {
+        console.error(error);
+      });
+  } else {
+    console.log("Emails access only on production");
   }
 }
 
@@ -884,33 +871,140 @@ export function send_email_to_invited_admin(send_to: string, message: any) {
       businessName: message.businessName,
     },
   };
-  if(checkAccess()){
-     sgMail
-    .send(msg)
-    .then(() => {
-      console.log("Email sent");
-      const params={
-        email:send_to,
-        title:'INVITED_ADMIN',
-        templateId:TEMPLATES_ID.INVITED_ADMIN
-      }
-      saveNotifications(params)
-    })
-    .catch((error: any) => {
-      console.error(error);
-    }); 
-  }
-  else{
-    console.log("Emails access only on production")
+  if (checkAccess()) {
+    sgMail
+      .send(msg)
+      .then(() => {
+        console.log("Email sent");
+        const params = {
+          email: send_to,
+          title: "INVITED_ADMIN",
+          templateId: TEMPLATES_ID.INVITED_ADMIN,
+        };
+        saveNotifications(params);
+      })
+      .catch((error: any) => {
+        console.error(error);
+      });
+  } else {
+    console.log("Emails access only on production");
   }
 }
 
-async function saveNotifications(params:NotificationsParams){
-const user=await User.findOne({email:params?.email})
-const dataToSave={
-  userId:user?.id,
-  title:params.title,
-  templateId:params.templateId,
+export function send_email_for_below_5_leads_pending(
+  send_to: string,
+  message: any
+) {
+  const msg = {
+    to: send_to, // Change to your recipient
+    // to: "radhika.walkweltech@gmail.com",
+    from: {
+      name: process.env.VERIFIED_SENDER_ON_SENDGRID_FROM_NAME,
+      email: process.env.VERIFIED_SENDER_ON_SENDGRID,
+    },
+    // Change to your verified sender
+    trackingSettings: {
+      clickTracking: {
+        enable: false,
+        enableText: false,
+      },
+      openTracking: {
+        enable: false,
+      },
+    },
+    // html: "<strong>and easy to do anywhere, even with Node.js</strong>",
+    templateId: TEMPLATES_ID.BELOW_5_LEADS_PENDING,
+    dynamic_template_data: {
+      name: message.name,
+      credits:message.credits
+    },
+  };
+  if (checkAccess()) {
+    sgMail
+      .send(msg)
+      .then(() => {
+        console.log("Email sent");
+        const params = {
+          email: send_to,
+          title: "BELOW_5_LEADS_PENDING",
+          templateId: TEMPLATES_ID.BELOW_5_LEADS_PENDING,
+        };
+        saveNotifications(params);
+      })
+      .catch((error: any) => {
+        console.error(error);
+      });
+  } else {
+    console.log("Emails access only on production");
+  }
 }
-await Notifications.create(dataToSave)
+
+export function send_email_for_out_of_funds(
+  send_to: string,
+  message: any
+) {
+  const msg = {
+    // to: send_to, // Change to your recipient
+    to: "radhika.walkweltech@gmail.com",
+    from: {
+      name: process.env.VERIFIED_SENDER_ON_SENDGRID_FROM_NAME,
+      email: process.env.VERIFIED_SENDER_ON_SENDGRID,
+    },
+    // Change to your verified sender
+    trackingSettings: {
+      clickTracking: {
+        enable: false,
+        enableText: false,
+      },
+      openTracking: {
+        enable: false,
+      },
+    },
+    // html: "<strong>and easy to do anywhere, even with Node.js</strong>",
+    templateId: TEMPLATES_ID.OUT_OF_FUNDS,
+    dynamic_template_data: {
+      name: message.name,
+      credits:message.credits
+    },
+  };
+  if (checkAccess()) {
+    sgMail
+      .send(msg)
+      .then(() => {
+        console.log("Email sent");
+        const params = {
+          email: send_to,
+          title: "OUT_OF_FUNDS",
+          templateId: TEMPLATES_ID.OUT_OF_FUNDS,
+        };
+        saveNotifications(params);
+      })
+      .catch((error: any) => {
+        console.error(error);
+      });
+  } else {
+    console.log("Emails access only on production");
+  }
+}
+
+
+async function saveNotifications(params: NotificationsParams) {
+  const user = await User.findOne({ email: params?.email });
+  const admin = await Admins.findOne({ email: params?.email });
+
+  let dataToSave;
+  if (user) {
+    dataToSave = {
+      userId: user?.id,
+      title: params.title,
+      templateId: params.templateId,
+    };
+  } else {
+    dataToSave = {
+      userId: admin?.id,
+      title: params.title,
+      templateId: params.templateId,
+    };
+  }
+  await Notifications.create(dataToSave);
 }
