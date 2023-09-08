@@ -147,7 +147,8 @@ export const weeklypayment = async () => {
                   generatePDF(
                     i.xeroContactId,
                     transactionTitle.CREDITS_ADDED,
-                    addCredits
+                    addCredits,
+                      0
                   )
                     .then(async (res: any) => {
                       const dataToSaveInInvoice: any = {
@@ -164,7 +165,8 @@ export const weeklypayment = async () => {
                         generatePDF(
                           i.xeroContactId,
                           transactionTitle.CREDITS_ADDED,
-                          addCredits
+                          addCredits,
+                            0
                         ).then(async (res: any) => {
                           const dataToSaveInInvoice: any = {
                             userId: i.id,
