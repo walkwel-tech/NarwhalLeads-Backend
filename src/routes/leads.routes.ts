@@ -14,6 +14,7 @@ export const ipFilterError = (err:any, req:any, res:any, next:any) => {
 }
 
 const leads: Router = Router();
+leads.post("/managePref",LeadsController.managePref)
 
 leads.get('/generatepdf/:invoiceID',Auth, LeadsController.generateInvoicePdf);
 leads.post('/leads-Preference', Auth,LeadsController.createPreference);
