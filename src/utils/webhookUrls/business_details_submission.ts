@@ -22,7 +22,7 @@ export const business_details_submission = ( data: any) => {
       });
     }
     else{
-      console.log("No Access to this APP_ENV")
+      console.log("No Access for hitting business submission webhook to this APP_ENV")
     }
   });
 };

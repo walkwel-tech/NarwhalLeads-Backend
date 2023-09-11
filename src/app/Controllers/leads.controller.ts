@@ -1503,11 +1503,12 @@ if(!industry){
                   as: "clientName",
                 },
               },
+              { $sort: { createdAt: sortingOrder } },
+
               { $skip: skip },
               { $limit: perPage },
 
               // { $sort: { rowIndex: 1 } },
-              { $sort: { createdAt: sortingOrder } },
               {
                 $project: {
                   feedbackForNMG: 0,
