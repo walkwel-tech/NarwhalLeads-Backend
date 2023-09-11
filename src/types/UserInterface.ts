@@ -18,6 +18,7 @@ export interface UserInterface extends Document {
   isLeadCostCheck:boolean;
   buyerId: string;
   xeroContactId: string;
+  isXeroCustomer:boolean;
   isVerified: boolean;
   verifiedAt: Date;
   isActive: boolean;

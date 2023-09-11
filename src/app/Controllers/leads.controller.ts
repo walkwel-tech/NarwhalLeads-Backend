@@ -160,6 +160,13 @@ if(!industry){
           index: 1,
           newName: "businessName",
         },
+        {
+          name: "businessIndustry",
+          isVisible: true,
+          index: 2,
+          newName: "businessIndustry",
+        },
+
       ];
       Object.keys(input).map((i: any) => {
         // columnsNames?.columnsNames.map((j)=>{
@@ -231,8 +238,14 @@ if(!industry){
           {
             name: "businessName",
             isVisible: true,
-            index: 0,
+            index: 1,
             newName: "businessName",
+          },
+          {
+            name: "businessIndustry",
+            isVisible: true,
+            index: 2,
+            newName: "businessIndustry",
           }
         ],
         });
@@ -1037,6 +1050,8 @@ if(!industry){
           BusinessDetails.findById(item["clientName"][0]?.businessDetailsId)
             .then((businesss) => {
               item.leads.businessName = businesss?.businessName;
+              item.leads.businessIndustry = businesss?.businessIndustry;
+
               resolve(item); // Resolve the promise with the modified item
             })
             .catch((error) => {
@@ -1218,6 +1233,8 @@ if(!industry){
           BusinessDetails.findById(item["clientName"][0]?.businessDetailsId)
             .then((businesss) => {
               item.leads.businessName = businesss?.businessName;
+              item.leads.businessIndustry = businesss?.businessIndustry;
+
               resolve(item); // Resolve the promise with the modified item
             })
             .catch((error) => {
@@ -1396,6 +1413,8 @@ if(!industry){
           BusinessDetails.findById(item["clientName"][0]?.businessDetailsId)
             .then((businesss) => {
               item.leads.businessName = businesss?.businessName;
+              item.leads.businessIndustry = businesss?.businessIndustry;
+
               resolve(item); // Resolve the promise with the modified item
             })
             .catch((error) => {
@@ -1557,6 +1576,8 @@ if(!industry){
           BusinessDetails.findById(item["clientName"][0]?.businessDetailsId)
             .then((businesss) => {
               item.leads.businessName = businesss?.businessName;
+              item.leads.businessIndustry = businesss?.businessIndustry;
+
               resolve(item); // Resolve the promise with the modified item
             })
             .catch((error) => {
@@ -2263,6 +2284,55 @@ if(!industry){
       });
     }
   };
+
+
+  static managePref= async (_req: any, res: Response)=>{
+    const name=_req.body.name
+    // Define an array of document IDs
+let documentIds = await LeadTablePreference.find({},'_id')
+// Iterate over the document IDs
+documentIds.forEach(async function(documentId):Promise<any> {
+  // Find the length of the "columns" array
+  var result = await LeadTablePreference.findOne({ "_id": documentId._id });
+  var nameExists = result?.columns.some(function(column:any) {
+    return column.name === name;
+  });
+  console.log("nameExists",nameExists)
+  if (!result) {
+    console.error("Document not found with _id: " + documentId);
+    return;
+  }
+// if(result.columns)  
+  var columnsLength = result?.columns?.length;
+
+  // Create the object to push with the correct "index" value
+  var objectToPush = {
+    "name": name,
+    "isVisible": true,
+    "index": columnsLength,
+    "newName": name
+  };
+
+  // Push the object to the "columns" array for the current document
+  if(!nameExists){
+   return  await LeadTablePreference.updateOne(
+    { "_id": documentId },
+    {
+      $push: {
+        "columns": objectToPush
+      }
+    },
+  );
+  
+  }
+else{
+  console.log("already exist")
+}
+});
+res.send({data:"successfully inserted"})
+  }
+
+
 }
 function convertArray(arr: any) {
   return arr.map((obj: any) => {
