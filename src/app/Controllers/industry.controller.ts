@@ -5,7 +5,7 @@ import { BuisnessIndustries } from "../Models/BuisnessIndustries";
 import { CustomColumnNames } from "../Models/CustomColumns.leads";
 import { User } from "../Models/User";
 import { UserInterface } from "../../types/UserInterface";
-
+const LIMIT = 10;
 export class IndustryController {
   static create = async (req: Request, res: Response) => {
     const input = req.body;
@@ -80,28 +80,57 @@ export class IndustryController {
     try {
       const sortField: any = req.query.sort || "industry"; // Change this field name as needed
 
-      let sortOrder : any= req.query.order || 1; // Change this as needed
-if(sortOrder=="asc"){sortOrder=1}
-else{
-  sortOrder=-1
-}
-let dataToFind={}
-if (req.query.search) {
-  dataToFind = {
-    ...dataToFind,
-    $or: [{ industry: { $regex: req.query.search, $options: "i" } }],
-  };
-}
+      let sortOrder: any = req.query.order || 1; // Change this as needed
+
+      const perPage =
+        //@ts-ignore
+        req.query && req.query?.perPage > 0
+          ? //@ts-ignore
+            parseInt(req.query?.perPage)
+          : LIMIT;
+
+      let skip =
+        //@ts-ignore
+        (req.query && req.query.page > 0 ? parseInt(req.query.page) - 1 : 0) *
+        perPage;
+      if (sortOrder == "asc") {
+        sortOrder = 1;
+      } else {
+        sortOrder = -1;
+      }
+      let dataToFind = {};
+      if (req.query.search) {
+        dataToFind = {
+          ...dataToFind,
+          $or: [{ industry: { $regex: req.query.search, $options: "i" } }],
+        };
+      }
       const sortObject: Record<string, 1 | -1> = {};
       sortObject[sortField] = sortOrder;
-      console.log("sortObject",sortObject)
-      const data = await BuisnessIndustries.find(dataToFind).collation({'locale':'en'}).sort(sortObject);
+      console.log("sortObject", sortObject);
+      const data = await BuisnessIndustries.find(dataToFind)
+        .collation({ locale: "en" })
+        .sort(sortObject)
+        .skip(skip)
+        .limit(perPage);
+        const datas = await BuisnessIndustries.find(dataToFind)
+        .collation({ locale: "en" })
+        .sort(sortObject)
       data.map((i) => {
         i?.columns.sort((a: any, b: any) => a.index - b.index);
       });
+      const totalPages = Math.ceil(datas.length / perPage);
 
       if (data) {
-        return res.json({ data: data });
+        return res.json({
+          data: data,
+          meta: {
+            perPage: perPage,
+            page: req.query.page || 1,
+            pages: totalPages,
+            total: datas.length,
+          },
+        });
       } else {
         return res.json({ data: { message: "Data not found" } });
       }

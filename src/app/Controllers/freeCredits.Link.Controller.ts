@@ -80,7 +80,6 @@ export class freeCreditsLinkController {
     try {
       let query = await FreeCreditsLink.aggregate([
         { $match: dataToFind },
-
         {
           $lookup: {
             from: "users", // Replace with the actual name of your "users" collection
