@@ -121,7 +121,6 @@ export class BusinessDetailsController {
 
     // input.businessOpeningHours=JSON.parse(input.businessOpeningHours)
     try {
-     
       let dataToSave: any = {
         userId: input?.userId,
         businessIndustry: Business?.businessIndustry,
@@ -309,8 +308,34 @@ export class BusinessDetailsController {
       //   return res.status(400).json({error:{message:"Business Name Already Exists."}})
 
       // }
-      if(input.businessName){
-        delete input.businessName
+      if (input.businessName) {
+        // if (userData?.registrationMailSentToAdmin) {
+          const businesses = await BusinessDetails.find({
+            businessName: input.businessName,
+          });
+          if (businesses.length > 0) {
+            let array: mongoose.Types.ObjectId[] = [];
+            businesses.map((i) => {
+              array.push(i._id);
+            });
+            const bString = userData?.businessDetailsId.toString();
+
+            const containsB = array.some((item) => item.toString() === bString);
+
+            if (!containsB) {
+              return res
+                .status(400)
+                .json({ error: { message: "Business Name Already Exists." } });
+            }
+          }
+
+          await BusinessDetails.findByIdAndUpdate(
+            userData?.businessDetailsId,
+            { businessName: input.businessName },
+
+            { new: true }
+          );
+        // }
       }
       if ((req.file || {}).filename) {
         input.businessLogo = `${FileEnum.PROFILEIMAGE}${req?.file?.filename}`;
@@ -330,29 +355,29 @@ export class BusinessDetailsController {
       if (input.accreditations) {
         input.accreditations = JSON.parse(input.accreditations);
       }
-      if (input.accreditations == "" || input.accreditations == null) {
+      if (input.accreditations === "null") {
         delete input.accreditations;
       }
-      if (input.financeOffers == "" || input.financeOffers == null) {
+      if (input.financeOffers == "" || input.financeOffers === "null") {
         delete input.financeOffers;
       }
-      if (input.financeOffers && input.financeOffers == "Yes") {
+      if (input.financeOffers && input.financeOffers === "Yes") {
         input.financeOffers = true;
       }
-      if (input.financeOffers && input.financeOffers == "No") {
+      if (input.financeOffers && input.financeOffers === "No") {
         input.financeOffers = false;
       }
-      if (input.prices == null) {
-        delete input.prices;
+      if (input.prices === "null") {
+         input.prices="";
       }
-      if (input.avgInstallTime == null) {
-        delete input.avgInstallTime;
+      if (input.avgInstallTime === "null") {
+         input.avgInstallTime="";
       }
-      if (input.trustpilotReviews == null) {
-        delete input.trustpilotReviews;
+      if (input.trustpilotReviews === "null") {
+         input.trustpilotReviews="";
       }
-      if (input.criteria == null) {
-        delete input.criteria;
+      if (input.criteria === "null") {
+         input.criteria=[];
       }
       let service;
       if (serviceData) {
@@ -392,7 +417,7 @@ export class BusinessDetailsController {
           // leadsHours: formattedLeadSchedule,
           leadsHours: leadData?.leadSchedule,
           area: `${formattedPostCodes}`,
-          leadCost:userData?.leadCost
+          leadCost: userData?.leadCost,
         };
         send_email_for_updated_details(message);
 
