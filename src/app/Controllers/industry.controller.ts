@@ -78,13 +78,24 @@ export class IndustryController {
 
   static view = async (req: Request, res: Response) => {
     try {
-      const sortField: any = req.query.sort || "createdAt"; // Change this field name as needed
+      const sortField: any = req.query.sort || "industry"; // Change this field name as needed
 
-      const sortOrder : any= req.query.order || 1; // Change this as needed
-
+      let sortOrder : any= req.query.order || 1; // Change this as needed
+if(sortOrder=="asc"){sortOrder=1}
+else{
+  sortOrder=-1
+}
+let dataToFind={}
+if (req.query.search) {
+  dataToFind = {
+    ...dataToFind,
+    $or: [{ industry: { $regex: req.query.search, $options: "i" } }],
+  };
+}
       const sortObject: Record<string, 1 | -1> = {};
       sortObject[sortField] = sortOrder;
-      const data = await BuisnessIndustries.find().sort(sortObject);
+      console.log("sortObject",sortObject)
+      const data = await BuisnessIndustries.find(dataToFind).collation({'locale':'en'}).sort(sortObject);
       data.map((i) => {
         i?.columns.sort((a: any, b: any) => a.index - b.index);
       });

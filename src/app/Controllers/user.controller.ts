@@ -452,11 +452,25 @@ export class UsersControllers {
         if(!checkUser.businessDetailsId){
           return res.status(400).json({error:{message:"business details not found"}})
         }
-        const businesses=await BusinessDetails.find({businessName:input.businessName})
-        if(businesses.length>0){
-          return res.status(400).json({error:{message:"Business Name Already Exists."}})
+        const businesses = await BusinessDetails.find({
+          businessName: input.businessName,
+        });
+        if (businesses.length > 0) {
+          let array: mongoose.Types.ObjectId[] = [];
+          businesses.map((i) => {
+            array.push(i._id);
+          });
+          const bString = checkUser?.businessDetailsId.toString();
 
+          const containsB = array.some((item) => item.toString() === bString);
+
+          if (!containsB) {
+            return res
+              .status(400)
+              .json({ error: { message: "Business Name Already Exists." } });
+          }
         }
+
         await BusinessDetails.findByIdAndUpdate(
           checkUser?.businessDetailsId,
           { businessName: input.businessName },
@@ -472,6 +486,18 @@ export class UsersControllers {
         await BusinessDetails.findByIdAndUpdate(
           checkUser?.businessDetailsId,
           { businessAddress: input.businessAddress },
+
+          { new: true }
+        );
+      }
+      if (input.businessSalesNumber) {
+        if(!checkUser.businessDetailsId){
+          return res.status(400).json({error:{message:"business details not found"}})
+        }
+
+        await BusinessDetails.findByIdAndUpdate(
+          checkUser?.businessDetailsId,
+          { businessSalesNumber: input.businessSalesNumber },
 
           { new: true }
         );
