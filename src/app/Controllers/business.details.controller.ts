@@ -181,7 +181,7 @@ export class BusinessDetailsController {
           await User.findOneAndUpdate(
             { email: user.email },
             {
-              xeroContactId: res.data.Contacts[0].ContactID,
+              xeroContactId: res.data.Contacts[0].ContactID,isXeroCustomer:true
             },
             { new: true }
           );
@@ -196,9 +196,9 @@ export class BusinessDetailsController {
                   await User.findOneAndUpdate(
                     { email: input.email },
                     {
-                      $set: {
+                      // $set: {
                         xeroContactId: res.data.Contacts[0].ContactID,
-                      },
+                      // },
                     }
                   );
                   console.log("success in creating contact");
