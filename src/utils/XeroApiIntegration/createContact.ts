@@ -73,7 +73,7 @@ export const addUserXeroId = async (userId: string) => {
   await User.findOneAndUpdate(
     { _id: userId },
     //@ts-ignore
-    { $set: { xeroContactId: res?.data?.Contacts[0]?.ContactID } }
+    { $set: { xeroContactId: res?.data?.Contacts[0]?.ContactID , isXeroCustomer:true} }
   );
   //@ts-ignore
   user = await User.findById(userId);

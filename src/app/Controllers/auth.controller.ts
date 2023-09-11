@@ -707,6 +707,19 @@ class AuthController {
     }
   };
 
+  
+  static userStatus = async (req: Request, res: Response): Promise<any> => {
+    try {
+      const id = req.params.id
+const user=await User.findById(id,'isRyftCustomer isLeadbyteCustomer isXeroCustomer -_id')
+      return res.json({ data: user });  
+    } catch (error) {
+      return res
+        .status(500)
+        .json({ error: { message: "Something went wrong." } });
+    }
+  };
+
   static adminRegister = async (req: Request, res: Response): Promise<any> => {
     const input = req.body;
     const showUsers: any = await User.findOne().sort({ rowIndex: -1 }).limit(1);

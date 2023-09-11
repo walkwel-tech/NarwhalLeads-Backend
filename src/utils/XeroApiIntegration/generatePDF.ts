@@ -1,3 +1,4 @@
+import { checkAccess } from "../../app/Middlewares/serverAccess";
 import { AccessToken } from "../../app/Models/AccessToken";
 import { User } from "../../app/Models/User";
 import { transactionTitle } from "../Enums/transaction.title.enum";
@@ -70,17 +71,23 @@ export const generatePDF = (
       },
       data: JSON.stringify(data),
     };
+if(checkAccess()){
+  axios(config)
+  .then(function (response: any) {
+    console.log("data while getting response of invoices", response.data);
 
-    axios(config)
-      .then(function (response: any) {
-        console.log("data while getting response of invoices", response.data);
+    resolve(response);
+  })
+  .catch(function (error: any) {
+    console.log(error.response?.data);
 
-        resolve(response);
-      })
-      .catch(function (error: any) {
-        console.log(error.response?.data);
+    reject(error);
+  });
+}
+else{
+  console.log("No Access for generating PDF to this "+ process.env.APP_ENV)
 
-        reject(error);
-      });
+}
+   
   });
 };

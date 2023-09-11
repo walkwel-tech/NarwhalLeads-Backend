@@ -53,6 +53,11 @@ const UserSchema = new Schema(
       type: String,
       required: false,
     },
+    isXeroCustomer: {
+      type: Boolean,
+      required: false,
+      default:false
+    },
     xeroContactId: {
       type: String,
       required: false,
