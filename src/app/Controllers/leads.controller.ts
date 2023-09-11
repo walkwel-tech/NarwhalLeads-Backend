@@ -16,6 +16,7 @@ import { Invoice } from "../Models/Invoice";
 import { refreshToken } from "../../utils/XeroApiIntegration/createContact";
 import { DeleteFile } from "../../utils/removeFile";
 import {
+  send_email_for_below_5_leads_pending,
   send_email_for_lead_status_accept,
   send_email_for_lead_status_reject,
   send_email_for_new_lead,
@@ -30,6 +31,9 @@ import { BuisnessIndustries } from "../Models/BuisnessIndustries";
 import { LeadTablePreferenceInterface } from "../../types/LeadTablePreferenceInterface";
 import { Column } from "../../types/ColumnsPreferenceInterface";
 import mongoose from "mongoose";
+import { PREMIUM_PROMOLINK } from "../../utils/constantFiles/spotDif.offers.promoLink";
+import { Notifications } from "../Models/Notifications";
+import { BusinessDetails } from "../Models/BusinessDetails";
 const ObjectId = mongoose.Types.ObjectId;
 
 const LIMIT = 10;
@@ -131,7 +135,7 @@ if(!industry){
     const checkPreferenceExists: any = await LeadTablePreference.findOne({
       userId: user._id,
     });
-    const admin = await User.findOne({ role: RolesEnum.ADMIN });
+    const admin = await User.findOne({ role: RolesEnum.SUPER_ADMIN });
     const adminPref: any = await LeadTablePreference.findOne({
       userId: admin?._id,
     });
@@ -149,6 +153,12 @@ if(!industry){
           isVisible: true,
           index: 0,
           newName: "clientName",
+        },
+        {
+          name: "businessName",
+          isVisible: true,
+          index: 1,
+          newName: "businessName",
         },
       ];
       Object.keys(input).map((i: any) => {
@@ -176,7 +186,7 @@ if(!industry){
       };
 
       await LeadTablePreference.create(dataToSaveInLeadsPreference);
-      const admin = await User.findOne({ role: RolesEnum.ADMIN });
+      const admin = await User.findOne({ role: RolesEnum.SUPER_ADMIN });
 
 
       if (adminPref) {
@@ -212,12 +222,19 @@ if(!industry){
       if (!adminPref) {
         await LeadTablePreference.create({
           userId: admin?._id,
-          columns: {
+          columns: [{
             name: "clientName",
             isVisible: true,
             index: 0,
             newName: "clientName",
           },
+          {
+            name: "businessName",
+            isVisible: true,
+            index: 0,
+            newName: "businessName",
+          }
+        ],
         });
       }
     }
@@ -261,6 +278,18 @@ if(!industry){
           isVisible: true,
           index: checkPreferenceExists?.columns.length,
           newName: "clientName",
+        };
+        checkPreferenceExists?.columns.push(obj);
+      }
+      const existingElementBusinessName = checkPreferenceExists?.columns.find(
+        (resElement: any) => resElement.name === "businessName"
+      );
+      if (!existingElementBusinessName) {
+        let obj = {
+          name: "businessName",
+          isVisible: true,
+          index: checkPreferenceExists?.columns.length,
+          newName: "businessName",
         };
         checkPreferenceExists?.columns.push(obj);
       }
@@ -320,6 +349,16 @@ if(!industry){
       const userf = await User.findByIdAndUpdate(user?.id, {
         credits: leftCredits,
       });
+      if(leftCredits < (leadcpl * PREMIUM_PROMOLINK.LEADS_THRESHOLD)){
+     const txn=await Transaction.find({title:transactionTitle.CREDITS_ADDED}).sort({createdAt:-1})
+     const notify:any=await Notifications.find({title:"BELOW_5_LEADS_PENDING"}).sort({createdAt:-1})
+     if(txn[0]?.createdAt>notify[0]?.createdAt){
+              send_email_for_below_5_leads_pending(user.email,{credits:leftCredits,name:user?.firstName+ " "+ user?.lastName})
+     }
+     else{
+      console.log("Email already send.")
+     }
+      }
       await User.updateMany(
         { invitedById: user?.id },
         { $set: { credits: userf?.credits } }
@@ -871,7 +910,7 @@ if(!industry){
     }
   };
 
-  static index = async (_req: any, res: Response) => {
+  static index = async (_req: any, res: Response):Promise<any> => {
     let sortingOrder = _req.query.sortingOrder || sort.DESC;
     const userId = _req.user?.id;
     // const archive: Boolean = _req.query.archive || false;
@@ -969,7 +1008,7 @@ if(!industry){
                   "clientName.verifiedAt": 0,
                   "clientName.isVerified": 0,
                   "clientName.isActive": 0,
-                  "clientName.businessDetailsId": 0,
+                  // "clientName.businessDetailsId": 0,
                   "clientName.businessIndustryId": 0,
                   "clientName.userLeadsDetailsId": 0,
                   "clientName.onBoarding": 0,
@@ -988,26 +1027,44 @@ if(!industry){
           },
         },
       ]);
-      const leadsCount = query.leadsCount[0]?.count || 0;
-      const totalPages = Math.ceil(leadsCount / perPage);
-      query.results.map((item: any) => {
+      const promises = query.results.map((item: any) => {
         item.leads.clientName =
-          item["clientName"][0]?.firstName +
-          " " +
-          item["clientName"][0]?.lastName;
-        //fixme: according to v2 front end, added status in leads object
+          item["clientName"][0]?.firstName + " " + item["clientName"][0]?.lastName;
         item.leads.status = item.status;
-        delete item.clientName;
+      
+        // Use explicit Promise construction
+        return new Promise((resolve, reject) => {
+          BusinessDetails.findById(item["clientName"][0]?.businessDetailsId)
+            .then((businesss) => {
+              item.leads.businessName = businesss?.businessName;
+              resolve(item); // Resolve the promise with the modified item
+            })
+            .catch((error) => {
+              reject(error); // Reject the promise if there's an error
+            });
+        });
       });
-      return res.json({
-        data: query.results,
-        meta: {
-          perPage: perPage,
-          page: _req.query.page || 1,
-          pages: totalPages,
-          total: leadsCount,
-        },
-      });
+      
+      // Use Promise.all to wait for all promises to resolve
+      Promise.all(promises)
+        .then((updatedResults) => {
+          // Handle the updatedResults here
+          const leadsCount = query.leadsCount[0]?.count || 0;
+
+          const totalPages = Math.ceil(leadsCount / perPage);
+          return res.json({
+            data: query.results,
+            meta: {
+              perPage: perPage,
+              page: _req.query.page || 1,
+              pages: totalPages,
+              total: leadsCount,
+            },
+          });
+        })
+        .catch((error) => {
+          console.error(error);
+        });
     } catch (err) {
       return res.status(500).json({
         error: {
@@ -1018,7 +1075,7 @@ if(!industry){
     }
   };
 
-  static showReportedLeads = async (_req: any, res: Response) => {
+  static showReportedLeads = async (_req: any, res: Response):Promise<any> => {
     let sortingOrder = _req.query.sortingOrder || sort.DESC;
     const userId = _req.user?.id;
     // const archive: Boolean = _req.query.archive || false;
@@ -1129,7 +1186,7 @@ if(!industry){
                   "clientName.verifiedAt": 0,
                   "clientName.isVerified": 0,
                   "clientName.isActive": 0,
-                  "clientName.businessDetailsId": 0,
+                  // "clientName.businessDetailsId": 0,
                   "clientName.userLeadsDetailsId": 0,
                   "clientName.onBoarding": 0,
                   "clientName.registrationMailSentToAdmin": 0,
@@ -1151,28 +1208,44 @@ if(!industry){
       // let clientName = Object.assign({}, item["clientName"][0]);
       // item.clientName = clientName;
       // });
-      query.results.map((item: any) => {
+      const promises = query.results.map((item: any) => {
         item.leads.clientName =
-          item["clientName"][0]?.firstName +
-          " " +
-          item["clientName"][0]?.lastName;
-        // let clientName = Object.assign({}, item["clientName"][0]);
-        // item.clientName = clientName;
+          item["clientName"][0]?.firstName + " " + item["clientName"][0]?.lastName;
         item.leads.status = item.status;
-      });
-
-       const leadsCount = query.leadsCount[0]?.count || 0;
       
-      const totalPages = Math.ceil(leadsCount / perPage);
-      return res.json({
-        data: query.results,
-        meta: {
-          perPage: perPage,
-          page: _req.query.page || 1,
-          pages: totalPages,
-          total: leadsCount,
-        },
+        // Use explicit Promise construction
+        return new Promise((resolve, reject) => {
+          BusinessDetails.findById(item["clientName"][0]?.businessDetailsId)
+            .then((businesss) => {
+              item.leads.businessName = businesss?.businessName;
+              resolve(item); // Resolve the promise with the modified item
+            })
+            .catch((error) => {
+              reject(error); // Reject the promise if there's an error
+            });
+        });
       });
+      
+      // Use Promise.all to wait for all promises to resolve
+      Promise.all(promises)
+        .then((updatedResults) => {
+          // Handle the updatedResults here
+          const leadsCount = query.leadsCount[0]?.count || 0;
+
+          const totalPages = Math.ceil(leadsCount / perPage);
+          return res.json({
+            data: query.results,
+            meta: {
+              perPage: perPage,
+              page: _req.query.page || 1,
+              pages: totalPages,
+              total: leadsCount,
+            },
+          });
+        })
+        .catch((error) => {
+          console.error(error);
+        });
     } catch (err) {
       return res.status(500).json({
         error: {
@@ -1201,7 +1274,7 @@ if(!industry){
     }
   };
 
-  static showAllLeadsToAdminByUserId = async (_req: any, res: Response) => {
+  static showAllLeadsToAdminByUserId = async (_req: any, res: Response) : Promise<any>=> {
     let sortingOrder = _req.query.sortingOrder || sort.DESC;
     if (sortingOrder == sort.ASC) {
       sortingOrder = 1;
@@ -1313,27 +1386,44 @@ if(!industry){
           },
         },
       ]);
-      query.results.map((item: any) => {
+      const promises = query.results.map((item: any) => {
         item.leads.clientName =
-          item["clientName"][0]?.firstName +
-          " " +
-          item["clientName"][0]?.lastName;
+          item["clientName"][0]?.firstName + " " + item["clientName"][0]?.lastName;
         item.leads.status = item.status;
+      
+        // Use explicit Promise construction
+        return new Promise((resolve, reject) => {
+          BusinessDetails.findById(item["clientName"][0]?.businessDetailsId)
+            .then((businesss) => {
+              item.leads.businessName = businesss?.businessName;
+              resolve(item); // Resolve the promise with the modified item
+            })
+            .catch((error) => {
+              reject(error); // Reject the promise if there's an error
+            });
+        });
       });
+      
+      // Use Promise.all to wait for all promises to resolve
+      Promise.all(promises)
+        .then((updatedResults) => {
+          // Handle the updatedResults here
+          const leadsCount = query.leadsCount[0]?.count || 0;
 
-  
-      const  leadsCount = query.leadsCount[0]?.count || 0;
- 
-      const totalPages = Math.ceil(leadsCount / perPage);
-      return res.json({
-        data: query.results,
-        meta: {
-          perPage: perPage,
-          page: _req.query.page || 1,
-          pages: totalPages,
-          total: leadsCount,
-        },
-      });
+          const totalPages = Math.ceil(leadsCount / perPage);
+          return res.json({
+            data: query.results,
+            meta: {
+              perPage: perPage,
+              page: _req.query.page || 1,
+              pages: totalPages,
+              total: leadsCount,
+            },
+          });
+        })
+        .catch((error) => {
+          console.error(error);
+        });
     } catch (err) {
       return res.status(500).json({
         error: {
@@ -1344,7 +1434,7 @@ if(!industry){
     }
   };
 
-  static showAllLeadsToAdmin = async (_req: any, res: Response) => {
+  static showAllLeadsToAdmin = async (_req: any, res: Response): Promise<any> => {
     let sortingOrder = _req.query.sortingOrder || sort.DESC;
 
     const status = _req.query.status;
@@ -1413,11 +1503,12 @@ if(!industry){
                   as: "clientName",
                 },
               },
+              { $sort: { createdAt: sortingOrder } },
+
               { $skip: skip },
               { $limit: perPage },
 
               // { $sort: { rowIndex: 1 } },
-              { $sort: { createdAt: sortingOrder } },
               {
                 $project: {
                   feedbackForNMG: 0,
@@ -1438,7 +1529,7 @@ if(!industry){
                   "clientName.verifiedAt": 0,
                   "clientName.isVerified": 0,
                   "clientName.isActive": 0,
-                  "clientName.businessDetailsId": 0,
+                  // "clientName.businessDetailsId": 0,
                   "clientName.userLeadsDetailsId": 0,
                   "clientName.onBoarding": 0,
                   "clientName.registrationMailSentToAdmin": 0,
@@ -1456,32 +1547,45 @@ if(!industry){
           },
         },
       ]);
-      query.results.map((item: any) => {
+      const promises = query.results.map((item: any) => {
         item.leads.clientName =
-          item["clientName"][0]?.firstName +
-          " " +
-          item["clientName"][0]?.lastName;
-        // let clientName = Object.assign({}, item["clientName"][0]);
-        // item.clientName = clientName;
+          item["clientName"][0]?.firstName + " " + item["clientName"][0]?.lastName;
         item.leads.status = item.status;
+      
+        // Use explicit Promise construction
+        return new Promise((resolve, reject) => {
+          BusinessDetails.findById(item["clientName"][0]?.businessDetailsId)
+            .then((businesss) => {
+              item.leads.businessName = businesss?.businessName;
+              resolve(item); // Resolve the promise with the modified item
+            })
+            .catch((error) => {
+              reject(error); // Reject the promise if there's an error
+            });
+        });
       });
+      
+      // Use Promise.all to wait for all promises to resolve
+      Promise.all(promises)
+        .then((updatedResults) => {
+          // Handle the updatedResults here
+          const leadsCount = query.leadsCount[0]?.count || 0;
 
-      // let leadsCount;
-
-      // else{
-      // }
-      const leadsCount = query.leadsCount[0]?.count || 0;
-
-      const totalPages = Math.ceil(leadsCount / perPage);
-      return res.json({
-        data: query.results,
-        meta: {
-          perPage: perPage,
-          page: _req.query.page || 1,
-          pages: totalPages,
-          total: leadsCount,
-        },
-      });
+          const totalPages = Math.ceil(leadsCount / perPage);
+          return res.json({
+            data: query.results,
+            meta: {
+              perPage: perPage,
+              page: _req.query.page || 1,
+              pages: totalPages,
+              total: leadsCount,
+            },
+          });
+        })
+        .catch((error) => {
+          console.error(error);
+        });
+    
     } catch (err) {
       return res.status(500).json({
         error: {
