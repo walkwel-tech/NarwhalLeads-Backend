@@ -173,6 +173,14 @@ const UserSchema = new Schema(
     },
     triggerAmount:{
       type:Number,  
+    },
+    smsNotificationActive:{
+      type: Boolean,
+      default: true,
+    },
+    smsPhoneNumber:{
+      type:String,
+      default:""
     }
   },
   { timestamps: true }

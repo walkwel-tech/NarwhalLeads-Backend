@@ -478,7 +478,7 @@ export class CardDetailsControllers {
       });
       if (!card) {
         return res
-          .status(400)
+          .status(404)
           .json({ error: { message: "Card Details not found" } });
       }
       const adminSettings: any = await AdminSettings.findOne();

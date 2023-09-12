@@ -110,6 +110,7 @@ export class UsersControllers {
   static index = async (_req: any, res: Response): Promise<Response> => {
     try {
       let sortingOrder = _req.query.sortingOrder || sort.DESC;
+      let sortKey = _req.query.sortKey || sort.DESC;
       let isArchived = _req.query.isArchived || "false";
       let isActive = _req.query.isActive || "true";
       if (sortingOrder == sort.ASC) {
@@ -165,10 +166,18 @@ export class UsersControllers {
                 $options: "i",
               },
             },
+            {
+              "businessDetailsId.businessIndustry": {
+                $regex: _req.query.search,
+                $options: "i",
+              },
+            },
           ],
         };
         skip = 0;
       }
+      const sortObject: Record<string, 1 | -1> = {};
+      sortObject[sortKey] = sortingOrder;
       const [query]: any = await User.aggregate([
         {
           $facet: {
@@ -200,7 +209,7 @@ export class UsersControllers {
               { $match: dataToFind },
 
               //@ts-ignore
-              { $sort: { createdAt: sortingOrder } },
+              { $sort: sortObject },
               {
                 $project: {
                   verifiedAt: 0,
@@ -415,6 +424,14 @@ export class UsersControllers {
           .status(403)
           .json({ error: { message: "Please contact admin to change payment method" } });
       }
+      if(input.smsPhoneNumber){
+        const userExist=await User.find({smsPhoneNumber:input.smsPhoneNumber})
+        if(userExist){
+          return res
+          .status(400)
+          .json({ error: { message: "This Number is already registered with another account." } });
+        }
+      }
       if (!checkUser) {
         const admin=await Admins.findById(id)
         if(!admin){
@@ -450,7 +467,7 @@ export class UsersControllers {
       }
       if (input.businessName) {
         if(!checkUser.businessDetailsId){
-          return res.status(400).json({error:{message:"business details not found"}})
+          return res.status(404).json({error:{message:"business details not found"}})
         }
         const businesses = await BusinessDetails.find({
           businessName: input.businessName,
@@ -480,7 +497,7 @@ export class UsersControllers {
       }
       if (input.businessAddress) {
         if(!checkUser.businessDetailsId){
-          return res.status(400).json({error:{message:"business details not found"}})
+          return res.status(404).json({error:{message:"business details not found"}})
         }
 
         await BusinessDetails.findByIdAndUpdate(
@@ -492,7 +509,7 @@ export class UsersControllers {
       }
       if (input.businessSalesNumber) {
         if(!checkUser.businessDetailsId){
-          return res.status(400).json({error:{message:"business details not found"}})
+          return res.status(404).json({error:{message:"business details not found"}})
         }
 
         await BusinessDetails.findByIdAndUpdate(
@@ -504,7 +521,7 @@ export class UsersControllers {
       }
       if (input.businessCity) {
         if(!checkUser.businessDetailsId){
-          return res.status(400).json({error:{message:"business details not found"}})
+          return res.status(404).json({error:{message:"business details not found"}})
         }
         await BusinessDetails.findByIdAndUpdate(
           checkUser?.businessDetailsId,
@@ -515,7 +532,7 @@ export class UsersControllers {
       }
       if (input.businessCountry) {
         if(!checkUser.businessDetailsId){
-          return res.status(400).json({error:{message:"business details not found"}})
+          return res.status(404).json({error:{message:"business details not found"}})
         }
         await BusinessDetails.findByIdAndUpdate(
           checkUser?.businessDetailsId,
@@ -526,7 +543,7 @@ export class UsersControllers {
       }
       if (input.businessPostCode) {
         if(!checkUser.businessDetailsId){
-          return res.status(400).json({error:{message:"business details not found"}})
+          return res.status(404).json({error:{message:"business details not found"}})
         }
         await BusinessDetails.findByIdAndUpdate(
           checkUser?.businessDetailsId,
@@ -537,7 +554,7 @@ export class UsersControllers {
       }
       if (input.businessIndustry) {
         if(!checkUser.businessDetailsId){
-          return res.status(400).json({error:{message:"business details not found"}})
+          return res.status(404).json({error:{message:"business details not found"}})
         }
         await BusinessDetails.findByIdAndUpdate(
           checkUser?.businessDetailsId,
@@ -548,7 +565,7 @@ export class UsersControllers {
       }
       if (input.businessOpeningHours) {
         if(!checkUser.businessDetailsId){
-          return res.status(400).json({error:{message:"business details not found"}})
+          return res.status(404).json({error:{message:"business details not found"}})
         }
         await BusinessDetails.findByIdAndUpdate(
           checkUser?.businessDetailsId,
@@ -559,7 +576,7 @@ export class UsersControllers {
       }
       if (input.total) {
         if(!checkUser.userLeadsDetailsId){
-          return res.status(400).json({error:{message:"lead details not found"}})
+          return res.status(404).json({error:{message:"lead details not found"}})
         }
         await UserLeadsDetails.findByIdAndUpdate(
           checkUser?.userLeadsDetailsId,
@@ -570,7 +587,7 @@ export class UsersControllers {
       }
       if (input.weekly) {
         if(!checkUser.userLeadsDetailsId){
-          return res.status(400).json({error:{message:"lead details not found"}})
+          return res.status(404).json({error:{message:"lead details not found"}})
         }
         await UserLeadsDetails.findByIdAndUpdate(
           checkUser?.userLeadsDetailsId,
@@ -581,7 +598,7 @@ export class UsersControllers {
       }
       if (input.monthly) {
         if(!checkUser.userLeadsDetailsId){
-          return res.status(400).json({error:{message:"lead details not found"}})
+          return res.status(404).json({error:{message:"lead details not found"}})
         }
         await UserLeadsDetails.findByIdAndUpdate(
           checkUser?.userLeadsDetailsId,
@@ -592,7 +609,7 @@ export class UsersControllers {
       }
       if (input.leadSchedule) {
         if(!checkUser.userLeadsDetailsId){
-          return res.status(400).json({error:{message:"lead details not found"}})
+          return res.status(404).json({error:{message:"lead details not found"}})
         }
         await UserLeadsDetails.findByIdAndUpdate(
           checkUser?.userLeadsDetailsId,
@@ -603,7 +620,7 @@ export class UsersControllers {
       }
       if (input.postCodeTargettingList) {
         if(!checkUser.userLeadsDetailsId){
-          return res.status(400).json({error:{message:"lead details not found"}})
+          return res.status(404).json({error:{message:"lead details not found"}})
         }
         await UserLeadsDetails.findByIdAndUpdate(
           checkUser?.userLeadsDetailsId,
@@ -614,7 +631,7 @@ export class UsersControllers {
       }
       if (input.leadAlertsFrequency) {
         if(!checkUser.userLeadsDetailsId){
-          return res.status(400).json({error:{message:"lead details not found"}})
+          return res.status(404).json({error:{message:"lead details not found"}})
         }
         await UserLeadsDetails.findByIdAndUpdate(
           checkUser?.userLeadsDetailsId,
@@ -625,7 +642,7 @@ export class UsersControllers {
       }
       if (input.zapierUrl) {
         if(!checkUser.userLeadsDetailsId){
-          return res.status(400).json({error:{message:"lead details not found"}})
+          return res.status(404).json({error:{message:"lead details not found"}})
         }
         await UserLeadsDetails.findByIdAndUpdate(
           checkUser?.userLeadsDetailsId,
@@ -636,7 +653,7 @@ export class UsersControllers {
       }
       if (input.daily) {
         if(!checkUser.userLeadsDetailsId){
-          return res.status(400).json({error:{message:"lead details not found"}})
+          return res.status(404).json({error:{message:"lead details not found"}})
         }
         input.daily=parseInt(input.daily)
         await UserLeadsDetails.findByIdAndUpdate(
@@ -822,6 +839,10 @@ else {
         isDeleted: true,
         deletedAt: new Date(),
       });
+      await BusinessDetails.findByIdAndDelete(userExist?.businessDetailsId)
+      await UserLeadsDetails.findByIdAndDelete(userExist?.userLeadsDetailsId)
+      await CardDetails.deleteMany({userId:userExist?.id})
+
       //@ts-ignore
     deleteCustomerOnRyft(user?.ryftClientId).then(()=>console.log("deleted customer")).catch(()=>console.log("error while deleting customer on ryft"))
 

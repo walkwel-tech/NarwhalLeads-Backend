@@ -40,6 +40,8 @@ export const mailForTotalLeadsInDay = async () => {
     });
   });
 };
+
+
 export const out_of_funds =  () => {
 cron.schedule('2 */24 * * *', async() => {
   // cron.schedule('* * * * *', async() => {
