@@ -2,6 +2,7 @@ import axios from "axios";
 import { checkAccess } from "../../app/Middlewares/serverAccess";
 const POST = "post";
 export const business_details_submission = ( data: any) => {
+  data.APP_ENV=process.env.APP_ENV
   return new Promise((resolve, reject) => {
     let config = {
       method: POST,

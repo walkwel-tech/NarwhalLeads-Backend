@@ -1,6 +1,6 @@
 {
   "name": "narwhal-leads",
-  "version": "1.0.41",
+  "version": "1.0.42",
   "description": "",
   "main": "index.js",
   "scripts": {
@@ -37,6 +37,7 @@
     "path": "^0.12.7",
     "swagger-ui-express": "^5.0.0",
     "ts-node-dev": "^2.0.0",
+    "twilio": "^4.17.0",
     "xlsx": "^0.18.5"
   },
   "devDependencies": {

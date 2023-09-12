@@ -4,8 +4,7 @@ import { order } from "../../utils/constantFiles/businessIndustry.orderList";
 import { BuisnessIndustries } from "../Models/BuisnessIndustries";
 import { CustomColumnNames } from "../Models/CustomColumns.leads";
 import { User } from "../Models/User";
-import { UserInterface } from "../../types/UserInterface";
-
+const LIMIT = 10;
 export class IndustryController {
   static create = async (req: Request, res: Response) => {
     const input = req.body;
@@ -23,6 +22,12 @@ export class IndustryController {
     });
 
     try {
+      const exist=await BuisnessIndustries.find({industry:input.industry})
+      if(exist){
+        return res
+        .status(400)
+        .json({ error: { message: "Business Industry should be unique." } });
+      }
       const details = await BuisnessIndustries.create(dataToSave);
       await CustomColumnNames.create({
         industryId: details.id,
@@ -80,30 +85,58 @@ export class IndustryController {
     try {
       const sortField: any = req.query.sort || "industry"; // Change this field name as needed
 
-      let sortOrder : any= req.query.order || 1; // Change this as needed
-if(sortOrder=="asc"){sortOrder=1}
-else{
-  sortOrder=-1
-}
-let dataToFind={}
-if (req.query.search) {
-  dataToFind = {
-    ...dataToFind,
-    $or: [{ industry: { $regex: req.query.search, $options: "i" } }],
-  };
-}
+      let sortOrder: any = req.query.order || 1; // Change this as needed
+
+      const perPage =
+        //@ts-ignore
+        req.query && req.query?.perPage > 0
+          ? //@ts-ignore
+            parseInt(req.query?.perPage)
+          : LIMIT;
+
+      let skip =
+        //@ts-ignore
+        (req.query && req.query.page > 0 ? parseInt(req.query.page) - 1 : 0) *
+        perPage;
+      if (sortOrder == "asc") {
+        sortOrder = 1;
+      } else {
+        sortOrder = -1;
+      }
+      let dataToFind = {};
+      if (req.query.search) {
+        dataToFind = {
+          ...dataToFind,
+          $or: [{ industry: { $regex: req.query.search, $options: "i" } }],
+        };
+      }
       const sortObject: Record<string, 1 | -1> = {};
       sortObject[sortField] = sortOrder;
-      console.log("sortObject",sortObject)
-      const data = await BuisnessIndustries.find(dataToFind).collation({'locale':'en'}).sort(sortObject);
+      const data = await BuisnessIndustries.find(dataToFind)
+        .collation({ locale: "en" })
+        .sort(sortObject)
+        .skip(skip)
+        .limit(perPage);
+        const datas = await BuisnessIndustries.find(dataToFind)
+        .collation({ locale: "en" })
+        .sort(sortObject)
       data.map((i) => {
         i?.columns.sort((a: any, b: any) => a.index - b.index);
       });
+      const totalPages = Math.ceil(datas.length / perPage);
 
       if (data) {
-        return res.json({ data: data });
+        return res.json({
+          data: data,
+          meta: {
+            perPage: perPage,
+            page: req.query.page || 1,
+            pages: totalPages,
+            total: datas.length,
+          },
+        });
       } else {
-        return res.json({ data: { message: "Data not found" } });
+        return res.status(404).json({ data: { message: "Data not found" } });
       }
     } catch (error) {
       return res
@@ -128,12 +161,18 @@ if (req.query.search) {
 
   static delete = async (req: Request, res: Response) => {
     try {
-      const data = await BuisnessIndustries.findByIdAndDelete(req.params.id);
       const users = await User.find({ businessIndustryId: req.params.id });
-      users.map(async (i: UserInterface) => {
-        await User.findByIdAndUpdate(i.id, { businessIndustryId: null });
-      });
-      return res.json({ data: data });
+      if(users.length>0){
+        return res
+        .status(400)
+        .json({ error: { message: "Users already registered with this industry. kindly first delete those users." } });
+      }
+      else{
+        const data = await BuisnessIndustries.findByIdAndDelete(req.params.id);
+        return res.json({ data: data });
+
+      }
+    
     } catch (error) {
       return res
         .status(500)
@@ -154,7 +193,7 @@ if (req.query.search) {
         });
         return res.json({ data: array });
       } else {
-        return res.json({ data: { message: "Data not found" } });
+        return res.status(404).json({ data: { message: "Data not found" } });
       }
     } catch (error) {
       return res
@@ -173,7 +212,7 @@ if (req.query.search) {
         industryId: req.params.id,
       });
       if (updatedData.length == 0 || !updatedData) {
-        return res.status(400).json({ error: { message: "Data not found" } });
+        return res.status(404).json({ error: { message: "Data not found" } });
       }
       return res.json({ data: updatedData });
     } catch (error) {
@@ -189,7 +228,7 @@ if (req.query.search) {
         industryId: req.params.id,
       });
       if (updatedData.length == 0 || !updatedData) {
-        return res.status(400).json({ error: { message: "Data not found" } });
+        return res.status(404).json({ error: { message: "Data not found" } });
       }
       return res.json({ data: updatedData });
     } catch (error) {

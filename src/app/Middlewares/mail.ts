@@ -1,4 +1,4 @@
-import { NotificationsParams } from "../../types/NotificationsParams";
+// import { NotificationsParams } from "../../types/NotificationsParams";
 import { TEMPLATES_ID } from "../../utils/constantFiles/email.templateIDs";
 import { Admins } from "../Models/Admins";
 import { Notifications } from "../Models/Notifications";
@@ -944,8 +944,8 @@ export function send_email_for_out_of_funds(
   message: any
 ) {
   const msg = {
-    // to: send_to, // Change to your recipient
-    to: "radhika.walkweltech@gmail.com",
+    to: send_to, // Change to your recipient
+    // to: "radhika.walkweltech@gmail.com",
     from: {
       name: process.env.VERIFIED_SENDER_ON_SENDGRID_FROM_NAME,
       email: process.env.VERIFIED_SENDER_ON_SENDGRID,
@@ -988,7 +988,7 @@ export function send_email_for_out_of_funds(
 }
 
 
-async function saveNotifications(params: NotificationsParams) {
+async function saveNotifications(params: any) {
   const user = await User.findOne({ email: params?.email });
   const admin = await Admins.findOne({ email: params?.email });
 
