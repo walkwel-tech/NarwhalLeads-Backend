@@ -23,7 +23,7 @@ export class IndustryController {
 
     try {
       const exist=await BuisnessIndustries.find({industry:input.industry})
-      if(exist){
+      if(exist.length>0){
         return res
         .status(400)
         .json({ error: { message: "Business Industry should be unique." } });
@@ -112,30 +112,38 @@ export class IndustryController {
       }
       const sortObject: Record<string, 1 | -1> = {};
       sortObject[sortField] = sortOrder;
-      const data = await BuisnessIndustries.find(dataToFind)
+      let data = await BuisnessIndustries.find(dataToFind)
         .collation({ locale: "en" })
         .sort(sortObject)
         .skip(skip)
         .limit(perPage);
-        const datas = await BuisnessIndustries.find(dataToFind)
+        const dataWithoutPagination = await BuisnessIndustries.find(dataToFind)
         .collation({ locale: "en" })
         .sort(sortObject)
       data.map((i) => {
         i?.columns.sort((a: any, b: any) => a.index - b.index);
       });
-      const totalPages = Math.ceil(datas.length / perPage);
+      const totalPages = Math.ceil(dataWithoutPagination.length / perPage);
 
-      if (data) {
-        return res.json({
+      if (data && req.query.perPage) {
+        let dataToShow={
           data: data,
           meta: {
             perPage: perPage,
             page: req.query.page || 1,
             pages: totalPages,
-            total: datas.length,
+            total: dataWithoutPagination.length,
           },
-        });
-      } else {
+        }
+        return res.json(dataToShow);
+      }
+      else if(data && !req.query.perPage) {
+        let dataToShow={
+          data: dataWithoutPagination
+        }
+        return res.json(dataToShow);
+      }
+        else {
         return res.status(404).json({ data: { message: "Data not found" } });
       }
     } catch (error) {

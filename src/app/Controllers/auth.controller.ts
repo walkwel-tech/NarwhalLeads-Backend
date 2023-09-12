@@ -751,7 +751,7 @@ const user=await User.findById(id,'isRyftCustomer isLeadbyteCustomer isXeroCusto
         userId:user.id,
         columns:leadsTablePreference
       })
-      return res.json({message:"Admin registeers successfully", data:user})
+      return res.json({message:"Admin registers successfully", data:user})
     } catch (error) {
       return res
         .status(500)

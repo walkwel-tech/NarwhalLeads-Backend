@@ -37,18 +37,23 @@ export class freeCreditsLinkController {
             .status(400)
             .json({ error: { message: "Duplicate codes are not allowed" } });
         }
+        else{
+          const data = await FreeCreditsLink.create(dataToSave);
+          return res.json({ data: data });
+        }
       }
       if (input.spotDiffPremiumPlan) {
         dataToSave.code = "SPOTDIFF_" + randomString(10);
         dataToSave.spotDiffPremiumPlan = true;
+        const data = await FreeCreditsLink.create(dataToSave);
+        return res.json({ data: data });
       }
       if (input.spotDiffPremiumPlan && !input.topUpAmount) {
         res
           .status(400)
           .json({ error: { message: "Top-up amount is required" } });
       }
-      const data = await FreeCreditsLink.create(dataToSave);
-      return res.json({ data: data });
+
     } catch (error) {
       console.log(error);
       res

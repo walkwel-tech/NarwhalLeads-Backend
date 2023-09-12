@@ -174,7 +174,7 @@ const UserSchema = new Schema(
     triggerAmount:{
       type:Number,  
     },
-    smsNotificationActive:{
+    isSmsNotificationActive:{
       type: Boolean,
       default: true,
     },
