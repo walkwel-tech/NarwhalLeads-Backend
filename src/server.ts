@@ -28,6 +28,7 @@ import TermsAndConditionsRoutes from "./routes/termsAndConditions.routes";
 import freeCreditsLinkRoutes from "./routes/FreeCreditsLink.routes";
 import path from "path";
 import serviceRoutes from "./routes/userService.routes";
+import nonBillablesUsers from "./routes/nonBillableUsers.routes";
 // import { generatePDF } from "./utils/XeroApiIntegration/generatePDF";
 // import { send_email_test } from "./app/Middlewares/test";
 // import {  dataCleaning } from "./dataCleaning";
@@ -101,6 +102,7 @@ export class Server {
         this.app.use("/api/v1/freeCredits",freeCreditsLinkRoutes)
         this.app.use("/api/v1/businessIndustry",BusinessIndustriesRoutes)
         this.app.use("/api/v1/service",Auth,serviceRoutes)
+        this.app.use("/api/v1/non-billable-users",Auth,nonBillablesUsers)
 
         this.app.get("/api/v1/version", (req: Request, res: Response) => {
             res.status(200).json({message: `App running on version ${version}`});

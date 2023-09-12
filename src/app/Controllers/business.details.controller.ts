@@ -27,6 +27,8 @@ import { AccessToken } from "../Models/AccessToken";
 import { UserService } from "../Models/UserService";
 import { business_details_submission } from "../../utils/webhookUrls/business_details_submission";
 import { FreeCreditsLink } from "../Models/freeCreditsLink";
+import { createCustomerOnLeadByte } from "../../utils/createCustomer/createOnLeadByte";
+import { LeadTablePreference } from "../Models/LeadTablePreference";
 
 const ObjectId = mongoose.Types.ObjectId;
 
@@ -528,6 +530,140 @@ export class BusinessDetailsController {
       return res
         .status(500)
         .json({ error: { message: "Something went wrong." } });
+    }
+  };
+
+  static nonBillableBusinessDetails = async (req: Request, res: Response): Promise<any> => {
+    const input = req.body;
+
+    if (!input.userId) {
+      return res
+        .status(400)
+        .json({ error: { message: "User Id is required" } });
+    }
+    const Business = new BusinessDetailsInput();
+    (Business.businessIndustry = input.businessIndustry),
+      (Business.businessName = input.businessName),
+      //@ts-ignore
+      // (Business.businessLogo = String(req.file?.filename)),
+      (Business.businessSalesNumber = input.businessSalesNumber),
+      (Business.address1 = input.address1),
+      // (Business.businessAddress = input.businessAddress),
+      (Business.businessCity = input.businessCity),
+      // (Business.businessCountry = input.businessCountry),
+      (Business.businessPostCode = input.businessPostCode);
+    Business.businessOpeningHours = JSON.parse(input?.businessOpeningHours);
+    const isBusinessNameExist = await BusinessDetails.findOne({
+      businessName: input.businessName,
+    });
+    const user: any = await User.findById(input.userId);
+
+    if (isBusinessNameExist) {
+      return res
+        .status(400)
+        .json({ error: { message: "Business Name Already Exists." } });
+    }
+    // get onboarding value of user
+  
+    // input.businessOpeningHours=JSON.parse(input.businessOpeningHours)
+    try {
+      let dataToSave: any = {
+        userId: input?.userId,
+        businessIndustry: Business?.businessIndustry,
+        businessName: Business?.businessName,
+        businessDescription: input?.businessDescription,
+        // businessLogo: `${FileEnum.PROFILEIMAGE}${req?.file.filename}`,
+        businessSalesNumber: Business?.businessSalesNumber,
+        businessAddress: Business?.address1 + " " + input?.address2,
+        address1: Business?.address1,
+        address2: input?.address2,
+        businessCity: Business?.businessCity,
+        businessPostCode: Business?.businessPostCode,
+        businessOpeningHours: JSON.parse(input?.businessOpeningHours),
+        // businessOpeningHours: (input?.businessOpeningHours),
+      };
+      if (req?.file) {
+        //@ts-ignore
+        dataToSave.businessLogo = `${FileEnum.PROFILEIMAGE}${req?.file.filename}`;
+      }
+      const userData = await BusinessDetails.create(dataToSave);
+
+      const industry = await BuisnessIndustries.findOne({
+        industry: input?.businessIndustry,
+      });
+       await LeadTablePreference.create({userId:input.userId, columns:industry?.columns})
+      await User.findByIdAndUpdate(input.userId, {
+        businessDetailsId: new ObjectId(userData._id),
+        leadCost: industry?.leadCost,
+        businessIndustryId: industry?.id,
+      });
+     
+      if (input.accreditations) {
+        input.accreditations = JSON.parse(input.accreditations);
+      }
+      if (input.accreditations == null || input.accreditations == "") {
+        delete input.accreditations;
+      }
+      if (input.financeOffers && input.financeOffers == "Yes") {
+        input.financeOffers = true;
+      }
+      if (input.financeOffers == null || input.financeOffers == "") {
+        delete input.financeOffers;
+      }
+      if (input.financeOffers && input.financeOffers == "No") {
+        input.financeOffers = false;
+      }
+
+      if (input.prices == null) {
+        delete input.prices;
+      }
+      if (input.avgInstallTime == null) {
+        delete input.avgInstallTime;
+      }
+      if (input.trustpilotReviews == null) {
+        delete input.trustpilotReviews;
+      }
+      if (input.criteria == null) {
+        delete input.criteria;
+      }
+      const service = await UserService.create(input);
+      await User.findByIdAndUpdate(user.id, { userServiceId: service.id });
+      res.json({
+        data: userData,
+        service,
+        leadCost: user?.leadCost,
+      });
+      const params: any = {
+        email: user?.email,
+        firstName: user?.firstName,
+        lastName: user?.lastName,
+        company: input.businessName,
+        userId: user?._id,
+        street1: input?.businessAddress,
+        street2: input?.businessAddress,
+        towncity: input?.businessCity,
+        // county:Name of county,
+        postcode: input?.businessPostCode,
+        // country_name: input.businessCountry,
+        phone: input?.businessSalesNumber,
+        businessId: userData?.id,
+      };
+      const paramsObj = Object.values(params).some(
+        (value: any) => value === undefined
+      );
+      if (!paramsObj) {
+        createCustomerOnLeadByte(params)
+          .then(() => {
+            console.log("Customer created!!!!");
+          })
+          .catch((ERR) => {
+            console.log("ERROR while creating customer");
+          });
+      }
+    } catch (error) {
+      return res
+        .status(500)
+        .json({ error: { message: "Something went wrong.", error } });
     }
   };
 }

@@ -332,7 +332,7 @@ if(!industry){
       // @ts-ignore
       rowIndex: leads?.rowIndex + 1 || 0,
     });
-if(user.smsNotificationActive){
+if(user.isSmsNotificationActive){
   const dataToSent={
     name:input.firstName+ " " +input.lastName,
     email:input.email,
