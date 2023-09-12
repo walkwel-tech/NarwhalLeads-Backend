@@ -1,6 +1,7 @@
 import axios from "axios";
 import { CreateCustomerInput } from "../../app/Inputs/createCustomerOnRyft&Lead.inputs";
 import { User } from "../../app/Models/User";
+import { checkAccess } from "../../app/Middlewares/serverAccess";
 let FormData = require("form-data");
 
 const POST = "post";
@@ -25,7 +26,8 @@ export const createCustomerOnLeadByte = (params: CreateCustomerInput) => {
       },
       data: data
     };
-    axios(configLead)
+    if(checkAccess()){
+        axios(configLead)
       .then(async (response) => {
         if (response.data.bid) {
           await User.findByIdAndUpdate(params.userId, {
@@ -39,5 +41,7 @@ export const createCustomerOnLeadByte = (params: CreateCustomerInput) => {
         
         reject(err.response?.data);
       });
+    }
+  
   });
 };

@@ -67,7 +67,7 @@ export class AdminSettingsController {
       if (data) {
         return res.json({ data: data });
       } else {
-        return res.json({ data: { message: "Data not found" } });
+        return res.status(404).json({ data: { message: "Data not found" } });
       }
     } catch (error) {
       return res
@@ -94,7 +94,7 @@ export class AdminSettingsController {
       if (data) {
         return res.json({ data: data });
       } else {
-        return res.json({ data: { message: "Data not found" } });
+        return res.status(404).json({ data: { message: "Data not found" } });
       }
     } catch (error) {
       return res

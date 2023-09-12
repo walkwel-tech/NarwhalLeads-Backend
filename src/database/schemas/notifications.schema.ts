@@ -1,4 +1,5 @@
 import { Schema, Types } from "mongoose";
+import { NOTIFICATION_TYPE } from "../../utils/Enums/notificationType.enum";
 
 const NotificationsSchema = new Schema(
   {
@@ -17,6 +18,14 @@ const NotificationsSchema = new Schema(
     },
     readAt: {
       type: Date,
+    },
+    notificationType: {
+      type: String,
+      default: NOTIFICATION_TYPE.EMAIL,
+    },
+    callerIds:{
+      type: String,
+      default: null,
     },
     createdAt: { type: Date },
   },

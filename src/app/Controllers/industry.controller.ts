@@ -4,7 +4,6 @@ import { order } from "../../utils/constantFiles/businessIndustry.orderList";
 import { BuisnessIndustries } from "../Models/BuisnessIndustries";
 import { CustomColumnNames } from "../Models/CustomColumns.leads";
 import { User } from "../Models/User";
-import { UserInterface } from "../../types/UserInterface";
 const LIMIT = 10;
 export class IndustryController {
   static create = async (req: Request, res: Response) => {
@@ -23,6 +22,12 @@ export class IndustryController {
     });
 
     try {
+      const exist=await BuisnessIndustries.find({industry:input.industry})
+      if(exist){
+        return res
+        .status(400)
+        .json({ error: { message: "Business Industry should be unique." } });
+      }
       const details = await BuisnessIndustries.create(dataToSave);
       await CustomColumnNames.create({
         industryId: details.id,
@@ -107,7 +112,6 @@ export class IndustryController {
       }
       const sortObject: Record<string, 1 | -1> = {};
       sortObject[sortField] = sortOrder;
-      console.log("sortObject", sortObject);
       const data = await BuisnessIndustries.find(dataToFind)
         .collation({ locale: "en" })
         .sort(sortObject)
@@ -132,7 +136,7 @@ export class IndustryController {
           },
         });
       } else {
-        return res.json({ data: { message: "Data not found" } });
+        return res.status(404).json({ data: { message: "Data not found" } });
       }
     } catch (error) {
       return res
@@ -157,12 +161,18 @@ export class IndustryController {
 
   static delete = async (req: Request, res: Response) => {
     try {
-      const data = await BuisnessIndustries.findByIdAndDelete(req.params.id);
       const users = await User.find({ businessIndustryId: req.params.id });
-      users.map(async (i: UserInterface) => {
-        await User.findByIdAndUpdate(i.id, { businessIndustryId: null });
-      });
-      return res.json({ data: data });
+      if(users.length>0){
+        return res
+        .status(400)
+        .json({ error: { message: "Users already registered with this industry. kindly first delete those users." } });
+      }
+      else{
+        const data = await BuisnessIndustries.findByIdAndDelete(req.params.id);
+        return res.json({ data: data });
+
+      }
+    
     } catch (error) {
       return res
         .status(500)
@@ -183,7 +193,7 @@ export class IndustryController {
         });
         return res.json({ data: array });
       } else {
-        return res.json({ data: { message: "Data not found" } });
+        return res.status(404).json({ data: { message: "Data not found" } });
       }
     } catch (error) {
       return res
@@ -202,7 +212,7 @@ export class IndustryController {
         industryId: req.params.id,
       });
       if (updatedData.length == 0 || !updatedData) {
-        return res.status(400).json({ error: { message: "Data not found" } });
+        return res.status(404).json({ error: { message: "Data not found" } });
       }
       return res.json({ data: updatedData });
     } catch (error) {
@@ -218,7 +228,7 @@ export class IndustryController {
         industryId: req.params.id,
       });
       if (updatedData.length == 0 || !updatedData) {
-        return res.status(400).json({ error: { message: "Data not found" } });
+        return res.status(404).json({ error: { message: "Data not found" } });
       }
       return res.json({ data: updatedData });
     } catch (error) {
