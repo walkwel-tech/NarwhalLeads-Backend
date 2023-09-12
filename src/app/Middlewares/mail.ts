@@ -823,6 +823,7 @@ export function send_email_for_payment_success_to_admin(message: any) {
       paymentAmount: `£${message?.amount}`,
       cardNumberEnd: message?.cardNumberEnd,
       cardHolderName: message?.cardHolderName,
+      businessName:message?.businessName
     },
   };
   if (checkAccess()) {
@@ -868,7 +869,6 @@ export function send_email_to_invited_admin(send_to: string, message: any) {
     dynamic_template_data: {
       name: message.name,
       password: message.password,
-      businessName: message.businessName,
     },
   };
   if (checkAccess()) {

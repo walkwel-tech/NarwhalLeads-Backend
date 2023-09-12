@@ -8,6 +8,7 @@ import { BusinessDetailsController } from "./business.details.controller";
 import { invitedUsersController } from "./invite.controller";
 import { TermsAndConditionsController } from "./termsAndConditions.controller";
 import { freeCreditsLinkController } from "./freeCredits.Link.Controller";
+import { nonBillableUsersController } from "./nonBillableUser.controller";
 
 
 export {
@@ -20,5 +21,6 @@ export {
     BusinessDetailsController,
     invitedUsersController,
     TermsAndConditionsController,
-    freeCreditsLinkController
+    freeCreditsLinkController,
+    nonBillableUsersController
 };
