@@ -425,8 +425,9 @@ export class UsersControllers {
           .json({ error: { message: "Please contact admin to change payment method" } });
       }
       if(input.smsPhoneNumber){
-        const userExist=await User.find({smsPhoneNumber:input.smsPhoneNumber})
-        if(userExist){
+        const userExist=await User.findOne({smsPhoneNumber:input.smsPhoneNumber})
+         // @ts-ignore
+        if(userExist && userExist.id!==req?.user?.id && userExist.role!==RolesEnum.SUPER_ADMIN){
           return res
           .status(400)
           .json({ error: { message: "This Number is already registered with another account." } });
@@ -809,6 +810,9 @@ export class UsersControllers {
         send_email_for_updated_details(message)
 if(input.triggerAmount || input.autoChargeAmount){
   return res.json({message:"Auto Top-Up Settings Updated Successfully",data:result})
+}
+if(input.isSmsNotificationActive || input.smsPhoneNumber){
+  return res.json({message:"SMS Settings Saved Successfully",data:result})
 }
 else if(input.paymentMethod){
   return res.json({message:"Payment Mode Changed Successfully",data:result});
