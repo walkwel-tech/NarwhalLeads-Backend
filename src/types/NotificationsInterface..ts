@@ -5,5 +5,6 @@ export interface NotificationsInterface {
    title:string,
    templateId:string,
    readAt?:Date,
-   createdAt?:Date
+   createdAt?:Date,
+   notificationType:string
   }

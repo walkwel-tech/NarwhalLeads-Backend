@@ -43,4 +43,6 @@ export interface UserInterface extends Document {
   onBoardingPercentage:number;
   userServiceId: Types.ObjectId;
   triggerAmount:number;
+  smsNotificationActive:boolean
+  smsPhoneNumber:string;
 }

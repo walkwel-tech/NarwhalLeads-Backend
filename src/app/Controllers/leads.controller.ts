@@ -34,6 +34,7 @@ import mongoose from "mongoose";
 import { PREMIUM_PROMOLINK } from "../../utils/constantFiles/spotDif.offers.promoLink";
 import { Notifications } from "../Models/Notifications";
 import { BusinessDetails } from "../Models/BusinessDetails";
+import { notify } from "../../utils/notifications/leadNotificationToUser";
 const ObjectId = mongoose.Types.ObjectId;
 
 const LIMIT = 10;
@@ -331,7 +332,14 @@ if(!industry){
       // @ts-ignore
       rowIndex: leads?.rowIndex + 1 || 0,
     });
-
+if(user.smsNotificationActive){
+  const dataToSent={
+    name:input.firstName+ " " +input.lastName,
+    email:input.email,
+    phoneNumber:input.phoneNumber
+  }
+  notify(user.smsPhoneNumber, dataToSent)
+}
     if (user?.userLeadsDetailsId?.sendDataToZapier) {
       send_lead_data_to_zap(user.userLeadsDetailsId.zapierUrl, input)
         .then((res) => {        })
