@@ -591,7 +591,7 @@ export class BusinessDetailsController {
       const industry = await BuisnessIndustries.findOne({
         industry: input?.businessIndustry,
       });
-    const a=  await LeadTablePreference.create({userId:input.userId, columns:industry?.columns})
+       await LeadTablePreference.create({userId:input.userId, columns:industry?.columns})
       await User.findByIdAndUpdate(input.userId, {
         businessDetailsId: new ObjectId(userData._id),
         leadCost: industry?.leadCost,
