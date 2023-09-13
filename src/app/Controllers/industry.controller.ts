@@ -119,7 +119,7 @@ export class IndustryController {
         .limit(perPage);
         const dataWithoutPagination = await BuisnessIndustries.find(dataToFind)
         .collation({ locale: "en" })
-        .sort(sortObject)
+        .sort({industry:1})
       data.map((i) => {
         i?.columns.sort((a: any, b: any) => a.index - b.index);
       });

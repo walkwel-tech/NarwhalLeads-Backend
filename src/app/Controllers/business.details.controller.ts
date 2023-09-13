@@ -196,12 +196,14 @@ export class BusinessDetailsController {
               createContactOnXero(paramsToCreateContact, res.data.access_token)
                 .then(async (res: any) => {
                   await User.findOneAndUpdate(
-                    { email: input.email },
+                    { email: user.email },
                     {
                       // $set: {
                         xeroContactId: res.data.Contacts[0].ContactID,
+                        isXeroCustomer:true
                       // },
-                    }
+                    },
+                    {new:true}
                   );
                   console.log("success in creating contact");
                 })
@@ -591,7 +593,7 @@ export class BusinessDetailsController {
       const industry = await BuisnessIndustries.findOne({
         industry: input?.businessIndustry,
       });
-       await LeadTablePreference.create({userId:input.userId, columns:industry?.columns})
+   await LeadTablePreference.create({userId:input.userId, columns:industry?.columns})
       await User.findByIdAndUpdate(input.userId, {
         businessDetailsId: new ObjectId(userData._id),
         leadCost: industry?.leadCost,
