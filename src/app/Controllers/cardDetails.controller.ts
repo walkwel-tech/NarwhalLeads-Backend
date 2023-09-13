@@ -404,7 +404,7 @@ export class CardDetailsControllers {
   static delete = async (req: Request, res: Response): Promise<Response> => {
     const { id } = req.params;
     const cardExist = await CardDetails.findById(id);
-    if (cardExist?.isDefault) {
+    if (cardExist?.isDefault && cardExist.status ===PAYMENT_STATUS.CAPTURED) {
       return res
         .status(400)
         .json({ error: { message: "Default card cannot be deleted!" } });
@@ -427,7 +427,7 @@ export class CardDetailsControllers {
           .json({ error: { message: "card to delete does not exists." } });
       }
 
-      return res.json({ message: "Card deleted successfully." });
+      return res.json({error:{ message: "Card deleted successfully."} });
     } catch (err) {
       return res
         .status(500)
@@ -654,6 +654,8 @@ export class CardDetailsControllers {
         const card = await RyftPaymentMethods.findOne({
           paymentMethod: input.data?.paymentMethod?.id,
         });
+        const cardDelete:any=await CardDetails.find({paymentMethod:input.data?.paymentMethod?.id})
+        await CardDetails.findByIdAndDelete(cardDelete?.id)
         const business = await BusinessDetails.findById(
           userId?.businessDetailsId
         );
@@ -904,7 +906,7 @@ export class CardDetailsControllers {
       },
     };
     axios(config)
-      .then(async function (response: any) {
+      .then(async function (response: any):Promise<any> {
         const sessionData = response.data;
         const { customerDetails, paymentMethod, amount } = sessionData;
         const user = await User.findOne({ ryftClientId: customerDetails.id });
@@ -928,11 +930,10 @@ export class CardDetailsControllers {
             cardHolderName: `${customerDetails.firstName} ${customerDetails?.lastName}`,
             amount,
           };
-          if (sessionData.status === "Captured") {
+          if (sessionData.status === "Captured" || sessionData.status === "Approved") {
             dataToSave.status = PAYMENT_SESSION.SUCCESS;
           }
-
-          if (cardExist.length == 0) {
+          if (cardExist.length == 0 && (sessionData.status === "Captured" || sessionData.status === "Approved")) {
             dataToSave.isDefault = true;
           }
           let existingCardNumbers: Array<string> = [];
@@ -942,7 +943,7 @@ export class CardDetailsControllers {
           if (
             !existingCardNumbers.includes(
               (paymentMethod?.card?.last4).toString()
-            )
+            )  
           ) {
             const card = await CardDetails.create(dataToSave);
             await RyftPaymentMethods.create({
@@ -952,7 +953,11 @@ export class CardDetailsControllers {
               cardId: card?.id,
             });
           }
-
+          else {
+            return res
+              .status(422)
+              .json({ error: { message: "Card Already Exist" } });
+          }
           await User.findByIdAndUpdate(user?.id, {
             onBoarding: [
               {
