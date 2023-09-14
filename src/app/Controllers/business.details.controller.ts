@@ -199,8 +199,7 @@ export class BusinessDetailsController {
                     { email: user.email },
                     {
                       // $set: {
-                        xeroContactId: res.data.Contacts[0].ContactID,
-                        isXeroCustomer:true
+                        xeroContactId: res.data.Contacts[0].ContactID,isXeroCustomer:true
                       // },
                     },
                     {new:true}
@@ -443,6 +442,7 @@ export class BusinessDetailsController {
           criteria: JSON.stringify(service?.criteria),
           dailyLeads: leadData?.daily,
           postCodes: leadData?.postCodeTargettingList,
+          detailsType:"UPDATED DETAILS"
         };
         business_details_submission(messageToSendInBusinessSubmission);
         if (req.file && details.businessLogo) {
