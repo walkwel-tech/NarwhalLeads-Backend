@@ -286,10 +286,74 @@ export class UsersControllers {
   };
 
   static show = async (req: Request, res: Response): Promise<Response> => {
+  
     const { id } = req.params;
+    const business=req.query.business
     let query;
     try {
-       [query] = await User.aggregate([
+      if(business){
+        const business=await BusinessDetails.findById(id);
+        const users=await User.findOne({businessDetailsId:business?.id});
+        [query] = await User.aggregate([
+          {
+            $facet: {
+              results: [
+                {
+                  $lookup: {
+                    from: "businessdetails",
+                    localField: "businessDetailsId",
+                    foreignField: "_id",
+                    as: "businessDetailsId",
+                  },
+                },
+                {
+                  $lookup: {
+                    from: "userleadsdetails",
+                    localField: "userLeadsDetailsId",
+                    foreignField: "_id",
+                    as: "userLeadsDetailsId",
+                  },
+                },
+                {
+                  $lookup: {
+                    from: "carddetails",
+                    localField: "_id",
+                    foreignField: "userId",
+                    as: "cardDetailsId",
+                  },
+                },
+                { $match: { _id: new ObjectId(users?.id) } }
+                          ],
+            },
+          },
+        ]);
+        query.results.map((item: any) => {
+          delete item.password
+          let businessDetailsId = Object.assign({}, item["businessDetailsId"][0]);
+          let cardDetailsId = Object.assign({}, item["cardDetailsId"][0]);
+          let userLeadsDetailsId = Object.assign(
+            {},
+            item["userLeadsDetailsId"][0]
+          );
+          item.userLeadsDetailsId = userLeadsDetailsId;
+          item.businessDetailsId = businessDetailsId;
+          item.cardDetailsId = cardDetailsId;
+        });
+        if(query.results.length==0){
+          [query] = await Admins.aggregate([
+            {
+              $facet: {
+                results: [
+                  { $match: { _id: new ObjectId(id) } }
+                            ],
+              },
+            },
+          ]);
+        }
+        return res.json({ data: query.results[0] });
+      }
+      else{
+          [query] = await User.aggregate([
         {
           $facet: {
             results: [
@@ -346,26 +410,48 @@ export class UsersControllers {
         ]);
       }
       return res.json({ data: query.results[0] });
+      }
+     
     } catch (err) {
       return res
         .status(500)
-        .json({ error: { message: "Something went wrong." } });
+        .json({ error: { message: "Something went wrong.",err } });
     }
   };
 
   static indexName = async (req: Request, res: Response): Promise<Response> => {
     try {
-      const user = await User.find(
-        { role: { $nin: [RolesEnum.ADMIN, RolesEnum.INVITED,RolesEnum.SUPER_ADMIN] } , isArchived:false},
-        "firstName lastName email buyerId"
-      ).sort("firstName")
-      ;
-
-      if (user) {
-        return res.json({ data: user });
+      const business=await User.aggregate([
+        {
+          $lookup: {
+            from: "businessdetails",
+            localField: "businessDetailsId",
+            foreignField: "_id",
+            as: "businessInfo",
+          },
+        },
+        {
+          $unwind: "$businessInfo"
+        },
+        {
+          $project: {
+            "businessInfo._id": 1,
+            "businessInfo.businessName": 1,
+            "_id":0
+          }
+        }
+      ])
+      if (business) {
+        const reformattedObjects = business.map(item => ({
+          _id: item.businessInfo._id,
+          businessName: item.businessInfo.businessName
+        }));
+        return res.json({ data: reformattedObjects});
       }
+else{
+  return res.status(404).json({ error: { message: "User not found." } });
 
-      return res.status(404).json({ error: { message: "User not found." } });
+}
     } catch (err) {
       return res
         .status(500)

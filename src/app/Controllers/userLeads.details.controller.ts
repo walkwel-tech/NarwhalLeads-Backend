@@ -170,6 +170,8 @@ const services=await UserService.findOne({userId:user.id})
         criteria:JSON.stringify( service?.criteria),
         dailyLeads: leadData?.daily,
         postCodes:leadData?.postCodeTargettingList,
+        detailsType:"NEW DETAILS"
+
       };
       business_details_submission(messageToSendInBusinessSubmission); 
     }
