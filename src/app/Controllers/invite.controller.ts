@@ -295,7 +295,7 @@ export class invitedUsersController {
      const adminPref:any= await LeadTablePreference.findOne({userId:adminExist.id})
      const adminClientPref:any= await ClientTablePreference.findOne({userId:adminExist._id})
      await LeadTablePreference.create({userId:data.id,columns:adminPref.columns})
- await ClientTablePreference.create({columns:adminClientPref.columns})
+ await ClientTablePreference.create({columns:adminClientPref.columns, userId:data.id})
    const show=await Admins.findById(data.id,'-password')
    return res.json({data:show})
    }

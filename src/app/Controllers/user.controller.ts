@@ -110,7 +110,7 @@ export class UsersControllers {
   static index = async (_req: any, res: Response): Promise<Response> => {
     try {
       let sortingOrder = _req.query.sortingOrder || sort.DESC;
-      let sortKey = _req.query.sortKey || sort.DESC;
+      let sortKey = _req.query.sortKey || "createdAt";
       let isArchived = _req.query.isArchived || "false";
       let isActive = _req.query.isActive || "true";
       if (sortingOrder == sort.ASC) {
@@ -224,7 +224,7 @@ export class UsersControllers {
                   signUpFlowStatus: 0,
                   invitedById: 0,
                   // isArchived:0,
-                  createdAt: 0,
+                  // createdAt: 0,
                   updatedAt: 0,
                   password: 0,
                   "businessDetailsId._id": 0,
@@ -243,6 +243,16 @@ export class UsersControllers {
                   "userLeadsDetailsId.userId": 0,
                 },
               },
+              {
+                $addFields: {
+                  createdAt: {
+                        $dateToString: {
+                            format: "%Y-%m-%d", // Define your desired format here
+                            date: "$createdAt" // Replace "createdAt" with your actual field name
+                        }
+                    }
+                }
+            },
               { $skip: skip },
               { $limit: perPage },
               // { $sort: { firstName: 1 } },
@@ -281,7 +291,7 @@ export class UsersControllers {
     } catch (err) {
       return res
         .status(500)
-        .json({ error: { message: "Something went wrong." } });
+        .json({ error: { message: "Something went wrong.",err } });
     }
   };
 

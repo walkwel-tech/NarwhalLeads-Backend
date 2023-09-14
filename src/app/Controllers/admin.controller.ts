@@ -3,6 +3,7 @@ import { Request, Response } from "express";
 import { AdminSettings } from "../Models/AdminSettings";
 import { ClientTablePreference } from "../Models/ClientTablePrefrence";
 import { FAQ } from "../Models/Faq";
+import { clientTablePreference } from "../../utils/constantFiles/clientTablePreferenceAdmin";
 
 export class AdminSettingsController {
   static create = async (req: Request, res: Response) => {
@@ -132,13 +133,16 @@ export class AdminSettingsController {
         const columns = input?.columns.sort((a, b) => a.index - b.index);
         let dataToSave: any = {
           columns,
+          //@ts-ignore
+          userId:req.user?.id
         };
         const Preference = await ClientTablePreference.create(dataToSave);
         return res.json({ data: Preference });
       } else {
         const data = await ClientTablePreference.findByIdAndUpdate(
           checkExist._id,
-          { columns: input.columns },
+          //@ts-ignore
+          { columns: input.columns,userId:req.user.id },
           { new: true }
         ).lean();
         //@ts-ignore
@@ -153,16 +157,24 @@ export class AdminSettingsController {
   };
 
   static showClientTablePreference = async (req: Request, res: Response) => {
-    //@ts-ignore
+
     try {
-      const Preference = await ClientTablePreference.findOne()
-      Preference?.columns.sort((a: any, b: any) => a.index - b.index);
-      return res.json({ data: Preference });
+          //@ts-ignore
+      const Preference = await ClientTablePreference.findOne({userId:req.user.id})
+      if(Preference){
+        Preference?.columns.sort((a: any, b: any) => a.index - b.index);
+        return res.json({ data: Preference });
+      }
+     else{
+      const data=clientTablePreference
+      data?.sort((a: any, b: any) => a.index - b.index);
+      return res.json({ data:  {columns:data}  });
+     }
     } catch (error) {
       return res
         .status(500)
         .json({ error: { message: "Something went wrong" } });
-    }
+      }
   };
 
 

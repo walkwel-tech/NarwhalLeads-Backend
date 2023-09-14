@@ -678,7 +678,7 @@ class AuthController {
       const exists = await User.findById(user?.id, "-password")
         .populate("businessDetailsId")
         .populate("userLeadsDetailsId")
-        .populate("invitedById")
+        // .populate("invitedById")
         .populate("userServiceId");
         const existsAdmin = await Admins.findById(user?.id, "-password")
       if (exists) {
@@ -745,7 +745,8 @@ const user=await User.findById(id,'isRyftCustomer isLeadbyteCustomer isXeroCusto
       }
       const user=await User.create(dataToSave)
       await ClientTablePreference.create({
-        columns:clientTablePreference
+        columns:clientTablePreference,
+        userId:user.id
       })
       await LeadTablePreference.create({
         userId:user.id,
