@@ -62,6 +62,26 @@ export class LeadsController {
     if (!user.isLeadReceived) {
       await User.findByIdAndUpdate(user.id, { isLeadReceived: true });
     }
+    if (user?.credits == 0 && user?.role == RolesEnum.USER) {
+        return res
+          .status(400)
+          .json({ error: {message:"Insufficient Credits"} });
+      }
+      const today = new Date();
+      const startOfDay = new Date(today);
+      startOfDay.setHours(0, 0, 0, 0); // Set the time to the beginning of the day
+      const endOfDay = new Date(today);
+      endOfDay.setHours(23, 59, 59, 999);
+            const previous =await Leads.find({bid: user?.buyerId,created_at: {
+              $gte: startOfDay,
+              $lt: endOfDay
+            }
+      } )
+      if(previous.length>=user.userLeadsDetailsId?.daily){
+        return res
+          .status(400)
+          .json({ error: {message:"Daily leads limit exhausted!"} });
+      }
     const leads = await Leads.findOne({ bid: user?.buyerId })
       .sort({ rowIndex: -1 })
       .limit(1);
@@ -323,6 +343,7 @@ if(!industry){
     await LeadTablePreference.findByIdAndUpdate(checkPreferenceExists?.id, {
       columns: checkPreferenceExists?.columns,
     });
+    
     const leadsSave = await Leads.create({
       bid: bid,
       leadsCost: user.leadCost,
@@ -332,6 +353,7 @@ if(!industry){
       // @ts-ignore
       rowIndex: leads?.rowIndex + 1 || 0,
     });
+
 if(user.isSmsNotificationActive){
   const dataToSent={
     name:input.firstName+ " " +input.lastName,
@@ -958,11 +980,11 @@ if(user.isSmsNotificationActive){
       } else {
         dataToFind.bid = user?.buyerId;
       }
-      if (user?.credits == 0 && user?.role == RolesEnum.USER) {
-        return res
-          .status(200)
-          .json({ message: "Insufficient credits!", data: [] });
-      }
+      // if (user?.credits == 0 && user?.role == RolesEnum.USER) {
+      //   return res
+      //     .status(200)
+      //     .json({ error: "Insufficient credits!", data: [] });
+      // }
       if (status) {
         dataToFind.status = status;
       }
@@ -1100,9 +1122,10 @@ if(user.isSmsNotificationActive){
 
   static showReportedLeads = async (_req: any, res: Response):Promise<any> => {
     let sortingOrder = _req.query.sortingOrder || sort.DESC;
-    const userId = _req.user?.id;
+    // const userId = _req.user?.id;
     // const archive: Boolean = _req.query.archive || false;
     const status = _req.query.status;
+    
     if (sortingOrder == sort.ASC) {
       sortingOrder = 1;
     } else {
@@ -1135,15 +1158,17 @@ if(user.isSmsNotificationActive){
         dataToFind.industryId = new ObjectId(_req.query.industryId);;
       }
       if (_req.query.userId) {
-        const user = await User.findById(_req.query.userId);
+        const businesses=await BusinessDetails.findById(_req.query.userId)
+
+        const user = await User.findOne({businessDetailsId:businesses?.id});
+
         dataToFind.bid = user?.buyerId;
       }
-      const user = await User.findById(userId);
-      if (user?.credits == 0 && user?.role == RolesEnum.USER) {
-        return res
-          .status(200)
-          .json({ message: "Insufficient credits!", data: [] });
-      }
+      // if (user?.credits == 0 && user?.role == RolesEnum.USER) {
+      //   return res
+      //     .status(200)
+      //     .json({ message: "Insufficient credits!", data: [] });
+      // }
       if (_req.query.search) {
         dataToFind = {
           ...dataToFind,
@@ -1316,7 +1341,8 @@ if(user.isSmsNotificationActive){
       (_req.query && _req.query.page > 0 ? parseInt(_req.query.page) - 1 : 0) *
       perPage;
     try {
-      const user = await User.findById(userId);
+      const businesses=await BusinessDetails.findById(userId)
+      const user = await User.findOne({businessDetailsId:businesses?.id});
       let dataToFind: any = {
         bid: user?.buyerId,
         status: { $nin: [leadsStatusEnums.ARCHIVED] },
@@ -1392,7 +1418,7 @@ if(user.isSmsNotificationActive){
                   "clientName.verifiedAt": 0,
                   "clientName.isVerified": 0,
                   "clientName.isActive": 0,
-                  "clientName.businessDetailsId": 0,
+                  // "clientName.businessDetailsId": 0,
                   // "clientName.businessIndustryId": 0,
                   "clientName.userLeadsDetailsId": 0,
                   "clientName.onBoarding": 0,
