@@ -84,6 +84,11 @@
         name: "createdAt",
         isVisible: true,
         index: 16
+      },
+      {
+        name: "daily",
+        isVisible: true,
+        index: 17
       }
     
     
