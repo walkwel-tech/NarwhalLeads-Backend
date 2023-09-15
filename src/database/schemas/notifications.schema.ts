@@ -23,9 +23,19 @@ const NotificationsSchema = new Schema(
       type: String,
       default: NOTIFICATION_TYPE.EMAIL,
     },
-    callerIds:{
+    MessageSid:{
       type: String,
       default: null,
+    },
+    accountId:{
+      type: String,
+      default: null,
+    },
+    MessageStatus:{
+      type: String,
+    },
+    toPhoneNumber:{
+      type:String
     },
     createdAt: { type: Date },
   },
