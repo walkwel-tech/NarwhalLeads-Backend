@@ -79,9 +79,14 @@ export class LeadsController {
       } )
       console.log(previous.length,user.userLeadsDetailsId?.daily)
       if(previous.length>=user.userLeadsDetailsId?.daily){
+        const debuggingLogs={
+          yesterday:today.toUTCString(),
+          today:endOfDay.toUTCString(),
+          currentServerTime:new Date().toUTCString()
+        }
         return res
           .status(400)
-          .json({ error: {message:"Daily leads limit exhausted!"} });
+          .json({ error: {message:"Daily leads limit exhausted!",logs:debuggingLogs} });
       }
     const leads = await Leads.findOne({ bid: user?.buyerId })
       .sort({ rowIndex: -1 })
