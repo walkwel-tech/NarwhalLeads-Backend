@@ -272,6 +272,7 @@ export class UsersControllers {
         item.userLeadsDetailsId = userLeadsDetailsId;
         item.businessDetailsId = businessDetailsId;
         item.userServiceId = userServiceId;
+        item.businessDetailsId.daily=item.userLeadsDetailsId.daily
       });
 
       const userCount = query.userCount[0]?.count || 0;
@@ -449,8 +450,14 @@ export class UsersControllers {
             "businessInfo.businessName": 1,
             "_id":0
           }
+        },
+        {$sort:{ "businessInfo.businessName": 1}}
+      ],
+      {
+        collation: {
+            locale: "en", // Specify the locale for collation rules
         }
-      ])
+    })
       if (business) {
         const reformattedObjects = business.map(item => ({
           _id: item.businessInfo._id,
@@ -459,7 +466,7 @@ export class UsersControllers {
         return res.json({ data: reformattedObjects});
       }
 else{
-  return res.status(404).json({ error: { message: "User not found." } });
+  return res.status(404).json({ error: { message: "Business not found." } });
 
 }
     } catch (err) {
