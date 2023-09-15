@@ -95,6 +95,7 @@ class AuthController {
           lastName: input.lastName,
           email: input.email,
           phoneNumber: input.phoneNumber,
+          // smsPhoneNumber: input.phoneNumber,
           password: hashPassword,
           role: RolesEnum.USER,
           // leadCost: adminSettings?.defaultLeadAmount,
@@ -759,6 +760,7 @@ const user=await User.findById(id,'isRyftCustomer isLeadbyteCustomer isXeroCusto
         .json({ error: { message: "Something went wrong." } });
     }
   };
+  
 }
 
 export { AuthController };

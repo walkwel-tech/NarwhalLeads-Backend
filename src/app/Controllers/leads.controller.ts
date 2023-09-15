@@ -35,6 +35,7 @@ import { PREMIUM_PROMOLINK } from "../../utils/constantFiles/spotDif.offers.prom
 import { Notifications } from "../Models/Notifications";
 import { BusinessDetails } from "../Models/BusinessDetails";
 import { notify } from "../../utils/notifications/leadNotificationToUser";
+import { APP_ENV } from "../../utils/Enums/serverModes.enum";
 const ObjectId = mongoose.Types.ObjectId;
 
 const LIMIT = 10;
@@ -45,15 +46,19 @@ interface DataObject {
 
 export class LeadsController {
   static create = async (req: Request, res: Response) => {
-    //@ts-ignore
-    if (!IP.IP.includes(req?.headers["x-forwarded-for"])) {
-      return res.status(403).json({
-        error: {
-          message:
-            "Access denied: Your IP address is not allowed to access this API",
-        },
-      });
+  
+    if(process.env.APP_ENV===APP_ENV.PRODUCTION){
+        //@ts-ignore
+      if (!IP.IP.includes(req?.headers["x-forwarded-for"])) {
+        return res.status(403).json({
+          error: {
+            message:
+              "Access denied: Your IP address is not allowed to access this API",
+          },
+        });
+      }
     }
+   
     const bid = req.params.buyerId;
     const input = req.body;
     const user: any = await User.findOne({ buyerId: bid })
