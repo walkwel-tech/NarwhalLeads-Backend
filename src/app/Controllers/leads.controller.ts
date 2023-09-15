@@ -68,19 +68,25 @@ export class LeadsController {
           .json({ error: {message:"Insufficient Credits"} });
       }
       const today = new Date();
-      const startOfDay = new Date(today);
-      startOfDay.setHours(0, 0, 0, 0); // Set the time to the beginning of the day
       const endOfDay = new Date(today);
-      endOfDay.setHours(23, 59, 59, 999);
-            const previous =await Leads.find({bid: user?.buyerId,created_at: {
-              $gte: startOfDay,
+      endOfDay.setDate(today.getDate() + 1);
+      today.setUTCHours(0, 0, 0, 0);
+      endOfDay.setUTCHours(0, 0, 0, 0);
+            const previous =await Leads.find({bid: user?.buyerId,createdAt: {
+              $gte: today,
               $lt: endOfDay
             }
       } )
+      console.log(previous.length,user.userLeadsDetailsId?.daily)
       if(previous.length>=user.userLeadsDetailsId?.daily){
+        const debuggingLogs={
+          yesterday:today.toUTCString(),
+          today:endOfDay.toUTCString(),
+          currentServerTime:new Date().toUTCString()
+        }
         return res
           .status(400)
-          .json({ error: {message:"Daily leads limit exhausted!"} });
+          .json({ error: {message:"Daily leads limit exhausted!",logs:debuggingLogs} });
       }
     const leads = await Leads.findOne({ bid: user?.buyerId })
       .sort({ rowIndex: -1 })

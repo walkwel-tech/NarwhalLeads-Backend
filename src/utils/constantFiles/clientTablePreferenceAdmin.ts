@@ -79,6 +79,16 @@
         name: "userSignupStatus",
         isVisible: true,
         index: 15
+      },
+      {
+        name: "createdAt",
+        isVisible: true,
+        index: 16
+      },
+      {
+        name: "daily",
+        isVisible: true,
+        index: 17
       }
     
     
