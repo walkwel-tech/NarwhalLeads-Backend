@@ -7,6 +7,7 @@ const adminSettings: Router = Router();
 adminSettings.post("/",OnlyAdmins,AdminSettingsController.create);
 adminSettings.patch("/",OnlyAdmins,AdminSettingsController.update);
 adminSettings.get("/",OnlyAdmins,AdminSettingsController.show);
+adminSettings.get("/notifications",AdminSettingsController.notifications);
 adminSettings.get("/clientColumnsPreference",OnlyAdmins,AdminSettingsController.showClientTablePreference);
 adminSettings.post("/clientColumnsPreference",OnlyAdmins,AdminSettingsController.createPreference);
 adminSettings.get("/FAQs",Auth,AdminSettingsController.showFaqs);
