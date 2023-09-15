@@ -4,6 +4,8 @@ import { AdminSettings } from "../Models/AdminSettings";
 import { ClientTablePreference } from "../Models/ClientTablePrefrence";
 import { FAQ } from "../Models/Faq";
 import { clientTablePreference } from "../../utils/constantFiles/clientTablePreferenceAdmin";
+import { Notifications } from "../Models/Notifications";
+import { ObjectID } from "bson";
 
 export class AdminSettingsController {
   static create = async (req: Request, res: Response) => {
@@ -177,5 +179,35 @@ export class AdminSettingsController {
       }
   };
 
+  static notifications = async (
+    req: any,
+    res: Response
+  ): Promise<Response> => {
+    let dataToFind={}
+    try {
+      if(req.query.start && req.query.end){
+        //@ts-ignore
+  dataToFind.createdAt={
+    $gte: req.query.start,
+    $lt: req.query.end
+  }
+      }
+  if(req.query.notificationType){
+          //@ts-ignore
+    dataToFind.notificationType=req.query.notificationType
+  }
+  if(req.query.userId){
+          //@ts-ignore
+    dataToFind.userId=new ObjectID(req.query.userId)
+  }
+  
+      const data= await  Notifications.find(dataToFind).sort({createdAt:-1})
+      return res.json({data:data})
+    } catch (err) {
+      return res
+        .status(500)
+        .json({ error: { message: "Something went wrong." } });
+    }
+  };
 
 }

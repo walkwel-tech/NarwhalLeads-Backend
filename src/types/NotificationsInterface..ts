@@ -6,5 +6,9 @@ export interface NotificationsInterface {
    templateId:string,
    readAt?:Date,
    createdAt?:Date,
-   notificationType:string
+   notificationType:string,
+   MessageStatus:string
+   MessageSid:string
+   accountId:string,
+   toPhoneNumber:string
   }
