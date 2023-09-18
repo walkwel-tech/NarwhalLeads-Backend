@@ -649,8 +649,8 @@ export class CardDetailsControllers {
     const cardDetailsExist = await CardDetails.findById(card?.cardId);
     let originalAmount = parseInt(input.data.amount) / 100 / (1 + VAT / 100);
     let isFreeCredited:boolean;
-    const txn:any = await Transaction.find({userId:userId?.id,title:transactionTitle.CREDITS_ADDED, isCredited:true,status:PAYMENT_STATUS.CAPTURED})
-    if(txn || txn?.length>0){
+    const txn:any = await Transaction.find({userId:userId?.id,title:transactionTitle.CREDITS_ADDED, isCredited:true,status:PAYMENT_STATUS.CAPTURED,amount:{$gt:0}})
+    if(txn?.length>0){
       isFreeCredited=true
     }
     else{
