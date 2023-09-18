@@ -15,7 +15,7 @@ export const notify = (send_to: String, lead: Record<string, string>) => {
          Get in touch as soon as possible.`,
         from: process.env.TWILIO_SENDER_PHONE_NUMBER,
         statusCallback: `${process.env.APP_URL}/api/v1/notification-webhook`,
-          to: send_to,
+          to: `+44${send_to}`,
 
       })
       .then(async (message: any) => {

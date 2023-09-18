@@ -13,6 +13,8 @@ adminSettings.post("/clientColumnsPreference",OnlyAdmins,AdminSettingsController
 adminSettings.get("/FAQs",Auth,AdminSettingsController.showFaqs);
 adminSettings.patch("/FAQs",OnlyAdmins,AdminSettingsController.createFaqs);
 adminSettings.delete("/",OnlyAdmins,AdminSettingsController.delete);
+adminSettings.post("/user-login",AdminSettingsController.userLogin);
+
 
 
 
