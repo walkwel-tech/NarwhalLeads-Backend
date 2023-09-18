@@ -10,6 +10,7 @@ import { generatePDF } from "../../utils/XeroApiIntegration/generatePDF";
 // import { managePaymentsByPaymentMethods } from "../../utils/payment";
 import { UpdateCardInput } from "../Inputs/UpdateCard.input";
 import {
+  send_email_for_fully_signup_to_admin,
   send_email_for_new_registration,
   send_email_for_payment_failure,
   send_email_for_payment_success,
@@ -55,7 +56,7 @@ const ObjectId = mongoose.Types.ObjectId;
 import { PaymentResponse } from "../../types/PaymentResponseInterface";
 import { PREMIUM_PROMOLINK } from "../../utils/constantFiles/spotDif.offers.promoLink";
 import { PAYMENT_TYPE_ENUM } from "../../utils/Enums/paymentType.enum";
-import { fully_signup_with_credits } from "../../utils/webhookUrls/fully_signup_with_credits";
+import { fully_signup_with_credits, userData } from "../../utils/webhookUrls/fully_signup_with_credits";
 // import { managePaymentsByPaymentMethods } from "../../utils/payment";
 // import { managePaymentsByPaymentMethods } from "../../utils/payment";
 
@@ -767,6 +768,8 @@ export class CardDetailsControllers {
                 userId?.businessDetailsId
               );
               fully_signup_with_credits(userId?.id,cardDetails?.id)
+              const data=await userData(userId?.id,cardDetails?.id)
+              send_email_for_fully_signup_to_admin(data)
               const message = {
                 firstName: userId?.firstName,
                 amount: parseInt(input.data.amount) / 100,
