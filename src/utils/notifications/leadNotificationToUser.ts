@@ -9,7 +9,7 @@ export const notify = (send_to: String, lead: Record<string, string>) => {
     client.messages
       .create({
         body: `You have a new lead:
-         Name:${lead?.name}
+         Name: ${lead?.name}
          Email: ${lead?.email}
          Phone: ${lead?.phoneNumber}
          Get in touch as soon as possible.`,
