@@ -56,7 +56,7 @@ const UserSchema = new Schema(
     isXeroCustomer: {
       type: Boolean,
       required: false,
-      default:false
+      default: false,
     },
     xeroContactId: {
       type: String,
@@ -115,7 +115,7 @@ const UserSchema = new Schema(
       ref: "User",
       default: null,
     },
-    userServiceId:{
+    userServiceId: {
       type: Types.ObjectId,
       ref: "UserService",
       default: null,
@@ -150,18 +150,18 @@ const UserSchema = new Schema(
     ryftClientId: {
       type: String,
     },
-    premiumUser:{
-      type:String,
-      default:false
+    premiumUser: {
+      type: String,
+      default: false,
     },
-    promoLinkId:{
+    promoLinkId: {
       type: Types.ObjectId,
       ref: "FreeCreditsLink",
       default: null,
     },
-    isLeadReceived:{
-      type:Boolean,
-      default:false
+    isLeadReceived: {
+      type: Boolean,
+      default: false,
     },
     promoCodeUsed: {
       type: Boolean,
@@ -171,17 +171,21 @@ const UserSchema = new Schema(
       type: Number,
       required: false,
     },
-    triggerAmount:{
-      type:Number,  
+    triggerAmount: {
+      type: Number,
     },
-    isSmsNotificationActive:{
+    isSmsNotificationActive: {
       type: Boolean,
       default: true,
     },
-    smsPhoneNumber:{
-      type:String,
-      default:""
-    }
+    smsPhoneNumber: {
+      type: String,
+      default: "",
+    },
+    isSignUpCompleteWithCredit: {
+      type: Boolean,
+      default: false,
+    },
   },
   { timestamps: true }
 );

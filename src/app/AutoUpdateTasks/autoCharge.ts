@@ -316,7 +316,6 @@ const autoTopUp = async (
     paymentSessionId: paymentMethod?.paymentSessionID,
     paymentMethodId: paymentMethod?.paymentMethod,
   };
-  console.log("params",params)
   const success: any = await chargeUser(params);
 
   if (success) {

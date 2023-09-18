@@ -61,7 +61,7 @@ class AuthController {
         .json({ error: { message: "VALIDATIONS_ERROR", info: errorsInfo } });
     }
     try {
-      const user = await User.findOne({ email: input.email, isDeleted:false });
+      const user = await User.findOne({ email: input.email, isDeleted:false, role:RolesEnum.USER });
       if (!user) {
         const salt = genSaltSync(10);
         const hashPassword = hashSync(input.password, salt);
@@ -95,7 +95,7 @@ class AuthController {
           lastName: input.lastName,
           email: input.email,
           phoneNumber: input.phoneNumber,
-          // smsPhoneNumber: input.phoneNumber,
+          smsPhoneNumber: input.phoneNumber,
           password: hashPassword,
           role: RolesEnum.USER,
           // leadCost: adminSettings?.defaultLeadAmount,
