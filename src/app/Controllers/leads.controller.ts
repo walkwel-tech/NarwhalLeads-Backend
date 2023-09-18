@@ -367,9 +367,9 @@ if(!industry){
 
 if(user.isSmsNotificationActive){
   const dataToSent={
-    name:input.firstName+ " " +input.lastName,
+    name:input.firstname+ " " +input.lastname,
     email:input.email,
-    phoneNumber:input.phoneNumber
+    phoneNumber:input.phone1
   }
   notify(user.smsPhoneNumber, dataToSent)
 }
@@ -446,9 +446,9 @@ if(user.isSmsNotificationActive){
       });
       const message: any = {
         userName: user.firstName,
-        firstName: input.firstName,
-        lastName: input.lastName,
-        phone: input.phone,
+        firstName: input.firstname,
+        lastName: input.lastname,
+        phone: input.phone1,
         email: input.email,
       };
       send_email_for_new_lead(user.email, message);
