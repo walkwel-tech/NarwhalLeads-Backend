@@ -825,7 +825,78 @@ export function send_email_for_payment_success_to_admin(message: any) {
       cardHolderName: message?.cardHolderName,
       businessName:message?.businessName
     },
+
   };
+  if (checkAccess()) {
+    sgMail
+      .send(msg)
+      .then(() => {
+        console.log("Email sent");
+        const params = {
+          email: "leads@nmg.group",
+          title: "PAYMENT_SUCCESS_TO_ADMIN",
+          templateId: TEMPLATES_ID.PAYMENT_SUCCESS_TO_ADMIN,
+        };
+        saveNotifications(params);
+      })
+      .catch((error: any) => {
+        console.error(error);
+      });
+  } else {
+    console.log("Emails access only on production");
+  }
+}
+
+export function send_email_for_fully_signup_to_admin(message: any) {
+  const msg = {
+    to: "leads@nmg.group", // Change to your recipient
+    // to: "radhika.walkweltech@gmail.com",
+    from: {
+      name: process.env.VERIFIED_SENDER_ON_SENDGRID_FROM_NAME,
+      email: process.env.VERIFIED_SENDER_ON_SENDGRID,
+    },
+    // Change to your verified sender
+    trackingSettings: {
+      clickTracking: {
+        enable: false,
+        enableText: false,
+      },
+      openTracking: {
+        enable: false,
+      },
+    },
+    // html: "<strong>and easy to do anywhere, even with Node.js</strong>",
+    // templateId: "d-69dcead271404a1d8a90aab2416bdc42",
+    templateId: "d-90a17909d72a45089b16d690f3d666d9",
+    dynamic_template_data: {
+      firstName: message?.firstName,
+      businessName:message?.businessName,
+      lastName: message.lastName,
+      email: message.email,
+      phoneNumber: message.phoneNumber,
+      buyerId: message.buyerId,
+      daily: message?.daily,
+      leadSchedule: message?.leadSchedule,
+      postCodeTargettingList: message?.postCodeTargettingList,
+      businessIndustry: message?.businessIndustry,
+      businessDescription: message?.businessDescription,
+      businessLogo: `${process.env.APP_URL}${message?.businessLogo}`,
+      address1: message?.address1,
+      businessSalesNumber: message?.businessSalesNumber,
+      businessAddress: message?.businessAddress,
+      businessCity: message?.businessCity,
+      businessPostCode: message?.businessPostCode,
+      businessOpeningHours: message?.businessOpeningHours,
+      financeOffers: message?.financeOffers,
+      prices: message?.prices,
+      accreditations: message?.accreditations,
+      avgInstallTime: message?.avgInstallTime,
+      trustpilotReviews: message?.trustpilotReviews,
+      criteria: message?.criteria,
+      leadCost:message?.leadCost
+    },
+  };
+  console.log("messagessss",message)
   if (checkAccess()) {
     sgMail
       .send(msg)
