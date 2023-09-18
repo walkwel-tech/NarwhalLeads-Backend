@@ -648,6 +648,14 @@ export class CardDetailsControllers {
 
     const cardDetailsExist = await CardDetails.findById(card?.cardId);
     let originalAmount = parseInt(input.data.amount) / 100 / (1 + VAT / 100);
+    let isFreeCredited:boolean;
+    const txn:any = await Transaction.find({userId:userId?.id,title:transactionTitle.CREDITS_ADDED, isCredited:true,status:PAYMENT_STATUS.CAPTURED})
+    if(txn || txn?.length>0){
+      isFreeCredited=true
+    }
+    else{
+      isFreeCredited=false
+    }
     if (userId) {
       if (input.eventType == "PaymentSession.declined") {
         userId = await User.findById(userId?.id);
@@ -709,7 +717,7 @@ export class CardDetailsControllers {
           !userId.promoCodeUsed &&
           userId?.promoLinkId &&
           userId.premiumUser == PROMO_LINK.PREMIUM_USER_TOP_UP &&
-          originalAmount >= promoLink?.topUpAmount * parseInt(userId?.leadCost)
+          originalAmount >= promoLink?.topUpAmount * parseInt(userId?.leadCost) && !isFreeCredited
         ) {
           params.freeCredits =
             promoLink?.freeCredits * parseInt(userId?.leadCost);
@@ -718,7 +726,7 @@ export class CardDetailsControllers {
           promoLink?.spotDiffPremiumPlan &&
           originalAmount >=
             promoLink?.topUpAmount * parseInt(userId?.leadCost) &&
-          userId.promoCodeUsed
+          userId.promoCodeUsed && !isFreeCredited
         ) {
           params.freeCredits =
             promoLink?.freeCredits * parseInt(userId?.leadCost);
@@ -727,7 +735,7 @@ export class CardDetailsControllers {
         else if (
           !userId.promoCodeUsed &&
           originalAmount >=
-            PREMIUM_PROMOLINK.TOP_UP * parseInt(userId?.leadCost)
+            PREMIUM_PROMOLINK.TOP_UP * parseInt(userId?.leadCost) && !isFreeCredited
         ) {
           params.freeCredits =
             PREMIUM_PROMOLINK.FREE_CREDITS * parseInt(userId?.leadCost);

@@ -433,6 +433,7 @@ export class UsersControllers {
   static indexName = async (req: Request, res: Response): Promise<Response> => {
     try {
       const business=await User.aggregate([
+        {$match:{isDeleted:false,role:RolesEnum.USER}},
         {
           $lookup: {
             from: "businessdetails",
