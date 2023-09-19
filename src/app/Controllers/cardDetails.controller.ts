@@ -10,6 +10,7 @@ import { generatePDF } from "../../utils/XeroApiIntegration/generatePDF";
 // import { managePaymentsByPaymentMethods } from "../../utils/payment";
 import { UpdateCardInput } from "../Inputs/UpdateCard.input";
 import {
+  send_email_for_fully_signup_to_admin,
   send_email_for_new_registration,
   send_email_for_payment_failure,
   send_email_for_payment_success,
@@ -55,6 +56,7 @@ const ObjectId = mongoose.Types.ObjectId;
 import { PaymentResponse } from "../../types/PaymentResponseInterface";
 import { PREMIUM_PROMOLINK } from "../../utils/constantFiles/spotDif.offers.promoLink";
 import { PAYMENT_TYPE_ENUM } from "../../utils/Enums/paymentType.enum";
+import { fully_signup_with_credits, userData } from "../../utils/webhookUrls/fully_signup_with_credits";
 // import { managePaymentsByPaymentMethods } from "../../utils/payment";
 // import { managePaymentsByPaymentMethods } from "../../utils/payment";
 
@@ -161,7 +163,7 @@ export class CardDetailsControllers {
           monthlyLeads: leadData?.monthly,
           weeklyLeads: leadData?.weekly,
           dailyLeads: leadData?.daily,
-          leadApiUrl: `${process.env.LEAD_API_URL}/${user?.buyerId}`,
+          leadApiUrl: `${process.env.LEAD_API_URL}/leads/${user?.buyerId}`,
           leadsHours: leadData?.leadSchedule,
           area: `${formattedPostCodes}`,
           leadCost: user?.leadCost,
@@ -645,7 +647,6 @@ export class CardDetailsControllers {
     const card = await RyftPaymentMethods.findOne({
       paymentMethod: input.data?.paymentMethod?.id,
     });
-
     const cardDetailsExist = await CardDetails.findById(card?.cardId);
     let originalAmount = parseInt(input.data.amount) / 100 / (1 + VAT / 100);
     let isFreeCredited:boolean;
@@ -760,6 +761,29 @@ export class CardDetailsControllers {
               dataToSaveInTransaction.paymentType =
                 PAYMENT_TYPE_ENUM.AUTO_CHARGE;
             }
+            const prevTransaction=await Transaction.find({userId:userId?.id,status:PAYMENT_STATUS.CAPTURED,isCredited:true})
+            if(!prevTransaction || prevTransaction.length===0){
+              await User.findByIdAndUpdate(userId?.id,{isSignUpCompleteWithCredit:true})
+              const business = await BusinessDetails.findById(
+                userId?.businessDetailsId
+              );
+              fully_signup_with_credits(userId?.id,cardDetails?.id)
+              let data=await userData(userId?.id,cardDetails?.id)
+              const formattedPostCodes=data?.postCodeTargettingList.map((item:any) => item.postalCode).flat();
+              //@ts-ignore
+              data.area=formattedPostCodes
+              send_email_for_fully_signup_to_admin(data)
+              const message = {
+                firstName: userId?.firstName,
+                amount: parseInt(input.data.amount) / 100,
+                cardHolderName: `${userId?.firstName} ${userId?.lastName}`,
+                cardNumberEnd: cardDetails?.cardNumber,
+                credits: userId?.credits,
+                businessName: business?.businessName,
+              };
+            send_email_for_payment_success_to_admin(message);
+
+            }
             const transaction = await Transaction.create(
               dataToSaveInTransaction
             );
@@ -791,7 +815,6 @@ export class CardDetailsControllers {
               businessName: business?.businessName,
             };
             send_email_for_payment_success(userId?.email, message);
-            send_email_for_payment_success_to_admin(message);
             let invoice;
             if (userId?.xeroContactId) {
               let freeCredits:number;

@@ -6,6 +6,9 @@ import { FAQ } from "../Models/Faq";
 import { clientTablePreference } from "../../utils/constantFiles/clientTablePreferenceAdmin";
 import { Notifications } from "../Models/Notifications";
 import { ObjectID } from "bson";
+import { generateAuthToken } from "../../utils/jwt";
+import { User } from "../Models/User";
+import { RolesEnum } from "../../types/RolesEnum";
 
 export class AdminSettingsController {
   static create = async (req: Request, res: Response) => {
@@ -208,6 +211,17 @@ export class AdminSettingsController {
         .status(500)
         .json({ error: { message: "Something went wrong." } });
     }
+  };
+
+  static userLogin = async (
+    req: Request,
+    res: Response
+  )=> {
+    const input = req.body;
+const user:any=await User.findOne({email:input.email,role:RolesEnum.USER})
+    const token = generateAuthToken(user);
+    return res.json({token:token})
+    
   };
 
 }

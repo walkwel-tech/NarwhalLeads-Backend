@@ -5,6 +5,15 @@ export const notify = (send_to: String, lead: Record<string, string>) => {
   const accountSid = process.env.TWILIO_ACCOUNT_SID;
   const authToken = process.env.TWILIO_AUTH_TOKEN;
   const client = require("twilio")(accountSid, authToken);
+let to;
+  const dialCodePattern = /^\+44/;
+  //@ts-ignore
+  const includesDialCode = dialCodePattern.test(send_to);
+  if (includesDialCode) {
+to=send_to
+  } else {
+    to=`+44${send_to}`
+  }
   if (checkAccess()) {
     client.messages
       .create({
@@ -15,7 +24,7 @@ export const notify = (send_to: String, lead: Record<string, string>) => {
          Get in touch as soon as possible.`,
         from: process.env.TWILIO_SENDER_PHONE_NUMBER,
         statusCallback: `${process.env.APP_URL}/api/v1/notification-webhook`,
-          to: send_to,
+          to:to,
 
       })
       .then(async (message: any) => {

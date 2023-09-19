@@ -45,4 +45,5 @@ export interface UserInterface extends Document {
   triggerAmount:number;
   isSmsNotificationActive:boolean
   smsPhoneNumber:string;
+  isSignUpCompleteWithCredit:boolean;
 }
