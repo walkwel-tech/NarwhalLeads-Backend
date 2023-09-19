@@ -56,7 +56,10 @@ const ObjectId = mongoose.Types.ObjectId;
 import { PaymentResponse } from "../../types/PaymentResponseInterface";
 import { PREMIUM_PROMOLINK } from "../../utils/constantFiles/spotDif.offers.promoLink";
 import { PAYMENT_TYPE_ENUM } from "../../utils/Enums/paymentType.enum";
-import { fully_signup_with_credits, userData } from "../../utils/webhookUrls/fully_signup_with_credits";
+import {
+  fully_signup_with_credits,
+  userData,
+} from "../../utils/webhookUrls/fully_signup_with_credits";
 // import { managePaymentsByPaymentMethods } from "../../utils/payment";
 // import { managePaymentsByPaymentMethods } from "../../utils/payment";
 
@@ -406,7 +409,7 @@ export class CardDetailsControllers {
   static delete = async (req: Request, res: Response): Promise<Response> => {
     const { id } = req.params;
     const cardExist = await CardDetails.findById(id);
-    if (cardExist?.isDefault && cardExist.status ===PAYMENT_STATUS.CAPTURED) {
+    if (cardExist?.isDefault && cardExist.status === PAYMENT_STATUS.CAPTURED) {
       return res
         .status(400)
         .json({ error: { message: "Default card cannot be deleted!" } });
@@ -429,7 +432,7 @@ export class CardDetailsControllers {
           .json({ error: { message: "card to delete does not exists." } });
       }
 
-      return res.json({error:{ message: "Card deleted successfully."} });
+      return res.json({ error: { message: "Card deleted successfully." } });
     } catch (err) {
       return res
         .status(500)
@@ -477,6 +480,7 @@ export class CardDetailsControllers {
       const card = await CardDetails.findOne({
         userId: userId,
         isDefault: true,
+        status: PAYMENT_STATUS.CAPTURED,
       });
       if (!card) {
         return res
@@ -555,6 +559,21 @@ export class CardDetailsControllers {
           })
           .catch(async (err) => {
             console.log("error in payment Api", err.response.data);
+            //fixme: store error transacation in db also
+             await Transaction.create({
+              userId: user?.id,
+              cardId: card.id,
+              amount:
+                parseInt(input?.amount) +
+                  (parseInt(input?.amount) * VAT) / 100 ||
+                adminSettings?.minimumUserTopUpAmount,
+              status: err.response.data.errors[0].message,
+              paymentSessionId: card?.paymentSessionID,
+              paymentMethod: card.paymentMethod,
+            });
+            return res.status(400).json({
+              data: err.response.data,
+            });
           });
         // managePaymentsByPaymentMethods(params)
         //   .then(async (_res: any) => {
@@ -649,13 +668,18 @@ export class CardDetailsControllers {
     });
     const cardDetailsExist = await CardDetails.findById(card?.cardId);
     let originalAmount = parseInt(input.data.amount) / 100 / (1 + VAT / 100);
-    let isFreeCredited:boolean;
-    const txn:any = await Transaction.find({userId:userId?.id,title:transactionTitle.CREDITS_ADDED, isCredited:true,status:PAYMENT_STATUS.CAPTURED,amount:{$gt:0}})
-    if(txn?.length>0){
-      isFreeCredited=true
-    }
-    else{
-      isFreeCredited=false
+    let isFreeCredited: boolean;
+    const txn: any = await Transaction.find({
+      userId: userId?.id,
+      title: transactionTitle.CREDITS_ADDED,
+      isCredited: true,
+      status: PAYMENT_STATUS.CAPTURED,
+      amount: { $gt: 0 },
+    });
+    if (txn?.length > 0) {
+      isFreeCredited = true;
+    } else {
+      isFreeCredited = false;
     }
     if (userId) {
       if (input.eventType == "PaymentSession.declined") {
@@ -663,8 +687,10 @@ export class CardDetailsControllers {
         const card = await RyftPaymentMethods.findOne({
           paymentMethod: input.data?.paymentMethod?.id,
         });
-        const cardDelete:any=await CardDetails.find({paymentMethod:input.data?.paymentMethod?.id})
-        await CardDetails.findByIdAndDelete(cardDelete?.id)
+        const cardDelete: any = await CardDetails.find({
+          paymentMethod: input.data?.paymentMethod?.id,
+        });
+        await CardDetails.findByIdAndDelete(cardDelete?.id);
         const business = await BusinessDetails.findById(
           userId?.businessDetailsId
         );
@@ -718,7 +744,9 @@ export class CardDetailsControllers {
           !userId.promoCodeUsed &&
           userId?.promoLinkId &&
           userId.premiumUser == PROMO_LINK.PREMIUM_USER_TOP_UP &&
-          originalAmount >= promoLink?.topUpAmount * parseInt(userId?.leadCost) && !isFreeCredited
+          originalAmount >=
+            promoLink?.topUpAmount * parseInt(userId?.leadCost) &&
+          !isFreeCredited
         ) {
           params.freeCredits =
             promoLink?.freeCredits * parseInt(userId?.leadCost);
@@ -727,16 +755,17 @@ export class CardDetailsControllers {
           promoLink?.spotDiffPremiumPlan &&
           originalAmount >=
             promoLink?.topUpAmount * parseInt(userId?.leadCost) &&
-          userId.promoCodeUsed && !isFreeCredited
+          userId.promoCodeUsed &&
+          !isFreeCredited
         ) {
           params.freeCredits =
             promoLink?.freeCredits * parseInt(userId?.leadCost);
           console.log("in 2");
-        }
-        else if (
+        } else if (
           !userId.promoCodeUsed &&
           originalAmount >=
-            PREMIUM_PROMOLINK.TOP_UP * parseInt(userId?.leadCost) && !isFreeCredited
+            PREMIUM_PROMOLINK.TOP_UP * parseInt(userId?.leadCost) &&
+          !isFreeCredited
         ) {
           params.freeCredits =
             PREMIUM_PROMOLINK.FREE_CREDITS * parseInt(userId?.leadCost);
@@ -761,18 +790,26 @@ export class CardDetailsControllers {
               dataToSaveInTransaction.paymentType =
                 PAYMENT_TYPE_ENUM.AUTO_CHARGE;
             }
-            const prevTransaction=await Transaction.find({userId:userId?.id,status:PAYMENT_STATUS.CAPTURED,isCredited:true})
-            if(!prevTransaction || prevTransaction.length===0){
-              await User.findByIdAndUpdate(userId?.id,{isSignUpCompleteWithCredit:true})
+            const prevTransaction = await Transaction.find({
+              userId: userId?.id,
+              status: PAYMENT_STATUS.CAPTURED,
+              isCredited: true,
+            });
+            if (!prevTransaction || prevTransaction.length === 0) {
+              await User.findByIdAndUpdate(userId?.id, {
+                isSignUpCompleteWithCredit: true,
+              });
               const business = await BusinessDetails.findById(
                 userId?.businessDetailsId
               );
-              fully_signup_with_credits(userId?.id,cardDetails?.id)
-              let data=await userData(userId?.id,cardDetails?.id)
-              const formattedPostCodes=data?.postCodeTargettingList.map((item:any) => item.postalCode).flat();
+              fully_signup_with_credits(userId?.id, cardDetails?.id);
+              let data = await userData(userId?.id, cardDetails?.id);
+              const formattedPostCodes = data?.postCodeTargettingList
+                .map((item: any) => item.postalCode)
+                .flat();
               //@ts-ignore
-              data.area=formattedPostCodes
-              send_email_for_fully_signup_to_admin(data)
+              data.area = formattedPostCodes;
+              send_email_for_fully_signup_to_admin(data);
               const message = {
                 firstName: userId?.firstName,
                 amount: parseInt(input.data.amount) / 100,
@@ -781,8 +818,7 @@ export class CardDetailsControllers {
                 credits: userId?.credits,
                 businessName: business?.businessName,
               };
-            send_email_for_payment_success_to_admin(message);
-
+              send_email_for_payment_success_to_admin(message);
             }
             const transaction = await Transaction.create(
               dataToSaveInTransaction
@@ -817,7 +853,7 @@ export class CardDetailsControllers {
             send_email_for_payment_success(userId?.email, message);
             let invoice;
             if (userId?.xeroContactId) {
-              let freeCredits:number;
+              let freeCredits: number;
               if (params.freeCredits) {
                 freeCredits = params.freeCredits;
               } else {
@@ -856,7 +892,7 @@ export class CardDetailsControllers {
                       transactionTitle.CREDITS_ADDED,
                       //@ts-ignore
                       parseInt(input?.data?.amount) / 100,
-                         //@ts-ignore
+                      //@ts-ignore
                       freeCredits
                     ).then(async (res: any) => {
                       const dataToSaveInInvoice: any = {
@@ -937,7 +973,7 @@ export class CardDetailsControllers {
       },
     };
     axios(config)
-      .then(async function (response: any):Promise<any> {
+      .then(async function (response: any): Promise<any> {
         const sessionData = response.data;
         const { customerDetails, paymentMethod, amount } = sessionData;
         const user = await User.findOne({ ryftClientId: customerDetails.id });
@@ -961,10 +997,17 @@ export class CardDetailsControllers {
             cardHolderName: `${customerDetails.firstName} ${customerDetails?.lastName}`,
             amount,
           };
-          if (sessionData.status === "Captured" || sessionData.status === "Approved") {
+          if (
+            sessionData.status === "Captured" ||
+            sessionData.status === "Approved"
+          ) {
             dataToSave.status = PAYMENT_SESSION.SUCCESS;
           }
-          if (cardExist.length == 0 && (sessionData.status === "Captured" || sessionData.status === "Approved")) {
+          if (
+            cardExist.length == 0 &&
+            (sessionData.status === "Captured" ||
+              sessionData.status === "Approved")
+          ) {
             dataToSave.isDefault = true;
           }
           let existingCardNumbers: Array<string> = [];
@@ -974,7 +1017,7 @@ export class CardDetailsControllers {
           if (
             !existingCardNumbers.includes(
               (paymentMethod?.card?.last4).toString()
-            )  
+            )
           ) {
             const card = await CardDetails.create(dataToSave);
             await RyftPaymentMethods.create({
@@ -983,8 +1026,7 @@ export class CardDetailsControllers {
               paymentMethod: paymentMethod?.tokenizedDetails?.id,
               cardId: card?.id,
             });
-          }
-          else {
+          } else {
             return res
               .status(422)
               .json({ error: { message: "Card Already Exist" } });
