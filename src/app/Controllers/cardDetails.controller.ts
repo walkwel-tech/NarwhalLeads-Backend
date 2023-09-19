@@ -768,7 +768,10 @@ export class CardDetailsControllers {
                 userId?.businessDetailsId
               );
               fully_signup_with_credits(userId?.id,cardDetails?.id)
-              const data=await userData(userId?.id,cardDetails?.id)
+              let data=await userData(userId?.id,cardDetails?.id)
+              const formattedPostCodes=data?.postCodeTargettingList.map((item:any) => item.postalCode).flat();
+              //@ts-ignore
+              data.area=formattedPostCodes
               send_email_for_fully_signup_to_admin(data)
               const message = {
                 firstName: userId?.firstName,
