@@ -192,7 +192,7 @@ export class invitedUsersController {
     const input = _req.body;
 
     try {
-   const data=await SubscriberList.find({email:input.email})
+   const data=await SubscriberList.find({email:input.email, isDeleted:false})
    if(data.length>0){
     return res.status(400).json({error:{message:"Subscriber already exist"}})
    }
