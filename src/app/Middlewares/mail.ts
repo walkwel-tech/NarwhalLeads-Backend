@@ -893,10 +893,10 @@ export function send_email_for_fully_signup_to_admin(message: any) {
       avgInstallTime: message?.avgInstallTime,
       trustpilotReviews: message?.trustpilotReviews,
       criteria: message?.criteria,
-      leadCost:message?.leadCost
+      leadCost:message?.leadCost,
+      area: message?.area,
     },
   };
-  console.log("messagessss",message)
   if (checkAccess()) {
     sgMail
       .send(msg)
