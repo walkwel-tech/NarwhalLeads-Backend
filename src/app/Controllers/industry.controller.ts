@@ -4,10 +4,30 @@ import { order } from "../../utils/constantFiles/businessIndustry.orderList";
 import { BuisnessIndustries } from "../Models/BuisnessIndustries";
 import { CustomColumnNames } from "../Models/CustomColumns.leads";
 import { User } from "../Models/User";
+import { RolesEnum } from "../../types/RolesEnum";
+import { IndustryInput } from "../Inputs/Industry.input";
+import { validate } from "class-validator";
+import { ValidationErrorResponse } from "../../types/ValidationErrorResponse";
 const LIMIT = 10;
 export class IndustryController {
   static create = async (req: Request, res: Response) => {
     const input = req.body;
+    const Industry=new IndustryInput()
+    Industry.industry=input.industry
+    Industry.leadCost=input.leadCost
+
+    const errors = await validate(Industry);
+
+    if (errors.length) {
+      const errorsInfo: ValidationErrorResponse[] = errors.map((error) => ({
+        property: error.property,
+        constraints: error.constraints,
+      }));
+
+      return res
+        .status(400)
+        .json({ error: { message: "VALIDATIONS_ERROR", info: errorsInfo } });
+    }
     let dataToSave: any = {
       industry: input.industry,
       leadCost: input.leadCost,
@@ -169,7 +189,7 @@ export class IndustryController {
 
   static delete = async (req: Request, res: Response) => {
     try {
-      const users = await User.find({ businessIndustryId: req.params.id });
+      const users = await User.find({ businessIndustryId: req.params.id, isDeleted:false, role:RolesEnum.USER });
       if(users.length>0){
         return res
         .status(400)

@@ -490,7 +490,7 @@ else{
       delete input.credits;
     }
     // @ts-ignore
-    if ((input.email || input.email =="")) {
+    if (req?.user.role===RolesEnum.USER && (input.email || input.email =="")) {
       // @ts-ignore
       input.email = req.user?.email
       // return res
