@@ -552,7 +552,7 @@ export class CardDetailsControllers {
               response.status = 200;
               response.sessionID = _res.data?.id;
             }
-
+           
             return res.json({
               data: response,
             });
@@ -560,17 +560,6 @@ export class CardDetailsControllers {
           .catch(async (err) => {
             console.log("error in payment Api", err.response.data);
             //fixme: store error transacation in db also
-             await Transaction.create({
-              userId: user?.id,
-              cardId: card.id,
-              amount:
-                parseInt(input?.amount) +
-                  (parseInt(input?.amount) * VAT) / 100 ||
-                adminSettings?.minimumUserTopUpAmount,
-              status: err.response.data.errors[0].message,
-              paymentSessionId: card?.paymentSessionID,
-              paymentMethod: card.paymentMethod,
-            });
             return res.status(400).json({
               data: err.response.data,
             });
@@ -643,10 +632,9 @@ export class CardDetailsControllers {
           response.data.customerDetails.id
         );
         sessionObject.paymentMethods = paymentMethods.data;
-
         return res.json({ data: sessionObject });
       })
-      .catch((error) => {
+      .catch(async(error) => {
         return res
           .status(400)
           .json({ data: { message: "Error in creating session", error } });
@@ -891,7 +879,7 @@ export class CardDetailsControllers {
                       userId?.xeroContactId,
                       transactionTitle.CREDITS_ADDED,
                       //@ts-ignore
-                      parseInt(input?.data?.amount) / 100,
+                      originalAmount,
                       //@ts-ignore
                       freeCredits
                     ).then(async (res: any) => {
