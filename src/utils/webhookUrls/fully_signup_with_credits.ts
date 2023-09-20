@@ -39,7 +39,7 @@ export const userData = async (userId: String, cardId: String) => {
     .populate("userLeadsDetailsId")
     .populate("userServiceId");
   const cards = await CardDetails.findById(cardId);
-  const data = {
+  let data:any = {
     firstName: user?.firstName,
     lastName: user?.lastName,
     email: user?.email,
@@ -74,7 +74,6 @@ export const userData = async (userId: String, cardId: String) => {
     businessIndustry: user?.businessDetailsId?.businessIndustry,
     businessDescription: user?.businessDetailsId?.businessDescription,
     businessName: user?.businessDetailsId?.businessName,
-    businessLogo: `${process.env.APP_URL}${user?.businessDetailsId?.businessLogo}`,
     address1: user?.businessDetailsId?.address1,
     address2: user?.businessDetailsId?.address2,
     businessSalesNumber: user?.businessDetailsId?.businessSalesNumber,
@@ -95,7 +94,11 @@ export const userData = async (userId: String, cardId: String) => {
     paymentMethod: cards?.paymentMethod,
     paymentSessionID: cards?.paymentSessionID,
     status: cards?.status,
+    leadUrl:`${process.env.APP_URL}/api/v1/leads/${user?.buyerId}`
   };
+  if(user?.businessDetailsId?.businessLogo){
+    data.businessLogo = `${process.env.APP_URL}${user?.businessDetailsId?.businessLogo}`
+  }
 
   return data;
 };
