@@ -58,6 +58,9 @@ const TransactionSchema = new Schema(
       },
       paymentMethod:{
         type:String
+      },
+      notes:{
+        type:String
       }
     },
     { timestamps: true }
