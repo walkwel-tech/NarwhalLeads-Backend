@@ -4,6 +4,9 @@ import { CardDetails } from "../../app/Models/CardDetails";
 import { RyftPaymentMethods } from "../../app/Models/RyftPaymentMethods";
 import { User } from "../../app/Models/User";
 import { PAYMENT_STATUS } from "../Enums/payment.status";
+import { Transaction } from "../../app/Models/Transaction";
+import { TRANSACTION_STATUS } from "../Enums/transaction.status.enum";
+import { transactionTitle } from "../Enums/transaction.title.enum";
 
 const POST = "post";
 
@@ -237,7 +240,7 @@ export const getPaymentMethodByPaymentSessionID = (
 
 
 export const createSessionInitial = (params: any) => {
-  return new Promise((resolve, reject) => {
+  return new Promise(async(resolve, reject) => {
     let body = {
       //@ts-ignore
       amount: parseInt(params?.fixedAmount * 100) || 0,
@@ -253,7 +256,8 @@ export const createSessionInitial = (params: any) => {
     if(params?.fixedAmount && params.fixedAmount >0){
       body.verifyAccount=false      
     }
-     
+    const user=await User.findOne({email:params.email})
+    const card=await CardDetails.findOne({paymentMethod:params.paymentMethodId})
     const data = JSON.stringify(body);    
     const config = {
       method: POST,
@@ -267,10 +271,31 @@ export const createSessionInitial = (params: any) => {
       data: data,
     };
     axios(config)
-      .then((response) => {
+      .then(async(response) => {
+        await Transaction.create({
+          userId: user?.id,
+          cardId: card?.id,
+          amount:
+          (params?.fixedAmount * 100) || 0,
+          status: TRANSACTION_STATUS.SUCCESS,
+          paymentSessionId: card?.paymentSessionID,
+          paymentMethod: card?.paymentMethod,
+          title:transactionTitle.SESSION_CREATED
+        });
         resolve(response);
       })
-      .catch((err) => {
+      .catch(async(err) => {
+        await Transaction.create({
+          userId: user?.id,
+          cardId: card?.id,
+          amount:
+          (params?.fixedAmount * 100) || 0,
+          status: TRANSACTION_STATUS.FAIL,
+          paymentSessionId: card?.paymentSessionID,
+          paymentMethod: card?.paymentMethod,
+          title:transactionTitle.SESSION_CREATED,
+          notes:err.response.data.errors[0].message,
+        });
         reject(err);
         // console.log("Create session error", err.response.data);
       });
@@ -330,9 +355,9 @@ export const attemptToPaymentInitial = ( params: any) => {
   });
 };
 
-export const createSessionUnScheduledPayment= (params: any) => {
+export const createSessionUnScheduledPayment=async (params: any) => {
   params.fixedAmount=parseInt(params?.fixedAmount)
-  return new Promise((resolve, reject) => {
+  return new Promise(async(resolve, reject) => {
     let body = {
       amount: (params?.fixedAmount * 100) || 0,
       currency: process.env.CURRENCY,
@@ -350,7 +375,8 @@ export const createSessionUnScheduledPayment= (params: any) => {
           }
       }
     }
-     
+     const user=await User.findOne({email:params.email})
+     const card=await CardDetails.findOne({paymentMethod:params.paymentMethodId})
     const data = JSON.stringify(body);    
     const config = {
       method: POST,
@@ -364,12 +390,33 @@ export const createSessionUnScheduledPayment= (params: any) => {
       data: data,
     };
     axios(config)
-      .then((response) => {
+      .then(async(response) => {
         console.log("data here")
+        await Transaction.create({
+          userId: user?.id,
+          cardId: card?.id,
+          amount:
+          (params?.fixedAmount * 100) || 0,
+          status: TRANSACTION_STATUS.SUCCESS,
+          paymentSessionId: card?.paymentSessionID,
+          paymentMethod: card?.paymentMethod,
+          title:transactionTitle.SESSION_CREATED
+        });
         resolve(response);
       })
-      .catch((err) => {
+      .catch(async(err) => {
         console.log("Create session err/or", err.response.data);
+        await Transaction.create({
+          userId: user?.id,
+          cardId: card?.id,
+          amount:
+          (params?.fixedAmount * 100) || 0,
+          status: TRANSACTION_STATUS.FAIL,
+          paymentSessionId: card?.paymentSessionID,
+          paymentMethod: card?.paymentMethod,
+          title:transactionTitle.SESSION_CREATED,
+          notes:err.response.data.errors[0].message,
+        });
         reject(err);
       });
   });

@@ -16,4 +16,5 @@ export interface TransactionInterface extends Document {
   creditsLeft:number;
   paymentType:string;
   paymentMethod:string;
+  notes:string
 }
