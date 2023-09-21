@@ -30,9 +30,7 @@ import path from "path";
 import serviceRoutes from "./routes/userService.routes";
 import nonBillablesUsers from "./routes/nonBillableUsers.routes";
 import { notification_webhook } from "./utils/webhookUrls/notification_webhook";
-// import { generatePDF } from "./utils/XeroApiIntegration/generatePDF";
-// import { send_email_test } from "./app/Middlewares/test";
-// import {  dataCleaning } from "./dataCleaning";
+
 const swaggerDocument = require('../swagger.json'); // Replace with the path to your actual Swagger document
 const swaggerUi = require('swagger-ui-express');
 
@@ -83,10 +81,6 @@ export class Server {
     regsiterRoutes() {
         this.app.use(express.static("build"));
         this.app.use(express.static("public"));
-        // this.app.use((req, res, next) => {
-        //     console.log("---------------------")
-        //     res.sendFile(path.join(__dirname, "../build", "index.html"));
-        //   });
 
         this.app.use("/api/v1/auth", AuthRoutes);
         this.app.use("/api/v1/auth/business",BusinessDetailsRoutes)

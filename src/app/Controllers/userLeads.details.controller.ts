@@ -7,7 +7,7 @@ import { checkOnbOardingComplete } from "../../utils/Functions/Onboarding_comple
 import { ONBOARDING_KEYS } from "../../utils/constantFiles/OnBoarding.keys";
 import { UserLeadDetailsInput } from "../Inputs/user.leadDetails.input";
 import {
-  send_email_for_new_registration,
+  // send_email_for_new_registration,
   send_email_for_updated_details,
 } from "../Middlewares/mail";
 import { BusinessDetails } from "../Models/BusinessDetails";
@@ -18,6 +18,10 @@ import { PROMO_LINK } from "../../utils/Enums/promoLink.enum";
 import { addCreditsToBuyer } from "../../utils/payment/addBuyerCredit";
 import { UserService } from "../Models/UserService";
 import { business_details_submission } from "../../utils/webhookUrls/business_details_submission";
+import { ACTION } from "../../utils/Enums/actionType.enum";
+import { MODEL_ENUM } from "../../utils/Enums/model.enum";
+import { findModifiedFieldsForUserService, findUpdatedFields } from "../../utils/Functions/findModifiedColumns";
+import { ActivityLogs } from "../Models/ActivityLogs";
 
 export class UserLeadsController {
   static create = async (req: Request, res: Response) => {
@@ -118,38 +122,7 @@ export class UserLeadsController {
         const leadData = await UserLeadsDetails.findOne({ userId: user?._id });
         const businessDeatilsData = await BusinessDetails.findById(
           user?.businessDetailsId
-        );
-        const formattedPostCodes=leadData?.postCodeTargettingList.map((item:any) => item.postalCode).flat();
-const services=await UserService.findOne({userId:user.id})
-        const message = {
-          firstName: user?.firstName,
-          lastName: user?.lastName,
-          businessName: businessDeatilsData?.businessName,
-          phone: businessDeatilsData?.businessSalesNumber,
-          email: user?.email,
-          leadCost:user?.leadCost,
-          industry: businessDeatilsData?.businessIndustry,
-          address:
-            businessDeatilsData?.address1 + " " + businessDeatilsData?.address2,
-          city: businessDeatilsData?.businessCity,
-          country: businessDeatilsData?.businessCountry,
-          businessLogo: businessDeatilsData?.businessLogo,
-          openingHours:businessDeatilsData?.businessOpeningHours,
-          totalLeads: leadData?.total,
-          monthlyLeads: leadData?.monthly,
-          weeklyLeads: leadData?.weekly,
-          dailyLeads: leadData?.daily,
-          leadApiUrl:  `${process.env.LEAD_API_URL}/${user?.buyerId}`,
-          leadsHours:leadData?.leadSchedule,
-          area: `${formattedPostCodes}`,
-          financeOffers:services?.financeOffers,
-          prices:services?.prices,
-          accreditations:services?.accreditations,
-          avgInstallTime:services?.avgInstallTime,
-          criteria:services?.criteria,
-          trustpilotReviews:services?.trustpilotReviews
-        };
-        send_email_for_new_registration(message);
+        );     
         await User.findByIdAndUpdate(user.id, {
           registrationMailSentToAdmin: true,
         });
@@ -276,12 +249,18 @@ const services=await UserService.findOne({userId:user.id})
     req: Request,
     res: Response
   ): Promise<any> => {
-
+console.log("hetrtredteydtuet")
     const id = req.params.id;
     const input = req.body;
+    delete input._id
     try {
       const details = await UserLeadsDetails.findById(id);
+      const userForActivity=await UserLeadsDetails.findById(id," -_id -userId -createdAt -updatedAt").lean()
+
       const user: any = await User.findById(details?.userId);
+
+      const serviceDataForActivityLogs = await UserService.findOne({ userId: user?.id },"-_id -__v -userId -createdAt -deletedAt -updatedAt");
+
       if(input.zapierUrl){
         await UserLeadsDetails.findByIdAndUpdate(
           user?.userLeadsDetailsId,
@@ -301,6 +280,22 @@ const services=await UserService.findOne({userId:user.id})
           new: true,
         }
       );
+      const userAfterMod=await UserLeadsDetails.findById(id," -_id -userId -createdAt -updatedAt").lean()
+
+      const fields = findUpdatedFields(userForActivity, userAfterMod);
+      const userr=await User.findOne({userLeadsDetailsId:req.params.id})
+      const isEmpty = Object.keys(fields.updatedFields).length === 0;
+
+   if(!isEmpty) {  const activity={
+        //@ts-ignore
+        actionBy:req?.user?.role,
+        actionType:ACTION.UPDATING,
+        targetModel:MODEL_ENUM.USER_LEAD_DETAILS,
+        userEntity:userr?.id,
+        originalValues:fields.oldFields,
+        modifiedValues:fields.updatedFields
+      }
+      await ActivityLogs.create(activity)}
       const serviceData=await UserService.findOne({userId:user.id})
       const service = await UserService.findByIdAndUpdate(serviceData?.id,input,{new:true})
       if (input.daily) {
@@ -340,25 +335,23 @@ const services=await UserService.findOne({userId:user.id})
           leadCost:userData?.leadCost
         };
         send_email_for_updated_details(message);
-        // const messageToSendInBusinessSubmission = {
-        //   businessName: businessDeatilsData?.businessName,
-        //   phone: businessDeatilsData?.businessSalesNumber,
-        //   industry: businessDeatilsData?.businessIndustry,
-        //   address: businessDeatilsData?.address1 + " " + businessDeatilsData?.address2,
-        //   city: businessDeatilsData?.businessCity,
-        //   country: businessDeatilsData?.businessCountry,
-        //   // openingHours: formattedOpeningHours,
-        //   openingHours: businessDeatilsData?.businessOpeningHours,
-        //   logo: businessDeatilsData?.businessLogo,
-        //   financeOffers: service?.financeOffers,
-        //   prices: service?.prices,
-        //   accreditations: service?.accreditations,
-        //   avgInstallTime: service?.avgInstallTime,
-        //   criteria:JSON.stringify( service?.criteria),
-        //   dailyLeads: updatedDetails?.daily,
-        //   postCodes:updatedDetails?.postCodeTargettingList,
-        // };
-        // business_details_submission(messageToSendInBusinessSubmission); 
+        if(input.criteria){
+          const serviceData = await UserService.findOne({ userId: userData?.id },"-_id -userId -createdAt -deletedAt -__v -updatedAt");
+          const fields = findModifiedFieldsForUserService(serviceDataForActivityLogs, serviceData);
+          const isEmpty = Object.keys(fields.updatedFields).length === 0;
+          if(!isEmpty){const activity={
+            //@ts-ignore
+            actionBy:req?.user?.role,
+            actionType:ACTION.UPDATING,
+            targetModel:MODEL_ENUM.USER_SERVICE_DETAILS,
+            //@ts-ignore
+            userEntity:userr?.id,
+            originalValues:fields.oldFields,
+            modifiedValues:fields.updatedFields
+          }
+          await ActivityLogs.create(activity)}
+  
+        }
         return res.json({
           data: {
             message: "UserLeadsDetails updated successfully.",
@@ -373,7 +366,7 @@ const services=await UserService.findOne({userId:user.id})
     } catch (error) {
       return res
         .status(500)
-        .json({ error: { message: "Something went wrong." } });
+        .json({ error: { message: "Something went wrong.",error } });
     }
   };
 }

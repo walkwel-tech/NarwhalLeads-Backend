@@ -44,18 +44,14 @@ class AuthController {
     registerInput.email = input.email;
     registerInput.password = input.password;
     const errors = await validate(registerInput);
-    // let Object: any = {
-    //   register: [],
-    // };
+
     const adminSettings = await AdminSettings.findOne();
     if (errors.length) {
       const errorsInfo: ValidationErrorResponse[] = errors.map((error) => ({
         property: error.property,
         constraints: error.constraints,
       }));
-      // errorsInfo.map((i) => {
-      //   Object.register.push(i.property);
-      // });
+
       return res
         .status(400)
         .json({ error: { message: "VALIDATIONS_ERROR", info: errorsInfo } });
@@ -131,11 +127,8 @@ class AuthController {
             {
               key: ONBOARDING_KEYS.CARD_DETAILS,
               pendingFields: [
-                // "cardHolderName",
                 "cardNumber",
-                // "expiryMonth",
-                // "expiryYear",
-                // "cvc",
+ 
               ],
               dependencies: [],
             },
@@ -307,10 +300,7 @@ class AuthController {
           });
         }
         const token = generateAuthToken(user);
-        // const business = await BusinessDetails.findById(user.businessDetailsId);
-        // const promoLink: any = await FreeCreditsLink.findOne({
-        //   user: { $elemMatch: { userId: user._id } },
-        // });
+
         //@ts-ignore
         user.password = undefined;
         return res.json({
@@ -490,12 +480,6 @@ class AuthController {
     userInput.email = input.email;
     const user = await User.findOne({ email: input.email });
     const admin = await Admins.findOne({ email: input.email });
-
-    // if (user?.role == RolesEnum.SUPER_ADMIN) {
-    //   return res
-    //     .status(400)
-    //     .json({ data: { message: "Admin cannot reset the password." } });
-    // }
 
     if (user) {
       const salt = genSaltSync(10);

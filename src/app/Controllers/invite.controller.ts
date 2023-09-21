@@ -355,11 +355,8 @@ export class invitedUsersController {
     try {
       const invitedUsers = await Admins.find(dataToFind,'-password').sort({createdAt:-1}).skip(skip).limit(perPage);
 
-      // if (invitedUsers.length == 0) {
-        // return res.json({ error: { message: "No Data Found" } });
-      // } else {
+
         return res.json({ data: invitedUsers });
-      // }
     } catch (error) {
       return res
         .status(500)

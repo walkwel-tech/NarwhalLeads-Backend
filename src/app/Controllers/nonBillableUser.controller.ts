@@ -51,17 +51,7 @@ export class nonBillableUsersController {
 
        const result= await User.create(dataToSave);
         const data = await User.findById(result.id,'-password')
-        // const leadPrefrence = await LeadTablePreference.findOne({
-        //   //@ts-ignore
 
-        //   userId: _req?.user?.id,
-        // });
-        // if (leadPrefrence) {
-        //   await LeadTablePreference.create({
-        //     userId: data.id,
-        //     columns: leadPrefrence.columns,
-        //   });
-        // }
         return res.json({ data: data });
       }
     } catch (error) {
