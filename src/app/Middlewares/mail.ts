@@ -1010,7 +1010,7 @@ export function send_email_for_below_5_leads_pending(
   }
 }
 
-export function send_email_for_out_of_funds(
+export function send_email_for_outOfFunds(
   send_to: string,
   message: any
 ) {
@@ -1032,7 +1032,7 @@ export function send_email_for_out_of_funds(
       },
     },
     // html: "<strong>and easy to do anywhere, even with Node.js</strong>",
-    templateId: TEMPLATES_ID.OUT_OF_FUNDS,
+    templateId: TEMPLATES_ID.outOfFunds,
     dynamic_template_data: {
       name: message.name,
       credits:message.credits
@@ -1045,8 +1045,8 @@ export function send_email_for_out_of_funds(
         console.log("Email sent");
         const params = {
           email: send_to,
-          title: "OUT_OF_FUNDS",
-          templateId: TEMPLATES_ID.OUT_OF_FUNDS,
+          title: "outOfFunds",
+          templateId: TEMPLATES_ID.outOfFunds,
         };
         saveNotifications(params);
       })

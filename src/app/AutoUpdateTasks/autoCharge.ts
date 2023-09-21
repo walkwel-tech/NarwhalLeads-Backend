@@ -284,19 +284,7 @@ const handleFailedCharge = async (
     // send_email_for_failed_autocharge(user.email, text);
     console.log("EMAIL SHOULD BE SENT NOW");
     return false
-    // const text = {
-    //   firstName: user.firstName,
-    //   lastName:user.lastName,
-    //   //@ts-ignore
-    //   businessName:user.businessDetailsId?.businessName,
-    //       //@ts-ignore
-    //   phone:user.businessDetailsId?.businessSalesNumber,
-    //   email:user.email,
-    //   credits:user.credits,
-    //   amount: user?.autoChargeAmount,
-    //   cardNumberEnd: card?.cardNumber?.substr(-4),
-    //   cardHolderName:card?.cardHolderName,
-    // };
+
   }
 })
 };

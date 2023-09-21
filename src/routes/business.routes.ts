@@ -11,11 +11,7 @@ import { fileMaxSize } from "../utils/constantFiles/fileMaxSize";
 // const fs=require("fs")
 //@ts-ignore
 export const fileSizeLimitErrorHandler = (err, req, res, next) => { 
-  // const profileImageDir = path.join(__dirname, "..",FileEnum.PROFILEIMAGE);
-    
-  // if (!fs.existsSync(profileImageDir)) {
-  //   fs.mkdirSync(profileImageDir, { recursive: true });
-  // }
+
     if (err) {
       return res
       .status(400)

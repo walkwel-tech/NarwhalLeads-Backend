@@ -14,7 +14,7 @@ import {
   send_email_for_new_registration,
   send_email_for_payment_failure,
   send_email_for_payment_success,
-  send_email_for_payment_success_to_admin,
+  // send_email_for_payment_success_to_admin,
   send_email_for_registration,
 } from "../Middlewares/mail";
 import { AdminSettings } from "../Models/AdminSettings";
@@ -23,13 +23,11 @@ import { Invoice } from "../Models/Invoice";
 import { Transaction } from "../Models/Transaction";
 import { User } from "../Models/User";
 import { FreeCreditsLink } from "../Models/freeCreditsLink";
-// import { BusinessDetails } from "../Models/BusinessDetails";
-// import { UserLeadsDetails } from "../Models/UserLeadsDetails";
+
 import { UserInterface } from "../../types/UserInterface";
 import { paymentMethodEnum } from "../../utils/Enums/payment.method.enum";
 import { checkOnbOardingComplete } from "../../utils/Functions/Onboarding_complete";
-// import { openingHoursFormatting } from "../../utils/Functions/openingHoursManipulation";
-// import { ONBOARDING_KEYS } from "../../utils/constantFiles/OnBoarding.keys";
+
 import { addCreditsToBuyer } from "../../utils/payment/addBuyerCredit";
 import { RolesEnum } from "../../types/RolesEnum";
 import axios from "axios";
@@ -503,19 +501,12 @@ export class CardDetailsControllers {
         cardId: card.id,
         paymentSessionId: card?.paymentSessionID,
       };
-      // let amount:any
-      // if (input.amount) {
-      //   amount = input.amount;
-      // } else {
-      //   amount = adminSettings?.minimumUserTopUpAmount;
-      // }
+
       const paymentMethodsExists = await RyftPaymentMethods.findOne({
         cardId: card.id,
       });
 
-      // const paymentMethods = await RyftPaymentMethods.find({
-      //   ryftClientId: user?.ryftClientId,
-      // });
+
       if (!paymentMethodsExists) {
         return res
           .status(404)
@@ -564,49 +555,6 @@ export class CardDetailsControllers {
               data: err.response.data,
             });
           });
-        // managePaymentsByPaymentMethods(params)
-        //   .then(async (_res: any) => {
-
-        //     const paymentMethods: any = await customerPaymentMethods(
-        //       params.clientId
-        //     );
-        //     let response: PaymentResponse = {
-        //       message: "In progress",
-        //       status: 200,
-        //     };
-        //     response.paymentMethods = paymentMethods.data;
-        //     if (_res.data.status == "PendingAction") {
-        //       // const sessionInformation: any = await createSessionInitial(
-        //       //   params
-        //       // );
-        //       response.message = "Further Action Required";
-        //       response.manualPaymentConfig = {
-        //         // clientSecret: sessionInformation?.data?.clientSecret,
-        //         // paymentType: sessionInformation?.data?.paymentType,
-        //         publicKey: process.env.RYFT_PUBLIC_KEY,
-        //         customerPaymentMethods: _res.data.paymentMethod,
-        //          clientSecret: _res.data?.clientSecret,
-        //         paymentType: _res?.data?.paymentType,
-        //       };
-        //       response.sessionID = _res.data?.id;
-
-        //       response.status = "manual_payment_required";
-        //     } else {
-        //       response.message =
-        //         "Your payment was successful, please refresh in few minutes to see your new balance";
-        //       response.status = 200;
-        //       response.sessionID = _res.data?.id;
-        //     }
-
-        //     return res.json({
-        //       data: response,
-        //     });
-        //   })
-        //   .catch(async (err) => {
-        //     return res.status(400).json({
-        //       error: { message: "Error occured in payment.", err },
-        //     });
-        //   });
       }
     } catch (err) {
       return res
@@ -787,9 +735,7 @@ export class CardDetailsControllers {
               await User.findByIdAndUpdate(userId?.id, {
                 isSignUpCompleteWithCredit: true,
               });
-              const business = await BusinessDetails.findById(
-                userId?.businessDetailsId
-              );
+
               fully_signup_with_credits(userId?.id, cardDetails?.id);
               let data = await userData(userId?.id, cardDetails?.id);
               const formattedPostCodes = data?.postCodeTargettingList
@@ -798,15 +744,7 @@ export class CardDetailsControllers {
               //@ts-ignore
               data.area = formattedPostCodes;
               send_email_for_fully_signup_to_admin(data);
-              const message = {
-                firstName: userId?.firstName,
-                amount: parseInt(input.data.amount) / 100,
-                cardHolderName: `${userId?.firstName} ${userId?.lastName}`,
-                cardNumberEnd: cardDetails?.cardNumber,
-                credits: userId?.credits,
-                businessName: business?.businessName,
-              };
-              send_email_for_payment_success_to_admin(message);
+            
             }
             const transaction = await Transaction.create(
               dataToSaveInTransaction
@@ -1062,8 +1000,7 @@ export class CardDetailsControllers {
           //need to change here in url
           res.status(302).redirect(process.env.RETURN_URL || "");
         }
-        // return res.status(400).json({ error: { message: "your payment got failed" } });
-        // console.log(error);
+     
       });
   };
 
