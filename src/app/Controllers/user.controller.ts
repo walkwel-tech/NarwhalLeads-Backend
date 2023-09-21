@@ -23,10 +23,13 @@ import { ClientTablePreference } from "../Models/ClientTablePrefrence";
 import { Column } from "../../types/ColumnsPreferenceInterface";
 import { Admins } from "../Models/Admins";
 import { deleteCustomerOnRyft } from "../../utils/createCustomer/deleteFromRyft";
+import { MODEL_ENUM } from "../../utils/Enums/model.enum";
+import { ACTION } from "../../utils/Enums/actionType.enum";
+import { ActivityLogs } from "../Models/ActivityLogs";
+import { findUpdatedFields } from "../../utils/Functions/findModifiedColumns";
 const ObjectId = mongoose.Types.ObjectId;
 
 const LIMIT = 10;
-
 
 interface DataObject {
   [key: string]: any;
@@ -136,17 +139,19 @@ export class UsersControllers {
           : 0) * perPage;
 
       let dataToFind: any = {
-        role: { $nin: [RolesEnum.ADMIN, RolesEnum.INVITED, RolesEnum.SUPER_ADMIN] },
+        role: {
+          $nin: [RolesEnum.ADMIN, RolesEnum.INVITED, RolesEnum.SUPER_ADMIN],
+        },
         // role:{$ne: RolesEnum.INVITED },
         isDeleted: false,
         isArchived: JSON.parse(isArchived?.toLowerCase()),
       };
-      if(_req.query.isActive){
-        dataToFind.isActive=JSON.parse(isActive?.toLowerCase())
-        dataToFind.isArchived=false
+      if (_req.query.isActive) {
+        dataToFind.isActive = JSON.parse(isActive?.toLowerCase());
+        dataToFind.isArchived = false;
       }
-      if(_req.query.isArchived){
-        dataToFind.isArchived=JSON.parse(isArchived?.toLowerCase())
+      if (_req.query.isArchived) {
+        dataToFind.isArchived = JSON.parse(isArchived?.toLowerCase());
       }
       if (_req.query.industryId) {
         dataToFind.businessIndustryId = new ObjectId(_req.query.industryId);
@@ -246,13 +251,13 @@ export class UsersControllers {
               {
                 $addFields: {
                   createdAt: {
-                        $dateToString: {
-                            format: "%Y-%m-%d", // Define your desired format here
-                            date: "$createdAt" // Replace "createdAt" with your actual field name
-                        }
-                    }
-                }
-            },
+                    $dateToString: {
+                      format: "%Y-%m-%d", // Define your desired format here
+                      date: "$createdAt", // Replace "createdAt" with your actual field name
+                    },
+                  },
+                },
+              },
               { $skip: skip },
               { $limit: perPage },
               // { $sort: { firstName: 1 } },
@@ -272,7 +277,7 @@ export class UsersControllers {
         item.userLeadsDetailsId = userLeadsDetailsId;
         item.businessDetailsId = businessDetailsId;
         item.userServiceId = userServiceId;
-        item.businessDetailsId.daily=item.userLeadsDetailsId.daily
+        item.businessDetailsId.daily = item.userLeadsDetailsId.daily;
       });
 
       const userCount = query.userCount[0]?.count || 0;
@@ -292,19 +297,18 @@ export class UsersControllers {
     } catch (err) {
       return res
         .status(500)
-        .json({ error: { message: "Something went wrong.",err } });
+        .json({ error: { message: "Something went wrong.", err } });
     }
   };
 
   static show = async (req: Request, res: Response): Promise<Response> => {
-  
     const { id } = req.params;
-    const business=req.query.business
+    const business = req.query.business;
     let query;
     try {
-      if(business){
-        const business=await BusinessDetails.findById(id);
-        const users=await User.findOne({businessDetailsId:business?.id});
+      if (business) {
+        const business = await BusinessDetails.findById(id);
+        const users = await User.findOne({ businessDetailsId: business?.id });
         [query] = await User.aggregate([
           {
             $facet: {
@@ -333,14 +337,17 @@ export class UsersControllers {
                     as: "cardDetailsId",
                   },
                 },
-                { $match: { _id: new ObjectId(users?.id) } }
-                          ],
+                { $match: { _id: new ObjectId(users?.id) } },
+              ],
             },
           },
         ]);
         query.results.map((item: any) => {
-          delete item.password
-          let businessDetailsId = Object.assign({}, item["businessDetailsId"][0]);
+          delete item.password;
+          let businessDetailsId = Object.assign(
+            {},
+            item["businessDetailsId"][0]
+          );
           let cardDetailsId = Object.assign({}, item["cardDetailsId"][0]);
           let userLeadsDetailsId = Object.assign(
             {},
@@ -350,126 +357,125 @@ export class UsersControllers {
           item.businessDetailsId = businessDetailsId;
           item.cardDetailsId = cardDetailsId;
         });
-        if(query.results.length==0){
+        if (query.results.length == 0) {
           [query] = await Admins.aggregate([
             {
               $facet: {
-                results: [
-                  { $match: { _id: new ObjectId(id) } }
-                            ],
+                results: [{ $match: { _id: new ObjectId(id) } }],
+              },
+            },
+          ]);
+        }
+        return res.json({ data: query.results[0] });
+      } else {
+        [query] = await User.aggregate([
+          {
+            $facet: {
+              results: [
+                {
+                  $lookup: {
+                    from: "businessdetails",
+                    localField: "businessDetailsId",
+                    foreignField: "_id",
+                    as: "businessDetailsId",
+                  },
+                },
+                {
+                  $lookup: {
+                    from: "userleadsdetails",
+                    localField: "userLeadsDetailsId",
+                    foreignField: "_id",
+                    as: "userLeadsDetailsId",
+                  },
+                },
+                {
+                  $lookup: {
+                    from: "carddetails",
+                    localField: "_id",
+                    foreignField: "userId",
+                    as: "cardDetailsId",
+                  },
+                },
+                { $match: { _id: new ObjectId(id) } },
+              ],
+            },
+          },
+        ]);
+        query.results.map((item: any) => {
+          delete item.password;
+          let businessDetailsId = Object.assign(
+            {},
+            item["businessDetailsId"][0]
+          );
+          let cardDetailsId = Object.assign({}, item["cardDetailsId"][0]);
+          let userLeadsDetailsId = Object.assign(
+            {},
+            item["userLeadsDetailsId"][0]
+          );
+          item.userLeadsDetailsId = userLeadsDetailsId;
+          item.businessDetailsId = businessDetailsId;
+          item.cardDetailsId = cardDetailsId;
+        });
+        if (query.results.length == 0) {
+          [query] = await Admins.aggregate([
+            {
+              $facet: {
+                results: [{ $match: { _id: new ObjectId(id) } }],
               },
             },
           ]);
         }
         return res.json({ data: query.results[0] });
       }
-      else{
-          [query] = await User.aggregate([
-        {
-          $facet: {
-            results: [
-              {
-                $lookup: {
-                  from: "businessdetails",
-                  localField: "businessDetailsId",
-                  foreignField: "_id",
-                  as: "businessDetailsId",
-                },
-              },
-              {
-                $lookup: {
-                  from: "userleadsdetails",
-                  localField: "userLeadsDetailsId",
-                  foreignField: "_id",
-                  as: "userLeadsDetailsId",
-                },
-              },
-              {
-                $lookup: {
-                  from: "carddetails",
-                  localField: "_id",
-                  foreignField: "userId",
-                  as: "cardDetailsId",
-                },
-              },
-              { $match: { _id: new ObjectId(id) } }
-                        ],
-          },
-        },
-      ]);
-      query.results.map((item: any) => {
-        delete item.password
-        let businessDetailsId = Object.assign({}, item["businessDetailsId"][0]);
-        let cardDetailsId = Object.assign({}, item["cardDetailsId"][0]);
-        let userLeadsDetailsId = Object.assign(
-          {},
-          item["userLeadsDetailsId"][0]
-        );
-        item.userLeadsDetailsId = userLeadsDetailsId;
-        item.businessDetailsId = businessDetailsId;
-        item.cardDetailsId = cardDetailsId;
-      });
-      if(query.results.length==0){
-        [query] = await Admins.aggregate([
-          {
-            $facet: {
-              results: [
-                { $match: { _id: new ObjectId(id) } }
-                          ],
-            },
-          },
-        ]);
-      }
-      return res.json({ data: query.results[0] });
-      }
-     
     } catch (err) {
       return res
         .status(500)
-        .json({ error: { message: "Something went wrong.",err } });
+        .json({ error: { message: "Something went wrong.", err } });
     }
   };
 
   static indexName = async (req: Request, res: Response): Promise<Response> => {
     try {
-      const business=await User.aggregate([
-        {$match:{isDeleted:false,role:RolesEnum.USER}},
-        {
-          $lookup: {
-            from: "businessdetails",
-            localField: "businessDetailsId",
-            foreignField: "_id",
-            as: "businessInfo",
+      const business = await User.aggregate(
+        [
+          { $match: { isDeleted: false, role: RolesEnum.USER } },
+          {
+            $lookup: {
+              from: "businessdetails",
+              localField: "businessDetailsId",
+              foreignField: "_id",
+              as: "businessInfo",
+            },
           },
-        },
+          {
+            $unwind: "$businessInfo",
+          },
+          {
+            $project: {
+              "businessInfo._id": 1,
+              "businessInfo.businessName": 1,
+              _id: 0,
+            },
+          },
+          { $sort: { "businessInfo.businessName": 1 } },
+        ],
         {
-          $unwind: "$businessInfo"
-        },
-        {
-          $project: {
-            "businessInfo._id": 1,
-            "businessInfo.businessName": 1,
-            "_id":0
-          }
-        },
-        {$sort:{ "businessInfo.businessName": 1}}
-      ],
-      {
-        collation: {
+          collation: {
             locale: "en", // Specify the locale for collation rules
+          },
         }
-    })
+      );
       if (business) {
-        const reformattedObjects = business.map(item => ({
+        const reformattedObjects = business.map((item) => ({
           _id: item.businessInfo._id,
-          businessName: item.businessInfo.businessName
+          businessName: item.businessInfo.businessName,
         }));
-        return res.json({ data: reformattedObjects});
+        return res.json({ data: reformattedObjects });
+      } else {
+        return res
+          .status(404)
+          .json({ error: { message: "Business not found." } });
       }
-else{
-  return res.status(404).json({ error: { message: "Business not found." } });
-
-}
     } catch (err) {
       return res
         .status(500)
@@ -489,31 +495,46 @@ else{
       // @ts-ignore
       delete input.credits;
     }
-    // @ts-ignore
-    if (req?.user.role===RolesEnum.USER && (input.email || input.email =="")) {
-      // @ts-ignore
-      input.email = req.user?.email
-      // return res
-      // .status(403)
-      // .json({ error: { message: "You can not update your email." } });  
 
+    if (
+      // @ts-ignore
+      req?.user.role === RolesEnum.USER &&
+      (input.email || input.email == "")
+    ) {
+      // @ts-ignore
+      input.email = req.user?.email;
     }
 
     try {
       const checkUser = await User.findById(id);
+      const businesBeforeUpdate=await BusinessDetails.findById(checkUser?.businessDetailsId)
+      // const userLeadDetailsBeforeUpdate=await UserLeadsDetails.findById(checkUser?.userLeadsDetailsId)
+      const userForActivity = await User.findById(
+        id,
+        " -_id -businessDetailsId -businessIndustryId -userLeadsDetailsId -onBoarding -createdAt -updatedAt"
+      ).lean();
       if (
         input.paymentMethod === paymentMethodEnum.WEEKLY_PAYMENT_METHOD &&
         // checkUser?.paymentMethod == paymentMethodEnum.WEEKLY_PAYMENT_METHOD
         //@ts-ignore
         req.user?.role === RolesEnum.USER
       ) {
-        return res
-          .status(403)
-          .json({ error: { message: "Please contact admin to request for weekly payment method" } });
+        return res.status(403).json({
+          error: {
+            message:
+              "Please contact admin to request for weekly payment method",
+          },
+        });
       }
       if (
-            // @ts-ignore
-        (input.buyerId || input.leadCost || input.ryftClientId || input.xeroContactId || input.role) &&  req.user?.role == RolesEnum.USER
+        // @ts-ignore
+        (input.buyerId ||
+          input.leadCost ||
+          input.ryftClientId ||
+          input.xeroContactId ||
+          input.role) &&
+        //@ts-ignore
+        req.user?.role == RolesEnum.USER
       ) {
         return res
           .status(403)
@@ -521,38 +542,48 @@ else{
       }
       if (
         input.paymentMethod &&
-         // @ts-ignore
-        checkUser?.paymentMethod == paymentMethodEnum.WEEKLY_PAYMENT_METHOD && req.user?.role===RolesEnum.USER
+        // @ts-ignore
+        checkUser?.paymentMethod == paymentMethodEnum.WEEKLY_PAYMENT_METHOD &&
+        // @ts-ignore
+        req.user?.role === RolesEnum.USER
       ) {
-        return res
-          .status(403)
-          .json({ error: { message: "Please contact admin to change payment method" } });
+        return res.status(403).json({
+          error: { message: "Please contact admin to change payment method" },
+        });
       }
-      if(input.smsPhoneNumber){
-        const userExist=await User.findOne({smsPhoneNumber:input.smsPhoneNumber})
-         // @ts-ignore
-        if(userExist && userExist.id!==req?.user?.id && userExist.role!==RolesEnum.SUPER_ADMIN){
-          return res
-          .status(400)
-          .json({ error: { message: "This Number is already registered with another account." } });
+      if (input.smsPhoneNumber) {
+        const userExist = await User.findOne({
+          smsPhoneNumber: input.smsPhoneNumber,
+        });
+
+        if (
+          userExist &&
+          // @ts-ignore
+          userExist.id !== req?.user?.id &&
+          userExist.role !== RolesEnum.SUPER_ADMIN
+        ) {
+          return res.status(400).json({
+            error: {
+              message:
+                "This Number is already registered with another account.",
+            },
+          });
         }
       }
       if (!checkUser) {
-        const admin=await Admins.findById(id)
-        if(!admin){
+        const admin = await Admins.findById(id);
+        if (!admin) {
           return res
-          .status(404)
-          .json({ error: { message: "Admin to update does not exists." } });
-        } else if(!checkUser && !admin){
+            .status(404)
+            .json({ error: { message: "Admin and User to update does not exists." } });
+        } else if (!checkUser && !admin) {
           return res
-          .status(404)
-          .json({ error: { message: "User to update does not exists." } });
-        }
-        else{
-          const data=await Admins.findByIdAndUpdate(id,input,{new:true})
+            .status(404)
+            .json({ error: { message: "User to update does not exists." } });
+        } else {
+          const data = await Admins.findByIdAndUpdate(id, input, { new: true });
           return res.json({ data: data });
         }
-       
       }
 
       const cardExist = await CardDetails.findOne({
@@ -564,15 +595,21 @@ else{
         !cardExist &&
         input.credits &&
         //@ts-ignore
-        (req?.user.role == RolesEnum.USER || req?.user.role == RolesEnum.ADMIN || req?.user.role == RolesEnum.SUPER_ADMIN)
+        (req?.user.role == RolesEnum.USER ||
+          //@ts-ignore
+          req?.user.role == RolesEnum.ADMIN ||
+          //@ts-ignore
+          req?.user.role == RolesEnum.SUPER_ADMIN)
       ) {
         return res
           .status(404)
           .json({ error: { message: "Card Details not found!" } });
       }
       if (input.businessName) {
-        if(!checkUser.businessDetailsId){
-          return res.status(404).json({error:{message:"business details not found"}})
+        if (!checkUser.businessDetailsId) {
+          return res
+            .status(404)
+            .json({ error: { message: "business details not found" } });
         }
         const businesses = await BusinessDetails.find({
           businessName: input.businessName,
@@ -601,8 +638,10 @@ else{
         );
       }
       if (input.businessAddress) {
-        if(!checkUser.businessDetailsId){
-          return res.status(404).json({error:{message:"business details not found"}})
+        if (!checkUser.businessDetailsId) {
+          return res
+            .status(404)
+            .json({ error: { message: "business details not found" } });
         }
 
         await BusinessDetails.findByIdAndUpdate(
@@ -613,8 +652,10 @@ else{
         );
       }
       if (input.businessSalesNumber) {
-        if(!checkUser.businessDetailsId){
-          return res.status(404).json({error:{message:"business details not found"}})
+        if (!checkUser.businessDetailsId) {
+          return res
+            .status(404)
+            .json({ error: { message: "business details not found" } });
         }
 
         await BusinessDetails.findByIdAndUpdate(
@@ -625,8 +666,10 @@ else{
         );
       }
       if (input.businessCity) {
-        if(!checkUser.businessDetailsId){
-          return res.status(404).json({error:{message:"business details not found"}})
+        if (!checkUser.businessDetailsId) {
+          return res
+            .status(404)
+            .json({ error: { message: "business details not found" } });
         }
         await BusinessDetails.findByIdAndUpdate(
           checkUser?.businessDetailsId,
@@ -636,8 +679,10 @@ else{
         );
       }
       if (input.businessCountry) {
-        if(!checkUser.businessDetailsId){
-          return res.status(404).json({error:{message:"business details not found"}})
+        if (!checkUser.businessDetailsId) {
+          return res
+            .status(404)
+            .json({ error: { message: "business details not found" } });
         }
         await BusinessDetails.findByIdAndUpdate(
           checkUser?.businessDetailsId,
@@ -647,8 +692,10 @@ else{
         );
       }
       if (input.businessPostCode) {
-        if(!checkUser.businessDetailsId){
-          return res.status(404).json({error:{message:"business details not found"}})
+        if (!checkUser.businessDetailsId) {
+          return res
+            .status(404)
+            .json({ error: { message: "business details not found" } });
         }
         await BusinessDetails.findByIdAndUpdate(
           checkUser?.businessDetailsId,
@@ -658,8 +705,10 @@ else{
         );
       }
       if (input.businessIndustry) {
-        if(!checkUser.businessDetailsId){
-          return res.status(404).json({error:{message:"business details not found"}})
+        if (!checkUser.businessDetailsId) {
+          return res
+            .status(404)
+            .json({ error: { message: "business details not found" } });
         }
         await BusinessDetails.findByIdAndUpdate(
           checkUser?.businessDetailsId,
@@ -669,8 +718,10 @@ else{
         );
       }
       if (input.businessOpeningHours) {
-        if(!checkUser.businessDetailsId){
-          return res.status(404).json({error:{message:"business details not found"}})
+        if (!checkUser.businessDetailsId) {
+          return res
+            .status(404)
+            .json({ error: { message: "business details not found" } });
         }
         await BusinessDetails.findByIdAndUpdate(
           checkUser?.businessDetailsId,
@@ -680,8 +731,10 @@ else{
         );
       }
       if (input.total) {
-        if(!checkUser.userLeadsDetailsId){
-          return res.status(404).json({error:{message:"lead details not found"}})
+        if (!checkUser.userLeadsDetailsId) {
+          return res
+            .status(404)
+            .json({ error: { message: "lead details not found" } });
         }
         await UserLeadsDetails.findByIdAndUpdate(
           checkUser?.userLeadsDetailsId,
@@ -691,8 +744,10 @@ else{
         );
       }
       if (input.weekly) {
-        if(!checkUser.userLeadsDetailsId){
-          return res.status(404).json({error:{message:"lead details not found"}})
+        if (!checkUser.userLeadsDetailsId) {
+          return res
+            .status(404)
+            .json({ error: { message: "lead details not found" } });
         }
         await UserLeadsDetails.findByIdAndUpdate(
           checkUser?.userLeadsDetailsId,
@@ -702,8 +757,10 @@ else{
         );
       }
       if (input.monthly) {
-        if(!checkUser.userLeadsDetailsId){
-          return res.status(404).json({error:{message:"lead details not found"}})
+        if (!checkUser.userLeadsDetailsId) {
+          return res
+            .status(404)
+            .json({ error: { message: "lead details not found" } });
         }
         await UserLeadsDetails.findByIdAndUpdate(
           checkUser?.userLeadsDetailsId,
@@ -713,8 +770,10 @@ else{
         );
       }
       if (input.leadSchedule) {
-        if(!checkUser.userLeadsDetailsId){
-          return res.status(404).json({error:{message:"lead details not found"}})
+        if (!checkUser.userLeadsDetailsId) {
+          return res
+            .status(404)
+            .json({ error: { message: "lead details not found" } });
         }
         await UserLeadsDetails.findByIdAndUpdate(
           checkUser?.userLeadsDetailsId,
@@ -724,8 +783,10 @@ else{
         );
       }
       if (input.postCodeTargettingList) {
-        if(!checkUser.userLeadsDetailsId){
-          return res.status(404).json({error:{message:"lead details not found"}})
+        if (!checkUser.userLeadsDetailsId) {
+          return res
+            .status(404)
+            .json({ error: { message: "lead details not found" } });
         }
         await UserLeadsDetails.findByIdAndUpdate(
           checkUser?.userLeadsDetailsId,
@@ -735,8 +796,10 @@ else{
         );
       }
       if (input.leadAlertsFrequency) {
-        if(!checkUser.userLeadsDetailsId){
-          return res.status(404).json({error:{message:"lead details not found"}})
+        if (!checkUser.userLeadsDetailsId) {
+          return res
+            .status(404)
+            .json({ error: { message: "lead details not found" } });
         }
         await UserLeadsDetails.findByIdAndUpdate(
           checkUser?.userLeadsDetailsId,
@@ -746,8 +809,10 @@ else{
         );
       }
       if (input.zapierUrl) {
-        if(!checkUser.userLeadsDetailsId){
-          return res.status(404).json({error:{message:"lead details not found"}})
+        if (!checkUser.userLeadsDetailsId) {
+          return res
+            .status(404)
+            .json({ error: { message: "lead details not found" } });
         }
         await UserLeadsDetails.findByIdAndUpdate(
           checkUser?.userLeadsDetailsId,
@@ -757,10 +822,12 @@ else{
         );
       }
       if (input.daily) {
-        if(!checkUser.userLeadsDetailsId){
-          return res.status(404).json({error:{message:"lead details not found"}})
+        if (!checkUser.userLeadsDetailsId) {
+          return res
+            .status(404)
+            .json({ error: { message: "lead details not found" } });
         }
-        input.daily=parseInt(input.daily)
+        input.daily = parseInt(input.daily);
         await UserLeadsDetails.findByIdAndUpdate(
           checkUser?.userLeadsDetailsId,
           { daily: input.daily },
@@ -768,15 +835,20 @@ else{
           { new: true }
         );
       }
-      // @ts-ignore
-      if (input.credits && (req?.user.role == RolesEnum.ADMIN || req?.user.role == RolesEnum.SUPER_ADMIN )) {
+      if (
+        input.credits &&
+        // @ts-ignore
+        (req?.user.role == RolesEnum.ADMIN ||
+          // @ts-ignore
+          req?.user.role == RolesEnum.SUPER_ADMIN)
+      ) {
         const params: any = {
           fixedAmount: input.credits,
           email: checkUser?.email,
-           cardNumber:cardExist?.cardNumber,
+          cardNumber: cardExist?.cardNumber,
           buyerId: checkUser?.buyerId,
-          clientId:checkUser.ryftClientId,
-          cardId:cardExist?.id
+          clientId: checkUser.ryftClientId,
+          cardId: cardExist?.id,
         };
 
         managePaymentsByPaymentMethods(params)
@@ -791,8 +863,7 @@ else{
               title: transactionTitle.CREDITS_ADDED,
               isCredited: true,
               status: "success",
-              creditsLeft: checkUser?.credits + input.credits
-
+              creditsLeft: checkUser?.credits + input.credits,
             };
 
             const transaction = await Transaction.create(dataToSave);
@@ -812,7 +883,9 @@ else{
                     invoiceId: res.data.Invoices[0].InvoiceID,
                   };
                   await Invoice.create(dataToSaveInInvoice);
-                  await Transaction.findByIdAndUpdate(transaction.id, { invoiceId: res.data.Invoices[0].InvoiceID, })
+                  await Transaction.findByIdAndUpdate(transaction.id, {
+                    invoiceId: res.data.Invoices[0].InvoiceID,
+                  });
 
                   console.log("PDF generated");
                 })
@@ -832,7 +905,9 @@ else{
                         invoiceId: res.data.Invoices[0].InvoiceID,
                       };
                       await Invoice.create(dataToSaveInInvoice);
-                      await Transaction.findByIdAndUpdate(transaction.id, { invoiceId: res.data.Invoices[0].InvoiceID, })
+                      await Transaction.findByIdAndUpdate(transaction.id, {
+                        invoiceId: res.data.Invoices[0].InvoiceID,
+                      });
 
                       console.log("PDF generated");
                     });
@@ -862,8 +937,7 @@ else{
               title: transactionTitle.CREDITS_ADDED,
               isCredited: true,
               status: "error",
-              creditsLeft: checkUser?.credits
-
+              creditsLeft: checkUser?.credits,
             };
             await Transaction.create(dataToSave);
             console.log("error in payment Api", err);
@@ -885,10 +959,19 @@ else{
             .json({ error: { message: "User to update does not exists." } });
         }
         const result = await User.findById(id, "-password -__v");
-        const buinessData= await BusinessDetails.findById(result?.businessDetailsId)
-        const leadData= await UserLeadsDetails.findById(result?.userLeadsDetailsId)
-        const formattedPostCodes=leadData?.postCodeTargettingList.map((item:any) => item.postalCode).flat();
-
+        const buinessData = await BusinessDetails.findById(
+          result?.businessDetailsId
+        );
+        const leadData = await UserLeadsDetails.findById(
+          result?.userLeadsDetailsId
+        );
+        const formattedPostCodes = leadData?.postCodeTargettingList
+          .map((item: any) => item.postalCode)
+          .flat();
+        const userAfterMod = await User.findById(
+          id,
+          " -_id -businessDetailsId -businessIndustryId -userLeadsDetailsId -onBoarding -createdAt -updatedAt"
+        ).lean();
         const message = {
           firstName: result?.firstName,
           lastName: result?.lastName,
@@ -909,27 +992,72 @@ else{
           // leadsHours:formattedLeadSchedule,
           leadsHours: leadData?.leadSchedule,
           area: `${formattedPostCodes}`,
-          leadCost:user?.leadCost
-        }
-        send_email_for_updated_details(message)
-if(input.triggerAmount || input.autoChargeAmount){
-  return res.json({message:"Auto Top-Up Settings Updated Successfully",data:result})
-}
-if(input.isSmsNotificationActive || input.smsPhoneNumber){
-  return res.json({message:"SMS Settings Saved Successfully",data:result})
-}
-else if(input.paymentMethod){
-  return res.json({message:"Payment Mode Changed Successfully",data:result});
-}
+          leadCost: user?.leadCost,
+        };
+        send_email_for_updated_details(message);
 
-else {
-  return res.json({message:"Updated Successfully",data:result});
-}
-      }  
+        const fields = findUpdatedFields(userForActivity, userAfterMod);
+        const isEmpty = Object.keys(fields.updatedFields).length === 0;
+
+        if (!isEmpty) {
+          const activity = {
+            //@ts-ignore
+            actionBy: req?.user?.role,
+            actionType: ACTION.UPDATING,
+            targetModel: MODEL_ENUM.USER,
+            userEntity: req.params.id,
+            originalValues: fields.oldFields,
+            modifiedValues: fields.updatedFields,
+          };
+          console.log("activity", activity);
+          await ActivityLogs.create(activity);
+        }
+
+        if (input.triggerAmount || input.autoChargeAmount) {
+          return res.json({
+            message: "Auto Top-Up Settings Updated Successfully",
+            data: result,
+          });
+        }
+        if (input.isSmsNotificationActive || input.smsPhoneNumber) {
+          return res.json({
+            message: "SMS Settings Saved Successfully",
+            data: result,
+          });
+        } else if (input.paymentMethod) {
+          return res.json({
+            message: "Payment Mode Changed Successfully",
+            data: result,
+          });
+        } else {
+          if(input.businessIndustry || input.businessName || input.businessLogo || input.address1 || input.address2 || input.businessSalesNumber || input.businessCountry || input.businessPostCode || input.businessOpeningHours)
+          {
+            const businesAfterUpdate=await BusinessDetails.findById(checkUser.businessDetailsId," -_id  -createdAt -updatedAt").lean()
+            
+            const fields = findUpdatedFields(businesBeforeUpdate, businesAfterUpdate);
+            const isEmpty = Object.keys(fields.updatedFields).length === 0;
+            if(!isEmpty){const activity={
+              //@ts-ignore
+              actionBy:req?.user?.role,
+              actionType:ACTION.UPDATING,
+              targetModel:MODEL_ENUM.BUSINESS_DETAILS,
+              //@ts-ignore
+              userEntity:checkUser?.id,
+              originalValues:fields.oldFields,
+              modifiedValues:fields.updatedFields
+            }
+            await ActivityLogs.create(activity)}
+      
+          }
+          return res.json({ message: "Updated Successfully", data: result });
+        }
+      }
+console.log("----here--------")
+     
     } catch (err) {
       return res
         .status(500)
-        .json({ error: { message: "Something went wrong." } });
+        .json({ error: { message: "Something went wrong." ,err} });
     }
   };
 
@@ -947,12 +1075,14 @@ else {
         isDeleted: true,
         deletedAt: new Date(),
       });
-      await BusinessDetails.findByIdAndDelete(userExist?.businessDetailsId)
-      await UserLeadsDetails.findByIdAndDelete(userExist?.userLeadsDetailsId)
-      await CardDetails.deleteMany({userId:userExist?.id})
+      await BusinessDetails.findByIdAndDelete(userExist?.businessDetailsId);
+      await UserLeadsDetails.findByIdAndDelete(userExist?.userLeadsDetailsId);
+      await CardDetails.deleteMany({ userId: userExist?.id });
 
       //@ts-ignore
-    deleteCustomerOnRyft(user?.ryftClientId).then(()=>console.log("deleted customer")).catch(()=>console.log("error while deleting customer on ryft"))
+      deleteCustomerOnRyft(user?.ryftClientId)
+        .then(() => console.log("deleted customer"))
+        .catch(() => console.log("error while deleting customer on ryft"));
 
       if (!user) {
         return res
@@ -1012,22 +1142,27 @@ else {
       sortingOrder = -1;
     }
     try {
-      let dataToFind: any = {  role:{$nin: [RolesEnum.ADMIN, RolesEnum.INVITED,RolesEnum.SUPER_ADMIN]},  isDeleted: false, };
-      if(_req.query.invited){
-        dataToFind.role={$nin: [RolesEnum.ADMIN]}
+      let dataToFind: any = {
+        role: {
+          $nin: [RolesEnum.ADMIN, RolesEnum.INVITED, RolesEnum.SUPER_ADMIN],
+        },
+        isDeleted: false,
+      };
+      if (_req.query.invited) {
+        dataToFind.role = { $nin: [RolesEnum.ADMIN] };
       }
-      if(_req.query.isActive){
-        dataToFind.isActive=true
-        dataToFind.isArchived=false
+      if (_req.query.isActive) {
+        dataToFind.isActive = true;
+        dataToFind.isArchived = false;
       }
 
-      if(_req.query.isInActive){
-        dataToFind.isActive=false
-        dataToFind.isArchived=false
+      if (_req.query.isInActive) {
+        dataToFind.isActive = false;
+        dataToFind.isArchived = false;
       }
 
-      if(_req.query.isArchived){
-        dataToFind.isArchived=true
+      if (_req.query.isArchived) {
+        dataToFind.isArchived = true;
       }
       if (_req.query.search) {
         dataToFind = {
@@ -1094,14 +1229,14 @@ else {
         item.businessDetailsId = businessDetailsId;
       });
       const pref: ClientTablePreferenceInterface | null =
-      await ClientTablePreference.findOne({ userId: _req.user.id });
+        await ClientTablePreference.findOne({ userId: _req.user.id });
 
-    const filteredDataArray: DataObject[] = filterAndTransformData(
-            //@ts-ignore
-      pref?.columns,
-      convertArray(query.results)
-    );
-      const arr = filteredDataArray
+      const filteredDataArray: DataObject[] = filterAndTransformData(
+        //@ts-ignore
+        pref?.columns,
+        convertArray(query.results)
+      );
+      const arr = filteredDataArray;
       return res.json({
         data: arr,
       });

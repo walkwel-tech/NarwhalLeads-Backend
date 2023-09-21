@@ -120,15 +120,7 @@ if(!industry){
         //@ts-ignore
         columns?.columnsNames.push(obj);
       } else {
-        // columns?.columnsNames.map((i, idx) => {
-        //   //@ts-ignore
-        //   if (i?.defaultColumn == j && i?.renamedColumn != "") {
-        //     //@ts-ignore
-        //     input[i?.renamedColumn] = input[j];
-        //     //@ts-ignore
-        //     // delete input[j];
-        //   }
-        // });
+
       }
     });
 
@@ -159,11 +151,7 @@ if(!industry){
       { columns: arr, columnsNames: columns?.columnsNames },
       { new: true }
     );
-    // await CustomColumnNames.findByIdAndUpdate(
-    // columns?.id,
-    // { columnsNames: columns?.columnsNames },
-    // { new: true }
-    // );
+
     const checkPreferenceExists: any = await LeadTablePreference.findOne({
       userId: user._id,
     });
@@ -452,12 +440,7 @@ if(user.isSmsNotificationActive){
         email: input.email,
       };
       send_email_for_new_lead(user.email, message);
-      // const messageToAdmin: any = {
-      //   leadsCost: leadcpl,
-      //   email: user.email,
-      //   cardNumber: cardDetails?.cardNumber?.substr(-4),
-      // };
-      // send_email_for_new_lead_to_admin(messageToAdmin);
+
     }
 
     return res.json({ data: leadsSave });
@@ -1837,11 +1820,7 @@ if(user.isSmsNotificationActive){
           .toISOString()
           .split("T")[0]
       );
-      // const dayBeforeYesterday = new Date(
-      //   new Date(new Date(aa.getTime() - aa.getTimezoneOffset() * 60000))
-      //     .toISOString()
-      //     .split("T")[0]
-      // );
+
       const lastWeek = new Date(
         new Date(new Date(b.getTime() - b.getTimezoneOffset() * 60000))
           .toISOString()
@@ -1887,13 +1866,7 @@ if(user.isSmsNotificationActive){
         },
       });
 
-      // const dayBeforeYesterdayData = await Leads.find({
-      //   bid: user?.buyerId,
-      //   createdAt: {
-      //     $gte: new Date(dayBeforeYesterday),
-      //     $lte: new Date(yesterday),
-      //   },
-      // });
+
       const lastWeekData = await Leads.find({
         bid: user?.buyerId,
         createdAt: {

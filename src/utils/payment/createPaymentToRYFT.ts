@@ -170,19 +170,12 @@ export const attemptToPaymentBy_PaymentMethods = (
     };
     axios(config)
       .then(async function (res) {
-        // if (res.data.status === PAYMENT_STATUS.APPROVED) {
           resolve(res);
-        // } else {
-          // console.log("Exception Occur")
-          // throw new Error("payment pending");
-        // }
+      
       })
       .catch(function (error) {
         reject(error);
-        // console.log(
-        //   "attempt payment by payment methods error",
-        //   error.response.data
-        // );
+       
       });
   });
 };
@@ -306,15 +299,7 @@ export const attemptToPaymentInitial = ( params: any) => {
   return new Promise((resolve, reject) => {
     const paymentData = JSON.stringify({
       clientSecret: params.clientSecret,
-      // cardDetails: {
-      //   number: params.cardNumber,
-      //   expiryMonth: params.expiryMonth,
-      //   expiryYear: params.expiryYear,
-      //   cvc: params.cvc,
-      // },
-      // paymentMethodOptions: {
-      //   store: true,
-      // },
+ 
     });
     const config = {
       method: "post",
@@ -330,23 +315,7 @@ export const attemptToPaymentInitial = ( params: any) => {
     axios(config)
       .then(async function (res) {
         resolve(res)
-        // if (res.data.status === PAYMENT_STATUS.APPROVED) {
-        //   const user: any = await User.findOne({ email: params.email });
-        //   await RyftPaymentMethods.create({
-        //     userId: user.id,
-        //     ryftClientId: user.ryftClientId,
-        //     cardId: params.cardId,
-        //     paymentMethod: res.data.paymentMethod,
-        //   });
-        //   const card = await CardDetails.findById(params.cardId);
-        //   await CardDetails.findByIdAndUpdate(params.cardId, {
-        //     cardNumber: "000000000000" + card?.cardNumber.slice(-4),
-        //   });
-        //   resolve(res);
-        // } else {
-        //   console.log("Exception Occur")
-        //   throw new Error("Payment Pending");
-        // }
+    
       })
       .catch(function (error) {
         reject(error);

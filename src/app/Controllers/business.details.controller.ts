@@ -4,7 +4,6 @@ import mongoose from "mongoose";
 import { FileEnum } from "../../types/FileEnum";
 import { RolesEnum } from "../../types/RolesEnum";
 import { ValidationErrorResponse } from "../../types/ValidationErrorResponse";
-// import { checkOnbOardingComplete } from "../../utils/Functions/Onboarding_complete";
 import { ONBOARDING_KEYS } from "../../utils/constantFiles/OnBoarding.keys";
 import { createCustomersOnRyftAndLeadByte } from "../../utils/createCustomer";
 import { DeleteFile } from "../../utils/removeFile";
@@ -29,6 +28,10 @@ import { business_details_submission } from "../../utils/webhookUrls/business_de
 import { FreeCreditsLink } from "../Models/freeCreditsLink";
 import { createCustomerOnLeadByte } from "../../utils/createCustomer/createOnLeadByte";
 import { LeadTablePreference } from "../Models/LeadTablePreference";
+import { findModifiedFieldsForUserService, findUpdatedFields } from "../../utils/Functions/findModifiedColumns";
+import { ACTION } from "../../utils/Enums/actionType.enum";
+import { MODEL_ENUM } from "../../utils/Enums/model.enum";
+import { ActivityLogs } from "../Models/ActivityLogs";
 
 const ObjectId = mongoose.Types.ObjectId;
 
@@ -62,9 +65,7 @@ export class BusinessDetailsController {
         .status(400)
         .json({ error: { message: "Business Name Already Exists." } });
     }
-    // get onboarding value of user
     const { onBoarding }: any = await User.findById(input.userId);
-    // if not exists we assign the empty array.
     let object = onBoarding || [];
     let array: any = [];
     if (errors.length) {
@@ -72,25 +73,20 @@ export class BusinessDetailsController {
         property: error.property,
         constraints: error.constraints,
       }));
-      //we put the columns in the array on which validation throws.
-      errorsInfo.map((i) => {
+      errorsInfo.forEach((i) => {
         array.push(i.property);
       });
-      // check if the array for business details key is already in onboarding and fetch if exists.
       const existLead = object.find(
         (item: any) => item.key === ONBOARDING_KEYS.BUSINESS_DETAILS
       );
 
       if (existLead) {
-        // if exists we just make the changes in existing object for busines details. we are setting the new pending fields by assigning the array.
         existLead.pendingFields = array;
         object = object.map((obj: any) =>
           obj.key === existLead.key ? existLead : obj
         );
 
-        // object.push(existLead)
       } else {
-        // if already not exists then make an mock object and push that object in existing onboarding
         const mock = {
           key: ONBOARDING_KEYS.BUSINESS_DETAILS,
           pendingFields: array,
@@ -98,7 +94,6 @@ export class BusinessDetailsController {
         object.push(mock);
       }
     }
-    // if validation error not occurs then, set pending field of byusiness empty and dependencies of card details also empty.
     else {
       object = object.map((obj: any) =>
         obj.key === ONBOARDING_KEYS.BUSINESS_DETAILS
@@ -297,6 +292,8 @@ export class BusinessDetailsController {
 
     try {
       const details = await BusinessDetails.findOne({ _id: new ObjectId(id) });
+      const userForActivity=await BusinessDetails.findById(id," -_id -createdAt -updatedAt").lean()
+
       if (!details) {
         return res
           .status(404)
@@ -306,11 +303,7 @@ export class BusinessDetailsController {
       if (input.businessOpeningHours) {
         input.businessOpeningHours = JSON.parse(input.businessOpeningHours);
       }
-      // const businesses=await BusinessDetails.find({businessName:input.businessName})
-      // if(businesses.length>0){
-      //   return res.status(400).json({error:{message:"Business Name Already Exists."}})
 
-      // }
       if (input.businessName) {
         // if (userData?.registrationMailSentToAdmin) {
           const businesses = await BusinessDetails.find({
@@ -354,6 +347,8 @@ export class BusinessDetailsController {
       const data = await BusinessDetails.findByIdAndUpdate(id, input, {
         new: true,
       });
+      const serviceDataForActivityLogs = await UserService.findOne({ userId: userData?.id },"-_id -__v -userId -createdAt -deletedAt -updatedAt");
+
       const serviceData = await UserService.findOne({ userId: userData?.id });
       if (input.accreditations) {
         input.accreditations = JSON.parse(input.accreditations);
@@ -447,6 +442,42 @@ export class BusinessDetailsController {
         business_details_submission(messageToSendInBusinessSubmission);
         if (req.file && details.businessLogo) {
           DeleteFile(`${details.businessLogo}`);
+        }
+        const userAfterMod=await BusinessDetails.findById(id," -_id  -createdAt -updatedAt").lean()
+
+        const fields = findUpdatedFields(userForActivity, userAfterMod);
+        const userr=await User.findOne({businessDetailsId:req.params.id})
+        const isEmpty = Object.keys(fields.updatedFields).length === 0;
+
+        
+        if(!isEmpty){const activity={
+          //@ts-ignore
+          actionBy:req?.user?.role,
+          actionType:ACTION.UPDATING,
+          targetModel:MODEL_ENUM.BUSINESS_DETAILS,
+          //@ts-ignore
+          userEntity:userr?.id,
+          originalValues:fields.oldFields,
+          modifiedValues:fields.updatedFields
+        }
+        await ActivityLogs.create(activity)}
+
+        if(input.financeOffers || input.prices || input.accreditations || input.avgInstallTime || input.trustpilotReviews){
+          const serviceData = await UserService.findOne({ userId: userData?.id },"-_id -userId -createdAt -deletedAt -__v -updatedAt");
+          const fields = findModifiedFieldsForUserService(serviceDataForActivityLogs, serviceData);
+          const isEmpty = Object.keys(fields.updatedFields).length === 0;
+          if(!isEmpty){const activity={
+            //@ts-ignore
+            actionBy:req?.user?.role,
+            actionType:ACTION.UPDATING,
+            targetModel:MODEL_ENUM.USER_SERVICE_DETAILS,
+            //@ts-ignore
+            userEntity:userr?.id,
+            originalValues:fields.oldFields,
+            modifiedValues:fields.updatedFields
+          }
+          await ActivityLogs.create(activity)}
+  
         }
         return res.json({
           data: {
