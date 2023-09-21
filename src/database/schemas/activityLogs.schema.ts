@@ -1,4 +1,4 @@
-import { Schema } from "mongoose";
+import { Schema, Types } from "mongoose";
 
 const ActivityLogsSchema = new Schema({
     actionBy: {
@@ -11,8 +11,10 @@ const ActivityLogsSchema = new Schema({
         type: String,
     },
     userEntity: {
-        type: String,
-    },
+        type: Types.ObjectId,
+        default: null,
+        ref: "User",
+      },
     originalValues: {
         type: Array,
     },
