@@ -9,8 +9,8 @@ import { createCustomersOnRyftAndLeadByte } from "../../utils/createCustomer";
 import { DeleteFile } from "../../utils/removeFile";
 import { BusinessDetailsInput } from "../Inputs/BusinessDetails.input";
 import {
-  // send_email_for_new_registration,
-  send_email_for_updated_details,
+  // sendEmailForNewRegistration,
+  sendEmailForUpdatedDetails,
 } from "../Middlewares/mail";
 import { BuisnessIndustries } from "../Models/BuisnessIndustries";
 import { BusinessDetails } from "../Models/BusinessDetails";
@@ -24,7 +24,7 @@ import { UserLeadsDetails } from "../Models/UserLeadsDetails";
 // import { LeadTablePreference } from "../Models/LeadTablePreference";
 import { AccessToken } from "../Models/AccessToken";
 import { UserService } from "../Models/UserService";
-import { business_details_submission } from "../../utils/webhookUrls/business_details_submission";
+import { businessDetailsSubmission } from "../../utils/webhookUrls/businessDetailsSubmission";
 import { FreeCreditsLink } from "../Models/freeCreditsLink";
 import { createCustomerOnLeadByte } from "../../utils/createCustomer/createOnLeadByte";
 import { LeadTablePreference } from "../Models/LeadTablePreference";
@@ -151,7 +151,7 @@ export class BusinessDetailsController {
       const user: any = await User.findById(input.userId);
       if (user.promoLinkId) {
         const dataToUpdate = {
-          $push: { user: { userId: user.id, businessDetailsId: userData?.id } },
+          $push: { users:  user.id},
         };
         const linkUpdate = await FreeCreditsLink.findByIdAndUpdate(
           user.promoLinkId,
@@ -417,7 +417,7 @@ export class BusinessDetailsController {
           area: `${formattedPostCodes}`,
           leadCost: userData?.leadCost,
         };
-        send_email_for_updated_details(message);
+        sendEmailForUpdatedDetails(message);
 
         const messageToSendInBusinessSubmission = {
           businessName: updatedDetails?.businessName,
@@ -439,7 +439,7 @@ export class BusinessDetailsController {
           postCodes: leadData?.postCodeTargettingList,
           detailsType:"UPDATED DETAILS"
         };
-        business_details_submission(messageToSendInBusinessSubmission);
+        businessDetailsSubmission(messageToSendInBusinessSubmission);
         if (req.file && details.businessLogo) {
           DeleteFile(`${details.businessLogo}`);
         }
@@ -450,7 +450,7 @@ export class BusinessDetailsController {
         const isEmpty = Object.keys(fields.updatedFields).length === 0;
 
         
-        if(!isEmpty){const activity={
+        if(!isEmpty && userr?.isSignUpCompleteWithCredit){const activity={
           //@ts-ignore
           actionBy:req?.user?.role,
           actionType:ACTION.UPDATING,
@@ -466,7 +466,7 @@ export class BusinessDetailsController {
           const serviceData = await UserService.findOne({ userId: userData?.id },"-_id -userId -createdAt -deletedAt -__v -updatedAt");
           const fields = findModifiedFieldsForUserService(serviceDataForActivityLogs, serviceData);
           const isEmpty = Object.keys(fields.updatedFields).length === 0;
-          if(!isEmpty){const activity={
+          if(!isEmpty && userr?.isSignUpCompleteWithCredit){const activity={
             //@ts-ignore
             actionBy:req?.user?.role,
             actionType:ACTION.UPDATING,

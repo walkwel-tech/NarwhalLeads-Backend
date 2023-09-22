@@ -3,12 +3,12 @@ import { Request, Response } from "express";
 import { RolesEnum } from "../../types/RolesEnum";
 import { ValidationErrorResponse } from "../../types/ValidationErrorResponse";
 import { leadsAlertsEnums } from "../../utils/Enums/leads.Alerts.enum";
-import { checkOnbOardingComplete } from "../../utils/Functions/Onboarding_complete";
+import { checkOnbOardingComplete } from "../../utils/Functions/OnboardingComplete";
 import { ONBOARDING_KEYS } from "../../utils/constantFiles/OnBoarding.keys";
 import { UserLeadDetailsInput } from "../Inputs/user.leadDetails.input";
 import {
-  // send_email_for_new_registration,
-  send_email_for_updated_details,
+  // sendEmailForNewRegistration,
+  sendEmailForUpdatedDetails,
 } from "../Middlewares/mail";
 import { BusinessDetails } from "../Models/BusinessDetails";
 import { User } from "../Models/User";
@@ -17,7 +17,7 @@ import { FreeCreditsLink } from "../Models/freeCreditsLink";
 import { PROMO_LINK } from "../../utils/Enums/promoLink.enum";
 import { addCreditsToBuyer } from "../../utils/payment/addBuyerCredit";
 import { UserService } from "../Models/UserService";
-import { business_details_submission } from "../../utils/webhookUrls/business_details_submission";
+import { businessDetailsSubmission } from "../../utils/webhookUrls/businessDetailsSubmission";
 import { ACTION } from "../../utils/Enums/actionType.enum";
 import { MODEL_ENUM } from "../../utils/Enums/model.enum";
 import { findModifiedFieldsForUserService, findUpdatedFields } from "../../utils/Functions/findModifiedColumns";
@@ -146,7 +146,7 @@ export class UserLeadsController {
         detailsType:"NEW DETAILS"
 
       };
-      business_details_submission(messageToSendInBusinessSubmission); 
+      businessDetailsSubmission(messageToSendInBusinessSubmission); 
     }
      
       if(user.premiumUser && user.premiumUser==PROMO_LINK.PREMIUM_USER_NO_TOP_UP){
@@ -286,7 +286,7 @@ console.log("hetrtredteydtuet")
       const userr=await User.findOne({userLeadsDetailsId:req.params.id})
       const isEmpty = Object.keys(fields.updatedFields).length === 0;
 
-   if(!isEmpty) {  const activity={
+   if(!isEmpty && userr?.isSignUpCompleteWithCredit) {  const activity={
         //@ts-ignore
         actionBy:req?.user?.role,
         actionType:ACTION.UPDATING,
@@ -334,12 +334,12 @@ console.log("hetrtredteydtuet")
           area: `${formattedPostCodes}`,
           leadCost:userData?.leadCost
         };
-        send_email_for_updated_details(message);
+        sendEmailForUpdatedDetails(message);
         if(input.criteria){
           const serviceData = await UserService.findOne({ userId: userData?.id },"-_id -userId -createdAt -deletedAt -__v -updatedAt");
           const fields = findModifiedFieldsForUserService(serviceDataForActivityLogs, serviceData);
           const isEmpty = Object.keys(fields.updatedFields).length === 0;
-          if(!isEmpty){const activity={
+          if(!isEmpty && userr?.isSignUpCompleteWithCredit){const activity={
             //@ts-ignore
             actionBy:req?.user?.role,
             actionType:ACTION.UPDATING,

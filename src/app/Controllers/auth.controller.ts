@@ -18,8 +18,8 @@ import { LoginInput } from "../Inputs/Login.input";
 import { CheckUserInput } from "../Inputs/checkUser.input";
 import { forgetPasswordInput } from "../Inputs/forgetPasswordInput";
 import {
-  send_email_for_registration,
-  send_email_forget_password,
+  sendEmailForRegistration,
+  sendEmailForgetPassword,
 } from "../Middlewares/mail";
 import { AdminSettings } from "../Models/AdminSettings";
 // import { BusinessDetails } from "../Models/BusinessDetails";
@@ -67,7 +67,7 @@ class AuthController {
         let checkCode;
         let codeExists;
         if (input.code) {
-          checkCode = await FreeCreditsLink.findOne({ code: input.code });
+          checkCode = await FreeCreditsLink.findOne({ code: input.code,isDeleted:false });
           if (checkCode?.isDisabled) {
             return res.status(400).json({ data: { message: "Link Expired!" } });
           }
@@ -144,7 +144,7 @@ class AuthController {
         await User.create(dataToSave);
         if (input.code) {
           const checkCode: any = await FreeCreditsLink.findOne({
-            code: input.code,
+            code: input.code, isDeleted:false
           });
           const dataToSave: any = {
             isUsed: true,
@@ -155,7 +155,7 @@ class AuthController {
             new: true,
           });
         }
-        send_email_for_registration(input.email, input.firstName);
+        sendEmailForRegistration(input.email, input.firstName);
 
         passport.authenticate(
           "local",
@@ -490,7 +490,7 @@ class AuthController {
         password: text,
       };
       console.log("FORGET PASSWORD", text);
-      send_email_forget_password(input.email, message);
+      sendEmailForgetPassword(input.email, message);
       await ForgetPassword.create({
         userId: user.id,
         email: input.email,
@@ -508,7 +508,7 @@ class AuthController {
         password: text,
       };
       console.log("FORGET PASSWORD", text);
-      send_email_forget_password(input.email, message);
+      sendEmailForgetPassword(input.email, message);
       await ForgetPassword.create({
         userId: admin.id,
         email: input.email,

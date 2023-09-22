@@ -10,7 +10,7 @@ const sgMail = require("@sendgrid/mail");
 sgMail.setApiKey(process.env.SENDGRID_API_KEY);
 sgMail.setSubstitutionWrappers("{{", "}}");
 
-export function send_email_forget_password(send_to: any, message: any) {
+export function sendEmailForgetPassword(send_to: any, message: any) {
   const msg = {
     to: send_to, // Change to your recipient
     // to: "radhika.walkweltech@gmail.com",
@@ -54,7 +54,7 @@ export function send_email_forget_password(send_to: any, message: any) {
   }
 }
 
-export function send_email_for_autocharge(send_to: any, message: any) {
+export function sendEmailForAutocharge(send_to: any, message: any) {
   const msg = {
     to: send_to, /// Change to your recipient
     // to: "radhika.walkweltech@gmail.com",
@@ -109,7 +109,7 @@ export function send_email_for_autocharge(send_to: any, message: any) {
   }
 }
 
-export function send_email_for_failed_autocharge(send_to: any, message: any) {
+export function sendEmailForFailedAutocharge(send_to: any, message: any) {
   const msg = {
     to: send_to, // Change to your recipient
     // to: "radhika.walkweltech@gmail.com",
@@ -164,7 +164,7 @@ export function send_email_for_failed_autocharge(send_to: any, message: any) {
   }
 }
 
-export function send_email_for_registration(send_to: any, message: any) {
+export function sendEmailForRegistration(send_to: any, message: any) {
   const msg = {
     to: send_to, // Change to your recipient
     // to: "radhika.walkweltech@gmail.com",
@@ -207,7 +207,7 @@ export function send_email_for_registration(send_to: any, message: any) {
   }
 }
 
-export function send_email_for_add_credits(send_to: any, message: any) {
+export function sendEmailForAddCredits(send_to: any, message: any) {
   const msg = {
     to: send_to, // Change to your recipient
     // to: "radhika.walkweltech@gmail.com",
@@ -251,7 +251,7 @@ export function send_email_for_add_credits(send_to: any, message: any) {
   }
 }
 
-export async function send_email_for_new_registration(message: any) {
+export async function sendEmailForNewRegistration(message: any) {
   if (message.openingHours) {
     message.openingHours = mapHours(message.openingHours);
   }
@@ -336,7 +336,7 @@ export async function send_email_for_new_registration(message: any) {
   }
 }
 
-export function send_email_to_invited_user(send_to: string, message: any) {
+export function sendEmailToInvitedUser(send_to: string, message: any) {
   const msg = {
     to: send_to, // Change to your recipient
     from: {
@@ -382,7 +382,7 @@ export function send_email_to_invited_user(send_to: string, message: any) {
   }
 }
 
-export function send_email_for_new_lead(send_to: string, message: any) {
+export function sendEmailForNewLead(send_to: string, message: any) {
   const msg = {
     to: send_to, // Change to your recipient
     // to: "radhika.walkweltech@gmail.com",
@@ -431,7 +431,7 @@ export function send_email_for_new_lead(send_to: string, message: any) {
   }
 }
 
-// export function send_email_for_new_lead_to_admin(message: any) {
+// export function sendEmailForNewLead_to_admin(message: any) {
 //   const msg = {
 //     // to: "leads@nmg.group", // Change to your recipient
 //      from: {
@@ -467,7 +467,7 @@ export function send_email_for_new_lead(send_to: string, message: any) {
 //     });
 // }
 
-export function send_email_for_total_lead(send_to: string, message: any) {
+export function sendEmaiForTotalLead(send_to: string, message: any) {
   const msg = {
     to: send_to, // Change to your recipient
     // to: "radhika.walkweltech@gmail.com",
@@ -512,7 +512,7 @@ export function send_email_for_total_lead(send_to: string, message: any) {
   }
 }
 
-export function send_email_for_lead_status_reject(
+export function sendEmailForLeadStatusReject(
   send_to: string,
   message: any
 ) {
@@ -559,7 +559,7 @@ export function send_email_for_lead_status_reject(
   }
 }
 
-export function send_email_for_lead_status_accept(
+export function sendEmailForLeadStatusAccept(
   send_to: string,
   message: any
 ) {
@@ -628,7 +628,7 @@ const mapHours = (hours: any) => {
   return hours || [];
 };
 
-export function send_email_for_updated_details(message: any) {
+export function sendEmailForUpdatedDetails(message: any) {
   if (message.openingHours) {
     message.openingHours = mapHours(message.openingHours);
   }
@@ -696,7 +696,7 @@ export function send_email_for_updated_details(message: any) {
   }
 }
 
-export function send_email_for_payment_success(send_to: any, message: any) {
+export function sendEmailForPaymentSuccess(send_to: any, message: any) {
   const msg = {
     to: send_to, // Change to your recipient
     // to: "radhika.walkweltech@gmail.com",
@@ -746,7 +746,7 @@ export function send_email_for_payment_success(send_to: any, message: any) {
   }
 }
 
-export function send_email_for_payment_failure(send_to: any, message: any) {
+export function sendEmailForPaymentFailure(send_to: any, message: any) {
   const msg = {
     to: send_to, // Change to your recipient
     // to: "radhika.walkweltech@gmail.com",
@@ -796,7 +796,7 @@ export function send_email_for_payment_failure(send_to: any, message: any) {
   }
 }
 
-export function send_email_for_payment_success_to_admin(message: any) {
+export function sendEmailForPaymentSuccess_to_admin(message: any) {
   const msg = {
     to: "leads@nmg.group", // Change to your recipient
     // to: "radhika.walkweltech@gmail.com",
@@ -847,7 +847,7 @@ export function send_email_for_payment_success_to_admin(message: any) {
   }
 }
 
-export function send_email_for_fully_signup_to_admin(message: any) {
+export function sendEmailForFullySignupToAdmin(message: any) {
   const msg = {
     to: "leads@nmg.group", // Change to your recipient
     // to: "radhika.walkweltech@gmail.com",
@@ -917,7 +917,7 @@ export function send_email_for_fully_signup_to_admin(message: any) {
   }
 }
 
-export function send_email_to_invited_admin(send_to: string, message: any) {
+export function sendEmailToInvitedAdmin(send_to: string, message: any) {
   const msg = {
     to: send_to, // Change to your recipient
     from: {
@@ -962,7 +962,7 @@ export function send_email_to_invited_admin(send_to: string, message: any) {
   }
 }
 
-export function send_email_for_below_5_leads_pending(
+export function sendEmailForBelow5LeadsPending(
   send_to: string,
   message: any
 ) {
@@ -1010,7 +1010,7 @@ export function send_email_for_below_5_leads_pending(
   }
 }
 
-export function send_email_for_outOfFunds(
+export function sendEmailForOutOfFunds(
   send_to: string,
   message: any
 ) {
