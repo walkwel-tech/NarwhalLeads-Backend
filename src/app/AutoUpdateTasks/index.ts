@@ -1,6 +1,6 @@
 import { activityLogs } from "./activityLogs"
 import { autoChargePayment, weeklypayment } from "./autoCharge"
-import { autoWebhookURLHitLeadSubmission } from "./lead_status_update_webhook"
+import { autoWebhookURLHitLeadSubmission } from "./leadStatusUpdateWebhook"
 import { mailForTotalLeadsInDay, outOfFunds } from "./sendMail"
 
 export const autoUpdateTasks=()=>{

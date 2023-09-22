@@ -10,12 +10,12 @@ import { generatePDF } from "../../utils/XeroApiIntegration/generatePDF";
 // import { managePaymentsByPaymentMethods } from "../../utils/payment";
 import { UpdateCardInput } from "../Inputs/UpdateCard.input";
 import {
-  send_email_for_fully_signup_to_admin,
-  send_email_for_new_registration,
-  send_email_for_payment_failure,
-  send_email_for_payment_success,
-  // send_email_for_payment_success_to_admin,
-  send_email_for_registration,
+  sendEmailForFullySignupToAdmin,
+  sendEmailForNewRegistration,
+  sendEmailForPaymentFailure,
+  sendEmailForPaymentSuccess,
+  // sendEmailForPaymentSuccess_to_admin,
+  sendEmailForRegistration,
 } from "../Middlewares/mail";
 import { AdminSettings } from "../Models/AdminSettings";
 import { CardDetails } from "../Models/CardDetails";
@@ -26,7 +26,7 @@ import { FreeCreditsLink } from "../Models/freeCreditsLink";
 
 import { UserInterface } from "../../types/UserInterface";
 import { paymentMethodEnum } from "../../utils/Enums/payment.method.enum";
-import { checkOnbOardingComplete } from "../../utils/Functions/Onboarding_complete";
+import { checkOnbOardingComplete } from "../../utils/Functions/OnboardingComplete";
 
 import { addCreditsToBuyer } from "../../utils/payment/addBuyerCredit";
 import { RolesEnum } from "../../types/RolesEnum";
@@ -55,9 +55,10 @@ import { PaymentResponse } from "../../types/PaymentResponseInterface";
 import { PREMIUM_PROMOLINK } from "../../utils/constantFiles/spotDif.offers.promoLink";
 import { PAYMENT_TYPE_ENUM } from "../../utils/Enums/paymentType.enum";
 import {
-  fully_signup_with_credits,
+  fullySignupWithCredits,
   userData,
-} from "../../utils/webhookUrls/fully_signup_with_credits";
+} from "../../utils/webhookUrls/fullySignupWithCredits";
+import { TRANSACTION_STATUS } from "../../utils/Enums/transaction.status.enum";
 // import { managePaymentsByPaymentMethods } from "../../utils/payment";
 // import { managePaymentsByPaymentMethods } from "../../utils/payment";
 
@@ -127,7 +128,7 @@ export class CardDetailsControllers {
         .populate("userLeadsDetailsId");
       const userData = await CardDetails.create(dataToSave);
 
-      send_email_for_registration(user.email, user.firstName);
+      sendEmailForRegistration(user.email, user.firstName);
       let array: any = [];
       user?.businessDetailsId?.businessOpeningHours.forEach((i: any) => {
         if (i.day != "") {
@@ -169,7 +170,7 @@ export class CardDetailsControllers {
           area: `${formattedPostCodes}`,
           leadCost: user?.leadCost,
         };
-        send_email_for_new_registration(message);
+        sendEmailForNewRegistration(message);
         await User.findByIdAndUpdate(user.id, {
           registrationMailSentToAdmin: true,
         });
@@ -638,7 +639,7 @@ export class CardDetailsControllers {
           credits: userId?.credits,
           businessName: business?.businessName,
         };
-        send_email_for_payment_failure(userId?.email, message);
+        sendEmailForPaymentFailure(userId?.email, message);
         let dataToSaveInTransaction: any = {
           userId: userId?.id,
           amount: input?.data?.amount / 100,
@@ -667,7 +668,7 @@ export class CardDetailsControllers {
         // TODO: apply conditipon for user does not iuncludes in promo link.users
         userId.id = new ObjectId(userId?.id);
         const promoLink = await FreeCreditsLink.findOne({
-          _id: new ObjectId(userId?.promoLinkId),
+          _id: new ObjectId(userId?.promoLinkId), isDeleted:false
         });
         let params: any = {
           buyerId: userId?.buyerId,
@@ -736,14 +737,14 @@ export class CardDetailsControllers {
                 isSignUpCompleteWithCredit: true,
               });
 
-              fully_signup_with_credits(userId?.id, cardDetails?.id);
+              fullySignupWithCredits(userId?.id, cardDetails?.id);
               let data = await userData(userId?.id, cardDetails?.id);
               const formattedPostCodes = data?.postCodeTargettingList
                 .map((item: any) => item.postalCode)
                 .flat();
               //@ts-ignore
               data.area = formattedPostCodes;
-              send_email_for_fully_signup_to_admin(data);
+              sendEmailForFullySignupToAdmin(data);
             
             }
             const transaction = await Transaction.create(
@@ -776,7 +777,7 @@ export class CardDetailsControllers {
               credits: userId?.credits,
               businessName: business?.businessName,
             };
-            send_email_for_payment_success(userId?.email, message);
+            sendEmailForPaymentSuccess(userId?.email, message);
             let invoice;
             if (userId?.xeroContactId) {
               let freeCredits: number;
@@ -890,6 +891,8 @@ export class CardDetailsControllers {
     res: Response
   ): Promise<any> => {
     const sessionId = req.query.ps;
+    let userData:any;
+    let cardData:any
     const shouldReturnJson = !!req.query.requestJson || false;
     let config = {
       method: "get",
@@ -903,6 +906,7 @@ export class CardDetailsControllers {
         const sessionData = response.data;
         const { customerDetails, paymentMethod, amount } = sessionData;
         const user = await User.findOne({ ryftClientId: customerDetails.id });
+        userData=user
         const paymentMthods = await RyftPaymentMethods.find({
           paymentMethod: paymentMethod?.tokenizedDetails?.id,
         });
@@ -946,6 +950,16 @@ export class CardDetailsControllers {
             )
           ) {
             const card = await CardDetails.create(dataToSave);
+            cardData=card
+            await Transaction.create({
+              userId: user?.id,
+              cardId: card?.id,
+              amount:0,             
+              status: TRANSACTION_STATUS.SUCCESS,
+              paymentSessionId: sessionId,
+              paymentMethod: card?.paymentMethod,
+              title:transactionTitle.SESSION_CREATED
+            });
             await RyftPaymentMethods.create({
               userId: user?.id,
               ryftClientId: customerDetails?.id,
@@ -990,8 +1004,18 @@ export class CardDetailsControllers {
           res.status(302).redirect(process.env.RETURN_URL || "");
         }
       })
-      .catch(function (error: any) {
+      .catch(async function (error: any) {
         if (shouldReturnJson) {
+          await Transaction.create({
+            userId: userData?.id,
+            cardId: cardData?.id,
+            amount:0,             
+            status: TRANSACTION_STATUS.FAIL,
+            paymentSessionId: sessionId,
+            paymentMethod: cardData?.paymentMethod,
+            title:transactionTitle.SESSION_CREATED,
+            notes:error.response.data.errors[0].message,
+          });
           res.json({
             message: "Session error",
             error: error,
