@@ -30,8 +30,8 @@ leads.post('/re-order',Auth,LeadsController.reOrderIndex)
 leads.patch('/:id',Auth,LeadsController.update)
 leads.get('/',Auth,LeadsController.index),
 leads.get('/reported-leads',Auth,LeadsController.showReportedLeads),
-leads.get('/export-csv-file-user-leads',Auth,LeadsController.export_csv_file_user_leads),
-leads.get('/export-csv-file-admin-leads',OnlyAdmins,LeadsController.export_csv_file_admin_leads),
+leads.get('/export-csv-file-user-leads',Auth,LeadsController.exportCsvFileUserLeads),
+leads.get('/export-csv-file-admin-leads',OnlyAdmins,LeadsController.exportCsvFileAdminLeads),
 leads.get('/allLeads/:id',OnlyAdmins,LeadsController.showAllLeadsToAdminByUserId)
 leads.get('/allLeads',OnlyAdmins,LeadsController.showAllLeadsToAdmin)
 leads.get('/:id',Auth,LeadsController.leadById)

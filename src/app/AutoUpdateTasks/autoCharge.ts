@@ -4,8 +4,8 @@ import { paymentMethodEnum } from "../../utils/Enums/payment.method.enum";
 import { addCreditsToBuyer } from "../../utils/payment/addBuyerCredit";
 import { generatePDF } from "../../utils/XeroApiIntegration/generatePDF";
 import {
-  send_email_for_autocharge,
-  // send_email_for_failed_autocharge,
+  sendEmailForAutocharge,
+  // sendEmailForFailedAutocharge,
 } from "../Middlewares/mail";
 import { AdminSettings } from "../Models/AdminSettings";
 import { CardDetails } from "../Models/CardDetails";
@@ -281,7 +281,7 @@ const handleFailedCharge = async (
     };
    return await chargeUser(params);
   } else {
-    // send_email_for_failed_autocharge(user.email, text);
+    // sendEmailForFailedAutocharge(user.email, text);
     console.log("EMAIL SHOULD BE SENT NOW");
     return false
 
@@ -324,7 +324,7 @@ const autoTopUp = async (
       cardHolderName: cardExist?.cardHolderName,
     };
     console.log("text", text);
-    send_email_for_autocharge(user.email, text);
+    sendEmailForAutocharge(user.email, text);
   } else {
   }
   return success

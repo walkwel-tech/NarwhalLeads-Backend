@@ -29,7 +29,7 @@ import freeCreditsLinkRoutes from "./routes/FreeCreditsLink.routes";
 import path from "path";
 import serviceRoutes from "./routes/userService.routes";
 import nonBillablesUsers from "./routes/nonBillableUsers.routes";
-import { notification_webhook } from "./utils/webhookUrls/notification_webhook";
+import { notificationWebhook } from "./utils/webhookUrls/notificationWebhook";
 
 const swaggerDocument = require('../swagger.json'); // Replace with the path to your actual Swagger document
 const swaggerUi = require('swagger-ui-express');
@@ -99,7 +99,7 @@ export class Server {
         this.app.use("/api/v1/service",Auth,serviceRoutes)
         this.app.use("/api/v1/non-billable-users",Auth,nonBillablesUsers)
         this.app.post("/api/v1/notification-webhook", (req: Request, res: Response) => {
-            return notification_webhook(req, res)
+            return notificationWebhook(req, res)
         });
         this.app.get("/api/v1/version", (req: Request, res: Response) => {
             res.status(200).json({message: `App running on version ${version}`});

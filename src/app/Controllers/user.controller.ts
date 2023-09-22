@@ -11,7 +11,7 @@ import { refreshToken } from "../../utils/XeroApiIntegration/createContact";
 import { generatePDF } from "../../utils/XeroApiIntegration/generatePDF";
 import { managePaymentsByPaymentMethods } from "../../utils/payment";
 import { RegisterInput } from "../Inputs/Register.input";
-import { send_email_for_updated_details } from "../Middlewares/mail";
+import { sendEmailForUpdatedDetails } from "../Middlewares/mail";
 import { BusinessDetails } from "../Models/BusinessDetails";
 import { CardDetails } from "../Models/CardDetails";
 import { Invoice } from "../Models/Invoice";
@@ -929,7 +929,7 @@ export class UsersControllers {
             );
           })
           .catch(async (err) => {
-            // send_email_for_failed_autocharge(i.email, subject, text);
+            // sendEmailForFailedAutocharge(i.email, subject, text);
             const dataToSave: any = {
               userId: checkUser?.id,
               cardId: cardExist?.id,
@@ -994,12 +994,12 @@ export class UsersControllers {
           area: `${formattedPostCodes}`,
           leadCost: user?.leadCost,
         };
-        send_email_for_updated_details(message);
+        sendEmailForUpdatedDetails(message);
 
         const fields = findUpdatedFields(userForActivity, userAfterMod);
         const isEmpty = Object.keys(fields.updatedFields).length === 0;
 
-        if (!isEmpty) {
+        if (!isEmpty && user?.isSignUpCompleteWithCredit) {
           const activity = {
             //@ts-ignore
             actionBy: req?.user?.role,
@@ -1036,7 +1036,7 @@ export class UsersControllers {
             
             const fields = findUpdatedFields(businesBeforeUpdate, businesAfterUpdate);
             const isEmpty = Object.keys(fields.updatedFields).length === 0;
-            if(!isEmpty){const activity={
+            if(!isEmpty && user?.isSignUpCompleteWithCredit){const activity={
               //@ts-ignore
               actionBy:req?.user?.role,
               actionType:ACTION.UPDATING,

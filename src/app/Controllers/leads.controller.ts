@@ -16,17 +16,17 @@ import { Invoice } from "../Models/Invoice";
 import { refreshToken } from "../../utils/XeroApiIntegration/createContact";
 import { DeleteFile } from "../../utils/removeFile";
 import {
-  send_email_for_below_5_leads_pending,
-  send_email_for_lead_status_accept,
-  send_email_for_lead_status_reject,
-  send_email_for_new_lead,
+  sendEmailForBelow5LeadsPending,
+  sendEmailForLeadStatusAccept,
+  sendEmailForLeadStatusReject,
+  sendEmailForNewLead,
 } from "../Middlewares/mail";
 import { transactionTitle } from "../../utils/Enums/transaction.title.enum";
 import { leadsAlertsEnums } from "../../utils/Enums/leads.Alerts.enum";
 // import { preference } from "../../utils/constantFiles/leadPreferenecColumns";
 import { sort } from "../../utils/Enums/sorting.enum";
-import { send_lead_data_to_zap } from "../../utils/webhookUrls/send_data_zap";
-import { IP } from "../../utils/constantFiles/IP_Lists";
+import { sendLeadDataToZap } from "../../utils/webhookUrls/sendDataZap";
+import { IP } from "../../utils/constantFiles/IP.Lists";
 import { BuisnessIndustries } from "../Models/BuisnessIndustries";
 import { LeadTablePreferenceInterface } from "../../types/LeadTablePreferenceInterface";
 import { Column } from "../../types/ColumnsPreferenceInterface";
@@ -362,7 +362,7 @@ if(user.isSmsNotificationActive){
   notify(user.smsPhoneNumber, dataToSent)
 }
     if (user?.userLeadsDetailsId?.sendDataToZapier) {
-      send_lead_data_to_zap(user.userLeadsDetailsId.zapierUrl, input)
+      sendLeadDataToZap(user.userLeadsDetailsId.zapierUrl, input)
         .then((res) => {        })
         .catch((err) => {
         });
@@ -395,7 +395,7 @@ if(user.isSmsNotificationActive){
      const txn=await Transaction.find({title:transactionTitle.CREDITS_ADDED}).sort({createdAt:-1})
      const notify:any=await Notifications.find({title:"BELOW_5_LEADS_PENDING"}).sort({createdAt:-1})
      if(txn[0]?.createdAt>notify[0]?.createdAt){
-              send_email_for_below_5_leads_pending(user.email,{credits:leftCredits,name:user?.firstName+ " "+ user?.lastName})
+              sendEmailForBelow5LeadsPending(user.email,{credits:leftCredits,name:user?.firstName+ " "+ user?.lastName})
      }
      else{
       console.log("Email already send.")
@@ -439,7 +439,7 @@ if(user.isSmsNotificationActive){
         phone: input.phone1,
         email: input.email,
       };
-      send_email_for_new_lead(user.email, message);
+      sendEmailForNewLead(user.email, message);
 
     }
 
@@ -533,7 +533,7 @@ if(user.isSmsNotificationActive){
         const leadUser: any = await User.findOne({ buyerId: lead?.bid });
 
         const message: any = { name: leadUser.firstName + " " + leadUser.lastName};
-        send_email_for_lead_status_reject(leadUser?.email, message);
+        sendEmailForLeadStatusReject(leadUser?.email, message);
         const leadsUpdate = await Leads.findByIdAndUpdate(
           leadId,
           { ...input, reportRejectedAt: new Date(),statusUpdatedAt:new Date()  },
@@ -566,7 +566,7 @@ if(user.isSmsNotificationActive){
         const leadUser: any = await User.findOne({ buyerId: lead?.bid });
 
         const message: any = { name: leadUser.firstName + " " + leadUser.lastName};
-        send_email_for_lead_status_accept(leadUser?.email, message);
+        sendEmailForLeadStatusAccept(leadUser?.email, message);
         addCreditsToBuyer(payment)
           .then(async () => {
             const dataToSave: any = {
@@ -2090,7 +2090,7 @@ if(user.isSmsNotificationActive){
     }
   };
 
-  static export_csv_file_user_leads = async (_req: any, res: Response) => {
+  static exportCsvFileUserLeads = async (_req: any, res: Response) => {
     let sortingOrder = _req.query.sortingOrder || sort.DESC;
     const userId = _req.user?.id;
     const status = _req.query.status;
@@ -2201,7 +2201,7 @@ if(user.isSmsNotificationActive){
     }
   };
 
-  static export_csv_file_admin_leads = async (_req: any, res: Response) => {
+  static exportCsvFileAdminLeads = async (_req: any, res: Response) => {
     const status = _req.query.status;
     let id = _req.query.id;
     let sortingOrder = _req.query.sortingOrder || sort.DESC;

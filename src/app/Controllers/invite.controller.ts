@@ -1,7 +1,7 @@
 import { genSaltSync, hashSync } from "bcryptjs";
 import { Request, Response } from "express";
 import { RolesEnum } from "../../types/RolesEnum";
-import { send_email_to_invited_admin, send_email_to_invited_user } from "../Middlewares/mail";
+import { sendEmailToInvitedAdmin, sendEmailToInvitedUser } from "../Middlewares/mail";
 import { LeadTablePreference } from "../Models/LeadTablePreference";
 import { User } from "../Models/User";
 import { SubscriberList } from "../Models/SubscriberList";
@@ -45,7 +45,7 @@ export class invitedUsersController {
             //@ts-ignore
           businessName:user?.businessDetailsId?.businessName
         };
-        send_email_to_invited_user(input.email, credentials);
+        sendEmailToInvitedUser(input.email, credentials);
         const hashPassword = hashSync(text, salt);
         //@ts-ignore
         const allInvites = await User.findOne({ invitedById: _req?.user?.id })
@@ -289,7 +289,7 @@ export class invitedUsersController {
     }
     const hashPassword = hashSync(text, salt);
     input.password=hashPassword
-    send_email_to_invited_admin(input.email,dataToSend)
+    sendEmailToInvitedAdmin(input.email,dataToSend)
      const data= await Admins.create(input)
      const adminExist:any=await User.findOne({role:RolesEnum.SUPER_ADMIN})
      const adminPref:any= await LeadTablePreference.findOne({userId:adminExist.id})

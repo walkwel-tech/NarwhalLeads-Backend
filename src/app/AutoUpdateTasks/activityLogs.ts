@@ -1,4 +1,4 @@
-import { activity_logs_webhook_url } from "../../utils/webhookUrls/activity_logs_webhook";
+import { activityLogsWebhookUrl } from "../../utils/webhookUrls/activityLogsWebhook";
 import { ActivityLogs } from "../Models/ActivityLogs";
 import { User } from "../Models/User";
 const cron = require("node-cron");
@@ -23,6 +23,6 @@ export const activityLogs = async () => {
       };
     });
     const userData = await Promise.all(userDataPromises);
-    await activity_logs_webhook_url(userData);
+    await activityLogsWebhookUrl(userData);
   });
 };

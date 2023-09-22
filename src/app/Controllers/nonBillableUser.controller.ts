@@ -2,7 +2,7 @@ import { genSaltSync, hashSync } from "bcryptjs";
 import { Request, Response } from "express";
 import { RolesEnum } from "../../types/RolesEnum";
 import {
-    send_email_to_invited_admin,
+    sendEmailToInvitedAdmin,
 } from "../Middlewares/mail";
 import { User } from "../Models/User";
 
@@ -29,7 +29,7 @@ export class nonBillableUsersController {
           password: text,
           name: input?.firstName + " " + input?.lastName,
         };
-        send_email_to_invited_admin(input.email, credentials);
+        sendEmailToInvitedAdmin(input.email, credentials);
         const hashPassword = hashSync(text, salt);
         //@ts-ignore
         const allInvites = await User.findOne({ role: RolesEnum.NON_BILLABLE })

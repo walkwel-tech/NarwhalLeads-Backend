@@ -1,8 +1,8 @@
 import { RolesEnum } from "../../types/RolesEnum";
 import { leadsAlertsEnums } from "../../utils/Enums/leads.Alerts.enum";
 import {
-  send_email_for_outOfFunds,
-  send_email_for_total_lead,
+  sendEmailForOutOfFunds,
+  sendEmaiForTotalLead,
 } from "../Middlewares/mail";
 import { Leads } from "../Models/Leads";
 import { User } from "../Models/User";
@@ -35,7 +35,7 @@ export const mailForTotalLeadsInDay = async () => {
           totalLeads: leads.length,
           leads: leads[0].leads,
         };
-        send_email_for_total_lead(i.email, message);
+        sendEmaiForTotalLead(i.email, message);
       }
     });
   });
@@ -48,7 +48,7 @@ cron.schedule('2 */24 * * *', async() => {
 
   const users = await User.find({ role: RolesEnum.USER, credits: 0 });
   users.map((i: any) => {
-    send_email_for_outOfFunds(i.email, {
+    sendEmailForOutOfFunds(i.email, {
       name: i.firstName + " " + i.lastName,
       credits: i.credits,
     });
