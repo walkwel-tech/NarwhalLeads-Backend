@@ -38,6 +38,9 @@ const NotificationsSchema = new Schema(
       type:String
     },
     createdAt: { type: Date },
+    status:{
+      type: String,
+    }
   },
   { timestamps: true }
 );

@@ -4,6 +4,5 @@ export interface BuisnessIndustriesInterface extends Document {
   industry:string;
   leadCost: Number;
   columns: [];
-  columnsNames:[];
   isActive:boolean;
 }

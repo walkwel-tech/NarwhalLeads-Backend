@@ -23,7 +23,7 @@ export const createCustomerOnRyft = (params: Record<string,any>) => {
         resolve(response);
       })
       .catch((err) => {
-        console.log('RYFT ERROR',err.response?.data);
+        console.log('ryft error',err.response?.data);
         
         reject(err.response?.data);
       });

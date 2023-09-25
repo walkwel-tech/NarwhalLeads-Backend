@@ -3,7 +3,7 @@ import { AccessToken } from "../../app/Models/AccessToken";
 import { User } from "../../app/Models/User";
 import { transactionTitle } from "../Enums/transaction.title.enum";
 // import { transactionTitle } from "../Enums/transaction.title.enum";
-var axios = require("axios");
+import axios from "axios"
 
 export const generatePDF = (
   ContactID: string,

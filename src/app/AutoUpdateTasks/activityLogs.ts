@@ -1,7 +1,8 @@
 import { activityLogsWebhookUrl } from "../../utils/webhookUrls/activityLogsWebhook";
 import { ActivityLogs } from "../Models/ActivityLogs";
 import { User } from "../Models/User";
-const cron = require("node-cron");
+import * as cron from "node-cron"
+
 
 export const activityLogs = async () => {
   cron.schedule("*/10 * * * *", async () => {
@@ -12,14 +13,14 @@ export const activityLogs = async () => {
       createdAt: { $gte: tenMinutesAgo, $lt: currentTime },
     });
 
-    const userDataPromises = activity.map(async (i: any) => {
-      const user: any = await User.findById(i.userEntity).populate(
+    const userDataPromises = activity.map(async (activity: any) => {
+      const user: any = await User.findById(activity.userEntity).populate(
         "businessDetailsId"
       );
       return {
         buyerId: user?.buyerId,
         businessName: user?.businessDetailsId?.businessName,
-        updatedValues: i.modifiedValues,
+        updatedValues: activity.modifiedValues,
       };
     });
     const userData = await Promise.all(userDataPromises);

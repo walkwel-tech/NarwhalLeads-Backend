@@ -2,7 +2,8 @@ import axios from "axios";
 import { CreateCustomerInput } from "../../app/Inputs/createCustomerOnRyft&Lead.inputs";
 import { User } from "../../app/Models/User";
 import { checkAccess } from "../../app/Middlewares/serverAccess";
-let FormData = require("form-data");
+import FormData from "form-data";
+// let FormData = require("form-data");
 
 const POST = "post";
 export const createCustomerOnLeadByte = (params: CreateCustomerInput) => {

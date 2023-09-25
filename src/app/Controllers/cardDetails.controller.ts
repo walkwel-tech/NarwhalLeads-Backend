@@ -130,12 +130,12 @@ export class CardDetailsControllers {
 
       sendEmailForRegistration(user.email, user.firstName);
       let array: any = [];
-      user?.businessDetailsId?.businessOpeningHours.forEach((i: any) => {
-        if (i.day != "") {
+      user?.businessDetailsId?.businessOpeningHours.forEach((businessOpeningHours: any) => {
+        if (businessOpeningHours.day != "") {
           let obj: any = {};
-          obj.day = i.day;
-          obj.openTime = i.openTime;
-          obj.closeTime = i.closeTime;
+          obj.day = businessOpeningHours.day;
+          obj.openTime = businessOpeningHours.openTime;
+          obj.closeTime = businessOpeningHours.closeTime;
           array.push(obj);
         }
       });
@@ -253,8 +253,8 @@ export class CardDetailsControllers {
           dataToSaveIncard.isDefault = true;
         }
         let existingCardNumbers: Array<string> = [];
-        cardExists.map((i) => {
-          existingCardNumbers.push(i.cardNumber);
+        cardExists.map((card) => {
+          existingCardNumbers.push(card.cardNumber);
         });
         if (!existingCardNumbers.includes((input?.cardNumber).toString())) {
           userData = await CardDetails.create(dataToSaveIncard);
@@ -295,9 +295,9 @@ export class CardDetailsControllers {
     try {
       const user = await CardDetails.find({ userId: userId, isDeleted: false });
       if (user) {
-        user.forEach(async (i) => {
-          if (i.isDefault) {
-            await CardDetails.findByIdAndUpdate(i.id, { isDefault: false });
+        user.forEach(async (user) => {
+          if (user.isDefault) {
+            await CardDetails.findByIdAndUpdate(user.id, { isDefault: false });
           }
         });
       }
@@ -687,7 +687,6 @@ export class CardDetailsControllers {
         ) {
           params.freeCredits =
             promoLink?.freeCredits * parseInt(userId?.leadCost);
-          console.log("in 1");
         } else if (
           promoLink?.spotDiffPremiumPlan &&
           originalAmount >=
@@ -697,7 +696,6 @@ export class CardDetailsControllers {
         ) {
           params.freeCredits =
             promoLink?.freeCredits * parseInt(userId?.leadCost);
-          console.log("in 2");
         } else if (
           !userId.promoCodeUsed &&
           originalAmount >=
@@ -709,7 +707,6 @@ export class CardDetailsControllers {
         }
         addCreditsToBuyer(params)
           .then(async (res: any) => {
-            // console.log("WEBHOOK 3------->>>",res)
             userId = await User.findById(userId?.id);
             let dataToSaveInTransaction: any = {
               userId: userId?.id,
@@ -809,7 +806,7 @@ export class CardDetailsControllers {
                     invoiceId: res.data.Invoices[0].InvoiceID,
                   });
 
-                  console.log("PDF generated");
+                  console.log("pdf generated");
                 })
                 .catch(async (err) => {
                   refreshToken().then(async (res) => {
@@ -833,12 +830,11 @@ export class CardDetailsControllers {
                         invoiceId: res.data.Invoices[0].InvoiceID,
                       });
 
-                      console.log("PDF generated");
+                      console.log("pdf generated");
                     });
                   });
                 });
             }
-            console.log("free credits", params, params.freeCredits);
             if (params.freeCredits) {
               userId = await User.findById(userId?.id);
               const dataToSaveInTxn = {
@@ -857,7 +853,7 @@ export class CardDetailsControllers {
             }
           })
           .catch((error) => {
-            console.log("ERROR IN WEBHOOK", error);
+            console.log("error in webhook", error);
           });
       } else if (input.eventType == "PaymentSession.approved") {
         const card = await RyftPaymentMethods.findOne({
@@ -941,8 +937,8 @@ export class CardDetailsControllers {
             dataToSave.isDefault = true;
           }
           let existingCardNumbers: Array<string> = [];
-          cardExist.map((i) => {
-            existingCardNumbers.push(i.cardNumber);
+          cardExist.map((card) => {
+            existingCardNumbers.push(card.cardNumber);
           });
           if (
             !existingCardNumbers.includes(

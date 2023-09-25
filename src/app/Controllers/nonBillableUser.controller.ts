@@ -1,9 +1,7 @@
 import { genSaltSync, hashSync } from "bcryptjs";
 import { Request, Response } from "express";
 import { RolesEnum } from "../../types/RolesEnum";
-import {
-    sendEmailToInvitedAdmin,
-} from "../Middlewares/mail";
+import { sendEmailToInvitedAdmin } from "../Middlewares/mail";
 import { User } from "../Models/User";
 
 const LIMIT = 10;
@@ -14,7 +12,8 @@ export class nonBillableUsersController {
     try {
       const checkExist = await User.findOne({
         //@ts-ignore
-        email: input.email,isDeleted:false
+        email: input.email,
+        isDeleted: false,
       });
       if (checkExist) {
         return res
@@ -49,8 +48,8 @@ export class nonBillableUsersController {
           credits: 0,
         };
 
-       const result= await User.create(dataToSave);
-        const data = await User.findById(result.id,'-password')
+        const result = await User.create(dataToSave);
+        const data = await User.findById(result.id, "-password");
 
         return res.json({ data: data });
       }
@@ -63,15 +62,15 @@ export class nonBillableUsersController {
 
   static show = async (_req: Request, res: Response) => {
     //@ts-ignore
-    const user = _req.user?._id;    
+    const user = _req.user?._id;
     const perPage =
-    //@ts-ignore
-      _req.query && _req.query.perPage > 0
       //@ts-ignore
-        ? parseInt(_req.query.perPage)
+      _req.query && _req.query.perPage > 0
+        ? //@ts-ignore
+          parseInt(_req.query.perPage)
         : LIMIT;
     let skip =
-    //@ts-ignore
+      //@ts-ignore
       (_req.query && _req.query.page > 0 ? parseInt(_req.query.page) - 1 : 0) *
       perPage;
     let dataToFind: any = {
@@ -155,8 +154,8 @@ export class nonBillableUsersController {
       if (invitedUsers.length == 0) {
         return res.status(400).json({ error: { message: "No User Found" } });
       } else {
-        const user = await User.findByIdAndUpdate(id, input, { new: true });
-
+        await User.findByIdAndUpdate(id, input, { new: true });
+        const user = await User.findById(id, "-password");
         return res.json({ data: user });
       }
     } catch (error) {
