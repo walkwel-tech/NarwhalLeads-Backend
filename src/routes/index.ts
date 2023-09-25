@@ -9,7 +9,7 @@ import userLeadsDetailsRoutes from "./userLeadsDetails.routes";
 import invitedUserRoutes from "./invite.routes";
 import BusinessIndustriesRoutes from "./buisnessIndustries.routes"
 import userServiceRoutes from "./userService.routes";
-
+import guestRoutes from "./guest.routes";
 
 export {
     AuthRoutes,
@@ -22,5 +22,6 @@ export {
     userLeadsDetailsRoutes,
     invitedUserRoutes,
     BusinessIndustriesRoutes,
-    userServiceRoutes
+    userServiceRoutes,
+    guestRoutes
 };

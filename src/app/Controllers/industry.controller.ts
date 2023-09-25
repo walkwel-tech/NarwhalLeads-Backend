@@ -1,6 +1,5 @@
 import { Request, Response } from "express";
 import { order } from "../../utils/constantFiles/businessIndustry.orderList";
-
 import { BuisnessIndustries } from "../Models/BuisnessIndustries";
 import { CustomColumnNames } from "../Models/CustomColumns.leads";
 import { User } from "../Models/User";
@@ -8,13 +7,14 @@ import { RolesEnum } from "../../types/RolesEnum";
 import { IndustryInput } from "../Inputs/Industry.input";
 import { validate } from "class-validator";
 import { ValidationErrorResponse } from "../../types/ValidationErrorResponse";
+import { LeadTablePreference } from "../Models/LeadTablePreference";
 const LIMIT = 10;
 export class IndustryController {
   static create = async (req: Request, res: Response) => {
     const input = req.body;
-    const Industry=new IndustryInput()
-    Industry.industry=input.industry
-    Industry.leadCost=input.leadCost
+    const Industry = new IndustryInput();
+    Industry.industry = input.industry;
+    Industry.leadCost = input.leadCost;
 
     const errors = await validate(Industry);
 
@@ -33,27 +33,52 @@ export class IndustryController {
       leadCost: input.leadCost,
       columns: order,
     };
-    let array: any = [];
-    order.forEach((i) => {
-      let obj: any = {};
-      obj.defaultColumn = i.name;
-      obj.renamedColumn = "";
-      array.push(obj);
-    });
 
     try {
-      const exist=await BuisnessIndustries.find({industry:input.industry})
-      if(exist.length>0){
+      const exist = await BuisnessIndustries.find({ industry: input.industry });
+      if (exist.length > 0) {
         return res
-        .status(400)
-        .json({ error: { message: "Business Industry should be unique." } });
+          .status(400)
+          .json({ error: { message: "Business Industry should be unique." } });
       }
       const details = await BuisnessIndustries.create(dataToSave);
-      await CustomColumnNames.create({
-        industryId: details.id,
-        columnsNames: array,
-      });
+      // await CustomColumnNames.create({
+      //   industryId: details.id,
+      //   columnsNames: array,
+      // });
       return res.json({ data: details });
+    } catch (error) {
+      return res
+        .status(500)
+        .json({ error: { message: "Something went wrong." } });
+    }
+  };
+
+  static updateOrg = async (req: Request, res: Response) => {
+    const input = req.body;
+    try {
+      const updatedData = await BuisnessIndustries.findByIdAndUpdate(
+        req.params.id,
+        {
+          ...input,
+        },
+        { new: true }
+      );
+      if (updatedData === null) {
+        return res
+          .status(404)
+          .json({ error: { message: "Business Industry not found." } });
+      }
+      updatedData?.columns.sort((a: any, b: any) => a.index - b.index);
+
+      if (input.leadCost) {
+        await User.updateMany(
+          { businessIndustryId: updatedData?.id },
+          { leadCost: input.leadCost }
+        );
+      }
+
+      return res.json({ data: updatedData });
     } catch (error) {
       return res
         .status(500)
@@ -64,14 +89,16 @@ export class IndustryController {
   static update = async (req: Request, res: Response) => {
     const input = req.body;
     try {
-      if (input.columnsNames) {
-        input.columnsNames.forEach((i: any) => {
-          if (i.defaultColumn == "") {
-            i.defaultColumn = i.renamedColumn;
-          }
-          return i;
+      if (input.columns) {
+        const users = await User.find({ businessIndustryId: req.params.id });
+        users.map(async (user: any) => {
+          
+        await LeadTablePreference.findOneAndUpdate({userId:user.id}, {
+            columns: input.columns,
+          },{new:true});
         });
       }
+
       const updatedData = await BuisnessIndustries.findByIdAndUpdate(
         req.params.id,
         {
@@ -137,16 +164,16 @@ export class IndustryController {
         .sort(sortObject)
         .skip(skip)
         .limit(perPage);
-        const dataWithoutPagination = await BuisnessIndustries.find(dataToFind)
+      const dataWithoutPagination = await BuisnessIndustries.find(dataToFind)
         .collation({ locale: "en" })
-        .sort({industry:1})
-      data.map((i) => {
-        i?.columns.sort((a: any, b: any) => a.index - b.index);
+        .sort({ industry: 1 });
+      data.map((data) => {
+        data?.columns.sort((a: any, b: any) => a.index - b.index);
       });
       const totalPages = Math.ceil(dataWithoutPagination.length / perPage);
 
       if (data && req.query.perPage) {
-        let dataToShow={
+        let dataToShow = {
           data: data,
           meta: {
             perPage: perPage,
@@ -154,16 +181,14 @@ export class IndustryController {
             pages: totalPages,
             total: dataWithoutPagination.length,
           },
-        }
+        };
         return res.json(dataToShow);
-      }
-      else if(data && !req.query.perPage) {
-        let dataToShow={
-          data: dataWithoutPagination
-        }
+      } else if (data && !req.query.perPage) {
+        let dataToShow = {
+          data: dataWithoutPagination,
+        };
         return res.json(dataToShow);
-      }
-        else {
+      } else {
         return res.status(404).json({ data: { message: "Data not found" } });
       }
     } catch (error) {
@@ -189,18 +214,24 @@ export class IndustryController {
 
   static delete = async (req: Request, res: Response) => {
     try {
-      const users = await User.find({ businessIndustryId: req.params.id, isDeleted:false, role:RolesEnum.USER });
-      if(users.length>0){
+      const users = await User.find({
+        businessIndustryId: req.params.id,
+        isDeleted: false,
+        role: RolesEnum.USER,
+      });
+      if (users.length > 0) {
         return res
-        .status(400)
-        .json({ error: { message: "Users already registered with this industry. kindly first delete those users." } });
-      }
-      else{
+          .status(400)
+          .json({
+            error: {
+              message:
+                "Users already registered with this industry. kindly first delete those users.",
+            },
+          });
+      } else {
         const data = await BuisnessIndustries.findByIdAndDelete(req.params.id);
         return res.json({ data: data });
-
       }
-    
     } catch (error) {
       return res
         .status(500)
@@ -216,8 +247,8 @@ export class IndustryController {
       );
       if (data) {
         let array: any = [];
-        data.map((i) => {
-          array.push(i.industry);
+        data.map((data) => {
+          array.push(data.industry);
         });
         return res.json({ data: array });
       } else {

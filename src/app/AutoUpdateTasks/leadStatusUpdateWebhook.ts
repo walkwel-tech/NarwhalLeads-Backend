@@ -1,6 +1,6 @@
 import { leadDetailsSubmission } from "../../utils/webhookUrls/leadDetailsSubmission";
 import { Leads } from "../Models/Leads";
-const cron = require("node-cron");
+import * as cron from "node-cron"
 
 
 export function autoWebhookURLHitLeadSubmission() {
@@ -29,8 +29,8 @@ export async function sendBatchedUpdates():Promise<any> {
   if (updatesToBeSent.length > 0) {
     // Send the batched updates to the webhook URL using Axios (or your preferred HTTP library)
     //create foreach for all status upda
- return  updatesToBeSent.map((i)=>{
-       return  leadDetailsSubmission(i)
+ return  updatesToBeSent.map((data)=>{
+       return  leadDetailsSubmission(data)
       .then((response) => {
         console.log("Batched updates sent successfully.");
       })
@@ -48,7 +48,6 @@ export function handleFailedWebhookURLHitLeadSubmissionOver12Hours() {
 
   cron.schedule('0 */12 * * *', () => {
 //   cron.schedule("* * * * *", () => {
-    console.log("Enter autoWebhookURLHitLeadSubmissionOver12Hours cron");
 
     sendBatchedUpdates();
   });

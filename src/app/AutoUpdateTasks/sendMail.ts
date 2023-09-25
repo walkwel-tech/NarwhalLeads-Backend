@@ -7,7 +7,7 @@ import {
 import { Leads } from "../Models/Leads";
 import { User } from "../Models/User";
 
-const cron = require("node-cron");
+import * as cron from "node-cron"
 
 export const mailForTotalLeadsInDay = async () => {
   // cron.schedule("* * * * *", async () => {
@@ -20,9 +20,9 @@ export const mailForTotalLeadsInDay = async () => {
         .split("T")[0]
     );
     const user = await User.find().populate("userLeadsDetailsId");
-    user.map(async (i) => {
+    user.map(async (user) => {
       const leads = await Leads.find({
-        bid: i.buyerId,
+        bid: user.buyerId,
         createdAt: { $gte: today },
       });
 
@@ -35,7 +35,7 @@ export const mailForTotalLeadsInDay = async () => {
           totalLeads: leads.length,
           leads: leads[0].leads,
         };
-        sendEmaiForTotalLead(i.email, message);
+        sendEmaiForTotalLead(user.email, message);
       }
     });
   });
@@ -47,10 +47,10 @@ cron.schedule('2 */24 * * *', async() => {
   // cron.schedule('* * * * *', async() => {
 
   const users = await User.find({ role: RolesEnum.USER, credits: 0 });
-  users.map((i: any) => {
-    sendEmailForOutOfFunds(i.email, {
-      name: i.firstName + " " + i.lastName,
-      credits: i.credits,
+  users.map((user: any) => {
+    sendEmailForOutOfFunds(user.email, {
+      name: user.firstName + " " + user.lastName,
+      credits: user.credits,
     });
   });
 })

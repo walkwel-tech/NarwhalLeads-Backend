@@ -44,8 +44,8 @@ export class UserLeadsController {
         property: error.property,
         constraints: error.constraints,
       }));
-      errorsInfo.map((i) => {
-        array.push(i.property);
+      errorsInfo.map((err) => {
+        array.push(err.property);
       });
       const existLead = object.find(
         (item: any) => item.key === ONBOARDING_KEYS.LEAD_DETAILS
@@ -156,9 +156,10 @@ export class UserLeadsController {
                 freeCredits:promoLink?.freeCredits
               }
               addCreditsToBuyer(params).then((_res)=>{
-                console.log("FREE CREDITS ADDED WITH SIGNUP CODE")
+                console.log("free credits added with signup code")
               }).catch((error)=>{
-                console.log("ERROR DURING ADDING FREE CREDITS WITH SIGNUP CODE")
+                console.log("error during adding free credits with signup code")
+
               })
 
 
@@ -249,7 +250,6 @@ export class UserLeadsController {
     req: Request,
     res: Response
   ): Promise<any> => {
-console.log("hetrtredteydtuet")
     const id = req.params.id;
     const input = req.body;
     delete input._id

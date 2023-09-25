@@ -43,7 +43,6 @@ export const createSession = (params: any) => {
       })
       .catch((err) => {
         reject(err);
-        // console.log("Create session error", err.response.data);
       });
   });
 };
@@ -67,7 +66,6 @@ export const deleteCustomerById = (customerId: any) => {
       })
       .catch((err) => {
         reject(err);
-        // console.log("Create session error", err.response.data);
       });
   });
 }
@@ -118,7 +116,6 @@ export const attemptToPayment = (response: any, params: any) => {
       })
       .catch(function (error) {
         reject(error);
-        // console.log("attempt payment error", error.response.data);
       });
   });
 };
@@ -141,7 +138,6 @@ export const customerPaymentMethods = (id: string) => {
       })
       .catch(function (error) {
         reject(error);
-        // console.log("payment methpods error", error.response.data);
       });
   });
 };
@@ -202,7 +198,6 @@ export const refundPayment = (params: any) => {
       })
       .catch(function (error) {
         reject(error);
-        // console.log(error?.response?.data);
       });
   });
 };
@@ -224,7 +219,6 @@ export const getPaymentMethodByPaymentSessionID = (
         resolve(response.data);
       })
       .catch(function (error) {
-        // console.log(error);
         reject(error)
       });
   })
@@ -290,7 +284,6 @@ export const createSessionInitial = (params: any) => {
           notes:err.response.data.errors[0].message,
         });
         reject(err);
-        // console.log("Create session error", err.response.data);
       });
   });
 };
@@ -319,7 +312,6 @@ export const attemptToPaymentInitial = ( params: any) => {
       })
       .catch(function (error) {
         reject(error);
-        // console.log("attempt payment error", error.response.data);
       });
   });
 };
@@ -360,7 +352,6 @@ export const createSessionUnScheduledPayment=async (params: any) => {
     };
     axios(config)
       .then(async(response) => {
-        console.log("data here")
         await Transaction.create({
           userId: user?.id,
           cardId: card?.id,
@@ -374,7 +365,6 @@ export const createSessionUnScheduledPayment=async (params: any) => {
         resolve(response);
       })
       .catch(async(err) => {
-        console.log("Create session err/or", err.response.data);
         await Transaction.create({
           userId: user?.id,
           cardId: card?.id,

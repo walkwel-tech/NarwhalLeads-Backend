@@ -252,7 +252,7 @@ export class UsersControllers {
                 $addFields: {
                   createdAt: {
                     $dateToString: {
-                      format: "%Y-%m-%d", // Define your desired format here
+                      format: "%d/%m/%Y", // Define your desired format here
                       date: "$createdAt", // Replace "createdAt" with your actual field name
                     },
                   },
@@ -616,8 +616,8 @@ export class UsersControllers {
         });
         if (businesses.length > 0) {
           let array: mongoose.Types.ObjectId[] = [];
-          businesses.map((i) => {
-            array.push(i._id);
+          businesses.map((business) => {
+            array.push(business._id);
           });
           const bString = checkUser?.businessDetailsId.toString();
 
@@ -887,7 +887,7 @@ export class UsersControllers {
                     invoiceId: res.data.Invoices[0].InvoiceID,
                   });
 
-                  console.log("PDF generated");
+                  console.log("pdf generated");
                 })
                 .catch(async (err) => {
                   refreshToken().then(async (res) => {
@@ -909,7 +909,7 @@ export class UsersControllers {
                         invoiceId: res.data.Invoices[0].InvoiceID,
                       });
 
-                      console.log("PDF generated");
+                      console.log("pdf generated");
                     });
                   });
                 });
@@ -1009,7 +1009,6 @@ export class UsersControllers {
             originalValues: fields.oldFields,
             modifiedValues: fields.updatedFields,
           };
-          console.log("activity", activity);
           await ActivityLogs.create(activity);
         }
 
@@ -1052,7 +1051,6 @@ export class UsersControllers {
           return res.json({ message: "Updated Successfully", data: result });
         }
       }
-console.log("----here--------")
      
     } catch (err) {
       return res
@@ -1101,10 +1099,10 @@ console.log("----here--------")
   static reOrderIndex = async (req: Request, res: Response): Promise<any> => {
     const input = req.body;
     try {
-      input.forEach(async (i: { _id: any; rowIndex: any }) => {
+      input.forEach(async (key: { _id: any; rowIndex: any }) => {
         await User.findByIdAndUpdate(
-          { _id: i._id },
-          { rowIndex: i.rowIndex },
+          { _id: key._id },
+          { rowIndex: key.rowIndex },
           { new: true }
         );
       });

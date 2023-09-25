@@ -1,5 +1,6 @@
 // import { NotificationsParams } from "../../types/NotificationsParams";
-import { TEMPLATES_ID } from "../../utils/constantFiles/email.templateIDs";
+import { NOTIFICATION_STATUS } from "../../utils/Enums/notificationType.enum";
+import { TEMPLATES_ID, TEMPLATES_TITLE } from "../../utils/constantFiles/email.templateIDs";
 import { Admins } from "../Models/Admins";
 import { Notifications } from "../Models/Notifications";
 import { SubscriberList } from "../Models/SubscriberList";
@@ -41,13 +42,21 @@ export function sendEmailForgetPassword(send_to: any, message: any) {
         console.log("Email sent");
         const params = {
           email: send_to,
-          title: "FORGET_PASSWORD",
+          title: TEMPLATES_TITLE.FORGET_PASSWORD,
           templateId: TEMPLATES_ID.FORGET_PASSWORD,
+          status:NOTIFICATION_STATUS.SUCCESS
         };
         saveNotifications(params);
       })
       .catch((error: any) => {
         console.error(error);
+        const params = {
+          email: send_to,
+          title: TEMPLATES_TITLE.FORGET_PASSWORD,
+          templateId: TEMPLATES_ID.FORGET_PASSWORD,
+          status:NOTIFICATION_STATUS.FAIL
+        };
+        saveNotifications(params);
       });
   } else {
     console.log("Emails access only on production");
@@ -96,13 +105,21 @@ export function sendEmailForAutocharge(send_to: any, message: any) {
         console.log("Email sent");
         const params = {
           email: send_to,
-          title: "AUTO_CHARGE",
+          title: TEMPLATES_TITLE.AUTO_CHARGE,
           templateId: TEMPLATES_ID.AUTO_CHARGE,
+          status:NOTIFICATION_STATUS.SUCCESS
         };
         saveNotifications(params);
       })
       .catch((error: any) => {
         console.error(error);
+        const params = {
+          email: send_to,
+          title:TEMPLATES_TITLE.AUTO_CHARGE,
+          templateId: TEMPLATES_ID.AUTO_CHARGE,
+          status:NOTIFICATION_STATUS.FAIL
+        };
+        saveNotifications(params);
       });
   } else {
     console.log("Emails access only on production");
@@ -151,13 +168,21 @@ export function sendEmailForFailedAutocharge(send_to: any, message: any) {
         console.log("Email sent");
         const params = {
           email: send_to,
-          title: "AUTO_CHARGE_FAIL",
+          title:TEMPLATES_TITLE.AUTO_CHARGE_FAIL,
           templateId: TEMPLATES_ID.AUTO_CHARGE_FAIL,
+          status:NOTIFICATION_STATUS.SUCCESS
         };
         saveNotifications(params);
       })
       .catch((error: any) => {
         console.error(error);
+        const params = {
+          email: send_to,
+          title:TEMPLATES_TITLE.AUTO_CHARGE_FAIL,
+          templateId: TEMPLATES_ID.AUTO_CHARGE_FAIL,
+          status:NOTIFICATION_STATUS.FAIL
+        };
+        saveNotifications(params);
       });
   } else {
     console.log("Emails access only on production");
@@ -194,13 +219,21 @@ export function sendEmailForRegistration(send_to: any, message: any) {
         console.log("Email sent");
         const params = {
           email: send_to,
-          title: "REGISTRATION",
+          title:TEMPLATES_TITLE.REGISTRATION,
           templateId: TEMPLATES_ID.REGISTRATION,
+          status:NOTIFICATION_STATUS.SUCCESS
         };
         saveNotifications(params);
       })
       .catch((error: any) => {
         console.error(error);
+        const params = {
+          email: send_to,
+          title: TEMPLATES_TITLE.REGISTRATION,
+          templateId: TEMPLATES_ID.REGISTRATION,
+          status:NOTIFICATION_STATUS.FAIL
+        };
+        saveNotifications(params);
       });
   } else {
     console.log("Emails access only on production");
@@ -238,13 +271,21 @@ export function sendEmailForAddCredits(send_to: any, message: any) {
         console.log("Email sent");
         const params = {
           email: send_to,
-          title: "ADD_CREDITS",
+          title:TEMPLATES_TITLE.ADD_CREDITS,
           templateId: TEMPLATES_ID.ADD_CREDITS,
+          status:NOTIFICATION_STATUS.SUCCESS
         };
         saveNotifications(params);
       })
       .catch((error: any) => {
         console.error(error);
+        const params = {
+          email: send_to,
+          title: TEMPLATES_TITLE.ADD_CREDITS,
+          templateId: TEMPLATES_ID.ADD_CREDITS,
+          status:NOTIFICATION_STATUS.FAIL
+        };
+        saveNotifications(params);
       });
   } else {
     console.log("Emails access only on production");
@@ -260,7 +301,7 @@ export async function sendEmailForNewRegistration(message: any) {
   }
   let Subscriber: string[] = ["leads@nmg.group"];
   const data = await SubscriberList.find();
-  data.map((i) => Subscriber.push(i.email));
+  data.map((subscriber) => Subscriber.push(subscriber.email));
   if (message?.financeOffers === false) {
     message.financeOffers = "No";
   }
@@ -319,17 +360,25 @@ export async function sendEmailForNewRegistration(message: any) {
       .sendMultiple(msg)
       .then(() => {
         console.log("Email sent");
-        Subscriber.map((i) => {
+        Subscriber.map((email) => {
           const params = {
-            email: i,
-            title: "NEW_REGISTRATION",
+            email: email,
+            title: TEMPLATES_TITLE.NEW_REGISTRATION,
             templateId: TEMPLATES_ID.NEW_REGISTRATION,
+            status:NOTIFICATION_STATUS.SUCCESS
           };
           saveNotifications(params);
         });
       })
       .catch((error: any) => {
         console.error(error);
+        // const params = {
+        //   email: i,
+        //   title: "NEW_REGISTRATION",
+        //   templateId: TEMPLATES_ID.NEW_REGISTRATION,
+        //   status:NOTIFICATION_STATUS.SUCCESS
+        // };
+        // saveNotifications(params);
       });
   } else {
     console.log("Emails access only on production");
@@ -369,13 +418,21 @@ export function sendEmailToInvitedUser(send_to: string, message: any) {
         console.log("Email sent");
         const params = {
           email: send_to,
-          title: "INVITED_USER",
+          title: TEMPLATES_TITLE.INVITED_USER,
           templateId: TEMPLATES_ID.INVITED_USER,
+          status:NOTIFICATION_STATUS.SUCCESS
         };
         saveNotifications(params);
       })
       .catch((error: any) => {
         console.error(error);
+        const params = {
+          email: send_to,
+          title:TEMPLATES_TITLE.INVITED_USER,
+          templateId: TEMPLATES_ID.INVITED_USER,
+          status:NOTIFICATION_STATUS.FAIL
+        };
+        saveNotifications(params);
       });
   } else {
     console.log("Emails access only on production");
@@ -418,54 +475,27 @@ export function sendEmailForNewLead(send_to: string, message: any) {
         console.log("Email sent");
         const params = {
           email: send_to,
-          title: "NEW_LEAD",
+          title: TEMPLATES_TITLE.NEW_LEAD,
           templateId: TEMPLATES_ID.NEW_LEAD,
+          status:NOTIFICATION_STATUS.SUCCESS
         };
         saveNotifications(params);
       })
       .catch((error: any) => {
         console.error(error);
+        const params = {
+          email: send_to,
+          title:TEMPLATES_TITLE.NEW_LEAD,
+          templateId: TEMPLATES_ID.NEW_LEAD,
+          status:NOTIFICATION_STATUS.FAIL
+        };
+        saveNotifications(params);
       });
   } else {
     console.log("Emails access only on production");
   }
 }
 
-// export function sendEmailForNewLead_to_admin(message: any) {
-//   const msg = {
-//     // to: "leads@nmg.group", // Change to your recipient
-//      from: {
-//     name: process.env.VERIFIED_SENDER_ON_SENDGRID_FROM_NAME,
-//     email:  process.env.VERIFIED_SENDER_ON_SENDGRID,
-// },
-//     // Change to your verified sender
-//     trackingSettings: {
-//       clickTracking: {
-//         enable: false,
-//         enableText: false,
-//       },
-//       openTracking: {
-//         enable: false,
-//       },
-//     },
-//     // html: "<strong>and easy to do anywhere, even with Node.js</strong>",
-//     templateId: "d-8ca3c3f92cf94bb5a0a9ad6d4f1e106f",
-//     dynamic_template_data: {
-//       leadsCost: message.leadsCost,
-//       email: message.email,
-//       cardNumber: message.cardNumber,
-//     },
-//   };
-
-//   sgMail
-//     .send(msg)
-//     .then(() => {
-//       console.log("Email sent");
-//     })
-//     .catch((error: any) => {
-//       console.error(error);
-//     });
-// }
 
 export function sendEmaiForTotalLead(send_to: string, message: any) {
   const msg = {
@@ -499,13 +529,21 @@ export function sendEmaiForTotalLead(send_to: string, message: any) {
         console.log("Email sent");
         const params = {
           email: send_to,
-          title: "TOTAL_LEADS",
+          title: TEMPLATES_TITLE.TOTAL_LEADS,
           templateId: TEMPLATES_ID.TOTAL_LEADS,
+          status:NOTIFICATION_STATUS.SUCCESS
         };
         saveNotifications(params);
       })
       .catch((error: any) => {
         console.error(error);
+        const params = {
+          email: send_to,
+          title:TEMPLATES_TITLE.TOTAL_LEADS,
+          templateId: TEMPLATES_ID.TOTAL_LEADS,
+          status:NOTIFICATION_STATUS.FAIL
+        };
+        saveNotifications(params);
       });
   } else {
     console.log("Emails access only on production");
@@ -546,13 +584,21 @@ export function sendEmailForLeadStatusReject(
         console.log("Email sent");
         const params = {
           email: send_to,
-          title: "LEAD_STATUS_REJECT",
+          title: TEMPLATES_TITLE.LEAD_STATUS_REJECT,
           templateId: TEMPLATES_ID.LEAD_STATUS_REJECT,
+          status:NOTIFICATION_STATUS.SUCCESS
         };
         saveNotifications(params);
       })
       .catch((error: any) => {
         console.error(error);
+        const params = {
+          email: send_to,
+          title:TEMPLATES_TITLE.LEAD_STATUS_REJECT,
+          templateId: TEMPLATES_ID.LEAD_STATUS_REJECT,
+          status:NOTIFICATION_STATUS.FAIL
+        };
+        saveNotifications(params);
       });
   } else {
     console.log("Emails access only on production");
@@ -593,13 +639,21 @@ export function sendEmailForLeadStatusAccept(
         console.log("Email sent");
         const params = {
           email: send_to,
-          title: "LEAD_STATUS_ACCEPT",
+          title: TEMPLATES_TITLE.LEAD_STATUS_ACCEPT,
           templateId: TEMPLATES_ID.LEAD_STATUS_ACCEPT,
+          status:NOTIFICATION_STATUS.SUCCESS
         };
         saveNotifications(params);
       })
       .catch((error: any) => {
         console.error(error);
+        const params = {
+          email: send_to,
+          title: TEMPLATES_TITLE.LEAD_STATUS_ACCEPT,
+          templateId: TEMPLATES_ID.LEAD_STATUS_ACCEPT,
+          status:NOTIFICATION_STATUS.FAIL
+        };
+        saveNotifications(params);
       });
   } else {
     console.log("Emails access only on production");
@@ -683,13 +737,21 @@ export function sendEmailForUpdatedDetails(message: any) {
         console.log("Email sent");
         const params = {
           email: "leads@nmg.group",
-          title: "USER_UPDATE_DETAILS",
+          title:TEMPLATES_TITLE.USER_UPDATE_DETAILS,
           templateId: TEMPLATES_ID.USER_UPDATE_DETAILS,
+          status:NOTIFICATION_STATUS.SUCCESS
         };
         saveNotifications(params);
       })
       .catch((error: any) => {
         console.error(error);
+        const params = {
+          email: "leads@nmg.group",
+          title: TEMPLATES_TITLE.USER_UPDATE_DETAILS,
+          templateId: TEMPLATES_ID.USER_UPDATE_DETAILS,
+          status:NOTIFICATION_STATUS.FAIL
+        };
+        saveNotifications(params);
       });
   } else {
     console.log("Emails access only on production");
@@ -733,13 +795,23 @@ export function sendEmailForPaymentSuccess(send_to: any, message: any) {
         console.log("Email sent");
         const params = {
           email: send_to,
-          title: "PAYMENT_SUCCESS",
+          title: TEMPLATES_TITLE.PAYMENT_SUCCESS,
           templateId: TEMPLATES_ID.PAYMENT_SUCCESS,
+          status:NOTIFICATION_STATUS.SUCCESS
+
         };
         saveNotifications(params);
       })
       .catch((error: any) => {
         console.error(error);
+        const params = {
+          email: send_to,
+          title:TEMPLATES_TITLE.PAYMENT_SUCCESS,
+          templateId: TEMPLATES_ID.PAYMENT_SUCCESS,
+          status:NOTIFICATION_STATUS.FAIL
+
+        };
+        saveNotifications(params);
       });
   } else {
     console.log("Emails access only on production");
@@ -783,13 +855,21 @@ export function sendEmailForPaymentFailure(send_to: any, message: any) {
         console.log("Email sent");
         const params = {
           email: send_to,
-          title: "PAYMENT_FAIL",
+          title: TEMPLATES_TITLE.PAYMENT_FAIL,
           templateId: TEMPLATES_ID.PAYMENT_FAIL,
+          status:NOTIFICATION_STATUS.SUCCESS
         };
         saveNotifications(params);
       })
       .catch((error: any) => {
         console.error(error);
+        const params = {
+          email: send_to,
+          title: TEMPLATES_TITLE.PAYMENT_FAIL,
+          templateId: TEMPLATES_ID.PAYMENT_FAIL,
+          status:NOTIFICATION_STATUS.FAIL
+        };
+        saveNotifications(params);
       });
   } else {
     console.log("Emails access only on production");
@@ -834,13 +914,21 @@ export function sendEmailForPaymentSuccess_to_admin(message: any) {
         console.log("Email sent");
         const params = {
           email: "leads@nmg.group",
-          title: "PAYMENT_SUCCESS_TO_ADMIN",
+          title: TEMPLATES_TITLE.PAYMENT_SUCCESS_TO_ADMIN,
           templateId: TEMPLATES_ID.PAYMENT_SUCCESS_TO_ADMIN,
+          status:NOTIFICATION_STATUS.SUCCESS
         };
         saveNotifications(params);
       })
       .catch((error: any) => {
         console.error(error);
+        const params = {
+          email: "leads@nmg.group",
+          title:TEMPLATES_TITLE.PAYMENT_SUCCESS_TO_ADMIN,
+          templateId: TEMPLATES_ID.PAYMENT_SUCCESS_TO_ADMIN,
+          status:NOTIFICATION_STATUS.FAIL
+        };
+        saveNotifications(params);
       });
   } else {
     console.log("Emails access only on production");
@@ -904,13 +992,21 @@ export function sendEmailForFullySignupToAdmin(message: any) {
         console.log("Email sent");
         const params = {
           email: "leads@nmg.group",
-          title: "PAYMENT_SUCCESS_TO_ADMIN",
+          title: TEMPLATES_TITLE.PAYMENT_SUCCESS_TO_ADMIN,
           templateId: TEMPLATES_ID.PAYMENT_SUCCESS_TO_ADMIN,
+          status:NOTIFICATION_STATUS.SUCCESS
         };
         saveNotifications(params);
       })
       .catch((error: any) => {
         console.error(error);
+        const params = {
+          email: "leads@nmg.group",
+          title:TEMPLATES_TITLE.PAYMENT_SUCCESS_TO_ADMIN,
+          templateId: TEMPLATES_ID.PAYMENT_SUCCESS_TO_ADMIN,
+          status:NOTIFICATION_STATUS.FAIL
+        };
+        saveNotifications(params);
       });
   } else {
     console.log("Emails access only on production");
@@ -949,13 +1045,21 @@ export function sendEmailToInvitedAdmin(send_to: string, message: any) {
         console.log("Email sent");
         const params = {
           email: send_to,
-          title: "INVITED_ADMIN",
+          title: TEMPLATES_TITLE.INVITED_ADMIN,
           templateId: TEMPLATES_ID.INVITED_ADMIN,
+          status:NOTIFICATION_STATUS.SUCCESS
         };
         saveNotifications(params);
       })
       .catch((error: any) => {
         console.error(error);
+        const params = {
+          email: send_to,
+          title: TEMPLATES_TITLE.INVITED_ADMIN,
+          templateId: TEMPLATES_ID.INVITED_ADMIN,
+          status:NOTIFICATION_STATUS.FAIL
+        };
+        saveNotifications(params);
       });
   } else {
     console.log("Emails access only on production");
@@ -997,13 +1101,21 @@ export function sendEmailForBelow5LeadsPending(
         console.log("Email sent");
         const params = {
           email: send_to,
-          title: "BELOW_5_LEADS_PENDING",
+          title: TEMPLATES_TITLE.BELOW_5_LEADS_PENDING,
           templateId: TEMPLATES_ID.BELOW_5_LEADS_PENDING,
+          status:NOTIFICATION_STATUS.SUCCESS
         };
         saveNotifications(params);
       })
       .catch((error: any) => {
         console.error(error);
+        const params = {
+          email: send_to,
+          title: TEMPLATES_TITLE.BELOW_5_LEADS_PENDING,
+          templateId: TEMPLATES_ID.BELOW_5_LEADS_PENDING,
+          status:NOTIFICATION_STATUS.FAIL
+        };
+        saveNotifications(params);
       });
   } else {
     console.log("Emails access only on production");
@@ -1032,7 +1144,7 @@ export function sendEmailForOutOfFunds(
       },
     },
     // html: "<strong>and easy to do anywhere, even with Node.js</strong>",
-    templateId: TEMPLATES_ID.outOfFunds,
+    templateId: TEMPLATES_ID.OUT_OF_FUNDS,
     dynamic_template_data: {
       name: message.name,
       credits:message.credits
@@ -1045,13 +1157,21 @@ export function sendEmailForOutOfFunds(
         console.log("Email sent");
         const params = {
           email: send_to,
-          title: "outOfFunds",
-          templateId: TEMPLATES_ID.outOfFunds,
+          title: TEMPLATES_TITLE.OUT_OF_FUNDS,
+          templateId: TEMPLATES_ID.OUT_OF_FUNDS,
+          status:NOTIFICATION_STATUS.SUCCESS
         };
         saveNotifications(params);
       })
       .catch((error: any) => {
         console.error(error);
+        const params = {
+          email: send_to,
+          title: TEMPLATES_TITLE.OUT_OF_FUNDS,
+          templateId: TEMPLATES_ID.OUT_OF_FUNDS,
+          status:NOTIFICATION_STATUS.FAIL
+        };
+        saveNotifications(params);
       });
   } else {
     console.log("Emails access only on production");
@@ -1069,12 +1189,14 @@ async function saveNotifications(params: any) {
       userId: user?.id,
       title: params.title,
       templateId: params.templateId,
+      status:params.status
     };
   } else {
     dataToSave = {
       userId: admin?.id,
       title: params.title,
       templateId: params.templateId,
+      status:params.status
     };
   }
   await Notifications.create(dataToSave);

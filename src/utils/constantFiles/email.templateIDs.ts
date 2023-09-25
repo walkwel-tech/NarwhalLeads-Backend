@@ -16,5 +16,26 @@ export const TEMPLATES_ID={
     PAYMENT_SUCCESS_TO_ADMIN:"d-f341f49885964b52a0523e1e083aa2d7",
     INVITED_ADMIN:"d-6d0be07496084fdcbf78a0be22651fb3",
     BELOW_5_LEADS_PENDING:"d-c4b0c33a54b3474ca1a8c0cb3855aad9",
-    outOfFunds:"d-3045292d88954e578d2ba9a875724b90"
+    OUT_OF_FUNDS:"d-3045292d88954e578d2ba9a875724b90"
+}
+
+export const TEMPLATES_TITLE={
+    FORGET_PASSWORD:"forgetPassword",
+    AUTO_CHARGE:"autoCharge",
+    AUTO_CHARGE_FAIL:"autoChargeFail",
+    REGISTRATION:"registration",
+    ADD_CREDITS:"addCredits",
+    NEW_REGISTRATION:"newRegistration",
+    INVITED_USER:"invitedUser",
+    NEW_LEAD:"newLead",
+    TOTAL_LEADS:"totalLeads",
+    LEAD_STATUS_REJECT:"leadStatusReject",
+    LEAD_STATUS_ACCEPT:"leadStatusAccept",
+    USER_UPDATE_DETAILS: "userUpdatedDetails",
+    PAYMENT_SUCCESS:"paymentSuccess",
+    PAYMENT_FAIL:"paymentFail",
+    PAYMENT_SUCCESS_TO_ADMIN:"paymentSuccessToAdmin",
+    INVITED_ADMIN:"invitedAdmin",
+    BELOW_5_LEADS_PENDING:"below5LeadsPending",
+    OUT_OF_FUNDS:"outOfFunds"
 }

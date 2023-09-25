@@ -1,4 +1,4 @@
-const fs = require('fs');
+import * as fs from "fs"
 import { FileEnum } from "../types/FileEnum";
 // @ts-ignore
 import path from "path";

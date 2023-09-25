@@ -29,9 +29,10 @@ import { PROMO_LINK } from "../../utils/Enums/promoLink.enum";
 import { ClientTablePreference } from "../Models/ClientTablePrefrence";
 import { clientTablePreference } from "../../utils/constantFiles/clientTablePreferenceAdmin";
 import { LeadTablePreference } from "../Models/LeadTablePreference";
-import { leadsTablePreference } from "../../utils/constantFiles/leadsTablePreferenceAdmin";
 import { Admins } from "../Models/Admins";
-const fs = require("fs");
+import { order } from "../../utils/constantFiles/businessIndustry.orderList";
+import * as fs from "fs"
+
 class AuthController {
   static register = async (req: Request, res: Response): Promise<any> => {
     const input = req.body;
@@ -489,7 +490,7 @@ class AuthController {
         name: user.firstName,
         password: text,
       };
-      console.log("FORGET PASSWORD", text);
+      console.log("forget password", text);
       sendEmailForgetPassword(input.email, message);
       await ForgetPassword.create({
         userId: user.id,
@@ -507,7 +508,7 @@ class AuthController {
         name: admin.firstName,
         password: text,
       };
-      console.log("FORGET PASSWORD", text);
+      console.log("forget password", text);
       sendEmailForgetPassword(input.email, message);
       await ForgetPassword.create({
         userId: admin.id,
@@ -735,7 +736,7 @@ const user=await User.findById(id,'isRyftCustomer isLeadbyteCustomer isXeroCusto
       })
       await LeadTablePreference.create({
         userId:user.id,
-        columns:leadsTablePreference
+        columns:order
       })
       return res.json({message:"Admin registers successfully", data:user})
     } catch (error) {
