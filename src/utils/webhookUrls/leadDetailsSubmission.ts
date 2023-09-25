@@ -10,7 +10,7 @@ export const leadDetailsSubmission = ( data: any) => {
       url: process.env.LEADS_SUBMISSION_WEBHOOK_URL,
       headers: {
         "Content-Type": "application/json",
-        "API-KEY":process.env.LEAD_DETAILS_SUBMISSION_API_KEY
+        "API-KEY":process.env.leadDetailsSubmission_API_KEY
       },
       data: data,
     };
