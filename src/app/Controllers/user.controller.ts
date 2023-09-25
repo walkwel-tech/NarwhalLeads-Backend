@@ -619,11 +619,11 @@ export class UsersControllers {
           businesses.map((business) => {
             array.push(business._id);
           });
-          const bString = checkUser?.businessDetailsId.toString();
+          const businessDetailsIdInString = checkUser?.businessDetailsId.toString();
 
-          const containsB = array.some((item) => item.toString() === bString);
+          const ids = array.some((item) => item.toString() === businessDetailsIdInString);
 
-          if (!containsB) {
+          if (!ids) {
             return res
               .status(400)
               .json({ error: { message: "Business Name Already Exists." } });
