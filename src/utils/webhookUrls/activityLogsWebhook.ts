@@ -8,10 +8,10 @@ export const activityLogsWebhookUrl =async (data:any) => {
     return new Promise((resolve, reject) => {
       let config = {
         method: POST,
-        url: process.env.ACTIVITY_LOGS_WEBHOOK_URL,
+        url: process.env.activityLogsWebhookUrl,
         headers: {
           "Content-Type": "application/json",
-          "API-KEY": process.env.BUSINESS_DETAILS_SUBMISSION_API_KEY,
+          "API-KEY": process.env.businessDetailsSubmission_API_KEY,
         },
         data: {data},
       };
@@ -25,7 +25,7 @@ export const activityLogsWebhookUrl =async (data:any) => {
           });
       } else {
         console.log(
-          "No Access for hitting activity logs webhook to this " +
+          "No Access for hitting business submission webhook to this " +
             process.env.APP_ENV
         );
       }
