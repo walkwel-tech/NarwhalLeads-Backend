@@ -1368,7 +1368,8 @@ if(user.isSmsNotificationActive){
           },
         },
       ]);
-      const promises = query.results.map((item: any) => {
+
+       query.results.map((item: any) => {
         if(!(item["clientName"][0].deletedAt)){
 item.leads.clientName =
           item["clientName"][0]?.firstName + " " + item["clientName"][0]?.lastName;
@@ -1378,7 +1379,7 @@ item.leads.clientName =
         }
         item.leads.status = item.status;
 
-      
+
         // Use explicit Promise construction
         return new Promise((resolve, reject) => {
           BusinessDetails.findById(item["clientName"][0]?.businessDetailsId)
@@ -1390,8 +1391,6 @@ item.leads.clientName =
                 item.leads.businessName = "Deleted Business Details";
                 item.leads.businessIndustry = "Deleted Business Industry";
               }
-              
-
               resolve(item); // Resolve the promise with the modified item
             })
             .catch((error) => {
@@ -1399,10 +1398,10 @@ item.leads.clientName =
             });
         });
       });
-      
+
       // Use Promise.all to wait for all promises to resolve
-      Promise.all(promises)
-        .then((updatedResults) => {
+      // Promise.all(promises)
+      //   .then((updatedResults) => {
           // Handle the updatedResults here
           const leadsCount = query.leadsCount[0]?.count || 0;
 
@@ -1416,10 +1415,10 @@ item.leads.clientName =
               total: leadsCount,
             },
           });
-        })
-        .catch((error) => {
-          console.error(error);
-        });
+        // })
+        // .catch((error) => {
+        //   console.error(error);
+        // });
     
     } catch (err) {
       return res.status(500).json({

@@ -12,9 +12,8 @@ export const activityLogs = async () => {
     const activity = await ActivityLogs.find({
       createdAt: { $gte: tenMinutesAgo, $lt: currentTime },
     });
-
     const userDataPromises = activity.map(async (activity: any) => {
-      const user: any = await User.findById(activity.userEntity).populate(
+      const user: any = await User.findOne({_id:activity.userEntity,isSignUpCompleteWithCredit:true}).populate(
         "businessDetailsId"
       );
       return {
