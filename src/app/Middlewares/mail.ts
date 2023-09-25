@@ -372,6 +372,7 @@ export async function sendEmailForNewRegistration(message: any) {
       })
       .catch((error: any) => {
         console.error(error);
+        //TODO:
         // const params = {
         //   email: i,
         //   title: "NEW_REGISTRATION",
