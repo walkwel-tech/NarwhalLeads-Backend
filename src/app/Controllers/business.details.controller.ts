@@ -32,7 +32,6 @@ import { findModifiedFieldsForUserService, findUpdatedFields } from "../../utils
 import { ACTION } from "../../utils/Enums/actionType.enum";
 import { MODEL_ENUM } from "../../utils/Enums/model.enum";
 import { ActivityLogs } from "../Models/ActivityLogs";
-import {additionalColumnsForLeads } from "../../utils/constantFiles/additionalColumnsOnClientLeadsTable";
 
 const ObjectId = mongoose.Types.ObjectId;
 
@@ -150,7 +149,26 @@ export class BusinessDetailsController {
         onBoardingPercentage: input?.onBoardingPercentage,
       });
       const user: any = await User.findById(input.userId);
-      const additionalColumns = additionalColumnsForLeads(industry?.columns.length)
+      const additionalColumns = [
+        {
+          originalName: "clientName",
+          isVisible: true,
+          index: industry?.columns?.length,
+          displayName: "clientName",
+        },
+        {
+          originalName: "businessName",
+          isVisible: true,
+          index: industry?.columns?.length + 1,
+          displayName: "businessName",
+        },
+        {
+          originalName: "businessIndustry",
+          isVisible: true,
+          index: industry?.columns?.length + 2,
+          displayName: "businessIndustry",
+        },
+      ];
       industry?.columns.push(...additionalColumns);
       await LeadTablePreference.create({
         userId: input.userId,
@@ -322,11 +340,11 @@ export class BusinessDetailsController {
           businesses.map((business) => {
             array.push(business._id);
           });
-          const businessDetailsIdInString = userData?.businessDetailsId.toString();
+          const bString = userData?.businessDetailsId.toString();
 
-          const ids = array.some((item) => item.toString() === businessDetailsIdInString);
+          const containsB = array.some((item) => item.toString() === bString);
 
-          if (!ids) {
+          if (!containsB) {
             return res
               .status(400)
               .json({ error: { message: "Business Name Already Exists." } });
@@ -636,7 +654,26 @@ export class BusinessDetailsController {
       const industry: any = await BuisnessIndustries.findOne({
         industry: input?.businessIndustry,
       });
-      const additionalColumns =  additionalColumnsForLeads(industry?.columns.length)
+      const additionalColumns = [
+        {
+          originalName: "clientName",
+          isVisible: true,
+          index: industry?.columns?.length + 1,
+          displayName: "clientName",
+        },
+        {
+          originalName: "businessName",
+          isVisible: true,
+          index: industry?.columns?.length + 2,
+          displayName: "businessName",
+        },
+        {
+          originalName: "businessIndustry",
+          isVisible: true,
+          index: industry?.columns?.length + 3,
+          displayName: "businessIndustry",
+        },
+      ];
       industry?.columns.push(additionalColumns);
       await LeadTablePreference.create({
         userId: input.userId,
