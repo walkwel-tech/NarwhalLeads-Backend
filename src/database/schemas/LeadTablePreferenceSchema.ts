@@ -5,7 +5,7 @@ const LeadTablePreferenceSchema = new Schema(
       userId: {
         type: Types.ObjectId,
         default: null,
-        ref: "Users",
+        ref: "User",
       },
       columns:{
         type:Array

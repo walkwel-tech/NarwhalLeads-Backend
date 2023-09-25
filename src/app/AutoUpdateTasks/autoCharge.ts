@@ -23,7 +23,7 @@ import { UserInterface } from "../../types/UserInterface";
 import { CardDetailsInterface } from "../../types/CardDetailsInterface";
 // import { PAYMENT_STATUS } from "../../utils/Enums/payment.status";
 import { PAYMENT_TYPE_ENUM } from "../../utils/Enums/paymentType.enum";
-const cron = require("node-cron");
+import * as cron from "node-cron"
 
 interface paymentParams {
   fixedAmount: number;
@@ -41,7 +41,6 @@ export const autoChargePayment = async () => {
     // cron.schedule("*/2 * * * *", async () => {
     try {
       const usersToCharge = await getUsersToCharge();
-      console.log("here is", usersToCharge);
       for (const user of usersToCharge) {
         const paymentMethod = await getUserPaymentMethods(user.id);
 
@@ -70,14 +69,14 @@ export const weeklypayment = async () => {
     if (!user || user?.length == 0) {
       console.log("no user found to make payment");
     } else {
-      user.map(async (i) => {
+      user.map(async (user) => {
         const card = await CardDetails.findOne({
-          userId: i?.id,
+          userId: user?.id,
           isDefault: true,
         });
 
         const leads = await Leads.find({
-          bid: i.buyerId,
+          bid: user.buyerId,
           createdAt: {
             // $gte: moment().subtract(7, "days").toDate(),
             $gte: moment()
@@ -91,13 +90,13 @@ export const weeklypayment = async () => {
         if (leads.length == 0) {
           console.log("no leads found in past week to make payment");
         } else {
-          const leadsDetails = await UserLeadsDetails.findOne({ userId: i.id });
+          const leadsDetails = await UserLeadsDetails.findOne({ userId: user.id });
           await AdminSettings.findOne();
-          if (i.isLeadCostCheck) {
-            leadcpl = i.leadCost;
+          if (user.isLeadCostCheck) {
+            leadcpl = user.leadCost;
           } else {
             const industry = await BuisnessIndustries.findById(
-              i.businessIndustryId
+              user.businessIndustryId
             );
             leadcpl = industry?.leadCost;
           }
@@ -107,17 +106,17 @@ export const weeklypayment = async () => {
           const addCredits = leadsDetails?.weekly * leadcpl;
           const params: any = {
             fixedAmount: amountToCharge,
-            email: i.email,
+            email: user.email,
             cardNumber: card?.cardNumber,
-            buyerId: i.buyerId,
-            clientId: i?.ryftClientId,
+            buyerId: user.buyerId,
+            clientId: user?.ryftClientId,
             cardId: card?.id,
             paymentSessionId: card?.paymentSessionID,
           };
           createSessionUnScheduledPayment(params)
             .then(async (res) => {
               const dataToSaveDeduction: any = {
-                userId: i.id,
+                userId: user.id,
                 cardId: card?.id,
                 amount: amountToCharge,
                 title: transactionTitle.NEW_LEAD,
@@ -126,14 +125,14 @@ export const weeklypayment = async () => {
               };
               await Transaction.create(dataToSaveDeduction);
               const addCreditsParams: any = {
-                buyerId: i.buyerId,
+                buyerId: user.buyerId,
                 fixedAmount: addCredits,
                 freeCredits: 0,
               };
               addCreditsToBuyer(addCreditsParams)
                 .then(async (res) => {
                   const dataToSave: any = {
-                    userId: i.id,
+                    userId: user.id,
                     cardId: card?.id,
                     amount: addCredits,
                     title: transactionTitle.CREDITS_ADDED,
@@ -141,45 +140,45 @@ export const weeklypayment = async () => {
                     status: "success",
                   };
                   const transaction = await Transaction.create(dataToSave);
-                  const leftCredits = i.credits - amountToCharge;
-                  await User.findByIdAndUpdate(i.id, { credits: leftCredits });
+                  const leftCredits = user.credits - amountToCharge;
+                  await User.findByIdAndUpdate(user.id, { credits: leftCredits });
                   generatePDF(
-                    i.xeroContactId,
+                    user.xeroContactId,
                     transactionTitle.CREDITS_ADDED,
                     addCredits,0
                   )
                     .then(async (res: any) => {
                       const dataToSaveInInvoice: any = {
-                        userId: i.id,
+                        userId: user.id,
                         transactionId: transaction.id,
                         price: addCredits,
                         invoiceId: res.data.Invoices[0].InvoiceID,
                       };
                       await Invoice.create(dataToSaveInInvoice);
-                      console.log("PDF generated");
+                      console.log("pdf generated");
                     })
                     .catch((error) => {
                       refreshToken().then((res) => {
                         generatePDF(
-                          i.xeroContactId,
+                          user.xeroContactId,
                           transactionTitle.CREDITS_ADDED,
                           addCredits,0
                         ).then(async (res: any) => {
                           const dataToSaveInInvoice: any = {
-                            userId: i.id,
+                            userId: user.id,
                             transactionId: transaction.id,
                             price: addCredits,
                             invoiceId: res.data.Invoices[0].InvoiceID,
                           };
                           await Invoice.create(dataToSaveInInvoice);
-                          console.log("PDF generated");
+                          console.log("pdf generated");
                         });
                       });
                     });
                 })
                 .catch(async (err) => {
                   const dataToSave: any = {
-                    userId: i.id,
+                    userId: user.id,
                     cardId: card?.id,
                     amount: addCredits,
                     title: transactionTitle.CREDITS_ADDED,
@@ -238,7 +237,6 @@ const handleFailedCharge = async (
   card: CardDetailsInterface[]
 ) => {
   cron.schedule('0 2 * * *',async ()=>{
-    console.log("----------**** handle failed charge running ******-------------")
   const currentDate = new Date();
 
   const yesterday = new Date(currentDate);
@@ -254,16 +252,15 @@ const handleFailedCharge = async (
     paymentType: PAYMENT_TYPE_ENUM.AUTO_CHARGE,
   });
   let cardsArray: any[] = [];
-  card.map((i: any) => {
-    cardsArray.push(i.paymentMethod);
+  card.map((card: any) => {
+    cardsArray.push(card.paymentMethod);
   });
 
   let TransactionArray: any[] = [];
-  transactions.map((i: any) => {
-    TransactionArray.push(i.paymentMethod);
+  transactions.map((txn: any) => {
+    TransactionArray.push(txn.paymentMethod);
   });
   let leftCards = getElementsNotInSubset(cardsArray, TransactionArray);
-  console.log("leftcards---------", leftCards);
   if (leftCards.length > 0) {
     const card: any = await CardDetails.findOne({
       paymentMethod: leftCards[0],
@@ -282,7 +279,7 @@ const handleFailedCharge = async (
    return await chargeUser(params);
   } else {
     // sendEmailForFailedAutocharge(user.email, text);
-    console.log("EMAIL SHOULD BE SENT NOW");
+    console.log("email should be sent now");
     return false
 
   }
@@ -323,7 +320,6 @@ const autoTopUp = async (
       cardNumberEnd: cardExist?.cardNumber?.substr(-4),
       cardHolderName: cardExist?.cardHolderName,
     };
-    console.log("text", text);
     sendEmailForAutocharge(user.email, text);
   } else {
   }

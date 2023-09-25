@@ -15,7 +15,8 @@ import {
     BusinessDetailsRoutes,
     userLeadsDetailsRoutes,
     invitedUserRoutes,
-    BusinessIndustriesRoutes
+    BusinessIndustriesRoutes,
+    guestRoutes
 
 } from "./routes";
 
@@ -98,6 +99,7 @@ export class Server {
         this.app.use("/api/v1/businessIndustry",BusinessIndustriesRoutes)
         this.app.use("/api/v1/service",Auth,serviceRoutes)
         this.app.use("/api/v1/non-billable-users",Auth,nonBillablesUsers)
+        this.app.use("/api/v1/guest",guestRoutes)
         this.app.post("/api/v1/notification-webhook", (req: Request, res: Response) => {
             return notificationWebhook(req, res)
         });

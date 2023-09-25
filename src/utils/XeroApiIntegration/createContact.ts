@@ -3,7 +3,9 @@ import { AccessToken } from "../../app/Models/AccessToken";
 import { User } from "../../app/Models/User";
 import { BusinessDetails } from "../../app/Models/BusinessDetails";
 import { createNotesOnXero } from "./addNotesToCustomer";
-let FormData = require("form-data");
+// let FormData = require("form-data");
+import FormData from "form-data";
+
 const POST = "post";
 export const createContactOnXero = (
   paramsToCreateContact: any,
@@ -148,11 +150,9 @@ export const refreshToken = () => {
           },
           { new: true }
         );
-        // console.log(JSON.stringify(response.data));
         resolve(response);
       })
       .catch(function (error) {
-        // console.log(error);
         reject(error);
       });
   });

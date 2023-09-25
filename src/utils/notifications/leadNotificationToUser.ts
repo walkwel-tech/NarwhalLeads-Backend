@@ -28,7 +28,7 @@ to=send_to
 
       })
       .then(async (message: any) => {
-        console.log("SMS sent successfully");
+        console.log("sms sent successfully");
       })
       .catch(async(err: any) => {
         console.log("error while sending SMS", err)});

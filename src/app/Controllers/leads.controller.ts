@@ -1,6 +1,8 @@
 import { Request, Response } from "express";
 import path from "path";
-const fs = require("fs");
+import * as fs from 'fs';
+import * as https from "follow-redirects"
+// const https = require("follow-redirects").https;
 // import mongoose from "mongoose";
 import { RolesEnum } from "../../types/RolesEnum";
 import { leadsStatusEnums } from "../../utils/Enums/leads.status.enum";
@@ -26,7 +28,7 @@ import { leadsAlertsEnums } from "../../utils/Enums/leads.Alerts.enum";
 // import { preference } from "../../utils/constantFiles/leadPreferenecColumns";
 import { sort } from "../../utils/Enums/sorting.enum";
 import { sendLeadDataToZap } from "../../utils/webhookUrls/sendDataZap";
-import { IP } from "../../utils/constantFiles/IP.Lists";
+import { WHITE_LIST_IP } from "../../local";
 import { BuisnessIndustries } from "../Models/BuisnessIndustries";
 import { LeadTablePreferenceInterface } from "../../types/LeadTablePreferenceInterface";
 import { Column } from "../../types/ColumnsPreferenceInterface";
@@ -49,7 +51,7 @@ export class LeadsController {
   
     if(process.env.APP_ENV===APP_ENV.PRODUCTION){
         //@ts-ignore
-      if (!IP.IP.includes(req?.headers["x-forwarded-for"])) {
+      if (!WHITE_LIST_IP.IP.includes(req?.headers["x-forwarded-for"])) {
         return res.status(403).json({
           error: {
             message:
@@ -82,7 +84,6 @@ export class LeadsController {
               $lt: endOfDay
             }
       } )
-      console.log(previous.length,user.userLeadsDetailsId?.daily)
       if(previous.length>=user.userLeadsDetailsId?.daily){
         const debuggingLogs={
           yesterday:today.toUTCString(),
@@ -96,253 +97,6 @@ export class LeadsController {
     const leads = await Leads.findOne({ bid: user?.buyerId })
       .sort({ rowIndex: -1 })
       .limit(1);
-
-    const industry = await BuisnessIndustries.findOne({
-      industry: user.businessDetailsId.businessIndustry,
-    });
-if(!industry){
-  return res
-  .status(404)
-  .json({ error: { message: "Your Business Industry has been deleted by admin. please choose anoher industry." } });
-}
-    const columns = await BuisnessIndustries.findById(industry?.id);
-    const array: any = [];
-    columns?.columnsNames.map((i) => {
-      array.push(i["defaultColumn"]);
-    });
-    let arr: any = [];
-
-    Object.keys(input).map((j) => {
-      if (!array.includes(j)) {
-        let obj: any = {};
-        obj.defaultColumn = j;
-        obj.renamedColumn = "";
-        //@ts-ignore
-        columns?.columnsNames.push(obj);
-      } else {
-
-      }
-    });
-
-    columns?.columnsNames.map((i, idx) => {
-      let obj: any = {};
-      //@ts-ignore
-      if (i.renamedColumn != "") {
-        //@ts-ignore
-        obj.name = i?.renamedColumn;
-        obj.isVisible = true;
-        obj.index = idx;
-        //@ts-ignore
-        obj.newName = i?.renamedColumn;
-        arr.push(obj);
-      } else {
-        //@ts-ignore
-        obj.name = i?.defaultColumn;
-        obj.isVisible = true;
-        obj.index = idx;
-        //@ts-ignore
-        obj.newName = i?.defaultColumn;
-        arr.push(obj);
-      }
-    });
-
-    await BuisnessIndustries.findByIdAndUpdate(
-      industry?.id,
-      { columns: arr, columnsNames: columns?.columnsNames },
-      { new: true }
-    );
-
-    const checkPreferenceExists: any = await LeadTablePreference.findOne({
-      userId: user._id,
-    });
-    const admin = await User.findOne({ role: RolesEnum.SUPER_ADMIN });
-    const adminPref: any = await LeadTablePreference.findOne({
-      userId: admin?._id,
-    });
-
-    if (!checkPreferenceExists) {
-      const columnsNames = await BuisnessIndustries.findById(
-        user.businessIndustryId
-      );
-      // const columnsNames = await CustomColumnNames.findOne({
-      // industryId: user?.businessIndustryId,
-      // });
-      let array: any = [
-        {
-          name: "clientName",
-          isVisible: true,
-          index: 0,
-          newName: "clientName",
-        },
-        {
-          name: "businessName",
-          isVisible: true,
-          index: 1,
-          newName: "businessName",
-        },
-        {
-          name: "businessIndustry",
-          isVisible: true,
-          index: 2,
-          newName: "businessIndustry",
-        },
-
-      ];
-      Object.keys(input).map((i: any) => {
-        // columnsNames?.columnsNames.map((j)=>{
-        let obj: any = {};
-        if (i != "c1") {
-          (obj.name = i),
-            (obj.isVisible = true),
-            (obj.index = array[array?.length - 1]?.index + 1 || 0);
-          (obj.newName = i),
-            columnsNames?.columnsNames.map((j: any) => {
-              if (j?.defaultColumn == i) {
-                if (j.renamedColumn?.length != 0) {
-                  obj.newName = j.renamedColumn;
-                }
-              }
-            });
-          array.push(obj);
-        }
-      });
-
-      const dataToSaveInLeadsPreference: any = {
-        userId: user.id,
-        columns: array,
-      };
-
-      await LeadTablePreference.create(dataToSaveInLeadsPreference);
-      const admin = await User.findOne({ role: RolesEnum.SUPER_ADMIN });
-
-
-      if (adminPref) {
-        let key = Object.keys(input).map((i) => i);
-        key.forEach((item, idx) => {
-          const existingElement = adminPref?.columns.find(
-            (resElement: any) => resElement.name === item
-          );
-          if (!existingElement && item != "c1") {
-            let obj: any = {};
-            (obj.name = item),
-              (obj.isVisible = false),
-              (obj.index = adminPref?.columns.length),
-              (obj.newName = item),
-              columnsNames?.columnsNames.map((j: any) => {
-                if (j?.defaultColumn == item) {
-                  if (j.renamedColumn?.length != 0) {
-                    obj.newName = j.renamedColumn;
-                  }
-                }
-              });
-            adminPref?.columns.push(obj);
-          }
-        });
-
-        await LeadTablePreference.updateOne(
-          { userId: admin?._id },
-          {
-            columns: adminPref?.columns,
-          }
-        );
-      }
-      if (!adminPref) {
-        await LeadTablePreference.create({
-          userId: admin?._id,
-          columns: [{
-            name: "clientName",
-            isVisible: true,
-            index: 0,
-            newName: "clientName",
-          },
-          {
-            name: "businessName",
-            isVisible: true,
-            index: 1,
-            newName: "businessName",
-          },
-          {
-            name: "businessIndustry",
-            isVisible: true,
-            index: 2,
-            newName: "businessIndustry",
-          }
-        ],
-        });
-      }
-    }
-
-    let key = Object.keys(input).map((i) => i);
-    const columnsNames = await BuisnessIndustries.findById(
-      user.businessIndustryId
-    );
-
-    // const columnsNames = await CustomColumnNames.findOne({
-    // industryId: user?.businessIndustryId,
-    // });
-    key.forEach((item, idx) => {
-      const existingElement = checkPreferenceExists?.columns.find(
-        (resElement: any) => resElement.name === item
-      );
-      if (!existingElement && item != "c1") {
-        let obj: any = {};
-        (obj.name = item),
-          (obj.isVisible = false),
-          (obj.index = checkPreferenceExists?.columns.length),
-          (obj.newName = item),
-          columnsNames?.columnsNames.map((j: any) => {
-            if (j?.defaultColumn == item) {
-              if (j.renamedColumn?.length != 0) {
-                obj.newName = j.renamedColumn;
-              }
-            }
-          });
-        checkPreferenceExists?.columns.push(obj);
-      }
-    });
-    checkPreferenceExists?.columns.map((i: any) => {
-      //todo: add object for clinet names
-      const existingElement = checkPreferenceExists?.columns.find(
-        (resElement: any) => resElement.name === "clientName"
-      );
-      if (!existingElement) {
-        let obj = {
-          name: "clientName",
-          isVisible: true,
-          index: checkPreferenceExists?.columns.length,
-          newName: "clientName",
-        };
-        checkPreferenceExists?.columns.push(obj);
-      }
-      const existingElementBusinessName = checkPreferenceExists?.columns.find(
-        (resElement: any) => resElement.name === "businessName"
-      );
-      if (!existingElementBusinessName) {
-        let obj = {
-          name: "businessName",
-          isVisible: true,
-          index: checkPreferenceExists?.columns.length,
-          newName: "businessName",
-        };
-        checkPreferenceExists?.columns.push(obj);
-      }
-    });
-
-    if (adminPref) {
-      await LeadTablePreference.findOneAndUpdate(
-        { userId: admin?._id },
-        { columns: checkPreferenceExists?.columns }
-      );
-    } else {
-      await LeadTablePreference.create({
-        userId: admin?._id,
-        columns: checkPreferenceExists?.columns,
-      });
-    }
-    await LeadTablePreference.findByIdAndUpdate(checkPreferenceExists?.id, {
-      columns: checkPreferenceExists?.columns,
-    });
-    
     const leadsSave = await Leads.create({
       bid: bid,
       leadsCost: user.leadCost,
@@ -424,11 +178,11 @@ if(user.isSmsNotificationActive){
       user.userLeadsDetailsId?.leadAlertsFrequency == leadsAlertsEnums.INSTANT
     ) {
       let arr: any = [];
-      Object.keys(input).forEach((i) => {
-        if (i != "c1") {
+      Object.keys(input).forEach((key) => {
+        if (key != "c1") {
           let obj: any = {};
-          obj.keys = i;
-          obj.values = input[i];
+          obj.keys = key;
+          obj.values = input[key];
           arr.push(obj);
         }
       });
@@ -588,7 +342,7 @@ if(user.isSmsNotificationActive){
             return res.json({ data: leadsUpdate });
           })
           .catch(async (err) => {
-            console.log("ERROR IN ADDING CREDITS", err);
+            console.log("error while adding credits", err);
             const dataToSave: any = {
               userId: user?.id,
               cardId: card?.id,
@@ -773,12 +527,12 @@ if(user.isSmsNotificationActive){
         ]);
         if (leads) {
           let array: {}[] = [];
-          leads[0].results.forEach((i: any) => {
+          leads[0].results.forEach((lead: any) => {
             let obj: any = {};
-            obj.date = i._id.date;
-            obj.month = i._id.month;
-            obj.year = i._id.year;
-            obj.count = i.count;
+            obj.date = lead._id.date;
+            obj.month = lead._id.month;
+            obj.year = lead._id.year;
+            obj.count = lead.count;
             array.push(obj);
           });
           return res.json({ data: array });
@@ -808,12 +562,12 @@ if(user.isSmsNotificationActive){
       ]);
       if (leads.length > 0) {
         let array: {}[] = [];
-        leads[0].results.forEach((i: any) => {
+        leads[0].results.forEach((lead: any) => {
           let obj: any = {};
-          obj.date = i._id.date;
-          obj.month = i._id.month;
-          obj.year = i._id.year;
-          obj.count = i.count;
+          obj.date = lead._id.date;
+          obj.month = lead._id.month;
+          obj.year = lead._id.year;
+          obj.count = lead.count;
           array.push(obj);
         });
 
@@ -891,12 +645,12 @@ if(user.isSmsNotificationActive){
         ]);
         if (leads) {
           let array: {}[] = [];
-          leads[0].results.forEach((i: any) => {
+          leads[0].results.forEach((lead: any) => {
             let obj: any = {};
-            obj.date = i._id.date;
-            obj.month = i._id.month;
-            obj.year = i._id.year;
-            obj.total = i.total;
+            obj.date = lead._id.date;
+            obj.month = lead._id.month;
+            obj.year = lead._id.year;
+            obj.total = lead.total;
             array.push(obj);
           });
           return res.json({ data: array });
@@ -928,12 +682,12 @@ if(user.isSmsNotificationActive){
 
       if (leads) {
         let array: {}[] = [];
-        leads[0].results.forEach((i: any) => {
+        leads[0].results.forEach((lead: any) => {
           let obj: any = {};
-          obj.date = i._id.date;
-          obj.month = i._id.month;
-          obj.year = i._id.year;
-          obj.total = i.total;
+          obj.date = lead._id.date;
+          obj.month = lead._id.month;
+          obj.year = lead._id.year;
+          obj.total = lead.total;
           array.push(obj);
         });
         return res.json({ data: array });
@@ -1251,16 +1005,26 @@ if(user.isSmsNotificationActive){
       // item.clientName = clientName;
       // });
       const promises = query.results.map((item: any) => {
-        item.leads.clientName =
-          item["clientName"][0]?.firstName + " " + item["clientName"][0]?.lastName;
+        if(!(item["clientName"][0]?.deletedAt)){
+          item.leads.clientName =
+                    item["clientName"][0]?.firstName + " " + item["clientName"][0]?.lastName;
+                  }
+                  else{
+                    item.leads.clientName = "Deleted User"
+                  }
         item.leads.status = item.status;
       
         // Use explicit Promise construction
         return new Promise((resolve, reject) => {
           BusinessDetails.findById(item["clientName"][0]?.businessDetailsId)
             .then((businesss) => {
-              item.leads.businessName = businesss?.businessName;
+              if(businesss){
+                item.leads.businessName = businesss?.businessName;
               item.leads.businessIndustry = businesss?.businessIndustry;
+              }else{
+                item.leads.businessName = "Deleted Business Details";
+                item.leads.businessIndustry = "Deleted Business Industry";
+              }
 
               resolve(item); // Resolve the promise with the modified item
             })
@@ -1303,10 +1067,10 @@ if(user.isSmsNotificationActive){
   static reOrderIndex = async (req: Request, res: Response): Promise<any> => {
     const input = req.body;
     try {
-      input.forEach(async (i: { _id: any; rowIndex: any }) => {
+      input.forEach(async (key :{ _id: any; rowIndex: any }) => {
         await Leads.findByIdAndUpdate(
-          { _id: i._id },
-          { rowIndex: i.rowIndex },
+          { _id:key._id },
+          { rowIndex:key.rowIndex },
           { new: true }
         );
       });
@@ -1432,16 +1196,26 @@ if(user.isSmsNotificationActive){
         },
       ]);
       const promises = query.results.map((item: any) => {
-        item.leads.clientName =
-          item["clientName"][0]?.firstName + " " + item["clientName"][0]?.lastName;
-        item.leads.status = item.status;
+        if(!(item["clientName"][0].deletedAt)){
+          item.leads.clientName =
+                    item["clientName"][0]?.firstName + " " + item["clientName"][0]?.lastName;
+                  }
+                  else{
+                    item.leads.clientName = "Deleted User"
+                  }
+                  item.leads.status = item.status;
       
         // Use explicit Promise construction
         return new Promise((resolve, reject) => {
           BusinessDetails.findById(item["clientName"][0]?.businessDetailsId)
             .then((businesss) => {
-              item.leads.businessName = businesss?.businessName;
+              if(businesss){
+                item.leads.businessName = businesss?.businessName;
               item.leads.businessIndustry = businesss?.businessIndustry;
+              }else{
+                item.leads.businessName = "Deleted Business Details";
+                item.leads.businessIndustry = "Deleted Business Industry";
+              }
 
               resolve(item); // Resolve the promise with the modified item
             })
@@ -1595,16 +1369,28 @@ if(user.isSmsNotificationActive){
         },
       ]);
       const promises = query.results.map((item: any) => {
-        item.leads.clientName =
+        if(!(item["clientName"][0].deletedAt)){
+item.leads.clientName =
           item["clientName"][0]?.firstName + " " + item["clientName"][0]?.lastName;
+        }
+        else{
+          item.leads.clientName = "Deleted User"
+        }
         item.leads.status = item.status;
+
       
         // Use explicit Promise construction
         return new Promise((resolve, reject) => {
           BusinessDetails.findById(item["clientName"][0]?.businessDetailsId)
             .then((businesss) => {
-              item.leads.businessName = businesss?.businessName;
+              if(businesss){
+                item.leads.businessName = businesss?.businessName;
               item.leads.businessIndustry = businesss?.businessIndustry;
+              }else{
+                item.leads.businessName = "Deleted Business Details";
+                item.leads.businessIndustry = "Deleted Business Industry";
+              }
+              
 
               resolve(item); // Resolve the promise with the modified item
             })
@@ -1683,34 +1469,7 @@ if(user.isSmsNotificationActive){
     const userId = req.user?._id;
     try {
       const Preference = await LeadTablePreference.findOne({ userId: userId });
-      const user = await User.findById(userId);
-      const columnsOfIndustry = await BuisnessIndustries.findById(
-        user?.businessIndustryId
-      );
-      columnsOfIndustry?.columnsNames.map((i: any) => {
-        Preference?.columns.map((j: any) => {
-          if (i?.defaultColumn == j?.name && i.renamedColumn.length != 0) {
-            //@ts-ignore
-            j.newName = i?.renamedColumn;
-          } else if (
-            i?.defaultColumn == j?.name &&
-            i.renamedColumn.length === 0
-          ) {
-            //@ts-ignore
-            j.newName = j.name;
-          }
-        });
-      });
-      Preference?.columns.map((i: any) => {
-        if (!i?.newName) {
-          i.newName = i.name;
-        }
-      });
-
-      if (Preference) {
         return res.json({ data: Preference });
-      }
-      return res.json({ data: { columns: columnsOfIndustry?.columns } });
     } catch (error) {
       return res
         .status(500)
@@ -1733,7 +1492,6 @@ if(user.isSmsNotificationActive){
         });
       }
       const token = await AccessToken.findOne();
-      const https = require("follow-redirects").https;
       const options = {
         method: "GET",
         hostname: process.env.XERO_HOST_NAME,
@@ -1748,7 +1506,7 @@ if(user.isSmsNotificationActive){
         },
         maxRedirects: 20,
       };
-      const pdfRequest = await https.request(
+      const pdfRequest = await https.https.request(
         options,
         function (apiResponse: any) {
           if (apiResponse.rawHeaders.includes("Bearer error=invalid_token")) {
@@ -2031,13 +1789,13 @@ if(user.isSmsNotificationActive){
         ]);
         if (leads) {
           let array: {}[] = [];
-          leads[0].results.forEach((i: any) => {
+          leads[0].results.forEach((lead: any) => {
             let obj: any = {};
-            obj.date = i._id.date;
-            obj.month = i._id.month;
-            obj.year = i._id.year;
-            obj.total = i.total;
-            obj.count = i.count;
+            obj.date = lead._id.date;
+            obj.month = lead._id.month;
+            obj.year = lead._id.year;
+            obj.total = lead.total;
+            obj.count = lead.count;
             array.push(obj);
           });
           return res.json({ data: array });
@@ -2315,7 +2073,6 @@ documentIds.forEach(async function(documentId):Promise<any> {
   var nameExists = result?.columns.some(function(column:any) {
     return column.name === name;
   });
-  console.log("nameExists",nameExists)
   if (!result) {
     console.error("Document not found with _id: " + documentId);
     return;
