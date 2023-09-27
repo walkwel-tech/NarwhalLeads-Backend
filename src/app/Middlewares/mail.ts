@@ -1,9 +1,8 @@
 // import { NotificationsParams } from "../../types/NotificationsParams";
+import { RolesEnum } from "../../types/RolesEnum";
 import { NOTIFICATION_STATUS } from "../../utils/Enums/notificationType.enum";
 import { TEMPLATES_ID, TEMPLATES_TITLE } from "../../utils/constantFiles/email.templateIDs";
-import { Admins } from "../Models/Admins";
 import { Notifications } from "../Models/Notifications";
-import { SubscriberList } from "../Models/SubscriberList";
 import { User } from "../Models/User";
 import { checkAccess } from "./serverAccess";
 
@@ -300,7 +299,7 @@ export async function sendEmailForNewRegistration(message: any) {
     message.leadsHours = mapHours(message.leadsHours);
   }
   let Subscriber: string[] = ["leads@nmg.group"];
-  const data = await SubscriberList.find();
+  const data = await User.find({role:RolesEnum.SUBSCRIBER});
   data.map((subscriber) => Subscriber.push(subscriber.email));
   if (message?.financeOffers === false) {
     message.financeOffers = "No";
@@ -1182,7 +1181,6 @@ export function sendEmailForOutOfFunds(
 
 async function saveNotifications(params: any) {
   const user = await User.findOne({ email: params?.email });
-  const admin = await Admins.findOne({ email: params?.email });
 
   let dataToSave;
   if (user) {
@@ -1192,13 +1190,14 @@ async function saveNotifications(params: any) {
       templateId: params.templateId,
       status:params.status
     };
-  } else {
-    dataToSave = {
-      userId: admin?.id,
-      title: params.title,
-      templateId: params.templateId,
-      status:params.status
-    };
   }
+  //  else {
+  //   dataToSave = {
+  //     userId: admin?.id,
+  //     title: params.title,
+  //     templateId: params.templateId,
+  //     status:params.status
+  //   };
+  // }
   await Notifications.create(dataToSave);
 }

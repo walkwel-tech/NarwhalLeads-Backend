@@ -8,6 +8,8 @@ import { IndustryInput } from "../Inputs/Industry.input";
 import { validate } from "class-validator";
 import { ValidationErrorResponse } from "../../types/ValidationErrorResponse";
 import { LeadTablePreference } from "../Models/LeadTablePreference";
+import { BuisnessIndustriesInterface } from "../../types/BuisnessIndustriesInterface";
+import { columnsObjects } from "../../types/columnsInterface"
 const LIMIT = 10;
 export class IndustryController {
   static create = async (req: Request, res: Response) => {
@@ -28,7 +30,7 @@ export class IndustryController {
         .status(400)
         .json({ error: { message: "VALIDATIONS_ERROR", info: errorsInfo } });
     }
-    let dataToSave: any = {
+    let dataToSave: Partial<BuisnessIndustriesInterface> = {
       industry: input.industry,
       leadCost: input.leadCost,
       columns: order,
@@ -69,7 +71,7 @@ export class IndustryController {
           .status(404)
           .json({ error: { message: "Business Industry not found." } });
       }
-      updatedData?.columns.sort((a: any, b: any) => a.index - b.index);
+      updatedData?.columns.sort((a: columnsObjects, b: columnsObjects) => a.index - b.index);
 
       if (input.leadCost) {
         await User.updateMany(
@@ -91,12 +93,13 @@ export class IndustryController {
     try {
       if (input.columns) {
         const users = await User.find({ businessIndustryId: req.params.id });
-        users.map(async (user: any) => {
+       const data= users.map(async (user: any) => {
           
         await LeadTablePreference.findOneAndUpdate({userId:user.id}, {
             columns: input.columns,
           },{new:true});
         });
+        Promise.all(data)
       }
 
       const updatedData = await BuisnessIndustries.findByIdAndUpdate(

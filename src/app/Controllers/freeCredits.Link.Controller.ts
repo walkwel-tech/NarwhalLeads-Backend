@@ -1,5 +1,7 @@
 import { Request, Response } from "express";
 import { FreeCreditsLink } from "../Models/freeCreditsLink";
+import { freeCreditsLinkInterface } from "../../types/FreeCreditsLinkInterface";
+import { UserInterface } from "../../types/UserInterface";
 
 let alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
 
@@ -18,13 +20,14 @@ export class freeCreditsLinkController {
       if (input?.freeCredits < 0 || input?.topUpAmount < 0) {
         res.status(400).json({ error: { message: "Invalid value" } });
       }
-      let dataToSave: any = {
+      let dataToSave: Partial<freeCreditsLinkInterface> = {
         code: randomString(10),
         freeCredits: input.freeCredits,
         topUpAmount: input.topUpAmount,
         maxUseCounts: input.maxUseCounts,
         useCounts: 0,
         name: input.name,
+        accountManager:input.accountManager
       };
       if (input.code) {
         dataToSave.code = input.code;
@@ -63,7 +66,7 @@ export class freeCreditsLinkController {
   };
 
   static show = async (req: any, res: Response): Promise<any> => {
-    let dataToFind: any = { isDeleted: false };
+    let dataToFind: Record<string,unknown> = { isDeleted: false };
     if (req.query.search) {
       dataToFind = {
         ...dataToFind,
@@ -81,6 +84,9 @@ export class freeCreditsLinkController {
     }
     if (req.query.live) {
       dataToFind.isDisabled = false;
+    }
+    if(req.query.accountManager){
+      dataToFind.accountManager=req.query.accountManager
     }
     try {
       let query = await FreeCreditsLink.aggregate([
@@ -135,7 +141,7 @@ export class freeCreditsLinkController {
         },
       ]);
       const transformedData = query.map(item => {
-        const usersData = item.users.userData.map((user:any) => {
+        const usersData = item.users.userData.map((user:UserInterface) => {
             const businessDetails = item.users.businessDetailsId.find((business:any) => business._id.equals(user.businessDetailsId));
             const businessName = businessDetails ? businessDetails.businessName : '';
             
@@ -179,7 +185,7 @@ export class freeCreditsLinkController {
   static expire = async (req: Request, res: Response): Promise<any> => {
     const id = req.params.id;
     try {
-      const dataToSave: any = {
+      const dataToSave: Partial<freeCreditsLinkInterface> = {
         isDisabled: true,
       };
       const data = await FreeCreditsLink.findByIdAndUpdate(id, dataToSave, {
@@ -194,7 +200,7 @@ export class freeCreditsLinkController {
   static delete = async (req: Request, res: Response): Promise<any> => {
     const id = req.params.id;
     try {
-      const dataToSave: any = {
+      const dataToSave: Partial<freeCreditsLinkInterface> = {
         isDeleted: true,
         deletedAt: new Date(),
       };

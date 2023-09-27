@@ -16,7 +16,7 @@ const invoiceSchema = new Schema({
         default: null
     },
     price: {
-        type: String,
+        type: Number,
         default: null
     },
     createdAt: {

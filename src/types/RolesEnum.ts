@@ -3,5 +3,7 @@ export enum RolesEnum {
     ADMIN = 'admin',
     INVITED='invited',
     SUPER_ADMIN='superAdmin',
-    NON_BILLABLE="non-billable"
+    NON_BILLABLE="nonBillable",
+    ACCOUNT_MANAGER="accountManager",
+    SUBSCRIBER="subscriber",
 }

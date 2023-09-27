@@ -4,8 +4,6 @@ import { RolesEnum } from "../../types/RolesEnum";
 import { sendEmailToInvitedAdmin, sendEmailToInvitedUser } from "../Middlewares/mail";
 import { LeadTablePreference } from "../Models/LeadTablePreference";
 import { User } from "../Models/User";
-import { SubscriberList } from "../Models/SubscriberList";
-import { Admins } from "../Models/Admins";
 import { ClientTablePreference } from "../Models/ClientTablePrefrence";
 
 const LIMIT = 10;
@@ -190,14 +188,15 @@ export class invitedUsersController {
 
   static addSubscribers = async (_req: Request, res: Response) => {
     const input = _req.body;
-
+    input.role=RolesEnum.SUBSCRIBER
+    input.isActive=true
     try {
-   const data=await SubscriberList.find({email:input.email, isDeleted:false})
+   const data=await User.find({email:input.email, isDeleted:false,role:RolesEnum.SUBSCRIBER})
    if(data.length>0){
     return res.status(400).json({error:{message:"Subscriber already exist"}})
    }
    else{
-   const data= await SubscriberList.create(input)
+   const data= await User.create(input)
    return res.json({data:data})
    }
     } catch (error) {
@@ -212,7 +211,7 @@ export class invitedUsersController {
     const id = _req.params.id;
 
     try {
-      const invitedUsers = await SubscriberList.find({
+      const invitedUsers = await User.find({
         _id: id,
         isDeleted: false,
       });
@@ -220,7 +219,7 @@ export class invitedUsersController {
       if (invitedUsers.length == 0) {
         return res.status(400).json({ error: { message: "No Subscriber Found" } });
       } else {
-        await SubscriberList.findByIdAndUpdate(id, { isDeleted: true });
+        await User.findByIdAndUpdate(id, { isDeleted: true });
         return res.json({ data: { message: "Subscriber Deleted!" } });
       }
     } catch (error) {
@@ -239,6 +238,7 @@ export class invitedUsersController {
     let skip = (_req.query && _req.query.page > 0 ? parseInt(_req.query.page) - 1 : 0) * perPage;
       let dataToFind: any = {
         isDeleted: false,
+        role:RolesEnum.SUBSCRIBER
         // isActive: JSON.parse(isActive?.toLowerCase()),
       };
       if (_req.query.search) {
@@ -254,7 +254,7 @@ export class invitedUsersController {
         skip = 0;
       }
     try {
-      const invitedUsers = await SubscriberList.find(dataToFind).sort({createdAt:-1}).skip(skip).limit(perPage);
+      const invitedUsers = await User.find(dataToFind).sort({createdAt:-1}).skip(skip).limit(perPage);
 
       // if (invitedUsers.length == 0) {
         // return res.json({ error: { message: "No Data Found" } });
@@ -271,15 +271,18 @@ export class invitedUsersController {
   static addAdmins = async (_req: Request, res: Response) => {
     const input = _req.body;
     input.email = String(input.email).toLowerCase();
+    input.role=RolesEnum.ADMIN
+    input.isActive=true
+
     try {
-   const data=await Admins.find({email:input.email, isDeleted:false})
-   const user=await User.find({email:input.email,isDeleted:false})
+   const data=await User.find({email:input.email, isDeleted:false, role:RolesEnum.ADMIN})
+  //  const user=await User.find({email:input.email,isDeleted:false})
    if(data.length>0){
     return res.status(400).json({error:{message:"Admin already exist"}})
    }
-   else if(user.length>0){
-    return res.status(400).json({error:{message:"Email already registered with an User."}})
-   }
+  //  else if(user.length>0){
+  //   return res.status(400).json({error:{message:"Email already registered with an User."}})
+  //  }
    else{
     const salt = genSaltSync(10);
     const text = randomString(8, true);
@@ -288,15 +291,16 @@ export class invitedUsersController {
       password:text
     }
     const hashPassword = hashSync(text, salt);
+    console.log("password",text)
     input.password=hashPassword
     sendEmailToInvitedAdmin(input.email,dataToSend)
-     const data= await Admins.create(input)
+     const data= await User.create(input)
      const adminExist:any=await User.findOne({role:RolesEnum.SUPER_ADMIN})
      const adminPref:any= await LeadTablePreference.findOne({userId:adminExist.id})
      const adminClientPref:any= await ClientTablePreference.findOne({userId:adminExist._id})
      await LeadTablePreference.create({userId:data.id,columns:adminPref.columns})
  await ClientTablePreference.create({columns:adminClientPref.columns, userId:data.id})
-   const show=await Admins.findById(data.id,'-password')
+   const show=await User.findById(data.id,'-password')
    return res.json({data:show})
    }
     } catch (error) {
@@ -311,7 +315,7 @@ export class invitedUsersController {
     const id = _req.params.id;
 
     try {
-      const invitedUsers = await Admins.find({
+      const invitedUsers = await User.find({
         _id: id,
         isDeleted: false,
       });
@@ -319,7 +323,7 @@ export class invitedUsersController {
       if (invitedUsers.length == 0) {
         return res.status(400).json({ error: { message: "No Admin Found" } });
       } else {
-        await Admins.findByIdAndUpdate(id, { isDeleted: true });
+        await User.findByIdAndUpdate(id, { isDeleted: true });
         return res.json({ data: { message: "Admin Deleted!" } });
       }
     } catch (error) {
@@ -338,6 +342,7 @@ export class invitedUsersController {
     let skip = (_req.query && _req.query.page > 0 ? parseInt(_req.query.page) - 1 : 0) * perPage;
       let dataToFind: any = {
         isDeleted: false,
+        role:RolesEnum.ADMIN
         // isActive: JSON.parse(isActive?.toLowerCase()),
       };
       if (_req.query.search) {
@@ -353,9 +358,7 @@ export class invitedUsersController {
         skip = 0;
       }
     try {
-      const invitedUsers = await Admins.find(dataToFind,'-password').sort({createdAt:-1}).skip(skip).limit(perPage);
-
-
+      const invitedUsers = await User.find(dataToFind,'-password').sort({createdAt:-1}).skip(skip).limit(perPage);
         return res.json({ data: invitedUsers });
     } catch (error) {
       return res
@@ -369,7 +372,7 @@ export class invitedUsersController {
     const id = _req.params.id;
 const input=_req.body
     try {
-      const invitedUsers = await Admins.find({
+      const invitedUsers = await User.find({
         _id: id,
         isDeleted: false,
       });
@@ -377,8 +380,8 @@ const input=_req.body
       if (invitedUsers.length == 0) {
         return res.status(400).json({ error: { message: "No Admin Found" } });
       } else {
-        await Admins.findByIdAndUpdate(id, input,{new:true});
-        const data=await Admins.findById(id,'-password')
+        await User.findByIdAndUpdate(id, input,{new:true});
+        const data=await User.findById(id,'-password')
         return res.json({ data: { message: "Admin Updated!", data:data } });
       }
     } catch (error) {
