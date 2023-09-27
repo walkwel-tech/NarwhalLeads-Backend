@@ -1,4 +1,3 @@
-import { genSaltSync, hashSync } from "bcryptjs";
 import { Request, Response } from "express";
 import { AdminSettings } from "../Models/AdminSettings";
 import { ClientTablePreference } from "../Models/ClientTablePrefrence";
@@ -9,21 +8,18 @@ import { ObjectID } from "bson";
 import { generateAuthToken } from "../../utils/jwt";
 import { User } from "../Models/User";
 import { RolesEnum } from "../../types/RolesEnum";
+import { AdminSettingsInterface } from "../../types/AdminSettingInterface";
+import { ClientTablePreferenceInterface } from "../../types/clientTablePrefrenceInterface";
+import { UserInterface } from "../../types/UserInterface";
+import { columnsObjects } from "../../types/columnsInterface";
+
+
 
 export class AdminSettingsController {
   static create = async (req: Request, res: Response) => {
     const input = req.body;
-    const salt = genSaltSync(10);
-    const text =
-      input.amount +
-      "admin" +
-      input.thresholdValue +
-      "Secret" +
-      input.defaultLeadAmount;
-    const secretKey = hashSync(text, salt);
-    let dataToSave: any = {
+    let dataToSave: Partial<AdminSettingsInterface> = {
       amount: input.amount,
-      leadByteKey: secretKey,
       thresholdValue: input.thresholdValue,
       defaultLeadAmount: input.defaultLeadAmount,
     };
@@ -49,7 +45,7 @@ export class AdminSettingsController {
         return res.json({ message: "successfuly updated!", data: updatedData });
       }
       else {
-        let dataToSave: any = {
+        let dataToSave: Partial<AdminSettingsInterface> = {
           amount: input.amount,
           thresholdValue: input.thresholdValue,
           defaultLeadAmount: input.defaultLeadAmount,
@@ -136,11 +132,11 @@ export class AdminSettingsController {
       if (!checkExist) {
         //@ts-ignore
         const columns = input?.columns.sort((a, b) => a.index - b.index);
-        let dataToSave: any = {
+        let dataToSave: Partial<ClientTablePreferenceInterface> = {
           columns,
           //@ts-ignore
           userId:req.user?.id
-        };
+        } ?? {} as ClientTablePreferenceInterface
         const Preference = await ClientTablePreference.create(dataToSave);
         return res.json({ data: Preference });
       } else {
@@ -167,12 +163,12 @@ export class AdminSettingsController {
           //@ts-ignore
       const Preference = await ClientTablePreference.findOne({userId:req.user.id})
       if(Preference){
-        Preference?.columns.sort((a: any, b: any) => a.index - b.index);
+        Preference?.columns.sort((a: columnsObjects, b: columnsObjects) => a.index - b.index);
         return res.json({ data: Preference });
       }
      else{
       const data=clientTablePreference
-      data?.sort((a: any, b: any) => a.index - b.index);
+      data?.sort((a: columnsObjects, b: columnsObjects) => a.index - b.index);
       return res.json({ data:  {columns:data}  });
      }
     } catch (error) {
@@ -183,7 +179,7 @@ export class AdminSettingsController {
   };
 
   static notifications = async (
-    req: any,
+    req: Request,
     res: Response
   ): Promise<Response> => {
     let dataToFind={}
@@ -218,7 +214,7 @@ export class AdminSettingsController {
     res: Response
   )=> {
     const input = req.body;
-const user:any=await User.findOne({email:input.email,role:RolesEnum.USER})
+const user:UserInterface=await User.findOne({email:input.email,role:RolesEnum.USER}) ?? {} as UserInterface
     const token = generateAuthToken(user);
     return res.json({token:token})
     

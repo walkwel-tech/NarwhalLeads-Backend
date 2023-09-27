@@ -29,9 +29,10 @@ import { PROMO_LINK } from "../../utils/Enums/promoLink.enum";
 import { ClientTablePreference } from "../Models/ClientTablePrefrence";
 import { clientTablePreference } from "../../utils/constantFiles/clientTablePreferenceAdmin";
 import { LeadTablePreference } from "../Models/LeadTablePreference";
-import { Admins } from "../Models/Admins";
 import { order } from "../../utils/constantFiles/businessIndustry.orderList";
 import * as fs from "fs"
+import { AdminSettingsInterface } from "../../types/AdminSettingInterface";
+import { freeCreditsLinkInterface } from "../../types/FreeCreditsLinkInterface";
 
 class AuthController {
   static register = async (req: Request, res: Response): Promise<any> => {
@@ -46,7 +47,7 @@ class AuthController {
     registerInput.password = input.password;
     const errors = await validate(registerInput);
 
-    const adminSettings = await AdminSettings.findOne();
+    const adminSettings:AdminSettingsInterface = await AdminSettings.findOne() ?? {} as AdminSettingsInterface
     if (errors.length) {
       const errorsInfo: ValidationErrorResponse[] = errors.map((error) => ({
         property: error.property,
@@ -62,9 +63,9 @@ class AuthController {
       if (!user) {
         const salt = genSaltSync(10);
         const hashPassword = hashSync(input.password, salt);
-        const showUsers: any = await User.findOne()
+        const showUsers: UserInterface = await User.findOne()
           .sort({ rowIndex: -1 })
-          .limit(1);
+          .limit(1) ?? {} as UserInterface
         let checkCode;
         let codeExists;
         if (input.code) {
@@ -87,7 +88,7 @@ class AuthController {
           }
         }
         input.email = String(input.email).toLowerCase();
-        let dataToSave: any = {
+        let dataToSave: Partial<UserInterface>  = {
           firstName: input.firstName,
           lastName: input.lastName,
           email: input.email,
@@ -99,7 +100,6 @@ class AuthController {
           autoChargeAmount: adminSettings?.amount,
           isActive: true, //need to delete
           isVerified: true, //need to delete
-          autoCharge: true,
           rowIndex: showUsers?.rowIndex + 1 || 0,
           paymentMethod: paymentMethodEnum.MANUALLY_ADD_CREDITS_METHOD,
           onBoarding: [
@@ -138,16 +138,18 @@ class AuthController {
         if (codeExists && checkCode?.topUpAmount === 0) {
           dataToSave.premiumUser = PROMO_LINK.PREMIUM_USER_NO_TOP_UP;
           dataToSave.promoLinkId = checkCode?.id;
+          dataToSave.accountManager=checkCode.accountManager
         } else if (codeExists && checkCode?.topUpAmount != 0) {
           dataToSave.premiumUser = PROMO_LINK.PREMIUM_USER_TOP_UP;
           dataToSave.promoLinkId = checkCode?.id;
+          dataToSave.accountManager=checkCode?.accountManager
         }
         await User.create(dataToSave);
         if (input.code) {
-          const checkCode: any = await FreeCreditsLink.findOne({
+          const checkCode: freeCreditsLinkInterface = await FreeCreditsLink.findOne({
             code: input.code, isDeleted:false
-          });
-          const dataToSave: any = {
+          }) ?? {} as freeCreditsLinkInterface
+          const dataToSave: Partial<freeCreditsLinkInterface> = {
             isUsed: true,
             usedAt: new Date(),
             useCounts: checkCode?.useCounts + 1,
@@ -223,22 +225,17 @@ class AuthController {
   };
 
   static auth = async (req: Request, res: Response): Promise<any> => {
-    const user: any = req.user;
+    const user: Partial<UserInterface> = req.user ?? {} as UserInterface;
     try {
       const exists = await User.findById(user?.id, "-password")
         .populate("businessDetailsId")
         .populate("userLeadsDetailsId")
         .populate("invitedById");
-        const existsAdmin = await Admins.findById(user?.id, "-password")
-        .populate("businessDetailsId")
-        .populate("userLeadsDetailsId")
-        .populate("invitedById");
+      
       if (exists) {
         return res.json({ data: exists });
       }
-      else if(existsAdmin){
-        return res.json({ data: existsAdmin });
-      }
+ 
       return res.json({ data: "User not exists" });
     } catch (error) {
       
@@ -407,7 +404,7 @@ class AuthController {
           .status(401)
           .json({ data: { message: "User doesn't exist." } });
       }
-      const activeUser: any = await User.findByIdAndUpdate(
+      const activeUser: UserInterface = await User.findByIdAndUpdate(
         id,
         {
           isActive: isActive,
@@ -416,7 +413,7 @@ class AuthController {
         {
           new: true,
         }
-      );
+      ) ?? {} as UserInterface
       const dataToShow = {
         id: activeUser.id,
         firstName: activeUser.firstName,
@@ -480,7 +477,6 @@ class AuthController {
     const userInput = new forgetPasswordInput();
     userInput.email = input.email;
     const user = await User.findOne({ email: input.email });
-    const admin = await Admins.findOne({ email: input.email });
 
     if (user) {
       const salt = genSaltSync(10);
@@ -498,24 +494,6 @@ class AuthController {
         password: hashPassword,
       });
       await User.findOneAndUpdate({ _id: user }, { password: hashPassword });
-
-      return res.json({ data: { message: "Email sent please verify!" } });
-    }else if(admin){
-      const salt = genSaltSync(10);
-      const text = randomString(8, true);
-      const hashPassword = hashSync(text, salt);
-      let message = {
-        name: admin.firstName,
-        password: text,
-      };
-      console.log("forget password", text);
-      sendEmailForgetPassword(input.email, message);
-      await ForgetPassword.create({
-        userId: admin.id,
-        email: input.email,
-        password: hashPassword,
-      });
-      await Admins.findOneAndUpdate({ _id: admin }, { password: hashPassword });
 
       return res.json({ data: { message: "Email sent please verify!" } });
     }
@@ -659,20 +637,17 @@ class AuthController {
   };
 
   static me = async (req: Request, res: Response): Promise<any> => {
-    const user: any = req.user;
+    const user: Partial<UserInterface> = req.user ?? {} as UserInterface
     try {
       const exists = await User.findById(user?.id, "-password")
         .populate("businessDetailsId")
         .populate("userLeadsDetailsId")
         // .populate("invitedById")
         .populate("userServiceId");
-        const existsAdmin = await Admins.findById(user?.id, "-password")
       if (exists) {
         return res.json({ data: exists });
       }
-      else if(existsAdmin){
-        return res.json({ data: existsAdmin });
-      }
+     
       return res.json({ data: "User not exists" });
     } catch (error) {
       return res
@@ -708,7 +683,7 @@ const user=await User.findById(id,'isRyftCustomer isLeadbyteCustomer isXeroCusto
 
   static adminRegister = async (req: Request, res: Response): Promise<any> => {
     const input = req.body;
-    const showUsers: any = await User.findOne().sort({ rowIndex: -1 }).limit(1);
+    const showUsers: UserInterface = await User.findOne().sort({ rowIndex: -1 }).limit(1) ?? {} as UserInterface
     try {
       const salt = genSaltSync(10);
       const hashPassword = hashSync(input?.password || "secret@1", salt);
@@ -750,7 +725,7 @@ const user=await User.findById(id,'isRyftCustomer isLeadbyteCustomer isXeroCusto
 
 export { AuthController };
 
-function randomString(length: number, isSpecial: any) {
+function randomString(length: number, isSpecial: boolean) {
   const normalCharacters =
     "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
 

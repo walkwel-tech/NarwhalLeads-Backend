@@ -21,12 +21,14 @@ import { UserLeadsDetails } from "../Models/UserLeadsDetails";
 import { ClientTablePreferenceInterface } from "../../types/clientTablePrefrenceInterface";
 import { ClientTablePreference } from "../Models/ClientTablePrefrence";
 import { Column } from "../../types/ColumnsPreferenceInterface";
-import { Admins } from "../Models/Admins";
 import { deleteCustomerOnRyft } from "../../utils/createCustomer/deleteFromRyft";
 import { MODEL_ENUM } from "../../utils/Enums/model.enum";
 import { ACTION } from "../../utils/Enums/actionType.enum";
 import { ActivityLogs } from "../Models/ActivityLogs";
 import { findUpdatedFields } from "../../utils/Functions/findModifiedColumns";
+import { Leads } from "../Models/Leads";
+import { UserInterface } from "../../types/UserInterface";
+import { leadsStatusEnums } from "../../utils/Enums/leads.status.enum";
 const ObjectId = mongoose.Types.ObjectId;
 
 const LIMIT = 10;
@@ -113,6 +115,10 @@ export class UsersControllers {
   static index = async (_req: any, res: Response): Promise<Response> => {
     try {
       let sortingOrder = _req.query.sortingOrder || sort.DESC;
+      
+      let accountManagerBoolean = _req.query.accountManager;
+      let accountManagerId = _req.query.accountManagerId;
+
       let sortKey = _req.query.sortKey || "createdAt";
       let isArchived = _req.query.isArchived || "false";
       let isActive = _req.query.isActive || "true";
@@ -140,12 +146,22 @@ export class UsersControllers {
 
       let dataToFind: any = {
         role: {
-          $nin: [RolesEnum.ADMIN, RolesEnum.INVITED, RolesEnum.SUPER_ADMIN],
+          $nin: [
+            RolesEnum.ADMIN,
+            RolesEnum.INVITED,
+            RolesEnum.SUPER_ADMIN,
+            RolesEnum.ACCOUNT_MANAGER,
+            RolesEnum.SUBSCRIBER,
+
+          ],
         },
         // role:{$ne: RolesEnum.INVITED },
         isDeleted: false,
         isArchived: JSON.parse(isArchived?.toLowerCase()),
       };
+      if (accountManagerBoolean) {
+        dataToFind.role = RolesEnum.ACCOUNT_MANAGER;
+      }
       if (_req.query.isActive) {
         dataToFind.isActive = JSON.parse(isActive?.toLowerCase());
         dataToFind.isArchived = false;
@@ -155,6 +171,9 @@ export class UsersControllers {
       }
       if (_req.query.industryId) {
         dataToFind.businessIndustryId = new ObjectId(_req.query.industryId);
+      }
+      if (accountManagerId != "" && accountManagerId) {
+        dataToFind.accountManager = new ObjectId(_req.query.accountManagerId);
       }
       if (_req.query.search) {
         dataToFind = {
@@ -181,8 +200,14 @@ export class UsersControllers {
         };
         skip = 0;
       }
-      const sortObject: Record<string, 1 | -1> = {};
-      sortObject[sortKey] = sortingOrder;
+      let sortObject: Record<string, 1 | -1>;
+      if (accountManagerBoolean) {
+        sortObject = { firstName: 1 };
+      } else {
+        sortObject = {};
+        sortObject[sortKey] = sortingOrder;
+      }
+
       const [query]: any = await User.aggregate([
         {
           $facet: {
@@ -357,15 +382,7 @@ export class UsersControllers {
           item.businessDetailsId = businessDetailsId;
           item.cardDetailsId = cardDetailsId;
         });
-        if (query.results.length == 0) {
-          [query] = await Admins.aggregate([
-            {
-              $facet: {
-                results: [{ $match: { _id: new ObjectId(id) } }],
-              },
-            },
-          ]);
-        }
+
         return res.json({ data: query.results[0] });
       } else {
         [query] = await User.aggregate([
@@ -416,15 +433,7 @@ export class UsersControllers {
           item.businessDetailsId = businessDetailsId;
           item.cardDetailsId = cardDetailsId;
         });
-        if (query.results.length == 0) {
-          [query] = await Admins.aggregate([
-            {
-              $facet: {
-                results: [{ $match: { _id: new ObjectId(id) } }],
-              },
-            },
-          ]);
-        }
+        
         return res.json({ data: query.results[0] });
       }
     } catch (err) {
@@ -507,7 +516,9 @@ export class UsersControllers {
 
     try {
       const checkUser = await User.findById(id);
-      const businesBeforeUpdate=await BusinessDetails.findById(checkUser?.businessDetailsId)
+      const businesBeforeUpdate = await BusinessDetails.findById(
+        checkUser?.businessDetailsId
+      );
       // const userLeadDetailsBeforeUpdate=await UserLeadsDetails.findById(checkUser?.userLeadsDetailsId)
       const userForActivity = await User.findById(
         id,
@@ -571,19 +582,11 @@ export class UsersControllers {
         }
       }
       if (!checkUser) {
-        const admin = await Admins.findById(id);
-        if (!admin) {
-          return res
-            .status(404)
-            .json({ error: { message: "Admin and User to update does not exists." } });
-        } else if (!checkUser && !admin) {
+        
           return res
             .status(404)
             .json({ error: { message: "User to update does not exists." } });
-        } else {
-          const data = await Admins.findByIdAndUpdate(id, input, { new: true });
-          return res.json({ data: data });
-        }
+        
       }
 
       const cardExist = await CardDetails.findOne({
@@ -619,9 +622,12 @@ export class UsersControllers {
           businesses.map((business) => {
             array.push(business._id);
           });
-          const businessDetailsIdInString = checkUser?.businessDetailsId.toString();
+          const businessDetailsIdInString =
+            checkUser?.businessDetailsId.toString();
 
-          const ids = array.some((item) => item.toString() === businessDetailsIdInString);
+          const ids = array.some(
+            (item) => item.toString() === businessDetailsIdInString
+          );
 
           if (!ids) {
             return res
@@ -1029,33 +1035,48 @@ export class UsersControllers {
             data: result,
           });
         } else {
-          if(input.businessIndustry || input.businessName || input.businessLogo || input.address1 || input.address2 || input.businessSalesNumber || input.businessCountry || input.businessPostCode || input.businessOpeningHours)
-          {
-            const businesAfterUpdate=await BusinessDetails.findById(checkUser.businessDetailsId," -_id  -createdAt -updatedAt").lean()
-            
-            const fields = findUpdatedFields(businesBeforeUpdate, businesAfterUpdate);
+          if (
+            input.businessIndustry ||
+            input.businessName ||
+            input.businessLogo ||
+            input.address1 ||
+            input.address2 ||
+            input.businessSalesNumber ||
+            input.businessCountry ||
+            input.businessPostCode ||
+            input.businessOpeningHours
+          ) {
+            const businesAfterUpdate = await BusinessDetails.findById(
+              checkUser.businessDetailsId,
+              " -_id  -createdAt -updatedAt"
+            ).lean();
+
+            const fields = findUpdatedFields(
+              businesBeforeUpdate,
+              businesAfterUpdate
+            );
             const isEmpty = Object.keys(fields.updatedFields).length === 0;
-            if(!isEmpty && user?.isSignUpCompleteWithCredit){const activity={
-              //@ts-ignore
-              actionBy:req?.user?.role,
-              actionType:ACTION.UPDATING,
-              targetModel:MODEL_ENUM.BUSINESS_DETAILS,
-              //@ts-ignore
-              userEntity:checkUser?.id,
-              originalValues:fields.oldFields,
-              modifiedValues:fields.updatedFields
+            if (!isEmpty && user?.isSignUpCompleteWithCredit) {
+              const activity = {
+                //@ts-ignore
+                actionBy: req?.user?.role,
+                actionType: ACTION.UPDATING,
+                targetModel: MODEL_ENUM.BUSINESS_DETAILS,
+                //@ts-ignore
+                userEntity: checkUser?.id,
+                originalValues: fields.oldFields,
+                modifiedValues: fields.updatedFields,
+              };
+              await ActivityLogs.create(activity);
             }
-            await ActivityLogs.create(activity)}
-      
           }
           return res.json({ message: "Updated Successfully", data: result });
         }
       }
-     
     } catch (err) {
       return res
         .status(500)
-        .json({ error: { message: "Something went wrong." ,err} });
+        .json({ error: { message: "Something went wrong.", err } });
     }
   };
 
@@ -1239,6 +1260,159 @@ export class UsersControllers {
         data: arr,
       });
     } catch (err) {
+      return res.status(500).json({
+        error: {
+          message: "something went wrong",
+          err,
+        },
+      });
+    }
+  };
+
+  static createAccountManager = async (req: any, res: Response) => {
+    try {
+      const input = req.body;
+      let data;
+      const exists = await User.findOne({
+        firstName: input.firstName,
+        lastName: input.lastName,
+        role: RolesEnum.ACCOUNT_MANAGER,
+        isDeleted: false,
+      });
+      if (exists) {
+        return res
+          .status(400)
+          .json({ message: "Account Manager already exists" });
+      } else {
+        const dataToSave = {
+          firstName: input.firstName,
+          lastName: input.lastName,
+          role: RolesEnum.ACCOUNT_MANAGER,
+        };
+        data = await User.create(dataToSave);
+      }
+      return res.json({ data: data });
+    } catch (err) {
+      return res.status(500).json({
+        error: {
+          message: "something went wrong",
+          err,
+        },
+      });
+    }
+  };
+
+  static accountManagerStats = async (req: any, res: Response) => {
+    try {
+      const input = req.body;
+      const startDate=new Date(input.startDate)
+      const endDate=new Date(input.endDate)
+      let accountManagersId=input.accountManagerIds
+      // const query= await User.aggregate([
+      //   {
+      //     $match: {
+      //       role: "accountManager", // Filter by account managers
+      //       $or: [
+      //         { _id: {$in:[new ObjectId('6512cddc1c1aec51533fc02d' )] }}, // Match the specified account manager
+      //         { accountManager: {$in:[new ObjectId('6512cddc1c1aec51533fc02d' )]} } // Match users under the specified account manager
+      //       ]
+      //       // _id: {$in: [new ObjectId('6512cddc1c1aec51533fc02d' )]}// Filter by account manager IDs
+      //     }
+      //   },
+      //   {
+      //     $lookup: {
+      //       from: "leads", // Join with the User collection
+      //       localField: "bid",
+      //       foreignField: "buyerId",
+      //       as: "accountManagerLeads"
+      //     }
+      //   },
+      //   // {
+      //   //   $lookup: {
+      //   //     from: "users", // Join with the User collection
+      //   //     localField: "_id",
+      //   //     foreignField: "accountManager",
+      //   //     as: "user"
+      //   //   }
+      //   // },
+      
+      //   {
+      //     $unwind: "$accountManagerLeads"
+      //   },
+      //   {
+      //     $unwind: "$user"
+      //   },
+      //     {
+      //       $match: {
+      //         "accountManagerLeads.createdAt": { $gte: startDate, $lte: endDate }
+      //       }
+      //     },
+      //   {
+      //     $group: {
+      //       _id: "$_id",
+      //       accountManagerName: { $first: "$firstName" },
+      //       users: { $addToSet: "$user" }, // Collect unique users under the account manager
+      //       leads: { $push: "$accountManagerLeads" } ,
+      //       totalCreditAmount: { $sum: `$users.credits` }, // Total credit amount per Account Manager
+      //       numberOfCredits: { $sum: 1 }, // Number of credits per Account Manager
+      //       leadCount: { $sum: 1 }, // Daily lead count per Account Manager
+      //       leadRejectedCount: {
+      //         $sum: {
+      //           $cond: [{ $eq: ["$accountManagerLeads.status", "valid"] }, 1, 0]
+      //         }
+      //       } ,
+      //     }
+      //   },
+      //   // {
+      //   //   $project: {
+      //   //     accountManagerName: 1,
+      //   //     totalCreditAmount: 1,
+      //   //     numberOfCredits: 1,
+      //   //     averageCreditValue: { $divide: ["$totalCreditAmount", "$numberOfCredits"] },
+      //   //     leadCount: 1
+      //   //   }
+      //   // }
+      // ])
+      let dataToFind:any ={}
+      let bids: string[]=[]
+      let credits:number[]=[]
+      if(!accountManagersId){
+        const accManager=await User.findById(req.user.id)
+        accountManagersId=accManager?.id
+      }
+      const users=await User.find({accountManager:{$in:accountManagersId}})
+
+      users.map((user:UserInterface)=>{
+        credits.push(user.credits)
+       bids.push(user.buyerId)
+      })
+
+      if(accountManagersId && (req.user.role===RolesEnum.SUPER_ADMIN || req.user.role===RolesEnum.ADMIN)){
+        dataToFind.bid={$in:bids}
+      }
+
+      if(startDate && endDate){
+        dataToFind.createdAt={$gte:startDate,$lt:endDate}
+      }
+
+      const creditsTotal=credits.reduce((acc,cor)=>{ return acc+cor})
+
+      dataToFind.status=leadsStatusEnums.VALID
+      const requestedLeads=await Leads.find(  dataToFind)
+
+      dataToFind.status=leadsStatusEnums.REPORT_REJECTED
+      const rejectedLeads=await Leads.find(dataToFind)
+
+
+
+      return res.json({data:{
+        overAllTopUpAmount:creditsTotal,
+        numberOfTopUpCount:credits.length,
+        averageTopUpCount:creditsTotal/credits.length,
+        dailyLeadCount:requestedLeads.length,
+        leadRejectedCount:rejectedLeads.length
+      }})
+    } catch (err){
       return res.status(500).json({
         error: {
           message: "something went wrong",

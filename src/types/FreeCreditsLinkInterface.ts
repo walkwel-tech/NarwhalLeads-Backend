@@ -1,4 +1,4 @@
-import { Document } from "mongoose";
+import { Document, Types } from "mongoose";
 
 export interface freeCreditsLinkInterface extends Document {
   code: string;
@@ -15,5 +15,6 @@ export interface freeCreditsLinkInterface extends Document {
   spotDiffPremiumPlan:boolean;
   name:string;
   isDeleted:boolean;
-  deletedAt:Date
+  deletedAt:Date;
+  accountManager:Types.ObjectId
 }

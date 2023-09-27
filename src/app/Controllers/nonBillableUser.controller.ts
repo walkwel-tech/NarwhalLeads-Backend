@@ -3,6 +3,7 @@ import { Request, Response } from "express";
 import { RolesEnum } from "../../types/RolesEnum";
 import { sendEmailToInvitedAdmin } from "../Middlewares/mail";
 import { User } from "../Models/User";
+import { ONBOARDING_KEYS } from "../../utils/constantFiles/OnBoarding.keys";
 
 const LIMIT = 10;
 export class nonBillableUsersController {
@@ -46,6 +47,36 @@ export class nonBillableUsersController {
           //@ts-ignore
           rowIndex: allInvites?.rowIndex + 1 || 0,
           credits: 0,
+          onBoarding: [
+            {
+              key: ONBOARDING_KEYS.BUSINESS_DETAILS,
+              pendingFields: [
+                "businessIndustry",
+                "businessName", 
+                "businessSalesNumber",
+                "businessPostCode",
+                "address1",
+                "businessOpeningHours",
+                "businessCity",
+              ],
+              dependencies: [],
+            },
+            {
+              key: ONBOARDING_KEYS.LEAD_DETAILS,
+              pendingFields: [
+                "daily",
+                "leadSchedule",
+                "postCodeTargettingList",
+              ],
+              dependencies: ["businessIndustry"],
+            },
+            {
+              key: ONBOARDING_KEYS.CARD_DETAILS,
+              pendingFields: [
+              ],
+              dependencies: [],
+            },
+          ],
         };
 
         const result = await User.create(dataToSave);

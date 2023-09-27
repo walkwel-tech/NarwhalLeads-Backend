@@ -5,7 +5,6 @@ import { ChangePasswordInput } from "../Inputs/ChangePassword.input";
 import { UpdateUserInput } from "../Inputs/UpdateUser.input";
 import { ValidationErrorResponse } from "../../types/ValidationErrorResponse";
 import { User } from "../Models/User";
-import { Admins } from "../Models/Admins";
 
 export class ProfileController {
   static changePassword = async (
@@ -43,9 +42,9 @@ export class ProfileController {
     }
     try {
       const user = await User.findById(id);
-      const admin = await Admins.findById(id);
+      // const admin = await Admins.findById(id);
 
-      if (!user && !admin) {
+      if (!user ) {
         return res
           .status(400)
           .json({ error: { message: "User to update does not exists." } });
@@ -69,27 +68,7 @@ export class ProfileController {
             new: true,
           }
         );
-      } else if (admin) {
-        if (!compareSync(input.currentPassword, admin.password)) {
-          return res
-            .status(400)
-            .json({ error: { message: "Invalid current password" } });
-        }
-
-        const salt = genSaltSync(10);
-        const password = input.newPassword;
-        const hashPassword = hashSync(password, salt);
-        await Admins.findByIdAndUpdate(
-          id,
-          {
-            password: hashPassword,
-          },
-          {
-            new: true,
-          }
-        );
-      }
-
+      } 
       return res.json({ data: { message: "Password reset successfully." } });
     } catch (error) {
       return res

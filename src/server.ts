@@ -74,6 +74,7 @@ export class Server {
         this.app.use(express.urlencoded({limit: "50mb", extended: true}));
         // this.app.use(helmet());
         this.app.use(cors());
+        // this.app.use(caslMiddleware)
         this.app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument,swaggerUiOptions));
 
 

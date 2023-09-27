@@ -4,6 +4,6 @@ export interface invoiceInterface extends Document {
     _id: Types.ObjectId;
     userId: Types.ObjectId;
     transactionId: Types.ObjectId;
-    price:string
+    price:number
     invoiceId:string
 }

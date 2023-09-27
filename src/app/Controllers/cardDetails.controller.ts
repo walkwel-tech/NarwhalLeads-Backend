@@ -59,6 +59,13 @@ import {
   userData,
 } from "../../utils/webhookUrls/fullySignupWithCredits";
 import { TRANSACTION_STATUS } from "../../utils/Enums/transaction.status.enum";
+import { AdminSettingsInterface } from "../../types/AdminSettingInterface";
+import { CardDetailsInterface } from "../../types/CardDetailsInterface";
+import { TransactionInterface } from "../../types/TransactionInterface";
+import { RyftPaymentInterface } from "../../types/RyftPaymentInterface";
+import { invoiceInterface } from "../../types/InvoiceInterface";
+import { BusinessDetailsInterface, isBusinessObjectAndIncludesBusinessHours } from "../../types/BusinessInterface";
+import { webhhokParams, webhookResponse } from "../../types/webhook.interfaces";
 // import { managePaymentsByPaymentMethods } from "../../utils/payment";
 // import { managePaymentsByPaymentMethods } from "../../utils/payment";
 
@@ -73,7 +80,7 @@ export class CardDetailsControllers {
         .json({ error: { message: "User Id is required" } });
     }
     try {
-      const fixAmount: any = await AdminSettings.findOne();
+      const fixAmount: AdminSettingsInterface = await AdminSettings.findOne() ?? {} as AdminSettingsInterface
       if (input.amount == null) {
         input.amount = fixAmount.amount;
       }
@@ -112,7 +119,7 @@ export class CardDetailsControllers {
         object.push(mock);
       }
       await User.findByIdAndUpdate(input.userId, { onBoarding: object });
-      let dataToSave: any = {
+      let dataToSave: Partial<CardDetailsInterface> = {
         userId: input.userId,
         cardHolderName: input?.cardHolderName,
         //to trim the space between card number, will replace first space in string to ""
@@ -123,14 +130,18 @@ export class CardDetailsControllers {
         amount: input?.amount,
         isDefault: input?.isDefault,
       };
-      const user: any = await User.findById(input.userId)
+      const user: UserInterface = await User.findById(input.userId)
         .populate("businessDetailsId")
-        .populate("userLeadsDetailsId");
+        .populate("userLeadsDetailsId") ?? {} as UserInterface
       const userData = await CardDetails.create(dataToSave);
 
       sendEmailForRegistration(user.email, user.firstName);
       let array: any = [];
-      user?.businessDetailsId?.businessOpeningHours.forEach((businessOpeningHours: any) => {
+      const userBusiness: BusinessDetailsInterface | null = isBusinessObjectAndIncludesBusinessHours(user?.businessDetailsId) 
+      ? user?.businessDetailsId 
+      : null;
+      
+     user?.id ? userBusiness?.businessOpeningHours.forEach((businessOpeningHours: any) => {
         if (businessOpeningHours.day != "") {
           let obj: any = {};
           obj.day = businessOpeningHours.day;
@@ -138,7 +149,7 @@ export class CardDetailsControllers {
           obj.closeTime = businessOpeningHours.closeTime;
           array.push(obj);
         }
-      });
+      }) : ""
       if (checkOnbOardingComplete(user) && !user.registrationMailSentToAdmin) {
         const leadData = await UserLeadsDetails.findOne({ userId: user?._id });
         const businessDeatilsData = await BusinessDetails.findById(
@@ -198,7 +209,7 @@ export class CardDetailsControllers {
     const input = req.body;
     const id = Object(req.user).id;
     try {
-      const user: any = await User.findById(id);
+      const user: UserInterface = await User.findById(id) ?? {} as UserInterface
       await User.findByIdAndUpdate(user?.id, {
         onBoarding: [
           {
@@ -224,8 +235,8 @@ export class CardDetailsControllers {
       const paymentMethodFromRYFT: any =
         await getPaymentMethodByPaymentSessionID(input.paymentSessionID);
       if (input?.paymentMethod) {
-        let dataToSaveIncard: any = {
-          userId: user,
+        let dataToSaveIncard: Partial<CardDetailsInterface> = {
+          userId: user.id,
           cardHolderName: user?.firstName + user?.lastName,
           paymentSessionID: input?.paymentSessionID,
           //to trim the space between card number
@@ -242,7 +253,7 @@ export class CardDetailsControllers {
             input?.cardNumber?.length - 4
           );
         }
-        let userData: any;
+        let userData: CardDetailsInterface;
         const cardExist = await CardDetails.findOne({ userId: user?.id });
         const cardExists = await CardDetails.find({
           userId: user?.id,
@@ -486,7 +497,7 @@ export class CardDetailsControllers {
           .status(404)
           .json({ error: { message: "Card Details not found" } });
       }
-      const adminSettings: any = await AdminSettings.findOne();
+      const adminSettings: AdminSettingsInterface = await AdminSettings.findOne() ?? {} as AdminSettingsInterface
       const params: any = {
         fixedAmount:
           parseInt(input?.amount) + (parseInt(input?.amount) * VAT) / 100 ||
@@ -596,23 +607,23 @@ export class CardDetailsControllers {
   ): Promise<any> => {
     const input = req.body;
     const customerId = input.data.customer?.id;
-    let userId = await User.findOne({
+    let userId : UserInterface= await User.findOne({
       ryftClientId: customerId,
       role: RolesEnum.USER,
-    });
-    const card = await RyftPaymentMethods.findOne({
+    }) ?? {} as UserInterface
+    const card : RyftPaymentInterface= await RyftPaymentMethods.findOne({
       paymentMethod: input.data?.paymentMethod?.id,
-    });
+    }) ?? {} as RyftPaymentInterface
     const cardDetailsExist = await CardDetails.findById(card?.cardId);
     let originalAmount = parseInt(input.data.amount) / 100 / (1 + VAT / 100);
     let isFreeCredited: boolean;
-    const txn: any = await Transaction.find({
+    const txn: TransactionInterface[] = await Transaction.find({
       userId: userId?.id,
       title: transactionTitle.CREDITS_ADDED,
       isCredited: true,
       status: PAYMENT_STATUS.CAPTURED,
       amount: { $gt: 0 },
-    });
+    }) ?? [] as TransactionInterface[]
     if (txn?.length > 0) {
       isFreeCredited = true;
     } else {
@@ -620,13 +631,13 @@ export class CardDetailsControllers {
     }
     if (userId) {
       if (input.eventType == "PaymentSession.declined") {
-        userId = await User.findById(userId?.id);
-        const card = await RyftPaymentMethods.findOne({
+        userId = await User.findById(userId?.id) ?? {} as UserInterface
+        const card:RyftPaymentInterface = await RyftPaymentMethods.findOne({
           paymentMethod: input.data?.paymentMethod?.id,
-        });
-        const cardDelete: any = await CardDetails.find({
+        }) ?? {} as RyftPaymentInterface
+        const cardDelete: CardDetailsInterface = await CardDetails.findOne({
           paymentMethod: input.data?.paymentMethod?.id,
-        });
+        }) ?? {} as CardDetailsInterface
         await CardDetails.findByIdAndDelete(cardDelete?.id);
         const business = await BusinessDetails.findById(
           userId?.businessDetailsId
@@ -640,7 +651,7 @@ export class CardDetailsControllers {
           businessName: business?.businessName,
         };
         sendEmailForPaymentFailure(userId?.email, message);
-        let dataToSaveInTransaction: any = {
+        let dataToSaveInTransaction: Partial<TransactionInterface> = {
           userId: userId?.id,
           amount: input?.data?.amount / 100,
           status: PAYMENT_STATUS.DECLINE,
@@ -650,7 +661,7 @@ export class CardDetailsControllers {
           invoiceId: "",
           paymentSessionId: input.data.id,
           cardId: card?.cardId,
-          creditsLeft: userId?.credits,
+          creditsLeft: userId?.credits || 0,
           paymentMethod: input.data?.paymentMethod?.id,
         };
         if (userId?.paymentMethod === paymentMethodEnum.AUTOCHARGE_METHOD) {
@@ -670,7 +681,7 @@ export class CardDetailsControllers {
         const promoLink = await FreeCreditsLink.findOne({
           _id: new ObjectId(userId?.promoLinkId), isDeleted:false
         });
-        let params: any = {
+        let params: webhhokParams = {
           buyerId: userId?.buyerId,
           fixedAmount: originalAmount,
         };
@@ -707,8 +718,8 @@ export class CardDetailsControllers {
         }
         addCreditsToBuyer(params)
           .then(async (res: any) => {
-            userId = await User.findById(userId?.id);
-            let dataToSaveInTransaction: any = {
+            userId = await User.findById(userId?.id) ?? {} as UserInterface
+            let dataToSaveInTransaction: Partial<TransactionInterface> = {
               userId: userId?.id,
               amount: originalAmount,
               status: PAYMENT_STATUS.CAPTURED,
@@ -747,7 +758,7 @@ export class CardDetailsControllers {
             const transaction = await Transaction.create(
               dataToSaveInTransaction
             );
-            const save: any = {
+            const save: Partial<TransactionInterface> = {
               userId: userId?.id,
               amount: input?.data?.amount / 100 - originalAmount,
               status: PAYMENT_STATUS.CAPTURED,
@@ -781,7 +792,7 @@ export class CardDetailsControllers {
               if (params.freeCredits) {
                 freeCredits = params.freeCredits;
               } else {
-                freeCredits = params.freeCredits;
+                freeCredits = params.freeCredits || 0;
               }
               generatePDF(
                 userId?.xeroContactId,
@@ -792,7 +803,7 @@ export class CardDetailsControllers {
                 freeCredits
               )
                 .then(async (res: any) => {
-                  const dataToSaveInInvoice: any = {
+                  const dataToSaveInInvoice: Partial<invoiceInterface> = {
                     userId: userId?.id,
                     transactionId: transaction.id,
                     price: userId?.credits,
@@ -819,7 +830,7 @@ export class CardDetailsControllers {
                       //@ts-ignore
                       freeCredits
                     ).then(async (res: any) => {
-                      const dataToSaveInInvoice: any = {
+                      const dataToSaveInInvoice: Partial<invoiceInterface> = {
                         userId: userId?.id,
                         transactionId: transaction.id,
                         price: userId?.credits,
@@ -836,7 +847,7 @@ export class CardDetailsControllers {
                 });
             }
             if (params.freeCredits) {
-              userId = await User.findById(userId?.id);
+              userId = await User.findById(userId?.id) ?? {} as UserInterface
               const dataToSaveInTxn = {
                 userId: userId?.id,
                 amount: params.freeCredits,
@@ -868,7 +879,7 @@ export class CardDetailsControllers {
         );
       }
     }
-    const dataToShow: any = {
+    const dataToShow: webhookResponse = {
       message: "success",
       sessionId: input?.data?.id,
     };
@@ -887,8 +898,8 @@ export class CardDetailsControllers {
     res: Response
   ): Promise<any> => {
     const sessionId = req.query.ps;
-    let userData:any;
-    let cardData:any
+    let userData:UserInterface;
+    let cardData:CardDetailsInterface
     const shouldReturnJson = !!req.query.requestJson || false;
     let config = {
       method: "get",
@@ -901,7 +912,7 @@ export class CardDetailsControllers {
       .then(async function (response: any): Promise<any> {
         const sessionData = response.data;
         const { customerDetails, paymentMethod, amount } = sessionData;
-        const user = await User.findOne({ ryftClientId: customerDetails.id });
+        const user = await User.findOne({ ryftClientId: customerDetails.id }) ?? {} as UserInterface
         userData=user
         const paymentMthods = await RyftPaymentMethods.find({
           paymentMethod: paymentMethod?.tokenizedDetails?.id,

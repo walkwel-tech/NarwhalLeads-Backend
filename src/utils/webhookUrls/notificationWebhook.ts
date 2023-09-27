@@ -5,7 +5,7 @@ import { Notifications } from "../../app/Models/Notifications";
 
 export const notificationWebhook=async(req: Request, res: Response)=>{
 let input=req.body
-  const user=await User.findOne({smsPhoneNumber:input.To})
+  const user=await User.findOne({smsPhoneNumber:input.To,isDeleted:false})
   const data = {
     userId: user?.id,
     title: "NEW LEAD",
