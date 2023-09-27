@@ -20,6 +20,7 @@ const fileSizeLimitErrorHandler = (err, req, res, next) => {
     }
 }
 const upload = multer({ storage: storeFile(`${process.cwd()}${FileEnum.PUBLICDIR}${FileEnum.PROFILEIMAGE}`) ,limits:{fileSize:maxSize}})
+user.post("/account-manager",OnlyAdmins, UsersControllers.createAccountManager);
 user.post("/:id",OnlyAdminOrUserLogin,upload.single('image'),fileSizeLimitErrorHandler, UsersControllers.update);
 user.get("/invoices",Auth, UsersControllers.invoices);
 user.get("/show",OnlyAdmins, UsersControllers.indexName);
@@ -32,6 +33,7 @@ user.get("/:id",OnlyAdminOrUserLogin, UsersControllers.show);
 user.patch("/:id",OnlyAdminOrUserLogin,upload.single('image'),fileSizeLimitErrorHandler, UsersControllers.update);
 user.post("/:id",OnlyAdminOrUserLogin,upload.single('image'),fileSizeLimitErrorHandler, UsersControllers.update);
 user.delete("/:id",OnlyAdmins, UsersControllers.destroy);
+user.post("/account-manager/stats",OnlyAdmins, UsersControllers.accountManagerStats);
 
 
 export default user;

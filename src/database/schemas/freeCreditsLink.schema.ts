@@ -52,6 +52,10 @@ const FreeCreditsLinkSchema = new Schema(
     },
     deletedAt:{
       typ:Date
+    },
+    accountManager:{
+      type: Types.ObjectId,
+      ref: "User",
     }
   },
   { timestamps: true }

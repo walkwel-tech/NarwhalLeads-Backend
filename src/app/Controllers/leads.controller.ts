@@ -38,6 +38,7 @@ import { Notifications } from "../Models/Notifications";
 import { BusinessDetails } from "../Models/BusinessDetails";
 import { notify } from "../../utils/notifications/leadNotificationToUser";
 import { APP_ENV } from "../../utils/Enums/serverModes.enum";
+import { UserInterface } from "../../types/UserInterface";
 const ObjectId = mongoose.Types.ObjectId;
 
 const LIMIT = 10;
@@ -818,7 +819,7 @@ if(user.isSmsNotificationActive){
           },
         },
       ]);
-      const promises = query.results.map((item: any) => {
+      query.results.map((item: any) => {
         item.leads.clientName =
           item["clientName"][0]?.firstName + " " + item["clientName"][0]?.lastName;
         item.leads.status = item.status;
@@ -839,8 +840,8 @@ if(user.isSmsNotificationActive){
       });
       
       // Use Promise.all to wait for all promises to resolve
-      Promise.all(promises)
-        .then((updatedResults) => {
+      // Promise.all(promi'ses)
+      //   .then((updatedResults) => {'
           // Handle the updatedResults here
           const leadsCount = query.leadsCount[0]?.count || 0;
 
@@ -854,10 +855,10 @@ if(user.isSmsNotificationActive){
               total: leadsCount,
             },
           });
-        })
-        .catch((error) => {
-          console.error(error);
-        });
+        // })
+        // .catch((error) => {
+        //   console.error(error);
+        // });
     } catch (err) {
       return res.status(500).json({
         error: {
@@ -902,6 +903,17 @@ if(user.isSmsNotificationActive){
           },
         ],
       };
+       let bids: string[]=[]
+       if(_req.query.accountManagerId!="" && _req.query.accountManagerId){
+          const users=await User.find({accountManager:_req.query.accountManagerId})
+      users.map((user:UserInterface)=>{
+      return bids.push(user.buyerId)
+      })
+       }
+    
+      if (_req.query.accountManagerId) {
+        dataToFind.bid ={$in:bids}
+      }
       if (_req.query.industryId) {
         dataToFind.industryId = new ObjectId(_req.query.industryId);;
       }
@@ -1294,6 +1306,16 @@ if(user.isSmsNotificationActive){
       if (_req.query.industryId) {
         dataToFind.industryId =new ObjectId(_req.query.industryId);
       }
+      let bids: string[]=[]
+      if(_req.query.accountManagerId!="" && _req.query.accountManagerId){
+        const users=await User.find({accountManager:_req.query.accountManagerId})
+    users.map((user:UserInterface)=>{
+    return bids.push(user.buyerId)
+    })
+     }
+      if (_req.query.accountManagerId) {
+        dataToFind.bid ={$in:bids}
+      }
       if (_req.query.search) {
         dataToFind = {
           ...dataToFind,
@@ -1368,16 +1390,15 @@ if(user.isSmsNotificationActive){
           },
         },
       ]);
-
        query.results.map((item: any) => {
-        if(!(item["clientName"][0].deletedAt)){
+        if(!(item["clientName"][0]?.deletedAt)){
 item.leads.clientName =
           item["clientName"][0]?.firstName + " " + item["clientName"][0]?.lastName;
         }
         else{
           item.leads.clientName = "Deleted User"
         }
-        item.leads.status = item.status;
+        item.leads.status = item?.status;
 
 
         // Use explicit Promise construction

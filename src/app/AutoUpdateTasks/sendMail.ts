@@ -1,4 +1,5 @@
 import { RolesEnum } from "../../types/RolesEnum";
+import { UserInterface } from "../../types/UserInterface";
 import { leadsAlertsEnums } from "../../utils/Enums/leads.Alerts.enum";
 import {
   sendEmailForOutOfFunds,
@@ -20,24 +21,24 @@ export const mailForTotalLeadsInDay = async () => {
         .split("T")[0]
     );
     const user = await User.find().populate("userLeadsDetailsId");
-    user.map(async (user) => {
+    let data=user.map(async (user) => {
       const leads = await Leads.find({
         bid: user.buyerId,
         createdAt: { $gte: today },
       });
-
       if (
         leads.length != 0 &&
               //@ts-ignore
         i.userLeadsDetailsId?.leadAlertsFrequency == leadsAlertsEnums.DAILY
       ) {
-        const message: any = {
+        const message: {} = {
           totalLeads: leads.length,
           leads: leads[0].leads,
         };
         sendEmaiForTotalLead(user.email, message);
       }
     });
+    Promise.all(data)
   });
 };
 
@@ -47,7 +48,7 @@ cron.schedule('2 */24 * * *', async() => {
   // cron.schedule('* * * * *', async() => {
 
   const users = await User.find({ role: RolesEnum.USER, credits: 0 });
-  users.map((user: any) => {
+  users.map((user: UserInterface) => {
     sendEmailForOutOfFunds(user.email, {
       name: user.firstName + " " + user.lastName,
       credits: user.credits,

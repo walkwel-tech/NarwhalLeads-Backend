@@ -1,8 +1,10 @@
 import { Document, Types } from "mongoose";
 
 import { RolesEnum } from "./RolesEnum";
+import { BusinessDetailsInterface } from "./BusinessInterface";
 
 export interface UserInterface extends Document {
+  createdAt: any;
   _id: Types.ObjectId;
   businessIndustryId:Types.ObjectId;
   firstName: string;
@@ -29,9 +31,13 @@ export interface UserInterface extends Document {
   isUserSignup:boolean;
   invitedById: Types.ObjectId;
   userNotes:string;
-  businessDetailsId: Types.ObjectId;
+  businessDetailsId: Types.ObjectId | BusinessDetailsInterface;
   userLeadsDetailsId: Types.ObjectId;
-  onBoarding:[];
+  onBoarding:Array<{
+    key: string;
+    pendingFields: string[];
+    dependencies: string[];
+  }>;
   registrationMailSentToAdmin:boolean;
   ryftClientId:string
   isRyftCustomer:boolean;
@@ -46,4 +52,6 @@ export interface UserInterface extends Document {
   isSmsNotificationActive:boolean
   smsPhoneNumber:string;
   isSignUpCompleteWithCredit:boolean;
+  isCreditsAndBillingEnabled:boolean;
+  accountManager:Types.ObjectId
 }
