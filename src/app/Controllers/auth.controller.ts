@@ -30,7 +30,7 @@ import { ClientTablePreference } from "../Models/ClientTablePrefrence";
 import { clientTablePreference } from "../../utils/constantFiles/clientTablePreferenceAdmin";
 import { LeadTablePreference } from "../Models/LeadTablePreference";
 import { order } from "../../utils/constantFiles/businessIndustry.orderList";
-import * as fs from "fs"
+import * as fs from "fs";
 import { AdminSettingsInterface } from "../../types/AdminSettingInterface";
 import { freeCreditsLinkInterface } from "../../types/FreeCreditsLinkInterface";
 
@@ -47,7 +47,8 @@ class AuthController {
     registerInput.password = input.password;
     const errors = await validate(registerInput);
 
-    const adminSettings:AdminSettingsInterface = await AdminSettings.findOne() ?? {} as AdminSettingsInterface
+    const adminSettings: AdminSettingsInterface =
+      (await AdminSettings.findOne()) ?? ({} as AdminSettingsInterface);
     if (errors.length) {
       const errorsInfo: ValidationErrorResponse[] = errors.map((error) => ({
         property: error.property,
@@ -59,17 +60,24 @@ class AuthController {
         .json({ error: { message: "VALIDATIONS_ERROR", info: errorsInfo } });
     }
     try {
-      const user = await User.findOne({ email: input.email, isDeleted:false, role:RolesEnum.USER });
+      const user = await User.findOne({
+        email: input.email,
+        isDeleted: false,
+        role: RolesEnum.USER,
+      });
       if (!user) {
         const salt = genSaltSync(10);
         const hashPassword = hashSync(input.password, salt);
-        const showUsers: UserInterface = await User.findOne()
-          .sort({ rowIndex: -1 })
-          .limit(1) ?? {} as UserInterface
+        const showUsers: UserInterface =
+          (await User.findOne().sort({ rowIndex: -1 }).limit(1)) ??
+          ({} as UserInterface);
         let checkCode;
         let codeExists;
         if (input.code) {
-          checkCode = await FreeCreditsLink.findOne({ code: input.code,isDeleted:false });
+          checkCode = await FreeCreditsLink.findOne({
+            code: input.code,
+            isDeleted: false,
+          });
           if (checkCode?.isDisabled) {
             return res.status(400).json({ data: { message: "Link Expired!" } });
           }
@@ -88,7 +96,7 @@ class AuthController {
           }
         }
         input.email = String(input.email).toLowerCase();
-        let dataToSave: Partial<UserInterface>  = {
+        let dataToSave: Partial<UserInterface> = {
           firstName: input.firstName,
           lastName: input.lastName,
           email: input.email,
@@ -127,10 +135,7 @@ class AuthController {
             },
             {
               key: ONBOARDING_KEYS.CARD_DETAILS,
-              pendingFields: [
-                "cardNumber",
- 
-              ],
+              pendingFields: ["cardNumber"],
               dependencies: [],
             },
           ],
@@ -138,17 +143,19 @@ class AuthController {
         if (codeExists && checkCode?.topUpAmount === 0) {
           dataToSave.premiumUser = PROMO_LINK.PREMIUM_USER_NO_TOP_UP;
           dataToSave.promoLinkId = checkCode?.id;
-          dataToSave.accountManager=checkCode.accountManager
+          dataToSave.accountManager = checkCode.accountManager;
         } else if (codeExists && checkCode?.topUpAmount != 0) {
           dataToSave.premiumUser = PROMO_LINK.PREMIUM_USER_TOP_UP;
           dataToSave.promoLinkId = checkCode?.id;
-          dataToSave.accountManager=checkCode?.accountManager
+          dataToSave.accountManager = checkCode?.accountManager;
         }
         await User.create(dataToSave);
         if (input.code) {
-          const checkCode: freeCreditsLinkInterface = await FreeCreditsLink.findOne({
-            code: input.code, isDeleted:false
-          }) ?? {} as freeCreditsLinkInterface
+          const checkCode: freeCreditsLinkInterface =
+            (await FreeCreditsLink.findOne({
+              code: input.code,
+              isDeleted: false,
+            })) ?? ({} as freeCreditsLinkInterface);
           const dataToSave: Partial<freeCreditsLinkInterface> = {
             isUsed: true,
             usedAt: new Date(),
@@ -192,7 +199,6 @@ class AuthController {
 
             createCustomerOnRyft(params)
               .then(async () => {
-
                 //@ts-ignore
                 user.password = undefined;
                 res.send({
@@ -225,20 +231,19 @@ class AuthController {
   };
 
   static auth = async (req: Request, res: Response): Promise<any> => {
-    const user: Partial<UserInterface> = req.user ?? {} as UserInterface;
+    const user: Partial<UserInterface> = req.user ?? ({} as UserInterface);
     try {
       const exists = await User.findById(user?.id, "-password")
         .populate("businessDetailsId")
         .populate("userLeadsDetailsId")
         .populate("invitedById");
-      
+
       if (exists) {
         return res.json({ data: exists });
       }
- 
+
       return res.json({ data: "User not exists" });
     } catch (error) {
-      
       return res
         .status(500)
         .json({ error: { message: "Something went wrong." } });
@@ -272,27 +277,25 @@ class AuthController {
             return res.status(400).json({ error: err });
           }
           return res.status(401).json({ error: message });
-        } else if (!user.isActive && user.role===RolesEnum.USER) {
+        } else if (!user.isActive && user.role === RolesEnum.USER) {
           return res.status(401).json({
             error: { message: "User not active.Please contact admin." },
           });
-        } 
-        else if (!user.isActive && user.role===RolesEnum.ADMIN) {
+        } else if (!user.isActive && user.role === RolesEnum.ADMIN) {
           return res.status(401).json({
             error: { message: "Admin not active.Please contact super admin." },
           });
-        } else if (!user.isVerified && user.role===RolesEnum.USER) {
+        } else if (!user.isVerified && user.role === RolesEnum.USER) {
           return res.status(401).json({
             error: {
               message: "User not verified.Please verify your account",
             },
           });
-        } else if (user.isDeleted && user.role===RolesEnum.USER) {
+        } else if (user.isDeleted && user.role === RolesEnum.USER) {
           return res.status(401).json({
             error: { message: "User is deleted.Please contact admin" },
           });
-        }
-        else if (user.isDeleted && user.role===RolesEnum.ADMIN) {
+        } else if (user.isDeleted && user.role === RolesEnum.ADMIN) {
           return res.status(401).json({
             error: { message: "Admin is deleted.Please contact super admin" },
           });
@@ -404,16 +407,17 @@ class AuthController {
           .status(401)
           .json({ data: { message: "User doesn't exist." } });
       }
-      const activeUser: UserInterface = await User.findByIdAndUpdate(
-        id,
-        {
-          isActive: isActive,
-          activatedAt: new Date(),
-        },
-        {
-          new: true,
-        }
-      ) ?? {} as UserInterface
+      const activeUser: UserInterface =
+        (await User.findByIdAndUpdate(
+          id,
+          {
+            isActive: isActive,
+            activatedAt: new Date(),
+          },
+          {
+            new: true,
+          }
+        )) ?? ({} as UserInterface);
       const dataToShow = {
         id: activeUser.id,
         firstName: activeUser.firstName,
@@ -496,8 +500,7 @@ class AuthController {
       await User.findOneAndUpdate({ _id: user }, { password: hashPassword });
 
       return res.json({ data: { message: "Email sent please verify!" } });
-    }
-     else {
+    } else {
       return res
         .status(400)
         .json({ data: { message: "User does not exist." } });
@@ -637,7 +640,7 @@ class AuthController {
   };
 
   static me = async (req: Request, res: Response): Promise<any> => {
-    const user: Partial<UserInterface> = req.user ?? {} as UserInterface
+    const user: Partial<UserInterface> = req.user ?? ({} as UserInterface);
     try {
       const exists = await User.findById(user?.id, "-password")
         .populate("businessDetailsId")
@@ -647,7 +650,7 @@ class AuthController {
       if (exists) {
         return res.json({ data: exists });
       }
-     
+
       return res.json({ data: "User not exists" });
     } catch (error) {
       return res
@@ -655,7 +658,6 @@ class AuthController {
         .json({ error: { message: "Something went wrong." } });
     }
   };
-  
 
   static test = async (req: Request, res: Response): Promise<any> => {
     try {
@@ -668,12 +670,14 @@ class AuthController {
     }
   };
 
-  
   static userStatus = async (req: Request, res: Response): Promise<any> => {
     try {
-      const id = req.params.id
-const user=await User.findById(id,'isRyftCustomer isLeadbyteCustomer isXeroCustomer -_id')
-      return res.json({ data: user });  
+      const id = req.params.id;
+      const user = await User.findById(
+        id,
+        "isRyftCustomer isLeadbyteCustomer isXeroCustomer -_id"
+      );
+      return res.json({ data: user });
     } catch (error) {
       return res
         .status(500)
@@ -683,7 +687,9 @@ const user=await User.findById(id,'isRyftCustomer isLeadbyteCustomer isXeroCusto
 
   static adminRegister = async (req: Request, res: Response): Promise<any> => {
     const input = req.body;
-    const showUsers: UserInterface = await User.findOne().sort({ rowIndex: -1 }).limit(1) ?? {} as UserInterface
+    const showUsers: UserInterface =
+      (await User.findOne().sort({ rowIndex: -1 }).limit(1)) ??
+      ({} as UserInterface);
     try {
       const salt = genSaltSync(10);
       const hashPassword = hashSync(input?.password || "secret@1", salt);
@@ -704,23 +710,56 @@ const user=await User.findById(id,'isRyftCustomer isLeadbyteCustomer isXeroCusto
       if (!input.email) {
         dataToSave.email = "admin@example.com";
       }
-      const user=await User.create(dataToSave)
+      const user = await User.create(dataToSave);
       await ClientTablePreference.create({
-        columns:clientTablePreference,
-        userId:user.id
-      })
+        columns: clientTablePreference,
+        userId: user.id,
+      });
       await LeadTablePreference.create({
-        userId:user.id,
-        columns:order
-      })
-      return res.json({message:"Admin registers successfully", data:user})
+        userId: user.id,
+        columns: order,
+      });
+      return res.json({ message: "Admin registers successfully", data: user });
     } catch (error) {
       return res
         .status(500)
         .json({ error: { message: "Something went wrong." } });
     }
   };
-  
+
+  static createCustomerOnRyft = async (
+    req: Request,
+    res: Response
+  ): Promise<any> => {
+    try {
+      const input = req.body;
+      const params = {
+        email: input.email,
+        firstName: input.firstName,
+        lastName: input.lastName,
+        userId: input.userId,
+      };
+      if (!input.email) {
+        return res
+          .status(400)
+          .json({ error: { message: "email is required" } });
+      }
+      await createCustomerOnRyft(params);
+
+      const data = await User.findById(input.userId);
+      return res.json({ data: data });
+    } catch (error) {
+      if (error.errors) {
+        return res
+          .status(400)
+          .json({ error: { message: "Email already exist" } });
+      } else {
+        return res
+          .status(500)
+          .json({ error: { message: "Something went wrong.", error } });
+      }
+    }
+  };
 }
 
 export { AuthController };
