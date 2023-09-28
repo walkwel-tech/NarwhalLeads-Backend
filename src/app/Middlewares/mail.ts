@@ -17,7 +17,6 @@ sgMail.setSubstitutionWrappers("{{", "}}");
 export function sendEmailForgetPassword(send_to: any, message: any) {
   const msg = {
     to: send_to, // Change to your recipient
-    // to: "radhika.walkweltech@gmail.com",
 
     from: {
       name: process.env.VERIFIED_SENDER_ON_SENDGRID_FROM_NAME,
@@ -34,7 +33,6 @@ export function sendEmailForgetPassword(send_to: any, message: any) {
       },
     },
 
-    mail_settings: {},
     // html: "<strong>and easy to do anywhere, even with Node.js</strong>",
     // templateId: "d-3175762a4b534d82968a264a356a921b",
     templateId: TEMPLATES_ID.FORGET_PASSWORD,
@@ -42,11 +40,7 @@ export function sendEmailForgetPassword(send_to: any, message: any) {
   };
 
   if (process.env.APP_ENV !== APP_ENV.PRODUCTION) {
-    msg.mail_settings = {
-      sandbox_mode: {
-        enable: true,
-      },
-    };
+    msg.to = process.env.SENDGRID_TO_EMAIL || "";
   }
   sgMail
     .send(msg)
@@ -93,7 +87,7 @@ export function sendEmailForAutocharge(send_to: any, message: any) {
         enable: false,
       },
     },
-    mail_settings: {},
+
     // html: "<strong>and easy to do anywhere, even with Node.js</strong>",
     // templateId: "d-69dcead271404a1d8a90aab2416bdc42",
     templateId: TEMPLATES_ID.AUTO_CHARGE,
@@ -113,11 +107,7 @@ export function sendEmailForAutocharge(send_to: any, message: any) {
   };
   // if (checkAccess()) {
   if (process.env.APP_ENV !== APP_ENV.PRODUCTION) {
-    msg.mail_settings = {
-      sandbox_mode: {
-        enable: true,
-      },
-    };
+    msg.to = process.env.SENDGRID_TO_EMAIL || "";
   }
   sgMail
     .send(msg)
@@ -164,7 +154,7 @@ export function sendEmailForFailedAutocharge(send_to: any, message: any) {
         enable: false,
       },
     },
-    mail_settings: {},
+
     // html: "<strong>and easy to do anywhere, even with Node.js</strong>",
     // templateId: "d-5ec8ce254e7d4fb08db52f7bbecac652",
     templateId: TEMPLATES_ID.AUTO_CHARGE_FAIL,
@@ -184,11 +174,7 @@ export function sendEmailForFailedAutocharge(send_to: any, message: any) {
   };
   // if (checkAccess()) {
   if (process.env.APP_ENV !== APP_ENV.PRODUCTION) {
-    msg.mail_settings = {
-      sandbox_mode: {
-        enable: true,
-      },
-    };
+    msg.to = process.env.SENDGRID_TO_EMAIL || "";
   }
   sgMail
     .send(msg)
@@ -235,7 +221,7 @@ export function sendEmailForRegistration(send_to: any, message: any) {
         enable: false,
       },
     },
-    mail_settings: {},
+
     // html: "<strong>and easy to do anywhere, even with Node.js</strong>",
     // templateId: "d-896d30fea5e74796bb67c2d6ed03b2f5",
     templateId: TEMPLATES_ID.REGISTRATION,
@@ -243,11 +229,7 @@ export function sendEmailForRegistration(send_to: any, message: any) {
   };
   // if (checkAccess()) {
   if (process.env.APP_ENV !== APP_ENV.PRODUCTION) {
-    msg.mail_settings = {
-      sandbox_mode: {
-        enable: true,
-      },
-    };
+    msg.to = process.env.SENDGRID_TO_EMAIL || "";
   }
   sgMail
     .send(msg)
@@ -294,7 +276,7 @@ export function sendEmailForAddCredits(send_to: any, message: any) {
         enable: false,
       },
     },
-    mail_settings: {},
+
     templateId: TEMPLATES_ID.ADD_CREDITS,
     dynamic_template_data: {
       firstName: message?.firstName,
@@ -303,11 +285,7 @@ export function sendEmailForAddCredits(send_to: any, message: any) {
   };
   // if (checkAccess()) {
   if (process.env.APP_ENV !== APP_ENV.PRODUCTION) {
-    msg.mail_settings = {
-      sandbox_mode: {
-        enable: true,
-      },
-    };
+    msg.to = process.env.SENDGRID_TO_EMAIL || "";
   }
   sgMail
     .send(msg)
@@ -369,7 +347,7 @@ export async function sendEmailForNewRegistration(message: any) {
         enable: false,
       },
     },
-    mail_settings: {},
+
     isMultiple: true,
 
     // html: "<strong>and easy to do anywhere, even with Node.js</strong>",
@@ -402,11 +380,8 @@ export async function sendEmailForNewRegistration(message: any) {
   };
   // if (checkAccess()) {
   if (process.env.APP_ENV !== APP_ENV.PRODUCTION) {
-    msg.mail_settings = {
-      sandbox_mode: {
-        enable: true,
-      },
-    };
+    //@ts-ignore
+    msg.to = process.env.SENDGRID_TO_EMAIL;
   }
   sgMail
     .sendMultiple(msg)
@@ -455,7 +430,7 @@ export function sendEmailToInvitedUser(send_to: string, message: any) {
         enable: false,
       },
     },
-    mail_settings: {},
+
     // html: "<strong>and easy to do anywhere, even with Node.js</strong>",
     // templateId: "d-dad1bae4e3454fa8afea119f9de08b45",
     templateId: TEMPLATES_ID.INVITED_USER,
@@ -467,11 +442,7 @@ export function sendEmailToInvitedUser(send_to: string, message: any) {
   };
   // if (checkAccess()) {
   if (process.env.APP_ENV !== APP_ENV.PRODUCTION) {
-    msg.mail_settings = {
-      sandbox_mode: {
-        enable: true,
-      },
-    };
+    msg.to = process.env.SENDGRID_TO_EMAIL || "";
   }
   sgMail
     .send(msg)
@@ -518,7 +489,7 @@ export function sendEmailForNewLead(send_to: string, message: any) {
         enable: false,
       },
     },
-    mail_settings: {},
+
     // html: "<strong>and easy to do anywhere, even with Node.js</strong>",
     // templateId: "d-ca4e694d81ce4b3c8738b304a7a2368e",
     templateId: TEMPLATES_ID.NEW_LEAD,
@@ -532,11 +503,7 @@ export function sendEmailForNewLead(send_to: string, message: any) {
   };
   // if (checkAccess()) {
   if (process.env.APP_ENV !== APP_ENV.PRODUCTION) {
-    msg.mail_settings = {
-      sandbox_mode: {
-        enable: true,
-      },
-    };
+    msg.to = process.env.SENDGRID_TO_EMAIL || "";
   }
   sgMail
     .send(msg)
@@ -583,7 +550,7 @@ export function sendEmaiForTotalLead(send_to: string, message: any) {
         enable: false,
       },
     },
-    mail_settings: {},
+
     // html: "<strong>and easy to do anywhere, even with Node.js</strong>",
     templateId: TEMPLATES_ID.TOTAL_LEADS,
     dynamic_template_data: {
@@ -593,11 +560,7 @@ export function sendEmaiForTotalLead(send_to: string, message: any) {
   };
   // if (checkAccess()) {
   if (process.env.APP_ENV !== APP_ENV.PRODUCTION) {
-    msg.mail_settings = {
-      sandbox_mode: {
-        enable: true,
-      },
-    };
+    msg.to = process.env.SENDGRID_TO_EMAIL || "";
   }
   sgMail
     .send(msg)
@@ -644,7 +607,7 @@ export function sendEmailForLeadStatusReject(send_to: string, message: any) {
         enable: false,
       },
     },
-    mail_settings: {},
+
     // html: "<strong>and easy to do anywhere, even with Node.js</strong>",
     templateId: TEMPLATES_ID.LEAD_STATUS_REJECT,
     dynamic_template_data: {
@@ -653,11 +616,7 @@ export function sendEmailForLeadStatusReject(send_to: string, message: any) {
   };
   // if (checkAccess()) {
   if (process.env.APP_ENV !== APP_ENV.PRODUCTION) {
-    msg.mail_settings = {
-      sandbox_mode: {
-        enable: true,
-      },
-    };
+    msg.to = process.env.SENDGRID_TO_EMAIL || "";
   }
   sgMail
     .send(msg)
@@ -704,7 +663,7 @@ export function sendEmailForLeadStatusAccept(send_to: string, message: any) {
         enable: false,
       },
     },
-    mail_settings: {},
+
     // html: "<strong>and easy to do anywhere, even with Node.js</strong>",
     templateId: TEMPLATES_ID.LEAD_STATUS_ACCEPT,
     dynamic_template_data: {
@@ -713,11 +672,7 @@ export function sendEmailForLeadStatusAccept(send_to: string, message: any) {
   };
   // if (checkAccess()) {
   if (process.env.APP_ENV !== APP_ENV.PRODUCTION) {
-    msg.mail_settings = {
-      sandbox_mode: {
-        enable: true,
-      },
-    };
+    msg.to = process.env.SENDGRID_TO_EMAIL || "";
   }
   sgMail
     .send(msg)
@@ -792,7 +747,7 @@ export function sendEmailForUpdatedDetails(message: any) {
         enable: false,
       },
     },
-    mail_settings: {},
+
     // html: "<strong>and easy to do anywhere, even with Node.js</strong>",
     // templateId: "d-ee02048102ac4a2eb4e7f48a8527ea32",
     templateId: TEMPLATES_ID.USER_UPDATE_DETAILS,
@@ -819,11 +774,7 @@ export function sendEmailForUpdatedDetails(message: any) {
   };
   // if (checkAccess()) {
   if (process.env.APP_ENV !== APP_ENV.PRODUCTION) {
-    msg.mail_settings = {
-      sandbox_mode: {
-        enable: true,
-      },
-    };
+    msg.to = process.env.SENDGRID_TO_EMAIL || "";
   }
   sgMail
     .send(msg)
@@ -870,7 +821,7 @@ export function sendEmailForPaymentSuccess(send_to: any, message: any) {
         enable: false,
       },
     },
-    mail_settings: {},
+
     // html: "<strong>and easy to do anywhere, even with Node.js</strong>",
     // templateId: "d-69dcead271404a1d8a90aab2416bdc42",
     templateId: TEMPLATES_ID.PAYMENT_SUCCESS,
@@ -885,11 +836,7 @@ export function sendEmailForPaymentSuccess(send_to: any, message: any) {
   };
   // if (checkAccess()) {
   if (process.env.APP_ENV !== APP_ENV.PRODUCTION) {
-    msg.mail_settings = {
-      sandbox_mode: {
-        enable: true,
-      },
-    };
+    msg.to = process.env.SENDGRID_TO_EMAIL || "";
   }
   sgMail
     .send(msg)
@@ -936,7 +883,7 @@ export function sendEmailForPaymentFailure(send_to: any, message: any) {
         enable: false,
       },
     },
-    mail_settings: {},
+
     // html: "<strong>and easy to do anywhere, even with Node.js</strong>",
     // templateId: "d-69dcead271404a1d8a90aab2416bdc42",
     templateId: TEMPLATES_ID.PAYMENT_FAIL,
@@ -951,11 +898,7 @@ export function sendEmailForPaymentFailure(send_to: any, message: any) {
   };
   // if (checkAccess()) {
   if (process.env.APP_ENV !== APP_ENV.PRODUCTION) {
-    msg.mail_settings = {
-      sandbox_mode: {
-        enable: true,
-      },
-    };
+    msg.to = process.env.SENDGRID_TO_EMAIL || "";
   }
   sgMail
     .send(msg)
@@ -1002,7 +945,7 @@ export function sendEmailForPaymentSuccess_to_admin(message: any) {
         enable: false,
       },
     },
-    mail_settings: {},
+
     // html: "<strong>and easy to do anywhere, even with Node.js</strong>",
     // templateId: "d-69dcead271404a1d8a90aab2416bdc42",
     templateId: "d-f341f49885964b52a0523e1e083aa2d7",
@@ -1017,11 +960,7 @@ export function sendEmailForPaymentSuccess_to_admin(message: any) {
   };
   // if (checkAccess()) {
   if (process.env.APP_ENV !== APP_ENV.PRODUCTION) {
-    msg.mail_settings = {
-      sandbox_mode: {
-        enable: true,
-      },
-    };
+    msg.to = process.env.SENDGRID_TO_EMAIL || "";
   }
   sgMail
     .send(msg)
@@ -1068,7 +1007,7 @@ export function sendEmailForFullySignupToAdmin(message: any) {
         enable: false,
       },
     },
-    mail_settings: {},
+
     // html: "<strong>and easy to do anywhere, even with Node.js</strong>",
     // templateId: "d-69dcead271404a1d8a90aab2416bdc42",
     templateId: "d-90a17909d72a45089b16d690f3d666d9",
@@ -1103,11 +1042,7 @@ export function sendEmailForFullySignupToAdmin(message: any) {
   };
   // if (checkAccess()) {
   if (process.env.APP_ENV !== APP_ENV.PRODUCTION) {
-    msg.mail_settings = {
-      sandbox_mode: {
-        enable: true,
-      },
-    };
+    msg.to = process.env.SENDGRID_TO_EMAIL || "";
   }
   sgMail
     .send(msg)
@@ -1153,7 +1088,7 @@ export function sendEmailToInvitedAdmin(send_to: string, message: any) {
         enable: false,
       },
     },
-    mail_settings: {},
+
     // html: "<strong>and easy to do anywhere, even with Node.js</strong>",
     // templateId: "d-dad1bae4e3454fa8afea119f9de08b45",
     templateId: TEMPLATES_ID.INVITED_ADMIN,
@@ -1164,11 +1099,7 @@ export function sendEmailToInvitedAdmin(send_to: string, message: any) {
   };
   // if (checkAccess()) {
   if (process.env.APP_ENV !== APP_ENV.PRODUCTION) {
-    msg.mail_settings = {
-      sandbox_mode: {
-        enable: true,
-      },
-    };
+    msg.to = process.env.SENDGRID_TO_EMAIL || "" || "";
   }
   sgMail
     .send(msg)
@@ -1215,7 +1146,7 @@ export function sendEmailForBelow5LeadsPending(send_to: string, message: any) {
         enable: false,
       },
     },
-    mail_settings: {},
+
     // html: "<strong>and easy to do anywhere, even with Node.js</strong>",
     templateId: TEMPLATES_ID.BELOW_5_LEADS_PENDING,
     dynamic_template_data: {
@@ -1225,11 +1156,7 @@ export function sendEmailForBelow5LeadsPending(send_to: string, message: any) {
   };
   // if (checkAccess()) {
   if (process.env.APP_ENV !== APP_ENV.PRODUCTION) {
-    msg.mail_settings = {
-      sandbox_mode: {
-        enable: true,
-      },
-    };
+    msg.to = process.env.SENDGRID_TO_EMAIL || "";
   }
   sgMail
     .send(msg)
@@ -1276,7 +1203,7 @@ export function sendEmailForOutOfFunds(send_to: string, message: any) {
         enable: false,
       },
     },
-    mail_settings: {},
+
     // html: "<strong>and easy to do anywhere, even with Node.js</strong>",
     templateId: TEMPLATES_ID.OUT_OF_FUNDS,
     dynamic_template_data: {
@@ -1286,11 +1213,7 @@ export function sendEmailForOutOfFunds(send_to: string, message: any) {
   };
   // if (checkAccess()) {
   if (process.env.APP_ENV !== APP_ENV.PRODUCTION) {
-    msg.mail_settings = {
-      sandbox_mode: {
-        enable: true,
-      },
-    };
+    msg.to = process.env.SENDGRID_TO_EMAIL || "";
   }
   sgMail
     .send(msg)
