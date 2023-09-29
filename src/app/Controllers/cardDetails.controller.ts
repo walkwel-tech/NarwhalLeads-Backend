@@ -64,7 +64,10 @@ import { CardDetailsInterface } from "../../types/CardDetailsInterface";
 import { TransactionInterface } from "../../types/TransactionInterface";
 import { RyftPaymentInterface } from "../../types/RyftPaymentInterface";
 import { invoiceInterface } from "../../types/InvoiceInterface";
-import { BusinessDetailsInterface, isBusinessObjectAndIncludesBusinessHours } from "../../types/BusinessInterface";
+import {
+  BusinessDetailsInterface,
+  isBusinessObjectAndIncludesBusinessHours,
+} from "../../types/BusinessInterface";
 import { webhhokParams, webhookResponse } from "../../types/webhook.interfaces";
 // import { managePaymentsByPaymentMethods } from "../../utils/payment";
 // import { managePaymentsByPaymentMethods } from "../../utils/payment";
@@ -80,7 +83,8 @@ export class CardDetailsControllers {
         .json({ error: { message: "User Id is required" } });
     }
     try {
-      const fixAmount: AdminSettingsInterface = await AdminSettings.findOne() ?? {} as AdminSettingsInterface
+      const fixAmount: AdminSettingsInterface =
+        (await AdminSettings.findOne()) ?? ({} as AdminSettingsInterface);
       if (input.amount == null) {
         input.amount = fixAmount.amount;
       }
@@ -130,26 +134,32 @@ export class CardDetailsControllers {
         amount: input?.amount,
         isDefault: input?.isDefault,
       };
-      const user: UserInterface = await User.findById(input.userId)
-        .populate("businessDetailsId")
-        .populate("userLeadsDetailsId") ?? {} as UserInterface
+      const user: UserInterface =
+        (await User.findById(input.userId)
+          .populate("businessDetailsId")
+          .populate("userLeadsDetailsId")) ?? ({} as UserInterface);
       const userData = await CardDetails.create(dataToSave);
 
       sendEmailForRegistration(user.email, user.firstName);
       let array: any = [];
-      const userBusiness: BusinessDetailsInterface | null = isBusinessObjectAndIncludesBusinessHours(user?.businessDetailsId) 
-      ? user?.businessDetailsId 
-      : null;
-      
-     user?.id ? userBusiness?.businessOpeningHours.forEach((businessOpeningHours: any) => {
-        if (businessOpeningHours.day != "") {
-          let obj: any = {};
-          obj.day = businessOpeningHours.day;
-          obj.openTime = businessOpeningHours.openTime;
-          obj.closeTime = businessOpeningHours.closeTime;
-          array.push(obj);
-        }
-      }) : ""
+      const userBusiness: BusinessDetailsInterface | null =
+        isBusinessObjectAndIncludesBusinessHours(user?.businessDetailsId)
+          ? user?.businessDetailsId
+          : null;
+
+      user?.id
+        ? userBusiness?.businessOpeningHours.forEach(
+            (businessOpeningHours: any) => {
+              if (businessOpeningHours.day != "") {
+                let obj: any = {};
+                obj.day = businessOpeningHours.day;
+                obj.openTime = businessOpeningHours.openTime;
+                obj.closeTime = businessOpeningHours.closeTime;
+                array.push(obj);
+              }
+            }
+          )
+        : "";
       if (checkOnbOardingComplete(user) && !user.registrationMailSentToAdmin) {
         const leadData = await UserLeadsDetails.findOne({ userId: user?._id });
         const businessDeatilsData = await BusinessDetails.findById(
@@ -209,7 +219,8 @@ export class CardDetailsControllers {
     const input = req.body;
     const id = Object(req.user).id;
     try {
-      const user: UserInterface = await User.findById(id) ?? {} as UserInterface
+      const user: UserInterface =
+        (await User.findById(id)) ?? ({} as UserInterface);
       await User.findByIdAndUpdate(user?.id, {
         onBoarding: [
           {
@@ -497,7 +508,8 @@ export class CardDetailsControllers {
           .status(404)
           .json({ error: { message: "Card Details not found" } });
       }
-      const adminSettings: AdminSettingsInterface = await AdminSettings.findOne() ?? {} as AdminSettingsInterface
+      const adminSettings: AdminSettingsInterface =
+        (await AdminSettings.findOne()) ?? ({} as AdminSettingsInterface);
       const params: any = {
         fixedAmount:
           parseInt(input?.amount) + (parseInt(input?.amount) * VAT) / 100 ||
@@ -517,7 +529,6 @@ export class CardDetailsControllers {
       const paymentMethodsExists = await RyftPaymentMethods.findOne({
         cardId: card.id,
       });
-
 
       if (!paymentMethodsExists) {
         return res
@@ -555,7 +566,7 @@ export class CardDetailsControllers {
               response.status = 200;
               response.sessionID = _res.data?.id;
             }
-           
+
             return res.json({
               data: response,
             });
@@ -594,7 +605,7 @@ export class CardDetailsControllers {
         sessionObject.paymentMethods = paymentMethods.data;
         return res.json({ data: sessionObject });
       })
-      .catch(async(error) => {
+      .catch(async (error) => {
         return res
           .status(400)
           .json({ data: { message: "Error in creating session", error } });
@@ -607,23 +618,26 @@ export class CardDetailsControllers {
   ): Promise<any> => {
     const input = req.body;
     const customerId = input.data.customer?.id;
-    let userId : UserInterface= await User.findOne({
-      ryftClientId: customerId,
-      role: RolesEnum.USER,
-    }) ?? {} as UserInterface
-    const card : RyftPaymentInterface= await RyftPaymentMethods.findOne({
-      paymentMethod: input.data?.paymentMethod?.id,
-    }) ?? {} as RyftPaymentInterface
+    let userId: UserInterface =
+      (await User.findOne({
+        ryftClientId: customerId,
+        role: RolesEnum.USER,
+      })) ?? ({} as UserInterface);
+    const card: RyftPaymentInterface =
+      (await RyftPaymentMethods.findOne({
+        paymentMethod: input.data?.paymentMethod?.id,
+      })) ?? ({} as RyftPaymentInterface);
     const cardDetailsExist = await CardDetails.findById(card?.cardId);
     let originalAmount = parseInt(input.data.amount) / 100 / (1 + VAT / 100);
     let isFreeCredited: boolean;
-    const txn: TransactionInterface[] = await Transaction.find({
-      userId: userId?.id,
-      title: transactionTitle.CREDITS_ADDED,
-      isCredited: true,
-      status: PAYMENT_STATUS.CAPTURED,
-      amount: { $gt: 0 },
-    }) ?? [] as TransactionInterface[]
+    const txn: TransactionInterface[] =
+      (await Transaction.find({
+        userId: userId?.id,
+        title: transactionTitle.CREDITS_ADDED,
+        isCredited: true,
+        status: PAYMENT_STATUS.CAPTURED,
+        amount: { $gt: 0 },
+      })) ?? ([] as TransactionInterface[]);
     if (txn?.length > 0) {
       isFreeCredited = true;
     } else {
@@ -631,13 +645,15 @@ export class CardDetailsControllers {
     }
     if (userId) {
       if (input.eventType == "PaymentSession.declined") {
-        userId = await User.findById(userId?.id) ?? {} as UserInterface
-        const card:RyftPaymentInterface = await RyftPaymentMethods.findOne({
-          paymentMethod: input.data?.paymentMethod?.id,
-        }) ?? {} as RyftPaymentInterface
-        const cardDelete: CardDetailsInterface = await CardDetails.findOne({
-          paymentMethod: input.data?.paymentMethod?.id,
-        }) ?? {} as CardDetailsInterface
+        userId = (await User.findById(userId?.id)) ?? ({} as UserInterface);
+        const card: RyftPaymentInterface =
+          (await RyftPaymentMethods.findOne({
+            paymentMethod: input.data?.paymentMethod?.id,
+          })) ?? ({} as RyftPaymentInterface);
+        const cardDelete: CardDetailsInterface =
+          (await CardDetails.findOne({
+            paymentMethod: input.data?.paymentMethod?.id,
+          })) ?? ({} as CardDetailsInterface);
         await CardDetails.findByIdAndDelete(cardDelete?.id);
         const business = await BusinessDetails.findById(
           userId?.businessDetailsId
@@ -679,7 +695,8 @@ export class CardDetailsControllers {
         // TODO: apply conditipon for user does not iuncludes in promo link.users
         userId.id = new ObjectId(userId?.id);
         const promoLink = await FreeCreditsLink.findOne({
-          _id: new ObjectId(userId?.promoLinkId), isDeleted:false
+          _id: new ObjectId(userId?.promoLinkId),
+          isDeleted: false,
         });
         let params: webhhokParams = {
           buyerId: userId?.buyerId,
@@ -718,7 +735,7 @@ export class CardDetailsControllers {
         }
         addCreditsToBuyer(params)
           .then(async (res: any) => {
-            userId = await User.findById(userId?.id) ?? {} as UserInterface
+            userId = (await User.findById(userId?.id)) ?? ({} as UserInterface);
             let dataToSaveInTransaction: Partial<TransactionInterface> = {
               userId: userId?.id,
               amount: originalAmount,
@@ -753,7 +770,6 @@ export class CardDetailsControllers {
               //@ts-ignore
               data.area = formattedPostCodes;
               sendEmailForFullySignupToAdmin(data);
-            
             }
             const transaction = await Transaction.create(
               dataToSaveInTransaction
@@ -800,7 +816,8 @@ export class CardDetailsControllers {
                 //@ts-ignore
                 originalAmount,
                 //@ts-ignore
-                freeCredits
+                freeCredits,
+                input.data.id
               )
                 .then(async (res: any) => {
                   const dataToSaveInInvoice: Partial<invoiceInterface> = {
@@ -828,7 +845,8 @@ export class CardDetailsControllers {
                       //@ts-ignore
                       originalAmount,
                       //@ts-ignore
-                      freeCredits
+                      freeCredits,
+                      input.data.id
                     ).then(async (res: any) => {
                       const dataToSaveInInvoice: Partial<invoiceInterface> = {
                         userId: userId?.id,
@@ -847,7 +865,8 @@ export class CardDetailsControllers {
                 });
             }
             if (params.freeCredits) {
-              userId = await User.findById(userId?.id) ?? {} as UserInterface
+              userId =
+                (await User.findById(userId?.id)) ?? ({} as UserInterface);
               const dataToSaveInTxn = {
                 userId: userId?.id,
                 amount: params.freeCredits,
@@ -898,8 +917,8 @@ export class CardDetailsControllers {
     res: Response
   ): Promise<any> => {
     const sessionId = req.query.ps;
-    let userData:UserInterface;
-    let cardData:CardDetailsInterface
+    let userData: UserInterface;
+    let cardData: CardDetailsInterface;
     const shouldReturnJson = !!req.query.requestJson || false;
     let config = {
       method: "get",
@@ -912,8 +931,10 @@ export class CardDetailsControllers {
       .then(async function (response: any): Promise<any> {
         const sessionData = response.data;
         const { customerDetails, paymentMethod, amount } = sessionData;
-        const user = await User.findOne({ ryftClientId: customerDetails.id }) ?? {} as UserInterface
-        userData=user
+        const user =
+          (await User.findOne({ ryftClientId: customerDetails.id })) ??
+          ({} as UserInterface);
+        userData = user;
         const paymentMthods = await RyftPaymentMethods.find({
           paymentMethod: paymentMethod?.tokenizedDetails?.id,
         });
@@ -957,15 +978,15 @@ export class CardDetailsControllers {
             )
           ) {
             const card = await CardDetails.create(dataToSave);
-            cardData=card
+            cardData = card;
             await Transaction.create({
               userId: user?.id,
               cardId: card?.id,
-              amount:0,             
+              amount: 0,
               status: TRANSACTION_STATUS.SUCCESS,
               paymentSessionId: sessionId,
               paymentMethod: card?.paymentMethod,
-              title:transactionTitle.SESSION_CREATED
+              title: transactionTitle.SESSION_CREATED,
             });
             await RyftPaymentMethods.create({
               userId: user?.id,
@@ -1016,12 +1037,12 @@ export class CardDetailsControllers {
           await Transaction.create({
             userId: userData?.id,
             cardId: cardData?.id,
-            amount:0,             
+            amount: 0,
             status: TRANSACTION_STATUS.FAIL,
             paymentSessionId: sessionId,
             paymentMethod: cardData?.paymentMethod,
-            title:transactionTitle.SESSION_CREATED,
-            notes:error.response.data.errors[0].message,
+            title: transactionTitle.SESSION_CREATED,
+            notes: error.response.data.errors[0].message,
           });
           res.json({
             message: "Session error",
@@ -1031,7 +1052,6 @@ export class CardDetailsControllers {
           //need to change here in url
           res.status(302).redirect(process.env.RETURN_URL || "");
         }
-     
       });
   };
 
