@@ -32,7 +32,6 @@ export class GuestController {
       const businessIndustries = await BuisnessIndustries.find().exec();
       const updatedDocuments = await Promise.all(
         businessIndustries.map(async (ind) => {
-          
           ind.columns.forEach((column: any) => {
             column.originalName = column.name;
             column.displayName = column.name;
@@ -45,7 +44,7 @@ export class GuestController {
       );
       console.log("Updated and saved documents:", updatedDocuments);
       updatedDocuments.map(async (i) => {
-       await BuisnessIndustries.findByIdAndUpdate(i.id, {
+        await BuisnessIndustries.findByIdAndUpdate(i.id, {
           columns: i.columns,
         });
       });
@@ -81,11 +80,13 @@ export class GuestController {
         })
       );
       console.log("Updated and saved documents:", updatedDocuments);
-      updatedDocuments.map(async (i) => {
-      await LeadTablePreference.findByIdAndUpdate(i.id, {
-          columns: i.columns,
-        });
-      });
+      await Promise.all(
+        updatedDocuments.map(async (i) => {
+          await LeadTablePreference.findByIdAndUpdate(i.id, {
+            columns: i.columns,
+          });
+        })
+      );
 
       return res.json({
         data: "Updated and saved documents",
@@ -117,7 +118,7 @@ export class GuestController {
       );
       console.log("Updated and saved documents:", updatedDocuments);
       updatedDocuments.map(async (i) => {
-     await ClientTablePreference.findByIdAndUpdate(i.id, {
+        await ClientTablePreference.findByIdAndUpdate(i.id, {
           columns: i.columns,
         });
       });
@@ -134,25 +135,29 @@ export class GuestController {
   static setBusinessDetails = async (req: Request, res: Response) => {
     try {
       const users = await User.find();
-      users.map(async (i) => {
-        let dataToSave: any = {
-          userId: i.id,
-          businessIndustry: "baloon",
-          businessName: "test pvt ltd",
-          businessDescription: "desc",
-          // businessLogo: `${FileEnum.PROFILEIMAGE}${req?.file.filename}`,
-          businessSalesNumber: "123123123",
-          businessAddress: "street lights",
-          address1: "street",
-          address2: "lights",
-          businessCity: "london",
-          businessPostCode: "BH7",
-          // businessOpeningHours: JSON.parse(input?.businessOpeningHours),
-          // businessOpeningHours: (input?.businessOpeningHours),
-        };
-        const business = await BusinessDetails.create(dataToSave);
-        await User.findByIdAndUpdate(i.id, { businessDetailsId: business.id });
-      });
+      await Promise.all(
+        users.map(async (i) => {
+          let dataToSave: any = {
+            userId: i.id,
+            businessIndustry: "baloon",
+            businessName: "test pvt ltd",
+            businessDescription: "desc",
+            // businessLogo: `${FileEnum.PROFILEIMAGE}${req?.file.filename}`,
+            businessSalesNumber: "123123123",
+            businessAddress: "street lights",
+            address1: "street",
+            address2: "lights",
+            businessCity: "london",
+            businessPostCode: "BH7",
+            // businessOpeningHours: JSON.parse(input?.businessOpeningHours),
+            // businessOpeningHours: (input?.businessOpeningHours),
+          };
+          const business = await BusinessDetails.create(dataToSave);
+          await User.findByIdAndUpdate(i.id, {
+            businessDetailsId: business.id,
+          });
+        })
+      );
 
       return res.json({ data: "Updated Business Details" });
     } catch (error) {
@@ -160,6 +165,91 @@ export class GuestController {
     }
   };
 
+  static managePrefForLeads = async (_req: any, res: Response) => {
+    const name = _req.body.name;
+    // Define an array of document IDs
+    let documentIds = await LeadTablePreference.find({}, "_id");
+    // Iterate over the document IDs
+    documentIds.forEach(async function (documentId): Promise<any> {
+      // Find the length of the "columns" array
+      var result = await LeadTablePreference.findOne({ _id: documentId._id });
+      var nameExists = result?.columns.some(function (column: any) {
+        return column.originalName === name;
+      });
+      if (!result) {
+        console.error("Document not found with _id: " + documentId);
+        return;
+      }
+      // if(result.columns)
+      var columnsLength = result?.columns?.length;
+
+      // Create the object to push with the correct "index" value
+      var objectToPush = {
+        originalName: name,
+        isVisible: true,
+        index: columnsLength,
+        displayName: name,
+      };
+
+      // Push the object to the "columns" array for the current document
+      if (!nameExists) {
+        return await LeadTablePreference.updateOne(
+          { _id: documentId },
+          {
+            $push: {
+              columns: objectToPush,
+            },
+          }
+        );
+      } else {
+        console.log("already exist");
+      }
+    });
+    res.send({ data: "successfully inserted" });
+  };
+
+  static managePrefForClients = async (_req: any, res: Response) => {
+    const name = _req.body.name;
+    // Define an array of document IDs
+    let documentIds = await ClientTablePreference.find({}, "_id");
+    // Iterate over the document IDs
+    documentIds.forEach(async function (documentId): Promise<any> {
+      // Find the length of the "columns" array
+      var result = await ClientTablePreference.findOne({ _id: documentId._id });
+      var nameExists = result?.columns.some(function (column: any) {
+        return column.originalName === name;
+      });
+      if (!result) {
+        console.error("Document not found with _id: " + documentId);
+        return;
+      }
+      // if(result.columns)
+      var columnsLength = result?.columns?.length;
+
+      // Create the object to push with the correct "index" value
+      var objectToPush = {
+        originalName: name,
+        isVisible: true,
+        index: columnsLength,
+        displayName: name,
+      };
+
+      // Push the object to the "columns" array for the current document
+      if (!nameExists) {
+        return await ClientTablePreference.updateOne(
+          { _id: documentId },
+          {
+            $push: {
+              columns: objectToPush,
+            },
+          }
+        );
+      } else {
+        console.log("already exist");
+      }
+    });
+    res.send({ data: "successfully inserted" });
+  };
 }
 
 const getUsers = (users: UserInterface[]) => {

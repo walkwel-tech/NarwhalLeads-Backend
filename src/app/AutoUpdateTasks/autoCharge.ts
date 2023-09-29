@@ -124,7 +124,7 @@ export const weeklypayment = async () => {
                 paymentSessionId: card?.paymentSessionID || "",
               };
               createSessionUnScheduledPayment(params)
-                .then(async (res) => {
+                .then(async (_res_: any) => {
                   const dataToSaveDeduction: Partial<TransactionInterface> = {
                     userId: user.id,
                     cardId: card?.id,
@@ -158,15 +158,17 @@ export const weeklypayment = async () => {
                         user.xeroContactId,
                         transactionTitle.CREDITS_ADDED,
                         addCredits,
-                        0
+                        0,
+                        _res_.data?.id
                       )
                         .then(async (res: any) => {
-                          const dataToSaveInInvoice: Partial<invoiceInterface> = {
-                            userId: user.id,
-                            transactionId: transaction.id,
-                            price: addCredits,
-                            invoiceId: res?.data.Invoices[0].InvoiceID,
-                          };
+                          const dataToSaveInInvoice: Partial<invoiceInterface> =
+                            {
+                              userId: user.id,
+                              transactionId: transaction.id,
+                              price: addCredits,
+                              invoiceId: res?.data.Invoices[0].InvoiceID,
+                            };
                           await Invoice.create(dataToSaveInInvoice);
                           console.log("pdf generated");
                         })
@@ -176,14 +178,16 @@ export const weeklypayment = async () => {
                               user.xeroContactId,
                               transactionTitle.CREDITS_ADDED,
                               addCredits,
-                              0
+                              0,
+                              _res_.data?.id
                             ).then(async (res: any) => {
-                              const dataToSaveInInvoice: Partial<invoiceInterface> = {
-                                userId: user.id,
-                                transactionId: transaction.id,
-                                price: addCredits,
-                                invoiceId: res.data.Invoices[0].InvoiceID,
-                              };
+                              const dataToSaveInInvoice: Partial<invoiceInterface> =
+                                {
+                                  userId: user.id,
+                                  transactionId: transaction.id,
+                                  price: addCredits,
+                                  invoiceId: res.data.Invoices[0].InvoiceID,
+                                };
                               await Invoice.create(dataToSaveInInvoice);
                               console.log("pdf generated");
                             });
@@ -244,8 +248,12 @@ const chargeUser = async (params: paymentParams) => {
         resolve(res);
       })
       .catch(async (err) => {
-        const user: UserInterface = await User.findOne({ ryftClientId: params.clientId }) ?? {} as UserInterface;
-        const cards: CardDetailsInterface[] = await CardDetails.find({ userId: user.id }) ?? [] as CardDetailsInterface[]
+        const user: UserInterface =
+          (await User.findOne({ ryftClientId: params.clientId })) ??
+          ({} as UserInterface);
+        const cards: CardDetailsInterface[] =
+          (await CardDetails.find({ userId: user.id })) ??
+          ([] as CardDetailsInterface[]);
         await handleFailedCharge(user, cards);
         reject(err);
       });
@@ -284,10 +292,11 @@ const handleFailedCharge = async (
     });
     let leftCards = getElementsNotInSubset(cardsArray, TransactionArray);
     if (leftCards.length > 0) {
-      const card: CardDetailsInterface = await CardDetails.findOne({
-        paymentMethod: leftCards[0],
-        userId: user.id,
-      }) ?? {} as CardDetailsInterface
+      const card: CardDetailsInterface =
+        (await CardDetails.findOne({
+          paymentMethod: leftCards[0],
+          userId: user.id,
+        })) ?? ({} as CardDetailsInterface);
       const params = {
         fixedAmount:
           user.autoChargeAmount + (user.autoChargeAmount * VAT) / 100,
