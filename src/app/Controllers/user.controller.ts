@@ -160,13 +160,13 @@ export class UsersControllers {
         isDeleted: false,
         isArchived: JSON.parse(isArchived?.toLowerCase()),
       };
-      if (filter === FILTER_FOR_CLIENT.ALL) {
+      if (filter === FILTER_FOR_CLIENT.ALL && !accountManagerBoolean) {
         dataToFind.role = { $in: [RolesEnum.NON_BILLABLE, RolesEnum.USER] };
       }
-      if (filter === FILTER_FOR_CLIENT.BILLABLE) {
+      if (filter === FILTER_FOR_CLIENT.BILLABLE && !accountManagerBoolean) {
         dataToFind.role = { $in: [RolesEnum.USER] };
       }
-      if (filter === FILTER_FOR_CLIENT.NON_BILLABLE) {
+      if (filter === FILTER_FOR_CLIENT.NON_BILLABLE && !accountManagerBoolean) {
         dataToFind.role = { $in: [RolesEnum.NON_BILLABLE] };
       }
       if (accountManagerBoolean) {
