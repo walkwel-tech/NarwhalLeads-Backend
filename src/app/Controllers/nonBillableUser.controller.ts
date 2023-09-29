@@ -52,7 +52,7 @@ export class nonBillableUsersController {
               key: ONBOARDING_KEYS.BUSINESS_DETAILS,
               pendingFields: [
                 "businessIndustry",
-                "businessName", 
+                "businessName",
                 "businessSalesNumber",
                 "businessPostCode",
                 "address1",
@@ -72,8 +72,7 @@ export class nonBillableUsersController {
             },
             {
               key: ONBOARDING_KEYS.CARD_DETAILS,
-              pendingFields: [
-              ],
+              pendingFields: [],
               dependencies: [],
             },
           ],

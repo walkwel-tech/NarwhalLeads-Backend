@@ -3,13 +3,14 @@ import { AccessToken } from "../../app/Models/AccessToken";
 import { User } from "../../app/Models/User";
 import { transactionTitle } from "../Enums/transaction.title.enum";
 // import { transactionTitle } from "../Enums/transaction.title.enum";
-import axios from "axios"
+import axios from "axios";
 
 export const generatePDF = (
   ContactID: string,
   desc: string,
   amount: number,
-  freeCredits: number
+  freeCredits: number,
+  sessionId: string
 ) => {
   return new Promise(async (resolve, reject) => {
     const industry: any = await User.findOne({
@@ -18,7 +19,7 @@ export const generatePDF = (
     const quantity = amount / parseInt(industry.leadCost);
 
     let unitAmount = industry.leadCost;
-  
+
     let data = {
       Invoices: [
         {
@@ -39,7 +40,7 @@ export const generatePDF = (
           ],
           Date: new Date(),
           DueDate: new Date(new Date().setDate(new Date().getDate() + 7)),
-          Reference: "",
+          Reference: sessionId,
           Status: "AUTHORISED",
         },
       ],
@@ -71,23 +72,22 @@ export const generatePDF = (
       },
       data: JSON.stringify(data),
     };
-if(checkAccess()){
-  axios(config)
-  .then(function (response: any) {
-    console.log("data while getting response of invoices", response.data);
+    if (checkAccess()) {
+      axios(config)
+        .then(function (response: any) {
+          console.log("data while getting response of invoices", response.data);
 
-    resolve(response);
-  })
-  .catch(function (error: any) {
-    console.log(error.response?.data);
+          resolve(response);
+        })
+        .catch(function (error: any) {
+          console.log(error.response?.data);
 
-    reject(error);
-  });
-}
-else{
-  console.log("No Access for generating PDF to this "+ process.env.APP_ENV)
-
-}
-   
+          reject(error);
+        });
+    } else {
+      console.log(
+        "No Access for generating PDF to this " + process.env.APP_ENV
+      );
+    }
   });
 };
