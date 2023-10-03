@@ -4,6 +4,12 @@ import { RolesEnum } from "../../types/RolesEnum";
 import { sendEmailToInvitedAdmin } from "../Middlewares/mail";
 import { User } from "../Models/User";
 import { ONBOARDING_KEYS } from "../../utils/constantFiles/OnBoarding.keys";
+import { createCustomerOnRyft } from "../../utils/createCustomer/createOnRyft";
+import {
+  BUSINESS_DETAILS,
+  CARD_DETAILS,
+  LEAD_DETAILS,
+} from "../../utils/constantFiles/signupFields";
 
 const LIMIT = 10;
 export class nonBillableUsersController {
@@ -169,25 +175,81 @@ export class nonBillableUsersController {
     }
   };
 
-  static update = async (_req: Request, res: Response) => {
+  static update = async (_req: Request, res: Response): Promise<any> => {
     //@ts-ignore
     const id = _req.params.id;
     //@ts-ignore
     const user = _req.user?._id;
     const input = _req.body;
     try {
-      const invitedUsers = await User.find({
+      const invitedUsers = await User.findOne({
         _id: id,
         isDeleted: false,
       });
-
-      if (invitedUsers.length == 0) {
+      if (!invitedUsers) {
         return res.status(400).json({ error: { message: "No User Found" } });
+      }
+      if (
+        input.isCreditsAndBillingEnabled === true &&
+        !invitedUsers.isRyftCustomer
+      ) {
+        const params = {
+          email: invitedUsers.email,
+          firstName: invitedUsers.firstName,
+          lastName: invitedUsers.lastName,
+          userId: invitedUsers.id,
+        };
+
+        createCustomerOnRyft(params)
+          .then()
+          .catch((err) => {
+            return res
+              .status(500)
+              .json({ error: { message: "Email already exist on RYFT." } });
+          });
+      }
+      if (
+        input.isCreditsAndBillingEnabled === true &&
+        !invitedUsers?.isUserSignup
+      ) {
+        const dataToUpdate = {
+          isCreditsAndBillingEnabled: input.isCreditsAndBillingEnabled,
+          onBoarding: [
+            {
+              key: ONBOARDING_KEYS.BUSINESS_DETAILS,
+              pendingFields: [
+                BUSINESS_DETAILS.BUSINESS_INDUSTRY,
+                BUSINESS_DETAILS.BUSINESS_NAME,
+                BUSINESS_DETAILS.BUSINESS_SALES_NUMBER,
+                BUSINESS_DETAILS.BUSINESS_POST_CODE,
+                BUSINESS_DETAILS.ADDRESS1,
+                BUSINESS_DETAILS.BUSINESS_OPENING_HOURS,
+                BUSINESS_DETAILS.BUSINESS_CITY,
+              ],
+              dependencies: [],
+            },
+            {
+              key: ONBOARDING_KEYS.LEAD_DETAILS,
+              pendingFields: [
+                LEAD_DETAILS.DAILY,
+                LEAD_DETAILS.LEAD_SCHEDULE,
+                LEAD_DETAILS.POSTCODE_TARGETTING_LIST,
+              ],
+              dependencies: [BUSINESS_DETAILS.BUSINESS_INDUSTRY],
+            },
+            {
+              key: ONBOARDING_KEYS.CARD_DETAILS,
+              pendingFields: [CARD_DETAILS.CARD_NUMBER],
+              dependencies: [],
+            },
+          ],
+        };
+        await User.findByIdAndUpdate(id, dataToUpdate, { new: true });
       } else {
         await User.findByIdAndUpdate(id, input, { new: true });
-        const user = await User.findById(id, "-password");
-        return res.json({ data: user });
       }
+      const user = await User.findById(id, "-password");
+      return res.json({ data: user });
     } catch (error) {
       return res
         .status(500)

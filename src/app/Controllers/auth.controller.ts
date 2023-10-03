@@ -33,6 +33,11 @@ import { order } from "../../utils/constantFiles/businessIndustry.orderList";
 import * as fs from "fs";
 import { AdminSettingsInterface } from "../../types/AdminSettingInterface";
 import { freeCreditsLinkInterface } from "../../types/FreeCreditsLinkInterface";
+import {
+  BUSINESS_DETAILS,
+  CARD_DETAILS,
+  LEAD_DETAILS,
+} from "../../utils/constantFiles/signupFields";
 
 class AuthController {
   static register = async (req: Request, res: Response): Promise<any> => {
@@ -114,28 +119,28 @@ class AuthController {
             {
               key: ONBOARDING_KEYS.BUSINESS_DETAILS,
               pendingFields: [
-                "businessIndustry",
-                "businessName",
-                "businessSalesNumber",
-                "businessPostCode",
-                "address1",
-                "businessOpeningHours",
-                "businessCity",
+                BUSINESS_DETAILS.BUSINESS_INDUSTRY,
+                BUSINESS_DETAILS.BUSINESS_NAME,
+                BUSINESS_DETAILS.BUSINESS_SALES_NUMBER,
+                BUSINESS_DETAILS.BUSINESS_POST_CODE,
+                BUSINESS_DETAILS.ADDRESS1,
+                BUSINESS_DETAILS.BUSINESS_OPENING_HOURS,
+                BUSINESS_DETAILS.BUSINESS_CITY,
               ],
               dependencies: [],
             },
             {
               key: ONBOARDING_KEYS.LEAD_DETAILS,
               pendingFields: [
-                "daily",
-                "leadSchedule",
-                "postCodeTargettingList",
+                LEAD_DETAILS.DAILY,
+                LEAD_DETAILS.LEAD_SCHEDULE,
+                LEAD_DETAILS.POSTCODE_TARGETTING_LIST,
               ],
-              dependencies: ["businessIndustry"],
+              dependencies: [BUSINESS_DETAILS.BUSINESS_INDUSTRY],
             },
             {
               key: ONBOARDING_KEYS.CARD_DETAILS,
-              pendingFields: ["cardNumber"],
+              pendingFields: [CARD_DETAILS.CARD_NUMBER],
               dependencies: [],
             },
           ],

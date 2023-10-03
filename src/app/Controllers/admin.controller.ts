@@ -13,8 +13,6 @@ import { ClientTablePreferenceInterface } from "../../types/clientTablePrefrence
 import { UserInterface } from "../../types/UserInterface";
 import { columnsObjects } from "../../types/columnsInterface";
 
-
-
 export class AdminSettingsController {
   static create = async (req: Request, res: Response) => {
     const input = req.body;
@@ -43,19 +41,16 @@ export class AdminSettingsController {
           ...input,
         });
         return res.json({ message: "successfuly updated!", data: updatedData });
-      }
-      else {
+      } else {
         let dataToSave: Partial<AdminSettingsInterface> = {
           amount: input.amount,
           thresholdValue: input.thresholdValue,
           defaultLeadAmount: input.defaultLeadAmount,
-          minimumUserTopUpAmount: ""
-
+          minimumUserTopUpAmount: "",
         };
         await AdminSettings.create(dataToSave);
         return res.json({ message: "successfuly Created!", data: dataToSave });
       }
-
     } catch (error) {
       return res
         .status(500)
@@ -132,18 +127,19 @@ export class AdminSettingsController {
       if (!checkExist) {
         //@ts-ignore
         const columns = input?.columns.sort((a, b) => a.index - b.index);
-        let dataToSave: Partial<ClientTablePreferenceInterface> = {
-          columns,
-          //@ts-ignore
-          userId:req.user?.id
-        } ?? {} as ClientTablePreferenceInterface
+        let dataToSave: Partial<ClientTablePreferenceInterface> =
+          {
+            columns,
+            //@ts-ignore
+            userId: req.user?.id,
+          } ?? ({} as ClientTablePreferenceInterface);
         const Preference = await ClientTablePreference.create(dataToSave);
         return res.json({ data: Preference });
       } else {
         const data = await ClientTablePreference.findByIdAndUpdate(
           checkExist._id,
           //@ts-ignore
-          { columns: input.columns,userId:req.user.id },
+          { columns: input.columns, userId: req.user.id },
           { new: true }
         ).lean();
         //@ts-ignore
@@ -158,50 +154,53 @@ export class AdminSettingsController {
   };
 
   static showClientTablePreference = async (req: Request, res: Response) => {
-
     try {
-          //@ts-ignore
-      const Preference = await ClientTablePreference.findOne({userId:req.user.id})
-      if(Preference){
-        Preference?.columns.sort((a: columnsObjects, b: columnsObjects) => a.index - b.index);
+      const Preference = await ClientTablePreference.findOne({
+        //@ts-ignore
+
+        userId: req.user.id,
+      });
+      if (Preference) {
+        Preference?.columns.sort(
+          (a: columnsObjects, b: columnsObjects) => a.index - b.index
+        );
         return res.json({ data: Preference });
+      } else {
+        const data = clientTablePreference;
+        data?.sort((a: columnsObjects, b: columnsObjects) => a.index - b.index);
+        return res.json({ data: { columns: data } });
       }
-     else{
-      const data=clientTablePreference
-      data?.sort((a: columnsObjects, b: columnsObjects) => a.index - b.index);
-      return res.json({ data:  {columns:data}  });
-     }
     } catch (error) {
       return res
         .status(500)
         .json({ error: { message: "Something went wrong" } });
-      }
+    }
   };
 
   static notifications = async (
     req: Request,
     res: Response
   ): Promise<Response> => {
-    let dataToFind={}
+    let dataToFind = {};
     try {
-      if(req.query.start && req.query.end){
+      if (req.query.start && req.query.end) {
         //@ts-ignore
-  dataToFind.createdAt={
-    $gte: req.query.start,
-    $lt: req.query.end
-  }
+        dataToFind.createdAt = {
+          $gte: req.query.start,
+          $lt: req.query.end,
+        };
       }
-  if(req.query.notificationType){
-          //@ts-ignore
-    dataToFind.notificationType=req.query.notificationType
-  }
-  if(req.query.userId){
-          //@ts-ignore
-    dataToFind.userId=new ObjectID(req.query.userId)
-  }
-  
-      const data= await  Notifications.find(dataToFind).sort({createdAt:-1})
-      return res.json({data:data})
+      if (req.query.notificationType) {
+        //@ts-ignore
+        dataToFind.notificationType = req.query.notificationType;
+      }
+      if (req.query.userId) {
+        //@ts-ignore
+        dataToFind.userId = new ObjectID(req.query.userId);
+      }
+
+      const data = await Notifications.find(dataToFind).sort({ createdAt: -1 });
+      return res.json({ data: data });
     } catch (err) {
       return res
         .status(500)
@@ -209,15 +208,12 @@ export class AdminSettingsController {
     }
   };
 
-  static userLogin = async (
-    req: Request,
-    res: Response
-  )=> {
+  static userLogin = async (req: Request, res: Response) => {
     const input = req.body;
-const user:UserInterface=await User.findOne({email:input.email,role:RolesEnum.USER}) ?? {} as UserInterface
+    const user: UserInterface =
+      (await User.findOne({ email: input.email, role: RolesEnum.INVITED })) ??
+      ({} as UserInterface);
     const token = generateAuthToken(user);
-    return res.json({token:token})
-    
+    return res.json({ token: token });
   };
-
 }
