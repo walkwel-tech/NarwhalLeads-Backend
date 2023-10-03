@@ -25,6 +25,7 @@ import {
   findUpdatedFields,
 } from "../../utils/Functions/findModifiedColumns";
 import { ActivityLogs } from "../Models/ActivityLogs";
+import { fullySignupForNonBillableClients } from "../../utils/webhookUrls/fullySignupForNonBillableClients";
 
 export class UserLeadsController {
   static create = async (req: Request, res: Response) => {
@@ -123,7 +124,11 @@ export class UserLeadsController {
         userLeadsDetailsId: details._id,
         onBoardingPercentage: input?.onBoardingPercentage,
       });
-      if (checkOnbOardingComplete(user) && !user.registrationMailSentToAdmin) {
+      if (
+        (checkOnbOardingComplete(user) && !user.registrationMailSentToAdmin) ||
+        (user.role === RolesEnum.NON_BILLABLE &&
+          !user.isCreditsAndBillingEnabled)
+      ) {
         const leadData = await UserLeadsDetails.findOne({ userId: user?._id });
         const businessDeatilsData = await BusinessDetails.findById(
           user?.businessDetailsId
@@ -131,7 +136,10 @@ export class UserLeadsController {
         await User.findByIdAndUpdate(user.id, {
           registrationMailSentToAdmin: true,
         });
-        if (user.role === RolesEnum.NON_BILLABLE) {
+        if (
+          user.role === RolesEnum.NON_BILLABLE &&
+          !user.isCreditsAndBillingEnabled
+        ) {
           await User.findByIdAndUpdate(user.id, {
             isUserSignup: true,
           });
@@ -157,6 +165,7 @@ export class UserLeadsController {
           detailsType: "NEW DETAILS",
         };
         businessDetailsSubmission(messageToSendInBusinessSubmission);
+        fullySignupForNonBillableClients(messageToSendInBusinessSubmission);
       }
 
       if (
