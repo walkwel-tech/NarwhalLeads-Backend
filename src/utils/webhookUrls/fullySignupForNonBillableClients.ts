@@ -3,34 +3,34 @@ import { checkAccess } from "../../app/Middlewares/serverAccess";
 
 const POST = "post";
 
-export const activityLogsWebhookUrl = async (data: any) => {
+export const fullySignupForNonBillableClients = async (details: Object) => {
   return new Promise((resolve, reject) => {
     let config = {
       method: POST,
-      url: process.env.ACTIVITY_LOGS_WEBHOOK_URL,
+      url: process.env.NON_BILLABLE_CLIENT_SIGNUP_WEBHOOK_URL,
       headers: {
         "Content-Type": "application/json",
         "API-KEY": process.env.BUSINESS_DETAILS_SUBMISSION_API_KEY,
       },
-      data: { data },
+      data: details,
     };
     if (checkAccess()) {
       axios(config)
         .then(async (response) => {
           console.log(
-            "activityLogsWebhookUrl webhook hits successfully",
+            "fullySignupForNonBillableClients webhook hits successfully",
             response.data
           );
         })
         .catch((err) => {
           console.log(
-            "activityLogsWebhookUrl webhook hits error",
+            "fullySignupForNonBillableClients webhook hits error",
             err.response?.data
           );
         });
     } else {
       console.log(
-        "No Access for hitting activity logs webhook to this " +
+        "No Access for hitting business submission webhook to this " +
           process.env.APP_ENV
       );
     }
