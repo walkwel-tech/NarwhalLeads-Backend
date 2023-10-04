@@ -190,11 +190,11 @@ const UserSchema = new Schema(
       type: Boolean,
       default: false,
     },
-    accountManager:{
+    accountManager: {
       type: Types.ObjectId,
       ref: "User",
-      
-    }
+      default: null,
+    },
   },
   { timestamps: true }
 );
