@@ -94,4 +94,9 @@ export const clientTablePreference = [
     isVisible: true,
     index: 18,
   },
+  {
+    name: "phoneNumber",
+    isVisible: true,
+    index: 19,
+  },
 ];

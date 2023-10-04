@@ -26,6 +26,7 @@ import { PAYMENT_TYPE_ENUM } from "../../utils/Enums/paymentType.enum";
 import * as cron from "node-cron";
 import { TransactionInterface } from "../../types/TransactionInterface";
 import { invoiceInterface } from "../../types/InvoiceInterface";
+import { PAYMENT_STATUS } from "../../utils/Enums/payment.status";
 
 interface paymentParams {
   fixedAmount: number;
@@ -71,7 +72,7 @@ export const weeklypayment = async () => {
     const user = await User.find({
       paymentMethod: paymentMethodEnum.WEEKLY_PAYMENT_METHOD,
     });
-    let leadcpl;
+    let leadcpl: number;
     if (!user || user?.length == 0) {
       console.log("no user found to make payment");
     } else {
@@ -103,17 +104,17 @@ export const weeklypayment = async () => {
               });
               await AdminSettings.findOne();
               if (user.isLeadCostCheck) {
-                leadcpl = user.leadCost;
+                leadcpl = parseInt(user.leadCost);
               } else {
                 const industry = await BuisnessIndustries.findById(
                   user.businessIndustryId
                 );
-                leadcpl = industry?.leadCost;
+                if (industry) {
+                  leadcpl = industry?.leadCost;
+                }
               }
-              //@ts-ignore
               const amountToCharge = leadcpl * leads.length;
-              //@ts-ignore
-              const addCredits = leadsDetails?.weekly * leadcpl;
+              const addCredits = (leadsDetails?.weekly || 0) * leadcpl;
               const params: paymentParams = {
                 fixedAmount: amountToCharge,
                 email: user.email,
@@ -130,7 +131,7 @@ export const weeklypayment = async () => {
                     cardId: card?.id,
                     amount: amountToCharge,
                     title: transactionTitle.NEW_LEAD,
-                    status: "success",
+                    status: PAYMENT_STATUS.CAPTURED,
                     isDebited: true,
                   };
                   await Transaction.create(dataToSaveDeduction);
@@ -147,7 +148,7 @@ export const weeklypayment = async () => {
                         amount: addCredits,
                         title: transactionTitle.CREDITS_ADDED,
                         isCredited: true,
-                        status: "success",
+                        status: PAYMENT_STATUS.CAPTURED,
                       };
                       const transaction = await Transaction.create(dataToSave);
                       const leftCredits = user.credits - amountToCharge;

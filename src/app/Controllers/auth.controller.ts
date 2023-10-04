@@ -153,6 +153,13 @@ class AuthController {
           dataToSave.premiumUser = PROMO_LINK.PREMIUM_USER_TOP_UP;
           dataToSave.promoLinkId = checkCode?.id;
           dataToSave.accountManager = checkCode?.accountManager;
+        } else {
+          const accManagers = await User.aggregate([
+            { $match: { role: RolesEnum.ACCOUNT_MANAGER } },
+            { $sample: { size: 1 } },
+          ]);
+          let accountManager = accManagers[0];
+          dataToSave.accountManager = accountManager?._id;
         }
         await User.create(dataToSave);
         if (input.code) {
