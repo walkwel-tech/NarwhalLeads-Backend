@@ -39,6 +39,8 @@ import { BusinessDetails } from "../Models/BusinessDetails";
 import { notify } from "../../utils/notifications/leadNotificationToUser";
 import { APP_ENV } from "../../utils/Enums/serverModes.enum";
 import { UserInterface } from "../../types/UserInterface";
+import { leadReprocessWebhook } from "../../utils/webhookUrls/leadsReprocessWebhook";
+import { LeadsInterface } from "../../types/LeadsInterface";
 const ObjectId = mongoose.Types.ObjectId;
 
 const LIMIT = 10;
@@ -99,16 +101,16 @@ export class LeadsController {
         },
       });
     }
-    const leads = await Leads.findOne({ bid: user?.buyerId })
-      .sort({ rowIndex: -1 })
-      .limit(1);
+    const leads: LeadsInterface =
+      (await Leads.findOne({ bid: user?.buyerId })
+        .sort({ rowIndex: -1 })
+        .limit(1)) ?? ({} as LeadsInterface);
     const leadsSave = await Leads.create({
       bid: bid,
       leadsCost: user.leadCost,
       leads: input,
       status: leadsStatusEnums.VALID,
       industryId: user.businessIndustryId,
-      // @ts-ignore
       rowIndex: leads?.rowIndex + 1 || 0,
     });
 
@@ -212,19 +214,14 @@ export class LeadsController {
     const input = req.body;
     const lead = await Leads.findById(leadId);
     try {
+      if (!lead) {
+        return res.status(404).json({ error: { message: "Lead Not Found" } });
+      }
       const user: any = await User.findOne({ buyerId: lead?.bid });
       if (!user) {
         return res
           .status(400)
           .json({ error: { message: "User of this lead does not exist" } });
-      }
-      if (
-        lead?.status == leadsStatusEnums.REPORT_ACCEPTED ||
-        lead?.status == leadsStatusEnums.REPORT_REJECTED
-      ) {
-        return res
-          .status(400)
-          .json({ error: { message: "You can not update the status." } });
       }
       if (
         //@ts-ignore
@@ -259,6 +256,22 @@ export class LeadsController {
           },
           { new: true }
         );
+      }
+      if (
+        input.status === leadsStatusEnums.REPROCESS &&
+        lead.status !== leadsStatusEnums.REPORT_REJECTED
+      ) {
+        return res.status(400).json({
+          error: {
+            message: `You can not reprocess the ${lead.status} lead.`,
+          },
+        });
+      }
+      if (input.status === leadsStatusEnums.REPROCESS) {
+        const dataToSend = {
+          leadId: lead.bid,
+        };
+        leadReprocessWebhook(dataToSend);
       }
       if (
         lead?.status != leadsStatusEnums.REPORTED &&
@@ -760,11 +773,6 @@ export class LeadsController {
       } else {
         dataToFind.bid = user?.buyerId;
       }
-      // if (user?.credits == 0 && user?.role == RolesEnum.USER) {
-      //   return res
-      //     .status(200)
-      //     .json({ error: "Insufficient credits!", data: [] });
-      // }
       if (status) {
         dataToFind.status = status;
       }
@@ -945,7 +953,7 @@ export class LeadsController {
                 leadsStatusEnums.REPORTED,
                 leadsStatusEnums.REPORT_ACCEPTED,
                 leadsStatusEnums.REPORT_REJECTED,
-                // leadsStatusEnums.ARCHIVED,
+                leadsStatusEnums.REPROCESS,
               ],
             },
           },
@@ -974,11 +982,7 @@ export class LeadsController {
 
         dataToFind.bid = user?.buyerId;
       }
-      // if (user?.credits == 0 && user?.role == RolesEnum.USER) {
-      //   return res
-      //     .status(200)
-      //     .json({ message: "Insufficient credits!", data: [] });
-      // }
+
       if (_req.query.search) {
         dataToFind = {
           ...dataToFind,
@@ -1381,7 +1385,8 @@ export class LeadsController {
                 leadsStatusEnums.REPORTED,
                 leadsStatusEnums.REPORT_ACCEPTED,
                 leadsStatusEnums.REPORT_REJECTED,
-                // leadsStatusEnums.ARCHIVED,
+                leadsStatusEnums.REPROCESS,
+
                 leadsStatusEnums.VALID,
               ],
             },
@@ -1462,17 +1467,7 @@ export class LeadsController {
                   bid: 0,
                   leadsCost: 0,
                   updatedAt: 0,
-                  // users: {
-                  //   $mergeObjects: [
-                  //     {
-                  //       userData: "$clientName", // Replace with the actual path to the user's _id field
-                  //       // userCount: "$user.userCount"
-                  //     },
-                  //     {
-                  //       accountManager: "$accountManager", // Populate "businessDetailsId" with the "businessDetails" data
-                  //     },
-                  //   ],
-                  // },
+
                   "leads.c1": 0,
                   "clientName.password": 0,
                   "clientName.autoCharge": 0,
@@ -1538,10 +1533,6 @@ export class LeadsController {
         });
       });
 
-      // Use Promise.all to wait for all promises to resolve
-      // Promise.all(promises)
-      //   .then((updatedResults) => {
-      // Handle the updatedResults here
       const leadsCount = query.leadsCount[0]?.count || 0;
 
       const totalPages = Math.ceil(leadsCount / perPage);
