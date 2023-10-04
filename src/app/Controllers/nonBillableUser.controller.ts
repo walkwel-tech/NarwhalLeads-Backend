@@ -7,7 +7,7 @@ import { ONBOARDING_KEYS } from "../../utils/constantFiles/OnBoarding.keys";
 import { createCustomerOnRyft } from "../../utils/createCustomer/createOnRyft";
 import {
   BUSINESS_DETAILS,
-  CARD_DETAILS,
+  // CARD_DETAILS,
   LEAD_DETAILS,
 } from "../../utils/constantFiles/signupFields";
 
@@ -57,24 +57,24 @@ export class nonBillableUsersController {
             {
               key: ONBOARDING_KEYS.BUSINESS_DETAILS,
               pendingFields: [
-                "businessIndustry",
-                "businessName",
-                "businessSalesNumber",
-                "businessPostCode",
-                "address1",
-                "businessOpeningHours",
-                "businessCity",
+                BUSINESS_DETAILS.BUSINESS_INDUSTRY,
+                BUSINESS_DETAILS.BUSINESS_NAME,
+                BUSINESS_DETAILS.BUSINESS_SALES_NUMBER,
+                BUSINESS_DETAILS.BUSINESS_POST_CODE,
+                BUSINESS_DETAILS.ADDRESS1,
+                BUSINESS_DETAILS.BUSINESS_OPENING_HOURS,
+                BUSINESS_DETAILS.BUSINESS_CITY,
               ],
               dependencies: [],
             },
             {
               key: ONBOARDING_KEYS.LEAD_DETAILS,
               pendingFields: [
-                "daily",
-                "leadSchedule",
-                "postCodeTargettingList",
+                LEAD_DETAILS.DAILY,
+                LEAD_DETAILS.LEAD_SCHEDULE,
+                LEAD_DETAILS.POSTCODE_TARGETTING_LIST,
               ],
-              dependencies: ["businessIndustry"],
+              dependencies: [BUSINESS_DETAILS.BUSINESS_INDUSTRY],
             },
             {
               key: ONBOARDING_KEYS.CARD_DETAILS,
@@ -214,35 +214,6 @@ export class nonBillableUsersController {
       ) {
         const dataToUpdate = {
           isCreditsAndBillingEnabled: input.isCreditsAndBillingEnabled,
-          onBoarding: [
-            {
-              key: ONBOARDING_KEYS.BUSINESS_DETAILS,
-              pendingFields: [
-                BUSINESS_DETAILS.BUSINESS_INDUSTRY,
-                BUSINESS_DETAILS.BUSINESS_NAME,
-                BUSINESS_DETAILS.BUSINESS_SALES_NUMBER,
-                BUSINESS_DETAILS.BUSINESS_POST_CODE,
-                BUSINESS_DETAILS.ADDRESS1,
-                BUSINESS_DETAILS.BUSINESS_OPENING_HOURS,
-                BUSINESS_DETAILS.BUSINESS_CITY,
-              ],
-              dependencies: [],
-            },
-            {
-              key: ONBOARDING_KEYS.LEAD_DETAILS,
-              pendingFields: [
-                LEAD_DETAILS.DAILY,
-                LEAD_DETAILS.LEAD_SCHEDULE,
-                LEAD_DETAILS.POSTCODE_TARGETTING_LIST,
-              ],
-              dependencies: [BUSINESS_DETAILS.BUSINESS_INDUSTRY],
-            },
-            {
-              key: ONBOARDING_KEYS.CARD_DETAILS,
-              pendingFields: [CARD_DETAILS.CARD_NUMBER],
-              dependencies: [],
-            },
-          ],
         };
         await User.findByIdAndUpdate(id, dataToUpdate, { new: true });
       } else {
