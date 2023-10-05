@@ -41,6 +41,11 @@ export class nonBillableUsersController {
         const allInvites = await User.findOne({ role: RolesEnum.NON_BILLABLE })
           .sort({ rowIndex: -1 })
           .limit(1);
+        const accManagers = await User.aggregate([
+          { $match: { role: RolesEnum.ACCOUNT_MANAGER } },
+          { $sample: { size: 1 } },
+        ]);
+        let accountManager = accManagers[0];
         const dataToSave = {
           firstName: input.firstName,
           lastName: input.lastName,
@@ -53,6 +58,7 @@ export class nonBillableUsersController {
           //@ts-ignore
           rowIndex: allInvites?.rowIndex + 1 || 0,
           credits: 0,
+          accountManager: accountManager._id,
           onBoarding: [
             {
               key: ONBOARDING_KEYS.BUSINESS_DETAILS,

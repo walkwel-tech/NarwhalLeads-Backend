@@ -25,7 +25,7 @@ import { CardDetailsInterface } from "../../types/CardDetailsInterface";
 import { PAYMENT_TYPE_ENUM } from "../../utils/Enums/paymentType.enum";
 import * as cron from "node-cron";
 import { TransactionInterface } from "../../types/TransactionInterface";
-import { invoiceInterface } from "../../types/InvoiceInterface";
+import { InvoiceInterface } from "../../types/InvoiceInterface";
 import { PAYMENT_STATUS } from "../../utils/Enums/payment.status";
 
 interface paymentParams {
@@ -71,6 +71,7 @@ export const weeklypayment = async () => {
 
     const user = await User.find({
       paymentMethod: paymentMethodEnum.WEEKLY_PAYMENT_METHOD,
+      isDeleted: false,
     });
     let leadcpl: number;
     if (!user || user?.length == 0) {
@@ -163,7 +164,7 @@ export const weeklypayment = async () => {
                         _res_.data?.id
                       )
                         .then(async (res: any) => {
-                          const dataToSaveInInvoice: Partial<invoiceInterface> =
+                          const dataToSaveInInvoice: Partial<InvoiceInterface> =
                             {
                               userId: user.id,
                               transactionId: transaction.id,
@@ -182,7 +183,7 @@ export const weeklypayment = async () => {
                               0,
                               _res_.data?.id
                             ).then(async (res: any) => {
-                              const dataToSaveInInvoice: Partial<invoiceInterface> =
+                              const dataToSaveInInvoice: Partial<InvoiceInterface> =
                                 {
                                   userId: user.id,
                                   transactionId: transaction.id,
@@ -229,6 +230,7 @@ const getUsersToCharge = async () => {
       $lt: ["$credits", "$triggerAmount"],
     },
     paymentMethod: paymentMethodEnum.AUTOCHARGE_METHOD,
+    isDeleted: false,
   }).populate("businessDetailsId");
   return data;
 };

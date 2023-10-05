@@ -56,13 +56,9 @@ export class BusinessDetailsController {
     const Business = new BusinessDetailsInput();
     (Business.businessIndustry = input.businessIndustry),
       (Business.businessName = input.businessName),
-      //@ts-ignore
-      // (Business.businessLogo = String(req.file?.filename)),
       (Business.businessSalesNumber = input.businessSalesNumber),
       (Business.address1 = input.address1),
-      // (Business.businessAddress = input.businessAddress),
       (Business.businessCity = input.businessCity),
-      // (Business.businessCountry = input.businessCountry),
       (Business.businessPostCode = input.businessPostCode);
     Business.businessOpeningHours = JSON.parse(input?.businessOpeningHours);
     const errors = await validate(Business);
@@ -140,7 +136,6 @@ export class BusinessDetailsController {
         // businessOpeningHours: (input?.businessOpeningHours),
       };
       if (req?.file) {
-        //@ts-ignore
         dataToSave.businessLogo = `${FileEnum.PROFILEIMAGE}${req?.file.filename}`;
       }
       const userData = await BusinessDetails.create(dataToSave);
@@ -281,7 +276,7 @@ export class BusinessDetailsController {
         // country_name: input.businessCountry,
         phone: input?.businessSalesNumber,
         businessId: userData?.id,
-        country_name: ""
+        country_name: "",
       };
       const paramsObj = Object.values(params).some(
         (value: any) => value === undefined
@@ -483,14 +478,13 @@ export class BusinessDetailsController {
         const fields = findUpdatedFields(userForActivity, userAfterMod);
         const userr = await User.findOne({ businessDetailsId: req.params.id });
         const isEmpty = Object.keys(fields.updatedFields).length === 0;
+        let user: Partial<UserInterface> = req.user ?? ({} as UserInterface);
 
         if (!isEmpty && userr?.isSignUpCompleteWithCredit) {
           const activity = {
-            //@ts-ignore
-            actionBy: req?.user?.role,
+            actionBy: user.role,
             actionType: ACTION.UPDATING,
             targetModel: MODEL_ENUM.BUSINESS_DETAILS,
-            //@ts-ignore
             userEntity: userr?.id,
             originalValues: fields.oldFields,
             modifiedValues: fields.updatedFields,
@@ -513,14 +507,14 @@ export class BusinessDetailsController {
             serviceDataForActivityLogs,
             serviceData
           );
+          let user: Partial<UserInterface> = req.user ?? ({} as UserInterface);
+
           const isEmpty = Object.keys(fields.updatedFields).length === 0;
           if (!isEmpty && userr?.isSignUpCompleteWithCredit) {
             const activity = {
-              //@ts-ignore
-              actionBy: req?.user?.role,
+              actionBy: user?.role,
               actionType: ACTION.UPDATING,
               targetModel: MODEL_ENUM.USER_SERVICE_DETAILS,
-              //@ts-ignore
               userEntity: userr?.id,
               originalValues: fields.oldFields,
               modifiedValues: fields.updatedFields,
@@ -560,19 +554,18 @@ export class BusinessDetailsController {
   };
 
   static showById = async (req: Request, res: Response): Promise<any> => {
-    const currentUser = req.user;
     const Id = req.params.id;
     try {
+      const userData = await User.findById(Id).populate("businessDetailsId");
       const data = await BusinessDetails.find({
         _id: Id,
         isDeleted: false,
       });
+      let user: Partial<UserInterface> = req.user ?? ({} as UserInterface);
 
       if (
-        //@ts-ignore
-        currentUser?.role == RolesEnum.INVITED &&
-        //@ts-ignore
-        currentUser?.businessDetailsId != Id
+        user?.role == RolesEnum.INVITED &&
+        userData?.businessDetailsId !== new ObjectId(Id)
       ) {
         return res.status(403).json({
           error: { message: "You dont't have access to this resource.!" },
@@ -629,19 +622,16 @@ export class BusinessDetailsController {
     const Business = new BusinessDetailsInput();
     (Business.businessIndustry = input.businessIndustry),
       (Business.businessName = input.businessName),
-      //@ts-ignore
-      // (Business.businessLogo = String(req.file?.filename)),
       (Business.businessSalesNumber = input.businessSalesNumber),
       (Business.address1 = input.address1),
-      // (Business.businessAddress = input.businessAddress),
       (Business.businessCity = input.businessCity),
-      // (Business.businessCountry = input.businessCountry),
       (Business.businessPostCode = input.businessPostCode);
     Business.businessOpeningHours = JSON.parse(input?.businessOpeningHours);
     const isBusinessNameExist = await BusinessDetails.findOne({
       businessName: input.businessName,
     });
-    const user: UserInterface = await User.findById(input.userId) ?? {} as UserInterface
+    const user: UserInterface =
+      (await User.findById(input.userId)) ?? ({} as UserInterface);
 
     if (isBusinessNameExist) {
       return res
@@ -667,15 +657,15 @@ export class BusinessDetailsController {
         // businessOpeningHours: (input?.businessOpeningHours),
       };
       if (req?.file) {
-        //@ts-ignore
         dataToSave.businessLogo = `${FileEnum.PROFILEIMAGE}${req?.file.filename}`;
       }
       const userData = await BusinessDetails.create(dataToSave);
 
-      const industry: BuisnessIndustriesInterface = await BuisnessIndustries.findOne({
-        industry: input?.businessIndustry,
-      }) ?? {} as BuisnessIndustriesInterface
-      const additionalColumns:any = additionalColumnsForLeads(
+      const industry: BuisnessIndustriesInterface =
+        (await BuisnessIndustries.findOne({
+          industry: input?.businessIndustry,
+        })) ?? ({} as BuisnessIndustriesInterface);
+      const additionalColumns: any = additionalColumnsForLeads(
         industry?.columns.length
       );
       industry?.columns.push(additionalColumns);
@@ -738,7 +728,7 @@ export class BusinessDetailsController {
         // country_name: input.businessCountry,
         phone: input?.businessSalesNumber,
         businessId: userData?.id,
-        country_name: ""
+        country_name: "",
       };
       const paramsObj = Object.values(params).some(
         (value: any) => value === undefined

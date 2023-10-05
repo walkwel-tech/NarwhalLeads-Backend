@@ -1,8 +1,11 @@
-import {model, Model} from 'mongoose';
+import { model, Model } from "mongoose";
 
-import {invoiceInterface} from '../../types/InvoiceInterface';
-import {invoiceSchema} from "../../database/schemas/invoiceSchema";
+import { InvoiceInterface } from "../../types/InvoiceInterface";
+import { invoiceSchema } from "../../database/schemas/invoiceSchema";
 
-const Invoice: Model<invoiceInterface> = model<invoiceInterface>('Invoice', invoiceSchema);
+const Invoice: Model<InvoiceInterface> = model<InvoiceInterface>(
+  "Invoice",
+  invoiceSchema
+);
 
-export {Invoice};
+export { Invoice };

@@ -1,22 +1,19 @@
 import { leadDetailsSubmission } from "../../utils/webhookUrls/leadDetailsSubmission";
 import { Leads } from "../Models/Leads";
-import * as cron from "node-cron"
-
+import * as cron from "node-cron";
 
 export function autoWebhookURLHitLeadSubmission() {
-  
-    // Schedule a job to send batched updates at the top of each hour
-    cron.schedule("0 * * * *", () => {
-      sendBatchedUpdates();
-    });
-  }
+  // Schedule a job to send batched updates at the top of each hour
+  cron.schedule("0 * * * *", () => {
+    sendBatchedUpdates();
+  });
+}
 
-
-export async function sendBatchedUpdates():Promise<any> {
+export async function sendBatchedUpdates(): Promise<any> {
   const currentTime = Date.now();
   const updatesToBeSent = [];
   let leadStatusUpdates = await Leads.find({ webhookHits: false });
- 
+
   for (const id in leadStatusUpdates) {
     const update = leadStatusUpdates[id];
     //@ts-ignore
@@ -29,25 +26,21 @@ export async function sendBatchedUpdates():Promise<any> {
   if (updatesToBeSent.length > 0) {
     // Send the batched updates to the webhook URL using Axios (or your preferred HTTP library)
     //create foreach for all status upda
- return  updatesToBeSent.map((data)=>{
-       return  leadDetailsSubmission(data)
-      .then((response) => {
-        console.log("Batched updates sent successfully.");
-      })
-      .catch((error) => {
-        console.error("Error sending batched updates:", error);
-      });
-    })
-   
+    return updatesToBeSent.map((data) => {
+      return leadDetailsSubmission(data)
+        .then((response) => {
+          console.log("Batched updates sent successfully.");
+        })
+        .catch((error) => {
+          console.error("Error sending batched updates:", error);
+        });
+    });
   }
 }
 
-
-
 export function handleFailedWebhookURLHitLeadSubmissionOver12Hours() {
-
-  cron.schedule('0 */12 * * *', () => {
-//   cron.schedule("* * * * *", () => {
+  cron.schedule("0 */12 * * *", () => {
+    //   cron.schedule("* * * * *", () => {
 
     sendBatchedUpdates();
   });
