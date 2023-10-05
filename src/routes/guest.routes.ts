@@ -5,6 +5,17 @@ import { OnlyAdmins } from "../app/Middlewares";
 
 const guestRoutes: Router = Router();
 guestRoutes.post(
+  "/handle-Indutsry-Null-Values-In-Leads-Table",
+  OnlyAdmins,
+  GuestController.handleIndutsryNullValuesInLeadsTable
+);
+guestRoutes.get(
+  "/assign-Randoms-AccountManager-To-Users",
+  OnlyAdmins,
+  GuestController.assignRandomsAccountManagersToUsers
+);
+
+guestRoutes.post(
   "/managePrefLeads",
   OnlyAdmins,
   GuestController.managePrefForLeads
@@ -36,7 +47,7 @@ guestRoutes.post(
   GuestController.runCommandToSetClientTableColumns
 );
 guestRoutes.post(
-  "/setBusinessDetails",
+  "/set-Business-Details",
   OnlyAdmins,
   GuestController.setBusinessDetails
 );

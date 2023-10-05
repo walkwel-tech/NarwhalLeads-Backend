@@ -1,15 +1,15 @@
-import { activityLogs } from "./activityLogs"
-import { autoChargePayment, weeklypayment } from "./autoCharge"
-import { db_dump } from "./db.dump"
-import { autoWebhookURLHitLeadSubmission } from "./leadStatusUpdateWebhook"
-import { mailForTotalLeadsInDay, outOfFunds } from "./sendMail"
+import { activityLogs } from "./activityLogs";
+import { autoChargePayment, weeklypayment } from "./autoCharge";
+import { db_dump } from "./db.dump";
+import { autoWebhookURLHitLeadSubmission } from "./leadStatusUpdateWebhook";
+import { mailForTotalLeadsInDay } from "./sendMail";
 
-export const autoUpdateTasks=()=>{
-    autoChargePayment()
-    weeklypayment()
-    mailForTotalLeadsInDay()
-    autoWebhookURLHitLeadSubmission()
-    outOfFunds()
-    activityLogs()
-    db_dump()
-}
+export const autoUpdateTasks = () => {
+  autoChargePayment();
+  weeklypayment();
+  mailForTotalLeadsInDay();
+  autoWebhookURLHitLeadSubmission();
+  // outOfFunds()
+  activityLogs();
+  db_dump();
+};
