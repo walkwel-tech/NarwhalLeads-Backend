@@ -22,6 +22,7 @@ import {
   sendEmailForLeadStatusAccept,
   sendEmailForLeadStatusReject,
   sendEmailForNewLead,
+  sendEmailForOutOfFunds,
 } from "../Middlewares/mail";
 import { transactionTitle } from "../../utils/Enums/transaction.title.enum";
 import { leadsAlertsEnums } from "../../utils/Enums/leads.Alerts.enum";
@@ -168,6 +169,12 @@ export class LeadsController {
         } else {
           console.log("Email already send.");
         }
+      }
+      if (leftCredits <= 0) {
+        sendEmailForOutOfFunds(user.email, {
+          name: user.firstName + " " + user.lastName,
+          credits: user.credits,
+        });
       }
       await User.updateMany(
         { invitedById: user?.id },

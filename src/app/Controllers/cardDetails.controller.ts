@@ -63,7 +63,7 @@ import { AdminSettingsInterface } from "../../types/AdminSettingInterface";
 import { CardDetailsInterface } from "../../types/CardDetailsInterface";
 import { TransactionInterface } from "../../types/TransactionInterface";
 import { RyftPaymentInterface } from "../../types/RyftPaymentInterface";
-import { invoiceInterface } from "../../types/InvoiceInterface";
+import { InvoiceInterface } from "../../types/InvoiceInterface";
 import {
   BusinessDetailsInterface,
   isBusinessObjectAndIncludesBusinessHours,
@@ -345,7 +345,6 @@ export class CardDetailsControllers {
     const input = req.body;
     const updateCardInput = new UpdateCardInput();
 
-    // @ts-ignore
     delete input.password;
     const errors = await validate(updateCardInput);
 
@@ -465,8 +464,9 @@ export class CardDetailsControllers {
     req: Request,
     res: Response
   ): Promise<any> => {
-    //@ts-ignore
-    const userId = req.user?.id;
+    let curentUser: Partial<UserInterface> = req.user ?? ({} as UserInterface);
+
+    const userId = curentUser?.id;
     const input = req.body;
 
     let user: UserInterface | null = await User.findById(userId);
@@ -767,7 +767,6 @@ export class CardDetailsControllers {
               const formattedPostCodes = data?.postCodeTargettingList
                 .map((item: any) => item.postalCode)
                 .flat();
-              //@ts-ignore
               data.area = formattedPostCodes;
               sendEmailForFullySignupToAdmin(data);
             }
@@ -802,7 +801,7 @@ export class CardDetailsControllers {
               businessName: business?.businessName,
             };
             sendEmailForPaymentSuccess(userId?.email, message);
-            let invoice;
+            let invoice: InvoiceInterface | null;
             if (userId?.xeroContactId) {
               let freeCredits: number;
               if (params.freeCredits) {
@@ -813,14 +812,12 @@ export class CardDetailsControllers {
               generatePDF(
                 userId?.xeroContactId,
                 transactionTitle.CREDITS_ADDED,
-                //@ts-ignore
                 originalAmount,
-                //@ts-ignore
                 freeCredits,
                 input.data.id
               )
                 .then(async (res: any) => {
-                  const dataToSaveInInvoice: Partial<invoiceInterface> = {
+                  const dataToSaveInInvoice: Partial<InvoiceInterface> = {
                     userId: userId?.id,
                     transactionId: transaction.id,
                     price: userId?.credits,
@@ -839,16 +836,13 @@ export class CardDetailsControllers {
                 .catch(async (err) => {
                   refreshToken().then(async (res) => {
                     generatePDF(
-                      //@ts-ignore
                       userId?.xeroContactId,
                       transactionTitle.CREDITS_ADDED,
-                      //@ts-ignore
                       originalAmount,
-                      //@ts-ignore
                       freeCredits,
                       input.data.id
                     ).then(async (res: any) => {
-                      const dataToSaveInInvoice: Partial<invoiceInterface> = {
+                      const dataToSaveInInvoice: Partial<InvoiceInterface> = {
                         userId: userId?.id,
                         transactionId: transaction.id,
                         price: userId?.credits,

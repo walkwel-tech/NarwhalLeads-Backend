@@ -6,6 +6,7 @@ import { LeadTablePreference } from "../Models/LeadTablePreference";
 import { UserInterface } from "../../types/UserInterface";
 import { ClientTablePreference } from "../Models/ClientTablePrefrence";
 import { BusinessDetails } from "../Models/BusinessDetails";
+import { Leads } from "../Models/Leads";
 
 export class GuestController {
   static setLeadPreferenceAccordingToIndustryInDB = async (
@@ -249,6 +250,46 @@ export class GuestController {
       }
     });
     res.send({ data: "successfully inserted" });
+  };
+
+  static handleIndutsryNullValuesInLeadsTable = async (
+    _req: any,
+    res: Response
+  ) => {
+    const leads = await Leads.find();
+    leads.map(async (lead) => {
+      return new Promise(async (resolve, reject) => {
+        if (lead.industryId == null || !lead.industryId) {
+          const user = await User.findOne({ buyerId: lead.bid });
+          if (user) {
+            const leadUpdated = await Leads.findByIdAndUpdate(lead.id, {
+              industryId: user?.businessIndustryId,
+            });
+            resolve(leadUpdated);
+          } else {
+            reject("user not found");
+          }
+        }
+      });
+    });
+    return res.json({ message: "data updated" });
+  };
+
+  static assignRandomsAccountManagersToUsers = async (
+    _req: any,
+    res: Response
+  ) => {
+    const users = await User.find({ role: RolesEnum.USER });
+    users.map((user) => {
+      return new Promise(async (res, rej) => {
+        const am = await User.aggregate([
+          { $match: { role: RolesEnum.ACCOUNT_MANAGER } },
+          { $sample: { size: 1 } },
+        ]);
+        await User.findByIdAndUpdate(user.id, { accountManager: am[0]._id });
+      });
+    });
+    return res.json({ data: users });
   };
 }
 

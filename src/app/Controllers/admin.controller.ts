@@ -4,7 +4,6 @@ import { ClientTablePreference } from "../Models/ClientTablePrefrence";
 import { FAQ } from "../Models/Faq";
 import { clientTablePreference } from "../../utils/constantFiles/clientTablePreferenceAdmin";
 import { Notifications } from "../Models/Notifications";
-import { ObjectID } from "bson";
 import { generateAuthToken } from "../../utils/jwt";
 import { User } from "../Models/User";
 import { RolesEnum } from "../../types/RolesEnum";
@@ -12,6 +11,11 @@ import { AdminSettingsInterface } from "../../types/AdminSettingInterface";
 import { ClientTablePreferenceInterface } from "../../types/clientTablePrefrenceInterface";
 import { UserInterface } from "../../types/UserInterface";
 import { columnsObjects } from "../../types/columnsInterface";
+import mongoose from "mongoose";
+
+interface QueryParams {
+  userId: string;
+}
 
 export class AdminSettingsController {
   static create = async (req: Request, res: Response) => {
@@ -118,32 +122,36 @@ export class AdminSettingsController {
     }
   };
 
-  static createPreference = async (req: Request, res: Response) => {
-    //@ts-ignore
+  static createPreference = async (
+    // req: Request<QueryParams, {}>,
+    req: Request,
+    res: Response
+  ) => {
     const input = req.body;
+    let user: Partial<UserInterface> = req.user ?? ({} as UserInterface);
     try {
       const checkExist = await ClientTablePreference.findOne();
 
       if (!checkExist) {
-        //@ts-ignore
-        const columns = input?.columns.sort((a, b) => a.index - b.index);
+        const columns = input?.columns.sort(
+          (a: columnsObjects, b: columnsObjects) => a.index - b.index
+        );
         let dataToSave: Partial<ClientTablePreferenceInterface> =
           {
             columns,
-            //@ts-ignore
-            userId: req.user?.id,
+            userId: user?._id,
           } ?? ({} as ClientTablePreferenceInterface);
         const Preference = await ClientTablePreference.create(dataToSave);
         return res.json({ data: Preference });
       } else {
         const data = await ClientTablePreference.findByIdAndUpdate(
           checkExist._id,
-          //@ts-ignore
-          { columns: input.columns, userId: req.user.id },
+          { columns: input.columns, userId: user?._id },
           { new: true }
         ).lean();
-        //@ts-ignore
-        const col = data?.columns.sort((a, b) => a.index - b.index);
+        const col = data?.columns.sort(
+          (a: columnsObjects, b: columnsObjects) => a.index - b.index
+        );
         return res.json({ data: { ...data, columns: col } });
       }
     } catch (error) {
@@ -153,12 +161,16 @@ export class AdminSettingsController {
     }
   };
 
-  static showClientTablePreference = async (req: Request, res: Response) => {
+  static showClientTablePreference = async (
+    // req: Request<QueryParams, {}, {}, Record<string, any>>,
+    req: Request,
+    res: Response
+  ) => {
     try {
-      const Preference = await ClientTablePreference.findOne({
-        //@ts-ignore
+      let user: Partial<UserInterface> = req.user ?? ({} as UserInterface);
 
-        userId: req.user.id,
+      const Preference = await ClientTablePreference.findOne({
+        userId: user?.id,
       });
       if (Preference) {
         Preference?.columns.sort(
@@ -178,25 +190,24 @@ export class AdminSettingsController {
   };
 
   static notifications = async (
-    req: Request,
+    req: Request<QueryParams, {}>,
     res: Response
   ): Promise<Response> => {
-    let dataToFind = {};
+    let dataToFind: mongoose.FilterQuery<typeof Notifications> = {};
+
     try {
       if (req.query.start && req.query.end) {
-        //@ts-ignore
         dataToFind.createdAt = {
           $gte: req.query.start,
           $lt: req.query.end,
         };
       }
       if (req.query.notificationType) {
-        //@ts-ignore
         dataToFind.notificationType = req.query.notificationType;
       }
       if (req.query.userId) {
-        //@ts-ignore
-        dataToFind.userId = new ObjectID(req.query.userId);
+        // dataToFind.userId = new ObjectID(req.query.userId);
+        dataToFind.userId = req.query.userId;
       }
 
       const data = await Notifications.find(dataToFind).sort({ createdAt: -1 });

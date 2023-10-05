@@ -139,6 +139,8 @@ export class UserLeadsController {
         if (
           user.role === RolesEnum.NON_BILLABLE &&
           !user.isCreditsAndBillingEnabled
+
+          // && !user.isUserSignup
         ) {
           await User.findByIdAndUpdate(user.id, {
             isUserSignup: true,
