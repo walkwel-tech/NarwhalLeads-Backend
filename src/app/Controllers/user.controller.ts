@@ -116,12 +116,16 @@ export class UsersControllers {
 
   static index = async (_req: any, res: Response): Promise<Response> => {
     try {
-      let sortingOrder = _req.query.sortingOrder || sort.DESC;
+      let sortingOrder = _req.query.sortBy
+        ? JSON.parse(_req.query.sortBy)[0]?.order || sort.DESC
+        : "";
+
       let filter = _req.query.clientType;
       let accountManagerBoolean = _req.query.accountManager;
       let accountManagerId = _req.query.accountManagerId;
-
-      let sortKey = _req.query.sortKey || "createdAt";
+      let sortKey = _req.query.sortBy
+        ? JSON.parse(_req.query.sortBy)[0]?.id || "createdAt"
+        : "";
       let isArchived = _req.query.isArchived || "false";
       let isActive = _req.query.isActive || "true";
       if (sortingOrder == sort.ASC) {
@@ -217,11 +221,12 @@ export class UsersControllers {
         sortObject = {};
         sortObject[sortKey] = sortingOrder;
       }
-
+      console.log("data", dataToFind);
       const [query]: any = await User.aggregate([
         {
           $facet: {
             results: [
+              { $match: dataToFind },
               {
                 $lookup: {
                   from: "businessdetails",
@@ -257,7 +262,6 @@ export class UsersControllers {
                   as: "userServiceId",
                 },
               },
-              { $match: dataToFind },
 
               //@ts-ignore
               { $sort: sortObject },
@@ -312,6 +316,7 @@ export class UsersControllers {
           },
         },
       ]);
+
       query.results.map((item: any) => {
         let businessDetailsId = Object.assign({}, item["businessDetailsId"][0]);
         let userLeadsDetailsId = Object.assign(
