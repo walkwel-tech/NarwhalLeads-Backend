@@ -41,6 +41,10 @@ import { APP_ENV } from "../../utils/Enums/serverModes.enum";
 import { UserInterface } from "../../types/UserInterface";
 import { leadReprocessWebhook } from "../../utils/webhookUrls/leadsReprocessWebhook";
 import { LeadsInterface } from "../../types/LeadsInterface";
+import {
+  UserLeadsDetailsInterface,
+  isUserLeadDetailsObject,
+} from "../../types/LeadDetailsInterface";
 const ObjectId = mongoose.Types.ObjectId;
 
 const LIMIT = 10;
@@ -203,7 +207,23 @@ export class LeadsController {
         phone: input.phone1,
         email: input.email,
       };
-      sendEmailForNewLead(user.email, message);
+      let emails: string[] = [];
+      const invitedUsers = await User.find({
+        role: RolesEnum.INVITED,
+        invitedById: user.id,
+        isDeleted: false,
+      }).populate("userLeadsDetailsId");
+
+      invitedUsers.map((iUser) => {
+        const userLeadFreq: UserLeadsDetailsInterface | null =
+          isUserLeadDetailsObject(user?.userLeadsDetailsId)
+            ? user?.userLeadsDetailsId
+            : null;
+        if (userLeadFreq?.leadAlertsFrequency == leadsAlertsEnums.INSTANT) {
+          emails.push(iUser.email);
+        }
+      });
+      sendEmailForNewLead(emails, message);
     }
 
     return res.json({ data: leadsSave });
@@ -954,6 +974,7 @@ export class LeadsController {
                 leadsStatusEnums.REPORT_ACCEPTED,
                 leadsStatusEnums.REPORT_REJECTED,
                 leadsStatusEnums.REPROCESS,
+                leadsStatusEnums.ARCHIVED,
               ],
             },
           },
@@ -1305,6 +1326,8 @@ export class LeadsController {
           item.leads.clientName = "Deleted User";
         }
         item.leads.status = item.status;
+        item.leads.businessName = "Deleted";
+        item.leads.businessIndustry = "Deleted";
 
         // Use explicit Promise construction
         return new Promise((resolve, reject) => {
@@ -1386,6 +1409,7 @@ export class LeadsController {
                 leadsStatusEnums.REPORT_ACCEPTED,
                 leadsStatusEnums.REPORT_REJECTED,
                 leadsStatusEnums.REPROCESS,
+                leadsStatusEnums.ARCHIVED,
 
                 leadsStatusEnums.VALID,
               ],
@@ -1498,7 +1522,7 @@ export class LeadsController {
           },
         },
       ]);
-      query.results.map((item: any) => {
+      const promises = query.results.map((item: any) => {
         if (!item["clientName"][0]?.deletedAt) {
           item.leads.clientName =
             item["clientName"][0]?.firstName +
@@ -1512,6 +1536,8 @@ export class LeadsController {
         } else {
           item.leads.clientName = "Deleted User";
         }
+        item.leads.businessName = "Deleted";
+        item.leads.businessIndustry = "Deleted";
         item.leads.status = item?.status;
 
         // Use explicit Promise construction
@@ -1522,29 +1548,39 @@ export class LeadsController {
                 item.leads.businessName = businesss?.businessName;
                 item.leads.businessIndustry = businesss?.businessIndustry;
               } else {
-                item.leads.businessName = "Deleted Business Details";
-                item.leads.businessIndustry = "Deleted Business Industry";
+                item.leads.businessName = "Deleted";
+                item.leads.businessIndustry = "Deleted";
               }
+
               resolve(item); // Resolve the promise with the modified item
             })
             .catch((error) => {
+              // item.leads.businessName = "Deleted";
+              // item.leads.businessIndustry = "Deleted";
               reject(error); // Reject the promise if there's an error
             });
         });
       });
 
-      const leadsCount = query.leadsCount[0]?.count || 0;
+      Promise.all(promises)
+        .then((updatedResults) => {
+          // Handle the updatedResults here
+          const leadsCount = query.leadsCount[0]?.count || 0;
 
-      const totalPages = Math.ceil(leadsCount / perPage);
-      return res.json({
-        data: query.results,
-        meta: {
-          perPage: perPage,
-          page: _req.query.page || 1,
-          pages: totalPages,
-          total: leadsCount,
-        },
-      });
+          const totalPages = Math.ceil(leadsCount / perPage);
+          return res.json({
+            data: query.results,
+            meta: {
+              perPage: perPage,
+              page: _req.query.page || 1,
+              pages: totalPages,
+              total: leadsCount,
+            },
+          });
+        })
+        .catch((error) => {
+          console.error(error);
+        });
       // })
       // .catch((error) => {
       //   console.error(error);
