@@ -138,11 +138,18 @@ export class nonBillableUsersController {
         .sort({ createdAt: -1 })
         .skip(skip)
         .limit(perPage);
+      const count = await User.find(dataToFind, "-password");
 
-      // if (invitedUsers.length == 0) {
-      // return res.json({ error: { message: "No Data Found" } });
-      // } else {
-      return res.json({ data: invitedUsers });
+      const totalPages = Math.ceil(count.length / perPage);
+      return res.json({
+        data: invitedUsers,
+        meta: {
+          perPage: perPage,
+          page: _req.query.page || 1,
+          pages: totalPages,
+          total: count.length,
+        },
+      });
       // }
     } catch (error) {
       return res

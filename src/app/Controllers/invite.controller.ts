@@ -1,23 +1,28 @@
 import { genSaltSync, hashSync } from "bcryptjs";
 import { Request, Response } from "express";
 import { RolesEnum } from "../../types/RolesEnum";
-import { sendEmailToInvitedAdmin, sendEmailToInvitedUser } from "../Middlewares/mail";
+import {
+  sendEmailToInvitedAdmin,
+  sendEmailToInvitedUser,
+} from "../Middlewares/mail";
 import { LeadTablePreference } from "../Models/LeadTablePreference";
 import { User } from "../Models/User";
 import { ClientTablePreference } from "../Models/ClientTablePrefrence";
+import { UserInterface } from "../../types/UserInterface";
 
 const LIMIT = 10;
 export class invitedUsersController {
   static create = async (_req: Request, res: Response) => {
+    let currentUser: Partial<UserInterface> =
+      _req.user ?? ({} as UserInterface);
+
     const input = _req.body;
-    //@ts-ignore
-    const user = await User.findById(_req.user?.id).populate(
+    const user = await User.findById(currentUser?.id).populate(
       "businessDetailsId"
     );
     try {
       const checkExist = await User.findOne({
-        //@ts-ignore
-        invitedById: _req?.user?.id,
+        invitedById: currentUser?.id,
         email: input.email,
       });
       if (checkExist) {
@@ -39,9 +44,9 @@ export class invitedUsersController {
         const credentials = {
           email: input.email,
           password: text,
-          name: input?.firstName + " "+input?.lastName,
-            //@ts-ignore
-          businessName:user?.businessDetailsId?.businessName
+          name: input?.firstName + " " + input?.lastName,
+          //@ts-ignore
+          businessName: user?.businessDetailsId?.businessName,
         };
         sendEmailToInvitedUser(input.email, credentials);
         const hashPassword = hashSync(text, salt);
@@ -51,7 +56,7 @@ export class invitedUsersController {
           .limit(1);
         const dataToSave = {
           firstName: input.firstName,
-          lastName:input.lastName,
+          lastName: input.lastName,
           email: input.email,
           password: hashPassword,
           role: RolesEnum.INVITED,
@@ -63,7 +68,7 @@ export class invitedUsersController {
           isVerified: true,
           //@ts-ignore
           rowIndex: allInvites?.rowIndex + 1 || 0,
-          credits:user?.credits
+          credits: user?.credits,
         };
 
         const data = await User.create(dataToSave);
@@ -87,45 +92,51 @@ export class invitedUsersController {
     }
   };
 
-  static show = async (_req: Request, res: Response) => {
-    //@ts-ignore
+  static show = async (_req: any, res: Response) => {
     const user = _req.user?._id;
-    //@ts-ignore
-    const perPage = _req.query && _req.query.perPage > 0 ? parseInt(_req.query.perPage) : LIMIT;
-          //@ts-ignore
-    let skip = (_req.query && _req.query.page > 0 ? parseInt(_req.query.page) - 1 : 0) * perPage;
-      let dataToFind: any = {
-        invitedById: user,
-        role:RolesEnum.INVITED,
-        isDeleted: false,
-        // isActive: JSON.parse(isActive?.toLowerCase()),
-      };
-      if (_req.query.search) {
-        dataToFind = {
-          ...dataToFind,
-          $or: [
-            //$options : 'i' used for case insensitivity search
-            { email: { $regex: _req.query.search, $options: "i" } },
-            { firstName: { $regex: _req.query.search, $options: "i" } },
-            { lastName: { $regex: _req.query.search, $options: "i" } },
-            { buyerId: { $regex: _req.query.search, $options: "i" } },
-            {
-              "businessDetailsId.businessName": {
-                $regex: _req.query.search,
-                $options: "i",
-              },
+
+    const perPage =
+      _req.query.perPage && _req?.query?.perPage > 0
+        ? parseInt(_req.query.perPage)
+        : LIMIT;
+
+    let skip =
+      (_req.query && _req.query.page > 0 ? parseInt(_req.query.page) - 1 : 0) *
+      perPage;
+    let dataToFind: any = {
+      invitedById: user,
+      role: RolesEnum.INVITED,
+      isDeleted: false,
+    };
+    if (_req.query.search) {
+      dataToFind = {
+        ...dataToFind,
+        $or: [
+          { email: { $regex: _req.query.search, $options: "i" } },
+          { firstName: { $regex: _req.query.search, $options: "i" } },
+          { lastName: { $regex: _req.query.search, $options: "i" } },
+          { buyerId: { $regex: _req.query.search, $options: "i" } },
+          {
+            "businessDetailsId.businessName": {
+              $regex: _req.query.search,
+              $options: "i",
             },
-          ],
-        };
-        skip = 0;
-      }
+          },
+        ],
+      };
+      skip = 0;
+    }
     try {
-      const invitedUsers = await User.find(dataToFind,'-password').populate("invitedById").sort({createdAt:-1}).skip(skip).limit(perPage);
+      const invitedUsers = await User.find(dataToFind, "-password")
+        .populate("invitedById")
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(perPage);
 
       // if (invitedUsers.length == 0) {
-        // return res.json({ error: { message: "No Data Found" } });
+      // return res.json({ error: { message: "No Data Found" } });
       // } else {
-        return res.json({ data: invitedUsers });
+      return res.json({ data: invitedUsers });
       // }
     } catch (error) {
       return res
@@ -134,10 +145,8 @@ export class invitedUsersController {
     }
   };
 
-  static delete = async (_req: Request, res: Response) => {
-    //@ts-ignore
+  static delete = async (_req: any, res: Response) => {
     const id = _req.params.id;
-    //@ts-ignore
     const user = _req.user?._id;
     try {
       const invitedUsers = await User.find({
@@ -160,11 +169,10 @@ export class invitedUsersController {
   };
 
   static update = async (_req: Request, res: Response) => {
-    //@ts-ignore
+    let curentUser: Partial<UserInterface> = _req.user ?? ({} as UserInterface);
     const id = _req.params.id;
-    //@ts-ignore
-    const user = _req.user?._id;
-    const input=_req.body
+    const user = curentUser?.id;
+    const input = _req.body;
     try {
       const invitedUsers = await User.find({
         invitedById: user,
@@ -175,9 +183,9 @@ export class invitedUsersController {
       if (invitedUsers.length == 0) {
         return res.status(400).json({ error: { message: "No User Found" } });
       } else {
-        const user=await User.findByIdAndUpdate(id,input,{new:true});
+        const user = await User.findByIdAndUpdate(id, input, { new: true });
 
-        return res.json({ data: user  });
+        return res.json({ data: user });
       }
     } catch (error) {
       return res
@@ -188,26 +196,30 @@ export class invitedUsersController {
 
   static addSubscribers = async (_req: Request, res: Response) => {
     const input = _req.body;
-    input.role=RolesEnum.SUBSCRIBER
-    input.isActive=true
+    input.role = RolesEnum.SUBSCRIBER;
+    input.isActive = true;
     try {
-   const data=await User.find({email:input.email, isDeleted:false,role:RolesEnum.SUBSCRIBER})
-   if(data.length>0){
-    return res.status(400).json({error:{message:"Subscriber already exist"}})
-   }
-   else{
-   const data= await User.create(input)
-   return res.json({data:data})
-   }
+      const data = await User.find({
+        email: input.email,
+        isDeleted: false,
+        role: RolesEnum.SUBSCRIBER,
+      });
+      if (data.length > 0) {
+        return res
+          .status(400)
+          .json({ error: { message: "Subscriber already exist" } });
+      } else {
+        const data = await User.create(input);
+        return res.json({ data: data });
+      }
     } catch (error) {
       return res
         .status(500)
-        .json({ error: { message: "Something went wrong." ,error} });
+        .json({ error: { message: "Something went wrong.", error } });
     }
   };
 
   static deleteSubscriber = async (_req: Request, res: Response) => {
-    //@ts-ignore
     const id = _req.params.id;
 
     try {
@@ -217,7 +229,9 @@ export class invitedUsersController {
       });
 
       if (invitedUsers.length == 0) {
-        return res.status(400).json({ error: { message: "No Subscriber Found" } });
+        return res
+          .status(400)
+          .json({ error: { message: "No Subscriber Found" } });
       } else {
         await User.findByIdAndUpdate(id, { isDeleted: true });
         return res.json({ data: { message: "Subscriber Deleted!" } });
@@ -229,89 +243,110 @@ export class invitedUsersController {
     }
   };
 
-  static indexSubscriber = async (_req: Request, res: Response) => {
-    //@ts-ignore
-    const user = _req.user?._id;
-    //@ts-ignore
-    const perPage = _req.query && _req.query.perPage > 0 ? parseInt(_req.query.perPage) : LIMIT;
-          //@ts-ignore
-    let skip = (_req.query && _req.query.page > 0 ? parseInt(_req.query.page) - 1 : 0) * perPage;
-      let dataToFind: any = {
-        isDeleted: false,
-        role:RolesEnum.SUBSCRIBER
-        // isActive: JSON.parse(isActive?.toLowerCase()),
+  static indexSubscriber = async (_req: any, res: Response) => {
+    const perPage =
+      _req.query && _req.query.perPage > 0
+        ? parseInt(_req.query.perPage)
+        : LIMIT;
+
+    let skip =
+      (_req.query && _req.query.page > 0 ? parseInt(_req.query.page) - 1 : 0) *
+      perPage;
+    let dataToFind: any = {
+      isDeleted: false,
+      role: RolesEnum.SUBSCRIBER,
+    };
+    if (_req.query.search) {
+      dataToFind = {
+        ...dataToFind,
+        $or: [
+          //$options : 'i' used for case insensitivity search
+          { email: { $regex: _req.query.search, $options: "i" } },
+          { firstName: { $regex: _req.query.search, $options: "i" } },
+          { lastName: { $regex: _req.query.search, $options: "i" } },
+        ],
       };
-      if (_req.query.search) {
-        dataToFind = {
-          ...dataToFind,
-          $or: [
-            //$options : 'i' used for case insensitivity search
-            { email: { $regex: _req.query.search, $options: "i" } },
-            { firstName: { $regex: _req.query.search, $options: "i" } },
-            { lastName: { $regex: _req.query.search, $options: "i" } },
-          ],
-        };
-        skip = 0;
-      }
+      skip = 0;
+    }
     try {
-      const invitedUsers = await User.find(dataToFind).sort({createdAt:-1}).skip(skip).limit(perPage);
+      const invitedUsers = await User.find(dataToFind)
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(perPage);
 
       // if (invitedUsers.length == 0) {
-        // return res.json({ error: { message: "No Data Found" } });
+      // return res.json({ error: { message: "No Data Found" } });
       // } else {
-        return res.json({ data: invitedUsers });
+      return res.json({ data: invitedUsers });
       // }
     } catch (error) {
       return res
         .status(500)
-        .json({ error: { message: "Something went wrong." ,error} });
+        .json({ error: { message: "Something went wrong.", error } });
     }
   };
 
   static addAdmins = async (_req: Request, res: Response) => {
     const input = _req.body;
     input.email = String(input.email).toLowerCase();
-    input.role=RolesEnum.ADMIN
-    input.isActive=true
+    input.role = RolesEnum.ADMIN;
+    input.isActive = true;
 
     try {
-   const data=await User.find({email:input.email, isDeleted:false, role:RolesEnum.ADMIN})
-  //  const user=await User.find({email:input.email,isDeleted:false})
-   if(data.length>0){
-    return res.status(400).json({error:{message:"Admin already exist"}})
-   }
-  //  else if(user.length>0){
-  //   return res.status(400).json({error:{message:"Email already registered with an User."}})
-  //  }
-   else{
-    const salt = genSaltSync(10);
-    const text = randomString(8, true);
-    const dataToSend={
-      name:input.firstName + " " + input.lastName,
-      password:text
-    }
-    const hashPassword = hashSync(text, salt);
-    console.log("password",text)
-    input.password=hashPassword
-    sendEmailToInvitedAdmin(input.email,dataToSend)
-     const data= await User.create(input)
-     const adminExist:any=await User.findOne({role:RolesEnum.SUPER_ADMIN})
-     const adminPref:any= await LeadTablePreference.findOne({userId:adminExist.id})
-     const adminClientPref:any= await ClientTablePreference.findOne({userId:adminExist._id})
-     await LeadTablePreference.create({userId:data.id,columns:adminPref.columns})
- await ClientTablePreference.create({columns:adminClientPref.columns, userId:data.id})
-   const show=await User.findById(data.id,'-password')
-   return res.json({data:show})
-   }
+      const data = await User.find({
+        email: input.email,
+        isDeleted: false,
+        role: RolesEnum.ADMIN,
+      });
+      //  const user=await User.find({email:input.email,isDeleted:false})
+      if (data.length > 0) {
+        return res
+          .status(400)
+          .json({ error: { message: "Admin already exist" } });
+      }
+      //  else if(user.length>0){
+      //   return res.status(400).json({error:{message:"Email already registered with an User."}})
+      //  }
+      else {
+        const salt = genSaltSync(10);
+        const text = randomString(8, true);
+        const dataToSend = {
+          name: input.firstName + " " + input.lastName,
+          password: text,
+        };
+        const hashPassword = hashSync(text, salt);
+        console.log("password", text);
+        input.password = hashPassword;
+        sendEmailToInvitedAdmin(input.email, dataToSend);
+        const data = await User.create(input);
+        const adminExist: any = await User.findOne({
+          role: RolesEnum.SUPER_ADMIN,
+        });
+        const adminPref: any = await LeadTablePreference.findOne({
+          userId: adminExist.id,
+        });
+        const adminClientPref: any = await ClientTablePreference.findOne({
+          userId: adminExist._id,
+        });
+        await LeadTablePreference.create({
+          userId: data.id,
+          columns: adminPref.columns,
+        });
+        await ClientTablePreference.create({
+          columns: adminClientPref.columns,
+          userId: data.id,
+        });
+        const show = await User.findById(data.id, "-password");
+        return res.json({ data: show });
+      }
     } catch (error) {
       return res
         .status(500)
-        .json({ error: { message: "Something went wrong." ,error} });
+        .json({ error: { message: "Something went wrong.", error } });
     }
   };
 
   static deleteAdmin = async (_req: Request, res: Response) => {
-    //@ts-ignore
     const id = _req.params.id;
 
     try {
@@ -333,44 +368,58 @@ export class invitedUsersController {
     }
   };
 
-  static indexAdmin = async (_req: Request, res: Response) => {
-    //@ts-ignore
-    const user = _req.user?._id;
-    //@ts-ignore
-    const perPage = _req.query && _req.query.perPage > 0 ? parseInt(_req.query.perPage) : LIMIT;
-          //@ts-ignore
-    let skip = (_req.query && _req.query.page > 0 ? parseInt(_req.query.page) - 1 : 0) * perPage;
-      let dataToFind: any = {
-        isDeleted: false,
-        role:RolesEnum.ADMIN
-        // isActive: JSON.parse(isActive?.toLowerCase()),
+  static indexAdmin = async (_req: any, res: Response) => {
+    const perPage =
+      _req.query && _req.query.perPage > 0
+        ? parseInt(_req.query.perPage)
+        : LIMIT;
+
+    let skip =
+      (_req.query && _req.query.page > 0 ? parseInt(_req.query.page) - 1 : 0) *
+      perPage;
+    let dataToFind: any = {
+      isDeleted: false,
+      role: RolesEnum.ADMIN,
+    };
+    if (_req.query.search) {
+      dataToFind = {
+        ...dataToFind,
+        $or: [
+          //$options : 'i' used for case insensitivity search
+          { email: { $regex: _req.query.search, $options: "i" } },
+          { firstName: { $regex: _req.query.search, $options: "i" } },
+          { lastName: { $regex: _req.query.search, $options: "i" } },
+        ],
       };
-      if (_req.query.search) {
-        dataToFind = {
-          ...dataToFind,
-          $or: [
-            //$options : 'i' used for case insensitivity search
-            { email: { $regex: _req.query.search, $options: "i" } },
-            { firstName: { $regex: _req.query.search, $options: "i" } },
-            { lastName: { $regex: _req.query.search, $options: "i" } },
-          ],
-        };
-        skip = 0;
-      }
+      skip = 0;
+    }
     try {
-      const invitedUsers = await User.find(dataToFind,'-password').sort({createdAt:-1}).skip(skip).limit(perPage);
-        return res.json({ data: invitedUsers });
+      const invitedUsers = await User.find(dataToFind, "-password")
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(perPage);
+      const count = await User.find(dataToFind, "-password");
+
+      const totalPages = Math.ceil(count.length / perPage);
+      return res.json({
+        data: invitedUsers,
+        meta: {
+          perPage: perPage,
+          page: _req.query.page || 1,
+          pages: totalPages,
+          total: count.length,
+        },
+      });
     } catch (error) {
       return res
         .status(500)
-        .json({ error: { message: "Something went wrong." ,error} });
+        .json({ error: { message: "Something went wrong.", error } });
     }
   };
 
   static updateAdmin = async (_req: Request, res: Response) => {
-    //@ts-ignore
     const id = _req.params.id;
-const input=_req.body
+    const input = _req.body;
     try {
       const invitedUsers = await User.find({
         _id: id,
@@ -380,9 +429,9 @@ const input=_req.body
       if (invitedUsers.length == 0) {
         return res.status(400).json({ error: { message: "No Admin Found" } });
       } else {
-        await User.findByIdAndUpdate(id, input,{new:true});
-        const data=await User.findById(id,'-password')
-        return res.json({ data: { message: "Admin Updated!", data:data } });
+        await User.findByIdAndUpdate(id, input, { new: true });
+        const data = await User.findById(id, "-password");
+        return res.json({ data: { message: "Admin Updated!", data: data } });
       }
     } catch (error) {
       return res
@@ -390,7 +439,6 @@ const input=_req.body
         .json({ error: { message: "Something went wrong." } });
     }
   };
-  
 }
 
 function randomString(length: number, isSpecial: any) {
