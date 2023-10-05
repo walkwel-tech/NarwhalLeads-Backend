@@ -471,7 +471,7 @@ export function sendEmailToInvitedUser(send_to: string, message: any) {
   // }
 }
 
-export function sendEmailForNewLead(send_to: string, message: any) {
+export function sendEmailForNewLead(send_to: string[], message: any) {
   const msg = {
     to: send_to, // Change to your recipient
     // to: "radhika.walkweltech@gmail.com",
@@ -489,6 +489,7 @@ export function sendEmailForNewLead(send_to: string, message: any) {
         enable: false,
       },
     },
+    isMultiple: true,
 
     // html: "<strong>and easy to do anywhere, even with Node.js</strong>",
     // templateId: "d-ca4e694d81ce4b3c8738b304a7a2368e",
@@ -502,11 +503,9 @@ export function sendEmailForNewLead(send_to: string, message: any) {
     },
   };
   // if (checkAccess()) {
-  if (process.env.APP_ENV !== APP_ENV.PRODUCTION) {
-    msg.to = process.env.SENDGRID_TO_EMAIL || "";
-  }
+
   sgMail
-    .send(msg)
+    .sendMultiple(msg)
     .then(() => {
       console.log("Email sent");
       const params = {
