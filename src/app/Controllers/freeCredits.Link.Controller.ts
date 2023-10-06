@@ -106,9 +106,6 @@ export class freeCreditsLinkController {
           },
         },
         {
-          $unwind: "$accountManager",
-        },
-        {
           $lookup: {
             from: "businessdetails", // Replace with the actual name of your "BusinessDetails" collection
             localField: "usersData.businessDetailsId",
@@ -134,8 +131,7 @@ export class freeCreditsLinkController {
             createdAt: 1,
             updatedAt: 1,
             isDeleted: 1,
-            "accountManager.firstName": 1,
-            "accountManager.lastName": 1,
+            accountManager: 1,
             __v: 1,
             users: {
               $mergeObjects: [
@@ -170,8 +166,7 @@ export class freeCreditsLinkController {
             // Add other properties you need from the user object
           };
         });
-
-        return {
+        let dataToShow = {
           _id: item._id,
           code: item.code,
           freeCredits: item.freeCredits,
@@ -186,10 +181,14 @@ export class freeCreditsLinkController {
           updatedAt: item.updatedAt,
           __v: item.__v,
           users: usersData,
-          accountManager:
-            item.accountManager.firstName +
-            (item.accountManager.lastName || ""),
+          accountManager: undefined,
         };
+        if (item.accountManager.length > 0) {
+          dataToShow.accountManager =
+            (item.accountManager[0]?.firstName || "") +
+            (item.accountManager[0]?.lastName || "");
+        }
+        return dataToShow;
       });
 
       return res.json({
