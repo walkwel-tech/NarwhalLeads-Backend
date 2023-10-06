@@ -10,5 +10,6 @@ export interface NotificationsInterface {
    MessageStatus:string
    MessageSid:string
    accountId:string,
-   toPhoneNumber:string
+   toPhoneNumber:string,
+   status:string,
   }

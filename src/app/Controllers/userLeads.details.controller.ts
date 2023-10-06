@@ -20,16 +20,20 @@ import { UserService } from "../Models/UserService";
 import { businessDetailsSubmission } from "../../utils/webhookUrls/businessDetailsSubmission";
 import { ACTION } from "../../utils/Enums/actionType.enum";
 import { MODEL_ENUM } from "../../utils/Enums/model.enum";
-import { findModifiedFieldsForUserService, findUpdatedFields } from "../../utils/Functions/findModifiedColumns";
+import {
+  findModifiedFieldsForUserService,
+  findUpdatedFields,
+} from "../../utils/Functions/findModifiedColumns";
 import { ActivityLogs } from "../Models/ActivityLogs";
+import { fullySignupForNonBillableClients } from "../../utils/webhookUrls/fullySignupForNonBillableClients";
 
 export class UserLeadsController {
   static create = async (req: Request, res: Response) => {
     const input = req.body;
-    if(!input.userId){
+    if (!input.userId) {
       return res
-      .status(400)
-      .json({ error: { message: "User Id is required" } });
+        .status(400)
+        .json({ error: { message: "User Id is required" } });
     }
     const leadDetailsInput = new UserLeadDetailsInput();
     (leadDetailsInput.daily = input.daily),
@@ -44,8 +48,8 @@ export class UserLeadsController {
         property: error.property,
         constraints: error.constraints,
       }));
-      errorsInfo.map((i) => {
-        array.push(i.property);
+      errorsInfo.map((err) => {
+        array.push(err.property);
       });
       const existLead = object.find(
         (item: any) => item.key === ONBOARDING_KEYS.LEAD_DETAILS
@@ -72,8 +76,12 @@ export class UserLeadsController {
       );
     }
     await User.findByIdAndUpdate(input.userId, { onBoarding: object });
-    const serviceData=await UserService.findOne({userId:input.userId})
-    const service = await UserService.findByIdAndUpdate(serviceData?.id,input,{new:true})
+    const serviceData = await UserService.findOne({ userId: input.userId });
+    const service = await UserService.findByIdAndUpdate(
+      serviceData?.id,
+      input,
+      { new: true }
+    );
     const leadDetails = object.find(
       (item: any) => item.key === ONBOARDING_KEYS.LEAD_DETAILS
     );
@@ -89,13 +97,11 @@ export class UserLeadsController {
       businessPendingFields.includes(field)
     );
     if (valuesPresent && leadDependencyFields.length > 0) {
-      return res
-        .status(400)
-        .json({
-          error: {
-            message: `${leadDependencyFields} is required to fill the daily LeadCost`,
-          },
-        });
+      return res.status(400).json({
+        error: {
+          message: `${leadDependencyFields} is required to fill the daily LeadCost`,
+        },
+      });
     }
     // }
     const user: any = await User.findById(input.userId);
@@ -116,58 +122,76 @@ export class UserLeadsController {
       const details = await UserLeadsDetails.create(dataToSave);
       await User.findByIdAndUpdate(input.userId, {
         userLeadsDetailsId: details._id,
-        onBoardingPercentage:input?.onBoardingPercentage
+        onBoardingPercentage: input?.onBoardingPercentage,
       });
-      if (checkOnbOardingComplete(user) && !user.registrationMailSentToAdmin) {
+      if (
+        (checkOnbOardingComplete(user) && !user.registrationMailSentToAdmin) ||
+        (user.role === RolesEnum.NON_BILLABLE &&
+          !user.isCreditsAndBillingEnabled)
+      ) {
         const leadData = await UserLeadsDetails.findOne({ userId: user?._id });
         const businessDeatilsData = await BusinessDetails.findById(
           user?.businessDetailsId
-        );     
+        );
         await User.findByIdAndUpdate(user.id, {
           registrationMailSentToAdmin: true,
         });
-      const messageToSendInBusinessSubmission = {
-        businessName: businessDeatilsData?.businessName,
-        phone: businessDeatilsData?.businessSalesNumber,
-        industry: businessDeatilsData?.businessIndustry,
-        address: businessDeatilsData?.address1 + " " + businessDeatilsData?.address2,
-        city: businessDeatilsData?.businessCity,
-        country: businessDeatilsData?.businessCountry,
-        // openingHours: formattedOpeningHours,
-        openingHours: businessDeatilsData?.businessOpeningHours,
-        logo: businessDeatilsData?.businessLogo,
-        financeOffers: service?.financeOffers,
-        prices: service?.prices,
-        accreditations: service?.accreditations,
-        avgInstallTime: service?.avgInstallTime,
-        criteria:JSON.stringify( service?.criteria),
-        dailyLeads: leadData?.daily,
-        postCodes:leadData?.postCodeTargettingList,
-        detailsType:"NEW DETAILS"
+        if (
+          user.role === RolesEnum.NON_BILLABLE &&
+          !user.isCreditsAndBillingEnabled
 
-      };
-      businessDetailsSubmission(messageToSendInBusinessSubmission); 
-    }
-     
-      if(user.premiumUser && user.premiumUser==PROMO_LINK.PREMIUM_USER_NO_TOP_UP){
-              const promoLink=await FreeCreditsLink.findById(user?.promoLinkId)
-              const params={
-                buyerId:user.buyerId,
-                freeCredits:promoLink?.freeCredits
-              }
-              addCreditsToBuyer(params).then((_res)=>{
-                console.log("FREE CREDITS ADDED WITH SIGNUP CODE")
-              }).catch((error)=>{
-                console.log("ERROR DURING ADDING FREE CREDITS WITH SIGNUP CODE")
-              })
-
-
+          // && !user.isUserSignup
+        ) {
+          await User.findByIdAndUpdate(user.id, {
+            isUserSignup: true,
+          });
+        }
+        const messageToSendInBusinessSubmission = {
+          businessName: businessDeatilsData?.businessName,
+          phone: businessDeatilsData?.businessSalesNumber,
+          industry: businessDeatilsData?.businessIndustry,
+          address:
+            businessDeatilsData?.address1 + " " + businessDeatilsData?.address2,
+          city: businessDeatilsData?.businessCity,
+          country: businessDeatilsData?.businessCountry,
+          // openingHours: formattedOpeningHours,
+          openingHours: businessDeatilsData?.businessOpeningHours,
+          logo: businessDeatilsData?.businessLogo,
+          financeOffers: service?.financeOffers,
+          prices: service?.prices,
+          accreditations: service?.accreditations,
+          avgInstallTime: service?.avgInstallTime,
+          criteria: JSON.stringify(service?.criteria),
+          dailyLeads: leadData?.daily,
+          postCodes: leadData?.postCodeTargettingList,
+          detailsType: "NEW DETAILS",
+        };
+        businessDetailsSubmission(messageToSendInBusinessSubmission);
+        fullySignupForNonBillableClients(messageToSendInBusinessSubmission);
       }
-      return res.json({ data: details,service });
+
+      if (
+        user.premiumUser &&
+        user.premiumUser == PROMO_LINK.PREMIUM_USER_NO_TOP_UP
+      ) {
+        const promoLink = await FreeCreditsLink.findById(user?.promoLinkId);
+        const params = {
+          buyerId: user.buyerId,
+          freeCredits: promoLink?.freeCredits,
+        };
+        addCreditsToBuyer(params)
+          .then((_res) => {
+            console.log("free credits added with signup code");
+          })
+          .catch((error) => {
+            console.log("error during adding free credits with signup code");
+          });
+      }
+      return res.json({ data: details, service });
     } catch (error) {
       return res
         .status(500)
-        .json({ error: { message: "Something went wrong.",error } });
+        .json({ error: { message: "Something went wrong.", error } });
     }
   };
 
@@ -249,25 +273,31 @@ export class UserLeadsController {
     req: Request,
     res: Response
   ): Promise<any> => {
-console.log("hetrtredteydtuet")
     const id = req.params.id;
     const input = req.body;
-    delete input._id
+    delete input._id;
     try {
       const details = await UserLeadsDetails.findById(id);
-      const userForActivity=await UserLeadsDetails.findById(id," -_id -userId -createdAt -updatedAt").lean()
+      const userForActivity = await UserLeadsDetails.findById(
+        id,
+        " -_id -userId -createdAt -updatedAt"
+      ).lean();
 
       const user: any = await User.findById(details?.userId);
 
-      const serviceDataForActivityLogs = await UserService.findOne({ userId: user?.id },"-_id -__v -userId -createdAt -deletedAt -updatedAt");
+      const serviceDataForActivityLogs = await UserService.findOne(
+        { userId: user?.id },
+        "-_id -__v -userId -createdAt -deletedAt -updatedAt"
+      );
 
-      if(input.zapierUrl){
+      if (input.zapierUrl) {
         await UserLeadsDetails.findByIdAndUpdate(
           user?.userLeadsDetailsId,
-          { zapierUrl: input.zapierUrl, sendDataToZapier:true },
+          { zapierUrl: input.zapierUrl, sendDataToZapier: true },
 
           { new: true }
-        );      }
+        );
+      }
       if (!details) {
         return res
           .status(404)
@@ -280,24 +310,33 @@ console.log("hetrtredteydtuet")
           new: true,
         }
       );
-      const userAfterMod=await UserLeadsDetails.findById(id," -_id -userId -createdAt -updatedAt").lean()
+      const userAfterMod = await UserLeadsDetails.findById(
+        id,
+        " -_id -userId -createdAt -updatedAt"
+      ).lean();
 
       const fields = findUpdatedFields(userForActivity, userAfterMod);
-      const userr=await User.findOne({userLeadsDetailsId:req.params.id})
+      const userr = await User.findOne({ userLeadsDetailsId: req.params.id });
       const isEmpty = Object.keys(fields.updatedFields).length === 0;
 
-   if(!isEmpty && userr?.isSignUpCompleteWithCredit) {  const activity={
-        //@ts-ignore
-        actionBy:req?.user?.role,
-        actionType:ACTION.UPDATING,
-        targetModel:MODEL_ENUM.USER_LEAD_DETAILS,
-        userEntity:userr?.id,
-        originalValues:fields.oldFields,
-        modifiedValues:fields.updatedFields
+      if (!isEmpty && userr?.isSignUpCompleteWithCredit) {
+        const activity = {
+          //@ts-ignore
+          actionBy: req?.user?.role,
+          actionType: ACTION.UPDATING,
+          targetModel: MODEL_ENUM.USER_LEAD_DETAILS,
+          userEntity: userr?.id,
+          originalValues: fields.oldFields,
+          modifiedValues: fields.updatedFields,
+        };
+        await ActivityLogs.create(activity);
       }
-      await ActivityLogs.create(activity)}
-      const serviceData=await UserService.findOne({userId:user.id})
-      const service = await UserService.findByIdAndUpdate(serviceData?.id,input,{new:true})
+      const serviceData = await UserService.findOne({ userId: user.id });
+      const service = await UserService.findByIdAndUpdate(
+        serviceData?.id,
+        input,
+        { new: true }
+      );
       if (input.daily) {
         await UserLeadsDetails.findByIdAndUpdate(id, {
           dailyLeadCost: user?.leadCost * input.daily,
@@ -309,7 +348,9 @@ console.log("hetrtredteydtuet")
         const businessDeatilsData = await BusinessDetails.findById(
           userData?.businessDetailsId
         );
-        const formattedPostCodes=updatedDetails?.postCodeTargettingList.map((item:any) => item.postalCode).flat();
+        const formattedPostCodes = updatedDetails?.postCodeTargettingList
+          .map((item: any) => item.postalCode)
+          .flat();
 
         const message = {
           firstName: userData?.firstName,
@@ -323,39 +364,47 @@ console.log("hetrtredteydtuet")
           city: businessDeatilsData?.businessCity,
           country: businessDeatilsData?.businessCountry,
           // openingHours:formattedOpeningHours,
-          openingHours:businessDeatilsData?.businessOpeningHours,
-          logo:businessDeatilsData?.businessLogo,
+          openingHours: businessDeatilsData?.businessOpeningHours,
+          logo: businessDeatilsData?.businessLogo,
           totalLeads: updatedDetails?.total,
           monthlyLeads: updatedDetails?.monthly,
           weeklyLeads: updatedDetails?.weekly,
           dailyLeads: updatedDetails?.daily,
-          leadsHours:updatedDetails?.leadSchedule,
+          leadsHours: updatedDetails?.leadSchedule,
           // leadsHours:formattedLeadSchedule,
           area: `${formattedPostCodes}`,
-          leadCost:userData?.leadCost
+          leadCost: userData?.leadCost,
         };
         sendEmailForUpdatedDetails(message);
-        if(input.criteria){
-          const serviceData = await UserService.findOne({ userId: userData?.id },"-_id -userId -createdAt -deletedAt -__v -updatedAt");
-          const fields = findModifiedFieldsForUserService(serviceDataForActivityLogs, serviceData);
+        if (input.criteria) {
+          const serviceData = await UserService.findOne(
+            { userId: userData?.id },
+            "-_id -userId -createdAt -deletedAt -__v -updatedAt"
+          );
+          const fields = findModifiedFieldsForUserService(
+            serviceDataForActivityLogs,
+            serviceData
+          );
           const isEmpty = Object.keys(fields.updatedFields).length === 0;
-          if(!isEmpty && userr?.isSignUpCompleteWithCredit){const activity={
-            //@ts-ignore
-            actionBy:req?.user?.role,
-            actionType:ACTION.UPDATING,
-            targetModel:MODEL_ENUM.USER_SERVICE_DETAILS,
-            //@ts-ignore
-            userEntity:userr?.id,
-            originalValues:fields.oldFields,
-            modifiedValues:fields.updatedFields
+          if (!isEmpty && userr?.isSignUpCompleteWithCredit) {
+            const activity = {
+              //@ts-ignore
+              actionBy: req?.user?.role,
+              actionType: ACTION.UPDATING,
+              targetModel: MODEL_ENUM.USER_SERVICE_DETAILS,
+              //@ts-ignore
+              userEntity: userr?.id,
+              originalValues: fields.oldFields,
+              modifiedValues: fields.updatedFields,
+            };
+            await ActivityLogs.create(activity);
           }
-          await ActivityLogs.create(activity)}
-  
         }
         return res.json({
           data: {
             message: "UserLeadsDetails updated successfully.",
-            data: updatedDetails,service
+            data: updatedDetails,
+            service,
           },
         });
       } else {
@@ -366,7 +415,7 @@ console.log("hetrtredteydtuet")
     } catch (error) {
       return res
         .status(500)
-        .json({ error: { message: "Something went wrong.",error } });
+        .json({ error: { message: "Something went wrong.", error } });
     }
   };
 }

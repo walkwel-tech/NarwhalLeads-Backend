@@ -1,7 +1,19 @@
+import { ActivityLogsInterface } from "../../types/ActivityLogInterface";
+import {
+  BusinessDetailsInterface,
+  isBusinessObject,
+} from "../../types/BusinessInterface";
+import { UserInterface } from "../../types/UserInterface";
 import { activityLogsWebhookUrl } from "../../utils/webhookUrls/activityLogsWebhook";
 import { ActivityLogs } from "../Models/ActivityLogs";
 import { User } from "../Models/User";
-const cron = require("node-cron");
+import * as cron from "node-cron";
+
+type UserPromise = {
+  buyerId: string | null;
+  businessName: string | null;
+  updatedValue: string | null;
+};
 
 export const activityLogs = async () => {
   cron.schedule("*/10 * * * *", async () => {
@@ -11,17 +23,37 @@ export const activityLogs = async () => {
     const activity = await ActivityLogs.find({
       createdAt: { $gte: tenMinutesAgo, $lt: currentTime },
     });
+    const userDataPromises: Array<Promise<UserPromise>> = activity.map(
+      async (activity: ActivityLogsInterface) => {
+        const user: UserInterface =
+          (await User.findOne({
+            _id: activity.userEntity,
+            isSignUpCompleteWithCredit: true,
+            isDeleted: false,
+          }).populate("businessDetailsId")) ?? ({} as UserInterface);
 
-    const userDataPromises = activity.map(async (i: any) => {
-      const user: any = await User.findById(i.userEntity).populate(
-        "businessDetailsId"
-      );
-      return {
-        buyerId: user?.buyerId,
-        businessName: user?.businessDetailsId?.businessName,
-        updatedValues: i.modifiedValues,
-      };
-    });
+        const userBusiness: BusinessDetailsInterface | null = isBusinessObject(
+          user.businessDetailsId
+        )
+          ? user.businessDetailsId
+          : null;
+
+        return (
+          user.id !== null
+            ? {
+                buyerId: user.buyerId,
+                businessName: userBusiness?.businessName ?? "",
+                updatedValues: activity.modifiedValues,
+              }
+            : {
+                buyerId: null,
+                businessName: null,
+                updatedValue: null,
+              }
+        ) as UserPromise;
+      }
+    );
+
     const userData = await Promise.all(userDataPromises);
     await activityLogsWebhookUrl(userData);
   });

@@ -1,5 +1,7 @@
 import { Request, Response } from "express";
 import { FreeCreditsLink } from "../Models/freeCreditsLink";
+import { freeCreditsLinkInterface } from "../../types/FreeCreditsLinkInterface";
+import { UserInterface } from "../../types/UserInterface";
 
 let alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
 
@@ -18,13 +20,14 @@ export class freeCreditsLinkController {
       if (input?.freeCredits < 0 || input?.topUpAmount < 0) {
         res.status(400).json({ error: { message: "Invalid value" } });
       }
-      let dataToSave: any = {
+      let dataToSave: Partial<freeCreditsLinkInterface> = {
         code: randomString(10),
         freeCredits: input.freeCredits,
         topUpAmount: input.topUpAmount,
         maxUseCounts: input.maxUseCounts,
         useCounts: 0,
         name: input.name,
+        accountManager: input.accountManager,
       };
       if (input.code) {
         dataToSave.code = input.code;
@@ -36,8 +39,7 @@ export class freeCreditsLinkController {
           res
             .status(400)
             .json({ error: { message: "Duplicate codes are not allowed" } });
-        }
-        else{
+        } else {
           const data = await FreeCreditsLink.create(dataToSave);
           return res.json({ data: data });
         }
@@ -53,7 +55,6 @@ export class freeCreditsLinkController {
           .status(400)
           .json({ error: { message: "Top-up amount is required" } });
       }
-
     } catch (error) {
       console.log(error);
       res
@@ -63,7 +64,7 @@ export class freeCreditsLinkController {
   };
 
   static show = async (req: any, res: Response): Promise<any> => {
-    let dataToFind: any = { isDeleted: false };
+    let dataToFind: Record<string, unknown> = { isDeleted: false };
     if (req.query.search) {
       dataToFind = {
         ...dataToFind,
@@ -82,6 +83,9 @@ export class freeCreditsLinkController {
     if (req.query.live) {
       dataToFind.isDisabled = false;
     }
+    if (req.query.accountManager) {
+      dataToFind.accountManager = req.query.accountManager;
+    }
     try {
       let query = await FreeCreditsLink.aggregate([
         { $match: dataToFind },
@@ -92,6 +96,17 @@ export class freeCreditsLinkController {
             foreignField: "_id",
             as: "usersData",
           },
+        },
+        {
+          $lookup: {
+            from: "users", // Replace with the actual name of your "users" collection
+            localField: "accountManager",
+            foreignField: "_id",
+            as: "accountManager",
+          },
+        },
+        {
+          $unwind: "$accountManager",
         },
         {
           $lookup: {
@@ -118,7 +133,9 @@ export class freeCreditsLinkController {
             topUpAmount: 1,
             createdAt: 1,
             updatedAt: 1,
-            isDeleted:1,
+            isDeleted: 1,
+            "accountManager.firstName": 1,
+            "accountManager.lastName": 1,
             __v: 1,
             users: {
               $mergeObjects: [
@@ -127,46 +144,53 @@ export class freeCreditsLinkController {
                   // userCount: "$user.userCount"
                 },
                 {
-                  businessDetailsId: "$businessDetails" // Populate "businessDetailsId" with the "businessDetails" data
-                }
-              ]
+                  businessDetailsId: "$businessDetails", // Populate "businessDetailsId" with the "businessDetails" data
+                },
+              ],
             },
           },
         },
       ]);
-      const transformedData = query.map(item => {
-        const usersData = item.users.userData.map((user:any) => {
-            const businessDetails = item.users.businessDetailsId.find((business:any) => business._id.equals(user.businessDetailsId));
-            const businessName = businessDetails ? businessDetails.businessName : '';
-            
-            return {
-                "_id": user._id,
-                "firstName": user.firstName,
-                "lastName": user.lastName,
-                "email": user.email,
-                "businessName": businessName,
-                "createdAt":user.createdAt
-                // Add other properties you need from the user object
-            };
+      const transformedData = query.map((item) => {
+        const usersData = item.users.userData.map((user: UserInterface) => {
+          const businessDetails = item.users.businessDetailsId.find(
+            (business: any) => business._id.equals(user.businessDetailsId)
+          );
+          const businessName = businessDetails
+            ? businessDetails.businessName
+            : "";
+
+          return {
+            _id: user._id,
+            firstName: user.firstName,
+            lastName: user.lastName,
+            email: user.email,
+            businessName: businessName,
+            createdAt: user.createdAt,
+            // Add other properties you need from the user object
+          };
         });
-    
+
         return {
-            "_id": item._id,
-            "code": item.code,
-            "freeCredits": item.freeCredits,
-            "useCounts": item.useCounts,
-            "maxUseCounts": item.maxUseCounts,
-            "isDisabled": item.isDisabled,
-            "isUsed": item.isUsed,
-            "usedAt": item.usedAt,
-            "topUpAmount": item.topUpAmount,
-            "name": item.name,
-            "createdAt": item.createdAt,
-            "updatedAt": item.updatedAt,
-            "__v": item.__v,
-            "users": usersData,
+          _id: item._id,
+          code: item.code,
+          freeCredits: item.freeCredits,
+          useCounts: item.useCounts,
+          maxUseCounts: item.maxUseCounts,
+          isDisabled: item.isDisabled,
+          isUsed: item.isUsed,
+          usedAt: item.usedAt,
+          topUpAmount: item.topUpAmount,
+          name: item.name,
+          createdAt: item.createdAt,
+          updatedAt: item.updatedAt,
+          __v: item.__v,
+          users: usersData,
+          accountManager:
+            item.accountManager.firstName +
+            (item.accountManager.lastName || ""),
         };
-    });
+      });
 
       return res.json({
         data: transformedData,
@@ -179,7 +203,7 @@ export class freeCreditsLinkController {
   static expire = async (req: Request, res: Response): Promise<any> => {
     const id = req.params.id;
     try {
-      const dataToSave: any = {
+      const dataToSave: Partial<freeCreditsLinkInterface> = {
         isDisabled: true,
       };
       const data = await FreeCreditsLink.findByIdAndUpdate(id, dataToSave, {
@@ -194,7 +218,7 @@ export class freeCreditsLinkController {
   static delete = async (req: Request, res: Response): Promise<any> => {
     const id = req.params.id;
     try {
-      const dataToSave: any = {
+      const dataToSave: Partial<freeCreditsLinkInterface> = {
         isDeleted: true,
         deletedAt: new Date(),
       };

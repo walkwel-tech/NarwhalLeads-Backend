@@ -1,9 +1,11 @@
+import { Types } from "mongoose";
+
 export class CreateCustomerInput {
   email: string;
   firstName: string;
   lastName: string;
   company: string;
-  userId: string;
+  userId: Types.ObjectId;
   street1: string;
   street2:string;
   towncity: string;
@@ -11,5 +13,5 @@ export class CreateCustomerInput {
   postcode: string;
   country_name: string;
   phone: string;
-  businessId:string
+  businessId:Types.ObjectId
 }

@@ -1,7 +1,8 @@
-export const leadsStatusEnums={
-    VALID:"Valid",
-    REPORTED:"Reported",
-    REPORT_ACCEPTED:"Report Accepted",
-    REPORT_REJECTED:"Report Rejected",
-    ARCHIVED:"Archived"
-    }
+export const leadsStatusEnums = {
+  VALID: "Valid",
+  REPORTED: "Reported",
+  REPORT_ACCEPTED: "Report Accepted",
+  REPORT_REJECTED: "Report Rejected",
+  ARCHIVED: "Archived",
+  REPROCESS: "Reprocess",
+};

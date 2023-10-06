@@ -1,13 +1,9 @@
-import { RolesEnum } from "../../types/RolesEnum";
 import { leadsAlertsEnums } from "../../utils/Enums/leads.Alerts.enum";
-import {
-  sendEmailForOutOfFunds,
-  sendEmaiForTotalLead,
-} from "../Middlewares/mail";
+import { sendEmaiForTotalLead } from "../Middlewares/mail";
 import { Leads } from "../Models/Leads";
 import { User } from "../Models/User";
 
-const cron = require("node-cron");
+import * as cron from "node-cron";
 
 export const mailForTotalLeadsInDay = async () => {
   // cron.schedule("* * * * *", async () => {
@@ -19,39 +15,39 @@ export const mailForTotalLeadsInDay = async () => {
         .toISOString()
         .split("T")[0]
     );
-    const user = await User.find().populate("userLeadsDetailsId");
-    user.map(async (i) => {
+    const user = await User.find({ isDeleted: false }).populate(
+      "userLeadsDetailsId"
+    );
+    let data = user.map(async (user) => {
       const leads = await Leads.find({
-        bid: i.buyerId,
+        bid: user.buyerId,
         createdAt: { $gte: today },
       });
-
       if (
         leads.length != 0 &&
-              //@ts-ignore
-        i.userLeadsDetailsId?.leadAlertsFrequency == leadsAlertsEnums.DAILY
+        //@ts-ignore
+        user.userLeadsDetailsId?.leadAlertsFrequency === leadsAlertsEnums.DAILY
       ) {
-        const message: any = {
+        const message: {} = {
           totalLeads: leads.length,
           leads: leads[0].leads,
         };
-        sendEmaiForTotalLead(i.email, message);
+        sendEmaiForTotalLead(user.email, message);
       }
     });
+    Promise.all(data);
   });
 };
 
+// export const outOfFunds = async () => {
+//   // cron.schedule("2 */24 * * *", async () => {
 
-export const outOfFunds =  () => {
-cron.schedule('2 */24 * * *', async() => {
-  // cron.schedule('* * * * *', async() => {
-
-  const users = await User.find({ role: RolesEnum.USER, credits: 0 });
-  users.map((i: any) => {
-    sendEmailForOutOfFunds(i.email, {
-      name: i.firstName + " " + i.lastName,
-      credits: i.credits,
-    });
-  });
-})
-}
+//   const users = await User.find({ role: RolesEnum.USER, credits: 0 });
+//   users.map((user: UserInterface) => {
+//     sendEmailForOutOfFunds(user.email, {
+//       name: user.firstName + " " + user.lastName,
+//       credits: user.credits,
+//     });
+//   });
+//   // });
+// };

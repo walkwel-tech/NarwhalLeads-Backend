@@ -1,10 +1,15 @@
 import { genSaltSync, hashSync } from "bcryptjs";
 import { Request, Response } from "express";
 import { RolesEnum } from "../../types/RolesEnum";
-import {
-    sendEmailToInvitedAdmin,
-} from "../Middlewares/mail";
+import { sendEmailToInvitedAdmin } from "../Middlewares/mail";
 import { User } from "../Models/User";
+import { ONBOARDING_KEYS } from "../../utils/constantFiles/OnBoarding.keys";
+import { createCustomerOnRyft } from "../../utils/createCustomer/createOnRyft";
+import {
+  BUSINESS_DETAILS,
+  // CARD_DETAILS,
+  LEAD_DETAILS,
+} from "../../utils/constantFiles/signupFields";
 
 const LIMIT = 10;
 export class nonBillableUsersController {
@@ -14,7 +19,8 @@ export class nonBillableUsersController {
     try {
       const checkExist = await User.findOne({
         //@ts-ignore
-        email: input.email,isDeleted:false
+        email: input.email,
+        isDeleted: false,
       });
       if (checkExist) {
         return res
@@ -35,6 +41,11 @@ export class nonBillableUsersController {
         const allInvites = await User.findOne({ role: RolesEnum.NON_BILLABLE })
           .sort({ rowIndex: -1 })
           .limit(1);
+        const accManagers = await User.aggregate([
+          { $match: { role: RolesEnum.ACCOUNT_MANAGER } },
+          { $sample: { size: 1 } },
+        ]);
+        let accountManager = accManagers[0];
         const dataToSave = {
           firstName: input.firstName,
           lastName: input.lastName,
@@ -47,10 +58,40 @@ export class nonBillableUsersController {
           //@ts-ignore
           rowIndex: allInvites?.rowIndex + 1 || 0,
           credits: 0,
+          accountManager: accountManager._id,
+          onBoarding: [
+            {
+              key: ONBOARDING_KEYS.BUSINESS_DETAILS,
+              pendingFields: [
+                BUSINESS_DETAILS.BUSINESS_INDUSTRY,
+                BUSINESS_DETAILS.BUSINESS_NAME,
+                BUSINESS_DETAILS.BUSINESS_SALES_NUMBER,
+                BUSINESS_DETAILS.BUSINESS_POST_CODE,
+                BUSINESS_DETAILS.ADDRESS1,
+                BUSINESS_DETAILS.BUSINESS_OPENING_HOURS,
+                BUSINESS_DETAILS.BUSINESS_CITY,
+              ],
+              dependencies: [],
+            },
+            {
+              key: ONBOARDING_KEYS.LEAD_DETAILS,
+              pendingFields: [
+                LEAD_DETAILS.DAILY,
+                LEAD_DETAILS.LEAD_SCHEDULE,
+                LEAD_DETAILS.POSTCODE_TARGETTING_LIST,
+              ],
+              dependencies: [BUSINESS_DETAILS.BUSINESS_INDUSTRY],
+            },
+            {
+              key: ONBOARDING_KEYS.CARD_DETAILS,
+              pendingFields: [],
+              dependencies: [],
+            },
+          ],
         };
 
-       const result= await User.create(dataToSave);
-        const data = await User.findById(result.id,'-password')
+        const result = await User.create(dataToSave);
+        const data = await User.findById(result.id, "-password");
 
         return res.json({ data: data });
       }
@@ -63,15 +104,15 @@ export class nonBillableUsersController {
 
   static show = async (_req: Request, res: Response) => {
     //@ts-ignore
-    const user = _req.user?._id;    
+    const user = _req.user?._id;
     const perPage =
-    //@ts-ignore
-      _req.query && _req.query.perPage > 0
       //@ts-ignore
-        ? parseInt(_req.query.perPage)
+      _req.query && _req.query.perPage > 0
+        ? //@ts-ignore
+          parseInt(_req.query.perPage)
         : LIMIT;
     let skip =
-    //@ts-ignore
+      //@ts-ignore
       (_req.query && _req.query.page > 0 ? parseInt(_req.query.page) - 1 : 0) *
       perPage;
     let dataToFind: any = {
@@ -103,11 +144,18 @@ export class nonBillableUsersController {
         .sort({ createdAt: -1 })
         .skip(skip)
         .limit(perPage);
+      const count = await User.find(dataToFind, "-password");
 
-      // if (invitedUsers.length == 0) {
-      // return res.json({ error: { message: "No Data Found" } });
-      // } else {
-      return res.json({ data: invitedUsers });
+      const totalPages = Math.ceil(count.length / perPage);
+      return res.json({
+        data: invitedUsers,
+        meta: {
+          perPage: perPage,
+          page: _req.query.page || 1,
+          pages: totalPages,
+          total: count.length,
+        },
+      });
       // }
     } catch (error) {
       return res
@@ -140,25 +188,52 @@ export class nonBillableUsersController {
     }
   };
 
-  static update = async (_req: Request, res: Response) => {
+  static update = async (_req: Request, res: Response): Promise<any> => {
     //@ts-ignore
     const id = _req.params.id;
     //@ts-ignore
     const user = _req.user?._id;
     const input = _req.body;
     try {
-      const invitedUsers = await User.find({
+      const invitedUsers = await User.findOne({
         _id: id,
         isDeleted: false,
       });
-
-      if (invitedUsers.length == 0) {
+      if (!invitedUsers) {
         return res.status(400).json({ error: { message: "No User Found" } });
-      } else {
-        const user = await User.findByIdAndUpdate(id, input, { new: true });
-
-        return res.json({ data: user });
       }
+      if (
+        input.isCreditsAndBillingEnabled === true &&
+        !invitedUsers.isRyftCustomer
+      ) {
+        const params = {
+          email: invitedUsers.email,
+          firstName: invitedUsers.firstName,
+          lastName: invitedUsers.lastName,
+          userId: invitedUsers.id,
+        };
+
+        createCustomerOnRyft(params)
+          .then()
+          .catch((err) => {
+            return res
+              .status(500)
+              .json({ error: { message: "Email already exist on RYFT." } });
+          });
+      }
+      if (
+        input.isCreditsAndBillingEnabled === true &&
+        !invitedUsers?.isUserSignup
+      ) {
+        const dataToUpdate = {
+          isCreditsAndBillingEnabled: input.isCreditsAndBillingEnabled,
+        };
+        await User.findByIdAndUpdate(id, dataToUpdate, { new: true });
+      } else {
+        await User.findByIdAndUpdate(id, input, { new: true });
+      }
+      const user = await User.findById(id, "-password");
+      return res.json({ data: user });
     } catch (error) {
       return res
         .status(500)

@@ -1,6 +1,8 @@
 import { Request, Response } from "express";
 import path from "path";
-const fs = require("fs");
+import * as fs from "fs";
+import * as https from "follow-redirects";
+// const https = require("follow-redirects").https;
 // import mongoose from "mongoose";
 import { RolesEnum } from "../../types/RolesEnum";
 import { leadsStatusEnums } from "../../utils/Enums/leads.status.enum";
@@ -20,13 +22,14 @@ import {
   sendEmailForLeadStatusAccept,
   sendEmailForLeadStatusReject,
   sendEmailForNewLead,
+  sendEmailForOutOfFunds,
 } from "../Middlewares/mail";
 import { transactionTitle } from "../../utils/Enums/transaction.title.enum";
 import { leadsAlertsEnums } from "../../utils/Enums/leads.Alerts.enum";
 // import { preference } from "../../utils/constantFiles/leadPreferenecColumns";
 import { sort } from "../../utils/Enums/sorting.enum";
 import { sendLeadDataToZap } from "../../utils/webhookUrls/sendDataZap";
-import { IP } from "../../utils/constantFiles/IP.Lists";
+import { WHITE_LIST_IP } from "../../local";
 import { BuisnessIndustries } from "../Models/BuisnessIndustries";
 import { LeadTablePreferenceInterface } from "../../types/LeadTablePreferenceInterface";
 import { Column } from "../../types/ColumnsPreferenceInterface";
@@ -36,6 +39,13 @@ import { Notifications } from "../Models/Notifications";
 import { BusinessDetails } from "../Models/BusinessDetails";
 import { notify } from "../../utils/notifications/leadNotificationToUser";
 import { APP_ENV } from "../../utils/Enums/serverModes.enum";
+import { UserInterface } from "../../types/UserInterface";
+import { leadReprocessWebhook } from "../../utils/webhookUrls/leadsReprocessWebhook";
+import { LeadsInterface } from "../../types/LeadsInterface";
+import {
+  UserLeadsDetailsInterface,
+  isUserLeadDetailsObject,
+} from "../../types/LeadDetailsInterface";
 const ObjectId = mongoose.Types.ObjectId;
 
 const LIMIT = 10;
@@ -46,10 +56,9 @@ interface DataObject {
 
 export class LeadsController {
   static create = async (req: Request, res: Response) => {
-  
-    if(process.env.APP_ENV===APP_ENV.PRODUCTION){
-        //@ts-ignore
-      if (!IP.IP.includes(req?.headers["x-forwarded-for"])) {
+    if (process.env.APP_ENV === APP_ENV.PRODUCTION) {
+      //@ts-ignore
+      if (!WHITE_LIST_IP.IP.includes(req?.headers["x-forwarded-for"])) {
         return res.status(403).json({
           error: {
             message:
@@ -58,7 +67,7 @@ export class LeadsController {
         });
       }
     }
-   
+
     const bid = req.params.buyerId;
     const input = req.body;
     const user: any = await User.findOne({ buyerId: bid })
@@ -68,304 +77,60 @@ export class LeadsController {
       await User.findByIdAndUpdate(user.id, { isLeadReceived: true });
     }
     if (user?.credits == 0 && user?.role == RolesEnum.USER) {
-        return res
-          .status(400)
-          .json({ error: {message:"Insufficient Credits"} });
-      }
-      const today = new Date();
-      const endOfDay = new Date(today);
-      endOfDay.setDate(today.getDate() + 1);
-      today.setUTCHours(0, 0, 0, 0);
-      endOfDay.setUTCHours(0, 0, 0, 0);
-            const previous =await Leads.find({bid: user?.buyerId,createdAt: {
-              $gte: today,
-              $lt: endOfDay
-            }
-      } )
-      console.log(previous.length,user.userLeadsDetailsId?.daily)
-      if(previous.length>=user.userLeadsDetailsId?.daily){
-        const debuggingLogs={
-          yesterday:today.toUTCString(),
-          today:endOfDay.toUTCString(),
-          currentServerTime:new Date().toUTCString()
-        }
-        return res
-          .status(400)
-          .json({ error: {message:"Daily leads limit exhausted!",logs:debuggingLogs} });
-      }
-    const leads = await Leads.findOne({ bid: user?.buyerId })
-      .sort({ rowIndex: -1 })
-      .limit(1);
-
-    const industry = await BuisnessIndustries.findOne({
-      industry: user.businessDetailsId.businessIndustry,
+      return res
+        .status(400)
+        .json({ error: { message: "Insufficient Credits" } });
+    }
+    const today = new Date();
+    const endOfDay = new Date(today);
+    endOfDay.setDate(today.getDate() + 1);
+    today.setUTCHours(0, 0, 0, 0);
+    endOfDay.setUTCHours(0, 0, 0, 0);
+    const previous = await Leads.find({
+      bid: user?.buyerId,
+      createdAt: {
+        $gte: today,
+        $lt: endOfDay,
+      },
     });
-if(!industry){
-  return res
-  .status(404)
-  .json({ error: { message: "Your Business Industry has been deleted by admin. please choose anoher industry." } });
-}
-    const columns = await BuisnessIndustries.findById(industry?.id);
-    const array: any = [];
-    columns?.columnsNames.map((i) => {
-      array.push(i["defaultColumn"]);
-    });
-    let arr: any = [];
-
-    Object.keys(input).map((j) => {
-      if (!array.includes(j)) {
-        let obj: any = {};
-        obj.defaultColumn = j;
-        obj.renamedColumn = "";
-        //@ts-ignore
-        columns?.columnsNames.push(obj);
-      } else {
-
-      }
-    });
-
-    columns?.columnsNames.map((i, idx) => {
-      let obj: any = {};
-      //@ts-ignore
-      if (i.renamedColumn != "") {
-        //@ts-ignore
-        obj.name = i?.renamedColumn;
-        obj.isVisible = true;
-        obj.index = idx;
-        //@ts-ignore
-        obj.newName = i?.renamedColumn;
-        arr.push(obj);
-      } else {
-        //@ts-ignore
-        obj.name = i?.defaultColumn;
-        obj.isVisible = true;
-        obj.index = idx;
-        //@ts-ignore
-        obj.newName = i?.defaultColumn;
-        arr.push(obj);
-      }
-    });
-
-    await BuisnessIndustries.findByIdAndUpdate(
-      industry?.id,
-      { columns: arr, columnsNames: columns?.columnsNames },
-      { new: true }
-    );
-
-    const checkPreferenceExists: any = await LeadTablePreference.findOne({
-      userId: user._id,
-    });
-    const admin = await User.findOne({ role: RolesEnum.SUPER_ADMIN });
-    const adminPref: any = await LeadTablePreference.findOne({
-      userId: admin?._id,
-    });
-
-    if (!checkPreferenceExists) {
-      const columnsNames = await BuisnessIndustries.findById(
-        user.businessIndustryId
-      );
-      // const columnsNames = await CustomColumnNames.findOne({
-      // industryId: user?.businessIndustryId,
-      // });
-      let array: any = [
-        {
-          name: "clientName",
-          isVisible: true,
-          index: 0,
-          newName: "clientName",
-        },
-        {
-          name: "businessName",
-          isVisible: true,
-          index: 1,
-          newName: "businessName",
-        },
-        {
-          name: "businessIndustry",
-          isVisible: true,
-          index: 2,
-          newName: "businessIndustry",
-        },
-
-      ];
-      Object.keys(input).map((i: any) => {
-        // columnsNames?.columnsNames.map((j)=>{
-        let obj: any = {};
-        if (i != "c1") {
-          (obj.name = i),
-            (obj.isVisible = true),
-            (obj.index = array[array?.length - 1]?.index + 1 || 0);
-          (obj.newName = i),
-            columnsNames?.columnsNames.map((j: any) => {
-              if (j?.defaultColumn == i) {
-                if (j.renamedColumn?.length != 0) {
-                  obj.newName = j.renamedColumn;
-                }
-              }
-            });
-          array.push(obj);
-        }
-      });
-
-      const dataToSaveInLeadsPreference: any = {
-        userId: user.id,
-        columns: array,
+    if (previous.length >= user.userLeadsDetailsId?.daily) {
+      const debuggingLogs = {
+        yesterday: today.toUTCString(),
+        today: endOfDay.toUTCString(),
+        currentServerTime: new Date().toUTCString(),
       };
-
-      await LeadTablePreference.create(dataToSaveInLeadsPreference);
-      const admin = await User.findOne({ role: RolesEnum.SUPER_ADMIN });
-
-
-      if (adminPref) {
-        let key = Object.keys(input).map((i) => i);
-        key.forEach((item, idx) => {
-          const existingElement = adminPref?.columns.find(
-            (resElement: any) => resElement.name === item
-          );
-          if (!existingElement && item != "c1") {
-            let obj: any = {};
-            (obj.name = item),
-              (obj.isVisible = false),
-              (obj.index = adminPref?.columns.length),
-              (obj.newName = item),
-              columnsNames?.columnsNames.map((j: any) => {
-                if (j?.defaultColumn == item) {
-                  if (j.renamedColumn?.length != 0) {
-                    obj.newName = j.renamedColumn;
-                  }
-                }
-              });
-            adminPref?.columns.push(obj);
-          }
-        });
-
-        await LeadTablePreference.updateOne(
-          { userId: admin?._id },
-          {
-            columns: adminPref?.columns,
-          }
-        );
-      }
-      if (!adminPref) {
-        await LeadTablePreference.create({
-          userId: admin?._id,
-          columns: [{
-            name: "clientName",
-            isVisible: true,
-            index: 0,
-            newName: "clientName",
-          },
-          {
-            name: "businessName",
-            isVisible: true,
-            index: 1,
-            newName: "businessName",
-          },
-          {
-            name: "businessIndustry",
-            isVisible: true,
-            index: 2,
-            newName: "businessIndustry",
-          }
-        ],
-        });
-      }
-    }
-
-    let key = Object.keys(input).map((i) => i);
-    const columnsNames = await BuisnessIndustries.findById(
-      user.businessIndustryId
-    );
-
-    // const columnsNames = await CustomColumnNames.findOne({
-    // industryId: user?.businessIndustryId,
-    // });
-    key.forEach((item, idx) => {
-      const existingElement = checkPreferenceExists?.columns.find(
-        (resElement: any) => resElement.name === item
-      );
-      if (!existingElement && item != "c1") {
-        let obj: any = {};
-        (obj.name = item),
-          (obj.isVisible = false),
-          (obj.index = checkPreferenceExists?.columns.length),
-          (obj.newName = item),
-          columnsNames?.columnsNames.map((j: any) => {
-            if (j?.defaultColumn == item) {
-              if (j.renamedColumn?.length != 0) {
-                obj.newName = j.renamedColumn;
-              }
-            }
-          });
-        checkPreferenceExists?.columns.push(obj);
-      }
-    });
-    checkPreferenceExists?.columns.map((i: any) => {
-      //todo: add object for clinet names
-      const existingElement = checkPreferenceExists?.columns.find(
-        (resElement: any) => resElement.name === "clientName"
-      );
-      if (!existingElement) {
-        let obj = {
-          name: "clientName",
-          isVisible: true,
-          index: checkPreferenceExists?.columns.length,
-          newName: "clientName",
-        };
-        checkPreferenceExists?.columns.push(obj);
-      }
-      const existingElementBusinessName = checkPreferenceExists?.columns.find(
-        (resElement: any) => resElement.name === "businessName"
-      );
-      if (!existingElementBusinessName) {
-        let obj = {
-          name: "businessName",
-          isVisible: true,
-          index: checkPreferenceExists?.columns.length,
-          newName: "businessName",
-        };
-        checkPreferenceExists?.columns.push(obj);
-      }
-    });
-
-    if (adminPref) {
-      await LeadTablePreference.findOneAndUpdate(
-        { userId: admin?._id },
-        { columns: checkPreferenceExists?.columns }
-      );
-    } else {
-      await LeadTablePreference.create({
-        userId: admin?._id,
-        columns: checkPreferenceExists?.columns,
+      return res.status(400).json({
+        error: {
+          message: "Daily leads limit exhausted!",
+          logs: debuggingLogs,
+        },
       });
     }
-    await LeadTablePreference.findByIdAndUpdate(checkPreferenceExists?.id, {
-      columns: checkPreferenceExists?.columns,
-    });
-    
+    const leads: LeadsInterface =
+      (await Leads.findOne({ bid: user?.buyerId })
+        .sort({ rowIndex: -1 })
+        .limit(1)) ?? ({} as LeadsInterface);
     const leadsSave = await Leads.create({
       bid: bid,
       leadsCost: user.leadCost,
       leads: input,
       status: leadsStatusEnums.VALID,
       industryId: user.businessIndustryId,
-      // @ts-ignore
       rowIndex: leads?.rowIndex + 1 || 0,
     });
 
-if(user.isSmsNotificationActive){
-  const dataToSent={
-    name:input.firstname+ " " +input.lastname,
-    email:input.email,
-    phoneNumber:input.phone1
-  }
-  notify(user.smsPhoneNumber, dataToSent)
-}
+    if (user.isSmsNotificationActive) {
+      const dataToSent = {
+        name: input.firstname + " " + input.lastname,
+        email: input.email,
+        phoneNumber: input.phone1,
+      };
+      notify(user.smsPhoneNumber, dataToSent);
+    }
     if (user?.userLeadsDetailsId?.sendDataToZapier) {
       sendLeadDataToZap(user.userLeadsDetailsId.zapierUrl, input)
-        .then((res) => {        })
-        .catch((err) => {
-        });
+        .then((res) => {})
+        .catch((err) => {});
     }
     let leadcpl;
     const cardDetails = await CardDetails.findOne({
@@ -377,10 +142,8 @@ if(user.isSmsNotificationActive){
       const credits = user?.credits;
       let leftCredits;
       if (user.isLeadCostCheck) {
-
         leadcpl = user.leadCost;
         leftCredits = credits - user?.leadCost;
-       
       } else {
         const industry: any = await BuisnessIndustries.findById(
           user.businessIndustryId
@@ -391,15 +154,27 @@ if(user.isSmsNotificationActive){
       const userf = await User.findByIdAndUpdate(user?.id, {
         credits: leftCredits,
       });
-      if(leftCredits < (leadcpl * PREMIUM_PROMOLINK.LEADS_THRESHOLD)){
-     const txn=await Transaction.find({title:transactionTitle.CREDITS_ADDED}).sort({createdAt:-1})
-     const notify:any=await Notifications.find({title:"BELOW_5_LEADS_PENDING"}).sort({createdAt:-1})
-     if(txn[0]?.createdAt>notify[0]?.createdAt){
-              sendEmailForBelow5LeadsPending(user.email,{credits:leftCredits,name:user?.firstName+ " "+ user?.lastName})
-     }
-     else{
-      console.log("Email already send.")
-     }
+      if (leftCredits < leadcpl * PREMIUM_PROMOLINK.LEADS_THRESHOLD) {
+        const txn = await Transaction.find({
+          title: transactionTitle.CREDITS_ADDED,
+        }).sort({ createdAt: -1 });
+        const notify: any = await Notifications.find({
+          title: "BELOW_5_LEADS_PENDING",
+        }).sort({ createdAt: -1 });
+        if (txn[0]?.createdAt > notify[0]?.createdAt) {
+          sendEmailForBelow5LeadsPending(user.email, {
+            credits: leftCredits,
+            name: user?.firstName + " " + user?.lastName,
+          });
+        } else {
+          console.log("Email already send.");
+        }
+      }
+      if (leftCredits <= 0) {
+        sendEmailForOutOfFunds(user.email, {
+          name: user.firstName + " " + user.lastName,
+          credits: user.credits,
+        });
       }
       await User.updateMany(
         { invitedById: user?.id },
@@ -424,11 +199,11 @@ if(user.isSmsNotificationActive){
       user.userLeadsDetailsId?.leadAlertsFrequency == leadsAlertsEnums.INSTANT
     ) {
       let arr: any = [];
-      Object.keys(input).forEach((i) => {
-        if (i != "c1") {
+      Object.keys(input).forEach((key) => {
+        if (key != "c1") {
           let obj: any = {};
-          obj.keys = i;
-          obj.values = input[i];
+          obj.keys = key;
+          obj.values = input[key];
           arr.push(obj);
         }
       });
@@ -439,8 +214,23 @@ if(user.isSmsNotificationActive){
         phone: input.phone1,
         email: input.email,
       };
-      sendEmailForNewLead(user.email, message);
+      let emails: string[] = [];
+      const invitedUsers = await User.find({
+        role: RolesEnum.INVITED,
+        invitedById: user.id,
+        isDeleted: false,
+      }).populate("userLeadsDetailsId");
 
+      invitedUsers.map((iUser) => {
+        const userLeadFreq: UserLeadsDetailsInterface | null =
+          isUserLeadDetailsObject(user?.userLeadsDetailsId)
+            ? user?.userLeadsDetailsId
+            : null;
+        if (userLeadFreq?.leadAlertsFrequency == leadsAlertsEnums.INSTANT) {
+          emails.push(iUser.email);
+        }
+      });
+      sendEmailForNewLead(emails, message);
     }
 
     return res.json({ data: leadsSave });
@@ -451,19 +241,14 @@ if(user.isSmsNotificationActive){
     const input = req.body;
     const lead = await Leads.findById(leadId);
     try {
+      if (!lead) {
+        return res.status(404).json({ error: { message: "Lead Not Found" } });
+      }
       const user: any = await User.findOne({ buyerId: lead?.bid });
       if (!user) {
         return res
           .status(400)
           .json({ error: { message: "User of this lead does not exist" } });
-      }
-      if (
-        lead?.status == leadsStatusEnums.REPORT_ACCEPTED ||
-        lead?.status == leadsStatusEnums.REPORT_REJECTED
-      ) {
-        return res
-          .status(400)
-          .json({ error: { message: "You can not update the status." } });
       }
       if (
         //@ts-ignore
@@ -480,7 +265,7 @@ if(user.isSmsNotificationActive){
         input.invalidLeadReason = "";
         await Leads.findByIdAndUpdate(
           leadId,
-          { status: leadsStatusEnums.VALID,statusUpdatedAt:new Date() },
+          { status: leadsStatusEnums.VALID, statusUpdatedAt: new Date() },
           { new: true }
         );
       }
@@ -493,16 +278,34 @@ if(user.isSmsNotificationActive){
           {
             status: leadsStatusEnums.REPORTED,
             reportedAt: new Date(),
-            statusUpdatedAt:new Date() ,
+            statusUpdatedAt: new Date(),
             clientNotes: input?.clientNotes,
           },
           { new: true }
         );
       }
       if (
+        input.status === leadsStatusEnums.REPROCESS &&
+        lead.status !== leadsStatusEnums.REPORT_REJECTED
+      ) {
+        return res.status(400).json({
+          error: {
+            message: `You can not reprocess the ${lead.status} lead.`,
+          },
+        });
+      }
+      if (input.status === leadsStatusEnums.REPROCESS) {
+        const dataToSend = {
+          leadId: lead.bid,
+        };
+        leadReprocessWebhook(dataToSend);
+      }
+      if (
         lead?.status != leadsStatusEnums.REPORTED &&
         //@ts-ignore
-       ( req.user.role === RolesEnum.ADMIN || req.user.role == RolesEnum.SUPER_ADMIN )&&
+        (req.user.role === RolesEnum.ADMIN ||
+          //@ts-ignore
+          req.user.role == RolesEnum.SUPER_ADMIN) &&
         (input.status == leadsStatusEnums.REPORT_ACCEPTED ||
           input.status == leadsStatusEnums.REPORT_REJECTED)
       ) {
@@ -527,30 +330,40 @@ if(user.isSmsNotificationActive){
 
       if (
         //@ts-ignore
-        (req.user.role === RolesEnum.ADMIN || req.user.role === RolesEnum.SUPER_ADMIN) && 
+        (req.user.role === RolesEnum.ADMIN ||
+          //@ts-ignore
+          req.user.role === RolesEnum.SUPER_ADMIN) &&
         input.status == leadsStatusEnums.REPORT_REJECTED
       ) {
         const leadUser: any = await User.findOne({ buyerId: lead?.bid });
 
-        const message: any = { name: leadUser.firstName + " " + leadUser.lastName};
+        const message: any = {
+          name: leadUser.firstName + " " + leadUser.lastName,
+        };
         sendEmailForLeadStatusReject(leadUser?.email, message);
         const leadsUpdate = await Leads.findByIdAndUpdate(
           leadId,
-          { ...input, reportRejectedAt: new Date(),statusUpdatedAt:new Date()  },
+          {
+            ...input,
+            reportRejectedAt: new Date(),
+            statusUpdatedAt: new Date(),
+          },
           { new: true }
         );
         return res.json({ data: leadsUpdate });
       }
-      if(input.status){
+      if (input.status) {
         await Leads.findByIdAndUpdate(
           leadId,
-          { webhookHits:false,webhookHitsCounts:0 },
+          { webhookHits: false, webhookHitsCounts: 0 },
           { new: true }
         );
       }
       if (
         //@ts-ignore
-        (req.user.role === RolesEnum.ADMIN || req.user.role === RolesEnum.SUPER_ADMIN) &&
+        (req.user.role === RolesEnum.ADMIN ||
+          //@ts-ignore
+          req.user.role === RolesEnum.SUPER_ADMIN) &&
         input.status == leadsStatusEnums.REPORT_ACCEPTED
       ) {
         const user = await User.findOne({ buyerId: lead?.bid });
@@ -565,7 +378,9 @@ if(user.isSmsNotificationActive){
         };
         const leadUser: any = await User.findOne({ buyerId: lead?.bid });
 
-        const message: any = { name: leadUser.firstName + " " + leadUser.lastName};
+        const message: any = {
+          name: leadUser.firstName + " " + leadUser.lastName,
+        };
         sendEmailForLeadStatusAccept(leadUser?.email, message);
         addCreditsToBuyer(payment)
           .then(async () => {
@@ -582,13 +397,17 @@ if(user.isSmsNotificationActive){
             await Transaction.create(dataToSave);
             const leadsUpdate = await Leads.findByIdAndUpdate(
               leadId,
-              { ...input, reportAcceptedAt: new Date() , statusUpdatedAt:new Date() },
+              {
+                ...input,
+                reportAcceptedAt: new Date(),
+                statusUpdatedAt: new Date(),
+              },
               { new: true }
             );
             return res.json({ data: leadsUpdate });
           })
           .catch(async (err) => {
-            console.log("ERROR IN ADDING CREDITS", err);
+            console.log("error while adding credits", err);
             const dataToSave: any = {
               userId: user?.id,
               cardId: card?.id,
@@ -603,12 +422,11 @@ if(user.isSmsNotificationActive){
       } else {
         const leadsUpdate = await Leads.findByIdAndUpdate(
           leadId,
-          { ...input,statusUpdatedAt:new Date() },
+          { ...input, statusUpdatedAt: new Date() },
           { new: true }
         );
         return res.json({ data: leadsUpdate });
       }
-
     } catch (error) {
       return res
         .status(500)
@@ -742,8 +560,12 @@ if(user.isSmsNotificationActive){
       };
     }
     try {
-      //@ts-ignore
-      if (_req.user?.role == RolesEnum["ADMIN"] || _req.user?.role == RolesEnum.SUPER_ADMIN) {
+      if (
+        //@ts-ignore
+        _req.user?.role == RolesEnum["ADMIN"] ||
+        //@ts-ignore
+        _req.user?.role == RolesEnum.SUPER_ADMIN
+      ) {
         const leads = await Leads.aggregate([
           {
             $facet: {
@@ -773,12 +595,12 @@ if(user.isSmsNotificationActive){
         ]);
         if (leads) {
           let array: {}[] = [];
-          leads[0].results.forEach((i: any) => {
+          leads[0].results.forEach((lead: any) => {
             let obj: any = {};
-            obj.date = i._id.date;
-            obj.month = i._id.month;
-            obj.year = i._id.year;
-            obj.count = i.count;
+            obj.date = lead._id.date;
+            obj.month = lead._id.month;
+            obj.year = lead._id.year;
+            obj.count = lead.count;
             array.push(obj);
           });
           return res.json({ data: array });
@@ -808,12 +630,12 @@ if(user.isSmsNotificationActive){
       ]);
       if (leads.length > 0) {
         let array: {}[] = [];
-        leads[0].results.forEach((i: any) => {
+        leads[0].results.forEach((lead: any) => {
           let obj: any = {};
-          obj.date = i._id.date;
-          obj.month = i._id.month;
-          obj.year = i._id.year;
-          obj.count = i.count;
+          obj.date = lead._id.date;
+          obj.month = lead._id.month;
+          obj.year = lead._id.year;
+          obj.count = lead.count;
           array.push(obj);
         });
 
@@ -858,8 +680,12 @@ if(user.isSmsNotificationActive){
     }
 
     try {
-      //@ts-ignore
-      if (_req.user?.role == RolesEnum["ADMIN"] || _req.user?.role == RolesEnum.SUPER_ADMIN) {
+      if (
+        //@ts-ignore
+        _req.user?.role == RolesEnum["ADMIN"] ||
+        //@ts-ignore
+        _req.user?.role == RolesEnum.SUPER_ADMIN
+      ) {
         const leads = await Leads.aggregate([
           {
             $facet: {
@@ -891,12 +717,12 @@ if(user.isSmsNotificationActive){
         ]);
         if (leads) {
           let array: {}[] = [];
-          leads[0].results.forEach((i: any) => {
+          leads[0].results.forEach((lead: any) => {
             let obj: any = {};
-            obj.date = i._id.date;
-            obj.month = i._id.month;
-            obj.year = i._id.year;
-            obj.total = i.total;
+            obj.date = lead._id.date;
+            obj.month = lead._id.month;
+            obj.year = lead._id.year;
+            obj.total = lead.total;
             array.push(obj);
           });
           return res.json({ data: array });
@@ -928,12 +754,12 @@ if(user.isSmsNotificationActive){
 
       if (leads) {
         let array: {}[] = [];
-        leads[0].results.forEach((i: any) => {
+        leads[0].results.forEach((lead: any) => {
           let obj: any = {};
-          obj.date = i._id.date;
-          obj.month = i._id.month;
-          obj.year = i._id.year;
-          obj.total = i.total;
+          obj.date = lead._id.date;
+          obj.month = lead._id.month;
+          obj.year = lead._id.year;
+          obj.total = lead.total;
           array.push(obj);
         });
         return res.json({ data: array });
@@ -947,7 +773,7 @@ if(user.isSmsNotificationActive){
     }
   };
 
-  static index = async (_req: any, res: Response):Promise<any> => {
+  static index = async (_req: any, res: Response): Promise<any> => {
     let sortingOrder = _req.query.sortingOrder || sort.DESC;
     const userId = _req.user?.id;
     // const archive: Boolean = _req.query.archive || false;
@@ -974,11 +800,6 @@ if(user.isSmsNotificationActive){
       } else {
         dataToFind.bid = user?.buyerId;
       }
-      // if (user?.credits == 0 && user?.role == RolesEnum.USER) {
-      //   return res
-      //     .status(200)
-      //     .json({ error: "Insufficient credits!", data: [] });
-      // }
       if (status) {
         dataToFind.status = status;
       }
@@ -1010,6 +831,17 @@ if(user.isSmsNotificationActive){
                   foreignField: "buyerId",
                   as: "clientName",
                 },
+              },
+              {
+                $lookup: {
+                  from: "users", // Replace with the actual name of your "BusinessDetails" collection
+                  localField: "clientName.accountManager",
+                  foreignField: "_id",
+                  as: "accountManager",
+                },
+              },
+              {
+                $unwind: "$accountManager",
               },
               // { $sort: { rowIndex: -1 } },
               { $sort: { createdAt: sortingOrder } },
@@ -1064,11 +896,17 @@ if(user.isSmsNotificationActive){
           },
         },
       ]);
-      const promises = query.results.map((item: any) => {
+      query.results.map((item: any) => {
         item.leads.clientName =
-          item["clientName"][0]?.firstName + " " + item["clientName"][0]?.lastName;
+          item["clientName"][0]?.firstName +
+          " " +
+          item["clientName"][0]?.lastName;
+        item.leads.accountManager =
+          item["accountManager"]?.firstName +
+          " " +
+          (item["accountManager"].lastName || "");
         item.leads.status = item.status;
-      
+
         // Use explicit Promise construction
         return new Promise((resolve, reject) => {
           BusinessDetails.findById(item["clientName"][0]?.businessDetailsId)
@@ -1083,27 +921,27 @@ if(user.isSmsNotificationActive){
             });
         });
       });
-      
-      // Use Promise.all to wait for all promises to resolve
-      Promise.all(promises)
-        .then((updatedResults) => {
-          // Handle the updatedResults here
-          const leadsCount = query.leadsCount[0]?.count || 0;
 
-          const totalPages = Math.ceil(leadsCount / perPage);
-          return res.json({
-            data: query.results,
-            meta: {
-              perPage: perPage,
-              page: _req.query.page || 1,
-              pages: totalPages,
-              total: leadsCount,
-            },
-          });
-        })
-        .catch((error) => {
-          console.error(error);
-        });
+      // Use Promise.all to wait for all promises to resolve
+      // Promise.all(promi'ses)
+      //   .then((updatedResults) => {'
+      // Handle the updatedResults here
+      const leadsCount = query.leadsCount[0]?.count || 0;
+
+      const totalPages = Math.ceil(leadsCount / perPage);
+      return res.json({
+        data: query.results,
+        meta: {
+          perPage: perPage,
+          page: _req.query.page || 1,
+          pages: totalPages,
+          total: leadsCount,
+        },
+      });
+      // })
+      // .catch((error) => {
+      //   console.error(error);
+      // });
     } catch (err) {
       return res.status(500).json({
         error: {
@@ -1114,12 +952,12 @@ if(user.isSmsNotificationActive){
     }
   };
 
-  static showReportedLeads = async (_req: any, res: Response):Promise<any> => {
+  static showReportedLeads = async (_req: any, res: Response): Promise<any> => {
     let sortingOrder = _req.query.sortingOrder || sort.DESC;
     // const userId = _req.user?.id;
     // const archive: Boolean = _req.query.archive || false;
     const status = _req.query.status;
-    
+
     if (sortingOrder == sort.ASC) {
       sortingOrder = 1;
     } else {
@@ -1142,27 +980,37 @@ if(user.isSmsNotificationActive){
                 leadsStatusEnums.REPORTED,
                 leadsStatusEnums.REPORT_ACCEPTED,
                 leadsStatusEnums.REPORT_REJECTED,
-                // leadsStatusEnums.ARCHIVED,
+                leadsStatusEnums.REPROCESS,
+                leadsStatusEnums.ARCHIVED,
               ],
             },
           },
         ],
       };
+      let bids: string[] = [];
+      if (_req.query.accountManagerId != "" && _req.query.accountManagerId) {
+        const users = await User.find({
+          accountManager: _req.query.accountManagerId,
+        });
+        users.map((user: UserInterface) => {
+          return bids.push(user.buyerId);
+        });
+      }
+
+      if (_req.query.accountManagerId) {
+        dataToFind.bid = { $in: bids };
+      }
       if (_req.query.industryId) {
-        dataToFind.industryId = new ObjectId(_req.query.industryId);;
+        dataToFind.industryId = new ObjectId(_req.query.industryId);
       }
       if (_req.query.userId) {
-        const businesses=await BusinessDetails.findById(_req.query.userId)
+        const businesses = await BusinessDetails.findById(_req.query.userId);
 
-        const user = await User.findOne({businessDetailsId:businesses?.id});
+        const user = await User.findOne({ businessDetailsId: businesses?.id });
 
         dataToFind.bid = user?.buyerId;
       }
-      // if (user?.credits == 0 && user?.role == RolesEnum.USER) {
-      //   return res
-      //     .status(200)
-      //     .json({ message: "Insufficient credits!", data: [] });
-      // }
+
       if (_req.query.search) {
         dataToFind = {
           ...dataToFind,
@@ -1194,6 +1042,17 @@ if(user.isSmsNotificationActive){
                   foreignField: "buyerId",
                   as: "clientName",
                 },
+              },
+              {
+                $lookup: {
+                  from: "users", // Replace with the actual name of your "BusinessDetails" collection
+                  localField: "clientName.accountManager",
+                  foreignField: "_id",
+                  as: "accountManager",
+                },
+              },
+              {
+                $unwind: "$accountManager",
               },
               // { $sort: { rowIndex: -1 } },
               { $sort: { createdAt: sortingOrder } },
@@ -1251,16 +1110,31 @@ if(user.isSmsNotificationActive){
       // item.clientName = clientName;
       // });
       const promises = query.results.map((item: any) => {
-        item.leads.clientName =
-          item["clientName"][0]?.firstName + " " + item["clientName"][0]?.lastName;
+        if (!item["clientName"][0]?.deletedAt) {
+          item.leads.clientName =
+            item["clientName"][0]?.firstName +
+            " " +
+            item["clientName"][0]?.lastName;
+          item.leads.accountManager =
+            item["accountManager"]?.firstName +
+            " " +
+            (item["accountManager"].lastName || "");
+        } else {
+          item.leads.clientName = "Deleted User";
+        }
         item.leads.status = item.status;
-      
+
         // Use explicit Promise construction
         return new Promise((resolve, reject) => {
           BusinessDetails.findById(item["clientName"][0]?.businessDetailsId)
             .then((businesss) => {
-              item.leads.businessName = businesss?.businessName;
-              item.leads.businessIndustry = businesss?.businessIndustry;
+              if (businesss) {
+                item.leads.businessName = businesss?.businessName;
+                item.leads.businessIndustry = businesss?.businessIndustry;
+              } else {
+                item.leads.businessName = "Deleted Business Details";
+                item.leads.businessIndustry = "Deleted Business Industry";
+              }
 
               resolve(item); // Resolve the promise with the modified item
             })
@@ -1269,7 +1143,7 @@ if(user.isSmsNotificationActive){
             });
         });
       });
-      
+
       // Use Promise.all to wait for all promises to resolve
       Promise.all(promises)
         .then((updatedResults) => {
@@ -1303,10 +1177,10 @@ if(user.isSmsNotificationActive){
   static reOrderIndex = async (req: Request, res: Response): Promise<any> => {
     const input = req.body;
     try {
-      input.forEach(async (i: { _id: any; rowIndex: any }) => {
+      input.forEach(async (key: { _id: any; rowIndex: any }) => {
         await Leads.findByIdAndUpdate(
-          { _id: i._id },
-          { rowIndex: i.rowIndex },
+          { _id: key._id },
+          { rowIndex: key.rowIndex },
           { new: true }
         );
       });
@@ -1318,7 +1192,10 @@ if(user.isSmsNotificationActive){
     }
   };
 
-  static showAllLeadsToAdminByUserId = async (_req: any, res: Response) : Promise<any>=> {
+  static showAllLeadsToAdminByUserId = async (
+    _req: any,
+    res: Response
+  ): Promise<any> => {
     let sortingOrder = _req.query.sortingOrder || sort.DESC;
     if (sortingOrder == sort.ASC) {
       sortingOrder = 1;
@@ -1335,8 +1212,8 @@ if(user.isSmsNotificationActive){
       (_req.query && _req.query.page > 0 ? parseInt(_req.query.page) - 1 : 0) *
       perPage;
     try {
-      const businesses=await BusinessDetails.findById(userId)
-      const user = await User.findOne({businessDetailsId:businesses?.id});
+      const businesses = await BusinessDetails.findById(userId);
+      const user = await User.findOne({ businessDetailsId: businesses?.id });
       let dataToFind: any = {
         bid: user?.buyerId,
         status: { $nin: [leadsStatusEnums.ARCHIVED] },
@@ -1345,7 +1222,7 @@ if(user.isSmsNotificationActive){
         dataToFind.status = status;
       }
       if (_req.query.industryId) {
-        dataToFind.industryId = new ObjectId(_req.query.industryId);;
+        dataToFind.industryId = new ObjectId(_req.query.industryId);
       }
       if (_req.query.search) {
         dataToFind = {
@@ -1379,6 +1256,17 @@ if(user.isSmsNotificationActive){
                   foreignField: "buyerId",
                   as: "clientName",
                 },
+              },
+              {
+                $lookup: {
+                  from: "users", // Replace with the actual name of your "BusinessDetails" collection
+                  localField: "clientName.accountManager",
+                  foreignField: "_id",
+                  as: "accountManager",
+                },
+              },
+              {
+                $unwind: "$accountManager",
               },
               { $sort: { createdAt: sortingOrder } },
               { $skip: skip },
@@ -1432,16 +1320,33 @@ if(user.isSmsNotificationActive){
         },
       ]);
       const promises = query.results.map((item: any) => {
-        item.leads.clientName =
-          item["clientName"][0]?.firstName + " " + item["clientName"][0]?.lastName;
+        if (!item["clientName"][0].deletedAt) {
+          item.leads.clientName =
+            item["clientName"][0]?.firstName +
+            " " +
+            item["clientName"][0]?.lastName;
+          item.leads.accountManager =
+            item["accountManager"]?.firstName +
+            " " +
+            (item["accountManager"].lastName || "");
+        } else {
+          item.leads.clientName = "Deleted User";
+        }
         item.leads.status = item.status;
-      
+        item.leads.businessName = "Deleted";
+        item.leads.businessIndustry = "Deleted";
+
         // Use explicit Promise construction
         return new Promise((resolve, reject) => {
           BusinessDetails.findById(item["clientName"][0]?.businessDetailsId)
             .then((businesss) => {
-              item.leads.businessName = businesss?.businessName;
-              item.leads.businessIndustry = businesss?.businessIndustry;
+              if (businesss) {
+                item.leads.businessName = businesss?.businessName;
+                item.leads.businessIndustry = businesss?.businessIndustry;
+              } else {
+                item.leads.businessName = "Deleted Business Details";
+                item.leads.businessIndustry = "Deleted Business Industry";
+              }
 
               resolve(item); // Resolve the promise with the modified item
             })
@@ -1450,7 +1355,7 @@ if(user.isSmsNotificationActive){
             });
         });
       });
-      
+
       // Use Promise.all to wait for all promises to resolve
       Promise.all(promises)
         .then((updatedResults) => {
@@ -1481,7 +1386,10 @@ if(user.isSmsNotificationActive){
     }
   };
 
-  static showAllLeadsToAdmin = async (_req: any, res: Response): Promise<any> => {
+  static showAllLeadsToAdmin = async (
+    _req: any,
+    res: Response
+  ): Promise<any> => {
     let sortingOrder = _req.query.sortingOrder || sort.DESC;
 
     const status = _req.query.status;
@@ -1507,7 +1415,9 @@ if(user.isSmsNotificationActive){
                 leadsStatusEnums.REPORTED,
                 leadsStatusEnums.REPORT_ACCEPTED,
                 leadsStatusEnums.REPORT_REJECTED,
-                // leadsStatusEnums.ARCHIVED,
+                leadsStatusEnums.REPROCESS,
+                leadsStatusEnums.ARCHIVED,
+
                 leadsStatusEnums.VALID,
               ],
             },
@@ -1518,7 +1428,19 @@ if(user.isSmsNotificationActive){
         dataToFind = { status: status };
       }
       if (_req.query.industryId) {
-        dataToFind.industryId =new ObjectId(_req.query.industryId);
+        dataToFind.industryId = new ObjectId(_req.query.industryId);
+      }
+      let bids: string[] = [];
+      if (_req.query.accountManagerId != "" && _req.query.accountManagerId) {
+        const users = await User.find({
+          accountManager: _req.query.accountManagerId,
+        });
+        users.map((user: UserInterface) => {
+          return bids.push(user.buyerId);
+        });
+      }
+      if (_req.query.accountManagerId) {
+        dataToFind.bid = { $in: bids };
       }
       if (_req.query.search) {
         dataToFind = {
@@ -1550,6 +1472,17 @@ if(user.isSmsNotificationActive){
                   as: "clientName",
                 },
               },
+              {
+                $lookup: {
+                  from: "users", // Replace with the actual name of your "BusinessDetails" collection
+                  localField: "clientName.accountManager",
+                  foreignField: "_id",
+                  as: "accountManager",
+                },
+              },
+              {
+                $unwind: "$accountManager",
+              },
               { $sort: { createdAt: sortingOrder } },
 
               { $skip: skip },
@@ -1565,6 +1498,7 @@ if(user.isSmsNotificationActive){
                   bid: 0,
                   leadsCost: 0,
                   updatedAt: 0,
+
                   "leads.c1": 0,
                   "clientName.password": 0,
                   "clientName.autoCharge": 0,
@@ -1587,6 +1521,7 @@ if(user.isSmsNotificationActive){
                   "clientName.__v": 0,
                   "clientName.buyerId": 0,
                   "clientName.role": 0,
+                  // "clientName.accountManager": 1,
                 },
               },
             ],
@@ -1595,26 +1530,45 @@ if(user.isSmsNotificationActive){
         },
       ]);
       const promises = query.results.map((item: any) => {
-        item.leads.clientName =
-          item["clientName"][0]?.firstName + " " + item["clientName"][0]?.lastName;
-        item.leads.status = item.status;
-      
+        if (!item["clientName"][0]?.deletedAt) {
+          item.leads.clientName =
+            item["clientName"][0]?.firstName +
+            " " +
+            item["clientName"][0]?.lastName;
+
+          item.leads.accountManager =
+            item["accountManager"]?.firstName +
+            " " +
+            (item["accountManager"].lastName || "");
+        } else {
+          item.leads.clientName = "Deleted User";
+        }
+        item.leads.businessName = "Deleted";
+        item.leads.businessIndustry = "Deleted";
+        item.leads.status = item?.status;
+
         // Use explicit Promise construction
         return new Promise((resolve, reject) => {
           BusinessDetails.findById(item["clientName"][0]?.businessDetailsId)
             .then((businesss) => {
-              item.leads.businessName = businesss?.businessName;
-              item.leads.businessIndustry = businesss?.businessIndustry;
+              if (businesss) {
+                item.leads.businessName = businesss?.businessName;
+                item.leads.businessIndustry = businesss?.businessIndustry;
+              } else {
+                item.leads.businessName = "Deleted";
+                item.leads.businessIndustry = "Deleted";
+              }
 
               resolve(item); // Resolve the promise with the modified item
             })
             .catch((error) => {
+              // item.leads.businessName = "Deleted";
+              // item.leads.businessIndustry = "Deleted";
               reject(error); // Reject the promise if there's an error
             });
         });
       });
-      
-      // Use Promise.all to wait for all promises to resolve
+
       Promise.all(promises)
         .then((updatedResults) => {
           // Handle the updatedResults here
@@ -1634,7 +1588,10 @@ if(user.isSmsNotificationActive){
         .catch((error) => {
           console.error(error);
         });
-    
+      // })
+      // .catch((error) => {
+      //   console.error(error);
+      // });
     } catch (err) {
       return res.status(500).json({
         error: {
@@ -1683,34 +1640,7 @@ if(user.isSmsNotificationActive){
     const userId = req.user?._id;
     try {
       const Preference = await LeadTablePreference.findOne({ userId: userId });
-      const user = await User.findById(userId);
-      const columnsOfIndustry = await BuisnessIndustries.findById(
-        user?.businessIndustryId
-      );
-      columnsOfIndustry?.columnsNames.map((i: any) => {
-        Preference?.columns.map((j: any) => {
-          if (i?.defaultColumn == j?.name && i.renamedColumn.length != 0) {
-            //@ts-ignore
-            j.newName = i?.renamedColumn;
-          } else if (
-            i?.defaultColumn == j?.name &&
-            i.renamedColumn.length === 0
-          ) {
-            //@ts-ignore
-            j.newName = j.name;
-          }
-        });
-      });
-      Preference?.columns.map((i: any) => {
-        if (!i?.newName) {
-          i.newName = i.name;
-        }
-      });
-
-      if (Preference) {
-        return res.json({ data: Preference });
-      }
-      return res.json({ data: { columns: columnsOfIndustry?.columns } });
+      return res.json({ data: Preference });
     } catch (error) {
       return res
         .status(500)
@@ -1733,7 +1663,6 @@ if(user.isSmsNotificationActive){
         });
       }
       const token = await AccessToken.findOne();
-      const https = require("follow-redirects").https;
       const options = {
         method: "GET",
         hostname: process.env.XERO_HOST_NAME,
@@ -1748,7 +1677,7 @@ if(user.isSmsNotificationActive){
         },
         maxRedirects: 20,
       };
-      const pdfRequest = await https.request(
+      const pdfRequest = await https.https.request(
         options,
         function (apiResponse: any) {
           if (apiResponse.rawHeaders.includes("Bearer error=invalid_token")) {
@@ -1865,7 +1794,6 @@ if(user.isSmsNotificationActive){
           $lte: new Date(today),
         },
       });
-
 
       const lastWeekData = await Leads.find({
         bid: user?.buyerId,
@@ -2031,13 +1959,13 @@ if(user.isSmsNotificationActive){
         ]);
         if (leads) {
           let array: {}[] = [];
-          leads[0].results.forEach((i: any) => {
+          leads[0].results.forEach((lead: any) => {
             let obj: any = {};
-            obj.date = i._id.date;
-            obj.month = i._id.month;
-            obj.year = i._id.year;
-            obj.total = i.total;
-            obj.count = i.count;
+            obj.date = lead._id.date;
+            obj.month = lead._id.month;
+            obj.year = lead._id.year;
+            obj.total = lead.total;
+            obj.count = lead.count;
             array.push(obj);
           });
           return res.json({ data: array });
@@ -2302,55 +2230,6 @@ if(user.isSmsNotificationActive){
       });
     }
   };
-
-
-  static managePref= async (_req: any, res: Response)=>{
-    const name=_req.body.name
-    // Define an array of document IDs
-let documentIds = await LeadTablePreference.find({},'_id')
-// Iterate over the document IDs
-documentIds.forEach(async function(documentId):Promise<any> {
-  // Find the length of the "columns" array
-  var result = await LeadTablePreference.findOne({ "_id": documentId._id });
-  var nameExists = result?.columns.some(function(column:any) {
-    return column.name === name;
-  });
-  console.log("nameExists",nameExists)
-  if (!result) {
-    console.error("Document not found with _id: " + documentId);
-    return;
-  }
-// if(result.columns)  
-  var columnsLength = result?.columns?.length;
-
-  // Create the object to push with the correct "index" value
-  var objectToPush = {
-    "name": name,
-    "isVisible": true,
-    "index": columnsLength,
-    "newName": name
-  };
-
-  // Push the object to the "columns" array for the current document
-  if(!nameExists){
-   return  await LeadTablePreference.updateOne(
-    { "_id": documentId },
-    {
-      $push: {
-        "columns": objectToPush
-      }
-    },
-  );
-  
-  }
-else{
-  console.log("already exist")
-}
-});
-res.send({data:"successfully inserted"})
-  }
-
-
 }
 function convertArray(arr: any) {
   return arr.map((obj: any) => {
@@ -2392,4 +2271,3 @@ function filterAndTransformData(
     return filteredData;
   });
 }
-

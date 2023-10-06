@@ -11,7 +11,7 @@ export const createCustomersOnRyftAndLeadByte = (params: CreateCustomerInput) =>
     .then((res) => {
     })
     .catch(async (err) => {
-      console.log("ERRRORRRR",err.response?.data);
+      console.log("error",err.response?.data);
 
     });
 };

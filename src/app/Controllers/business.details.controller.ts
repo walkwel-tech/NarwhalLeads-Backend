@@ -28,10 +28,19 @@ import { businessDetailsSubmission } from "../../utils/webhookUrls/businessDetai
 import { FreeCreditsLink } from "../Models/freeCreditsLink";
 import { createCustomerOnLeadByte } from "../../utils/createCustomer/createOnLeadByte";
 import { LeadTablePreference } from "../Models/LeadTablePreference";
-import { findModifiedFieldsForUserService, findUpdatedFields } from "../../utils/Functions/findModifiedColumns";
+import {
+  findModifiedFieldsForUserService,
+  findUpdatedFields,
+} from "../../utils/Functions/findModifiedColumns";
 import { ACTION } from "../../utils/Enums/actionType.enum";
 import { MODEL_ENUM } from "../../utils/Enums/model.enum";
 import { ActivityLogs } from "../Models/ActivityLogs";
+import { additionalColumnsForLeads } from "../../utils/constantFiles/additionalColumnsOnClientLeadsTable";
+import { UserInterface } from "../../types/UserInterface";
+import { BusinessDetailsInterface } from "../../types/BusinessInterface";
+import { BuisnessIndustriesInterface } from "../../types/BuisnessIndustriesInterface";
+import { AccessTokenInterface } from "../../types/AccessTokenInterface";
+import { CreateCustomerInput } from "../Inputs/createCustomerOnRyft&Lead.inputs";
 
 const ObjectId = mongoose.Types.ObjectId;
 
@@ -47,13 +56,9 @@ export class BusinessDetailsController {
     const Business = new BusinessDetailsInput();
     (Business.businessIndustry = input.businessIndustry),
       (Business.businessName = input.businessName),
-      //@ts-ignore
-      // (Business.businessLogo = String(req.file?.filename)),
       (Business.businessSalesNumber = input.businessSalesNumber),
       (Business.address1 = input.address1),
-      // (Business.businessAddress = input.businessAddress),
       (Business.businessCity = input.businessCity),
-      // (Business.businessCountry = input.businessCountry),
       (Business.businessPostCode = input.businessPostCode);
     Business.businessOpeningHours = JSON.parse(input?.businessOpeningHours);
     const errors = await validate(Business);
@@ -73,8 +78,8 @@ export class BusinessDetailsController {
         property: error.property,
         constraints: error.constraints,
       }));
-      errorsInfo.forEach((i) => {
-        array.push(i.property);
+      errorsInfo.forEach((error) => {
+        array.push(error.property);
       });
       const existLead = object.find(
         (item: any) => item.key === ONBOARDING_KEYS.BUSINESS_DETAILS
@@ -85,7 +90,6 @@ export class BusinessDetailsController {
         object = object.map((obj: any) =>
           obj.key === existLead.key ? existLead : obj
         );
-
       } else {
         const mock = {
           key: ONBOARDING_KEYS.BUSINESS_DETAILS,
@@ -93,8 +97,7 @@ export class BusinessDetailsController {
         };
         object.push(mock);
       }
-    }
-    else {
+    } else {
       object = object.map((obj: any) =>
         obj.key === ONBOARDING_KEYS.BUSINESS_DETAILS
           ? (obj = { key: ONBOARDING_KEYS.BUSINESS_DETAILS, pendingFields: [] })
@@ -118,8 +121,7 @@ export class BusinessDetailsController {
 
     // input.businessOpeningHours=JSON.parse(input.businessOpeningHours)
     try {
-      let dataToSave: any = {
-        userId: input?.userId,
+      let dataToSave: Partial<BusinessDetailsInterface> = {
         businessIndustry: Business?.businessIndustry,
         businessName: Business?.businessName,
         businessDescription: input?.businessDescription,
@@ -134,31 +136,39 @@ export class BusinessDetailsController {
         // businessOpeningHours: (input?.businessOpeningHours),
       };
       if (req?.file) {
-        //@ts-ignore
         dataToSave.businessLogo = `${FileEnum.PROFILEIMAGE}${req?.file.filename}`;
       }
       const userData = await BusinessDetails.create(dataToSave);
 
-      const industry = await BuisnessIndustries.findOne({
-        industry: input?.businessIndustry,
-      });
+      const industry: BuisnessIndustriesInterface =
+        (await BuisnessIndustries.findOne({
+          industry: input?.businessIndustry,
+        })) ?? ({} as BuisnessIndustriesInterface);
       await User.findByIdAndUpdate(input.userId, {
         businessDetailsId: new ObjectId(userData._id),
         leadCost: industry?.leadCost,
         businessIndustryId: industry?.id,
         onBoardingPercentage: input?.onBoardingPercentage,
       });
-      const user: any = await User.findById(input.userId);
+      const user: UserInterface =
+        (await User.findById(input.userId)) ?? ({} as UserInterface);
+      const additionalColumns = additionalColumnsForLeads(
+        industry?.columns.length
+      );
+      industry?.columns.push(...additionalColumns);
+      await LeadTablePreference.create({
+        userId: input.userId,
+        columns: industry?.columns,
+      });
       if (user.promoLinkId) {
         const dataToUpdate = {
-          $push: { users:  user.id},
+          $push: { users: user.id },
         };
-        const linkUpdate = await FreeCreditsLink.findByIdAndUpdate(
+        await FreeCreditsLink.findByIdAndUpdate(
           user.promoLinkId,
           dataToUpdate,
           { new: true }
         );
-        console.log("lnk update", linkUpdate);
       }
 
       const paramsToCreateContact = {
@@ -172,13 +182,15 @@ export class BusinessDetailsController {
         postalCode: input.businessPostCode,
         businessName: input.businessName,
       };
-      const token: any = await AccessToken.findOne();
+      const token: AccessTokenInterface =
+        (await AccessToken.findOne()) ?? ({} as AccessTokenInterface);
       createContactOnXero(paramsToCreateContact, token?.access_token)
         .then(async (res: any) => {
           await User.findOneAndUpdate(
             { email: user.email },
             {
-              xeroContactId: res.data.Contacts[0].ContactID,isXeroCustomer:true
+              xeroContactId: res.data.Contacts[0].ContactID,
+              isXeroCustomer: true,
             },
             { new: true }
           );
@@ -194,16 +206,17 @@ export class BusinessDetailsController {
                     { email: user.email },
                     {
                       // $set: {
-                        xeroContactId: res.data.Contacts[0].ContactID,isXeroCustomer:true
+                      xeroContactId: res.data.Contacts[0].ContactID,
+                      isXeroCustomer: true,
                       // },
                     },
-                    {new:true}
+                    { new: true }
                   );
                   console.log("success in creating contact");
                 })
                 .catch((error) => {
                   console.log(
-                    "ERROR IN CREATING CUSTOMER AFTER TOKEN UPDATION."
+                    "error in creating customer after token updation."
                   );
                 });
             })
@@ -249,7 +262,7 @@ export class BusinessDetailsController {
         service,
         leadCost: user?.leadCost,
       });
-      const params: any = {
+      const params: CreateCustomerInput = {
         email: user?.email,
         firstName: user?.firstName,
         lastName: user?.lastName,
@@ -263,6 +276,7 @@ export class BusinessDetailsController {
         // country_name: input.businessCountry,
         phone: input?.businessSalesNumber,
         businessId: userData?.id,
+        country_name: "",
       };
       const paramsObj = Object.values(params).some(
         (value: any) => value === undefined
@@ -273,7 +287,7 @@ export class BusinessDetailsController {
             console.log("Customer created!!!!");
           })
           .catch((ERR) => {
-            console.log("ERROR while creating customer");
+            console.log("error while creating customer");
           });
       }
     } catch (error) {
@@ -292,7 +306,10 @@ export class BusinessDetailsController {
 
     try {
       const details = await BusinessDetails.findOne({ _id: new ObjectId(id) });
-      const userForActivity=await BusinessDetails.findById(id," -_id -createdAt -updatedAt").lean()
+      const userForActivity = await BusinessDetails.findById(
+        id,
+        " -_id -createdAt -updatedAt"
+      ).lean();
 
       if (!details) {
         return res
@@ -306,31 +323,34 @@ export class BusinessDetailsController {
 
       if (input.businessName) {
         // if (userData?.registrationMailSentToAdmin) {
-          const businesses = await BusinessDetails.find({
-            businessName: input.businessName,
+        const businesses = await BusinessDetails.find({
+          businessName: input.businessName,
+        });
+        if (businesses.length > 0) {
+          let array: mongoose.Types.ObjectId[] = [];
+          businesses.map((business) => {
+            array.push(business._id);
           });
-          if (businesses.length > 0) {
-            let array: mongoose.Types.ObjectId[] = [];
-            businesses.map((i) => {
-              array.push(i._id);
-            });
-            const bString = userData?.businessDetailsId.toString();
+          const businessDetailsIdInString =
+            userData?.businessDetailsId.toString();
 
-            const containsB = array.some((item) => item.toString() === bString);
-
-            if (!containsB) {
-              return res
-                .status(400)
-                .json({ error: { message: "Business Name Already Exists." } });
-            }
-          }
-
-          await BusinessDetails.findByIdAndUpdate(
-            userData?.businessDetailsId,
-            { businessName: input.businessName },
-
-            { new: true }
+          const ids = array.some(
+            (item) => item.toString() === businessDetailsIdInString
           );
+
+          if (!ids) {
+            return res
+              .status(400)
+              .json({ error: { message: "Business Name Already Exists." } });
+          }
+        }
+
+        await BusinessDetails.findByIdAndUpdate(
+          userData?.businessDetailsId,
+          { businessName: input.businessName },
+
+          { new: true }
+        );
         // }
       }
       if ((req.file || {}).filename) {
@@ -343,11 +363,18 @@ export class BusinessDetailsController {
         await User.findByIdAndUpdate(userData?.id, {
           leadCost: industry?.leadCost,
         });
+        await LeadTablePreference.findOneAndUpdate(
+          { userId: userData?.id },
+          { columns: industry?.columns }
+        );
       }
       const data = await BusinessDetails.findByIdAndUpdate(id, input, {
         new: true,
       });
-      const serviceDataForActivityLogs = await UserService.findOne({ userId: userData?.id },"-_id -__v -userId -createdAt -deletedAt -updatedAt");
+      const serviceDataForActivityLogs = await UserService.findOne(
+        { userId: userData?.id },
+        "-_id -__v -userId -createdAt -deletedAt -updatedAt"
+      );
 
       const serviceData = await UserService.findOne({ userId: userData?.id });
       if (input.accreditations) {
@@ -366,16 +393,16 @@ export class BusinessDetailsController {
         input.financeOffers = false;
       }
       if (input.prices === "null") {
-         input.prices="";
+        input.prices = "";
       }
       if (input.avgInstallTime === "null") {
-         input.avgInstallTime="";
+        input.avgInstallTime = "";
       }
       if (input.trustpilotReviews === "null") {
-         input.trustpilotReviews="";
+        input.trustpilotReviews = "";
       }
       if (input.criteria === "null") {
-         input.criteria=[];
+        input.criteria = [];
       }
       let service;
       if (serviceData) {
@@ -437,47 +464,63 @@ export class BusinessDetailsController {
           criteria: JSON.stringify(service?.criteria),
           dailyLeads: leadData?.daily,
           postCodes: leadData?.postCodeTargettingList,
-          detailsType:"UPDATED DETAILS"
+          detailsType: "UPDATED DETAILS",
         };
         businessDetailsSubmission(messageToSendInBusinessSubmission);
         if (req.file && details.businessLogo) {
           DeleteFile(`${details.businessLogo}`);
         }
-        const userAfterMod=await BusinessDetails.findById(id," -_id  -createdAt -updatedAt").lean()
+        const userAfterMod = await BusinessDetails.findById(
+          id,
+          " -_id  -createdAt -updatedAt"
+        ).lean();
 
         const fields = findUpdatedFields(userForActivity, userAfterMod);
-        const userr=await User.findOne({businessDetailsId:req.params.id})
+        const userr = await User.findOne({ businessDetailsId: req.params.id });
         const isEmpty = Object.keys(fields.updatedFields).length === 0;
+        let user: Partial<UserInterface> = req.user ?? ({} as UserInterface);
 
-        
-        if(!isEmpty && userr?.isSignUpCompleteWithCredit){const activity={
-          //@ts-ignore
-          actionBy:req?.user?.role,
-          actionType:ACTION.UPDATING,
-          targetModel:MODEL_ENUM.BUSINESS_DETAILS,
-          //@ts-ignore
-          userEntity:userr?.id,
-          originalValues:fields.oldFields,
-          modifiedValues:fields.updatedFields
+        if (!isEmpty && userr?.isSignUpCompleteWithCredit) {
+          const activity = {
+            actionBy: user.role,
+            actionType: ACTION.UPDATING,
+            targetModel: MODEL_ENUM.BUSINESS_DETAILS,
+            userEntity: userr?.id,
+            originalValues: fields.oldFields,
+            modifiedValues: fields.updatedFields,
+          };
+          await ActivityLogs.create(activity);
         }
-        await ActivityLogs.create(activity)}
 
-        if(input.financeOffers || input.prices || input.accreditations || input.avgInstallTime || input.trustpilotReviews){
-          const serviceData = await UserService.findOne({ userId: userData?.id },"-_id -userId -createdAt -deletedAt -__v -updatedAt");
-          const fields = findModifiedFieldsForUserService(serviceDataForActivityLogs, serviceData);
+        if (
+          input.financeOffers ||
+          input.prices ||
+          input.accreditations ||
+          input.avgInstallTime ||
+          input.trustpilotReviews
+        ) {
+          const serviceData = await UserService.findOne(
+            { userId: userData?.id },
+            "-_id -userId -createdAt -deletedAt -__v -updatedAt"
+          );
+          const fields = findModifiedFieldsForUserService(
+            serviceDataForActivityLogs,
+            serviceData
+          );
+          let user: Partial<UserInterface> = req.user ?? ({} as UserInterface);
+
           const isEmpty = Object.keys(fields.updatedFields).length === 0;
-          if(!isEmpty && userr?.isSignUpCompleteWithCredit){const activity={
-            //@ts-ignore
-            actionBy:req?.user?.role,
-            actionType:ACTION.UPDATING,
-            targetModel:MODEL_ENUM.USER_SERVICE_DETAILS,
-            //@ts-ignore
-            userEntity:userr?.id,
-            originalValues:fields.oldFields,
-            modifiedValues:fields.updatedFields
+          if (!isEmpty && userr?.isSignUpCompleteWithCredit) {
+            const activity = {
+              actionBy: user?.role,
+              actionType: ACTION.UPDATING,
+              targetModel: MODEL_ENUM.USER_SERVICE_DETAILS,
+              userEntity: userr?.id,
+              originalValues: fields.oldFields,
+              modifiedValues: fields.updatedFields,
+            };
+            await ActivityLogs.create(activity);
           }
-          await ActivityLogs.create(activity)}
-  
         }
         return res.json({
           data: {
@@ -511,19 +554,18 @@ export class BusinessDetailsController {
   };
 
   static showById = async (req: Request, res: Response): Promise<any> => {
-    const currentUser = req.user;
     const Id = req.params.id;
     try {
+      const userData = await User.findById(Id).populate("businessDetailsId");
       const data = await BusinessDetails.find({
         _id: Id,
         isDeleted: false,
       });
+      let user: Partial<UserInterface> = req.user ?? ({} as UserInterface);
 
       if (
-        //@ts-ignore
-        currentUser?.role == RolesEnum.INVITED &&
-        //@ts-ignore
-        currentUser?.businessDetailsId != Id
+        user?.role == RolesEnum.INVITED &&
+        userData?.businessDetailsId !== new ObjectId(Id)
       ) {
         return res.status(403).json({
           error: { message: "You dont't have access to this resource.!" },
@@ -566,7 +608,10 @@ export class BusinessDetailsController {
     }
   };
 
-  static nonBillableBusinessDetails = async (req: Request, res: Response): Promise<any> => {
+  static nonBillableBusinessDetails = async (
+    req: Request,
+    res: Response
+  ): Promise<any> => {
     const input = req.body;
 
     if (!input.userId) {
@@ -577,19 +622,16 @@ export class BusinessDetailsController {
     const Business = new BusinessDetailsInput();
     (Business.businessIndustry = input.businessIndustry),
       (Business.businessName = input.businessName),
-      //@ts-ignore
-      // (Business.businessLogo = String(req.file?.filename)),
       (Business.businessSalesNumber = input.businessSalesNumber),
       (Business.address1 = input.address1),
-      // (Business.businessAddress = input.businessAddress),
       (Business.businessCity = input.businessCity),
-      // (Business.businessCountry = input.businessCountry),
       (Business.businessPostCode = input.businessPostCode);
     Business.businessOpeningHours = JSON.parse(input?.businessOpeningHours);
     const isBusinessNameExist = await BusinessDetails.findOne({
       businessName: input.businessName,
     });
-    const user: any = await User.findById(input.userId);
+    const user: UserInterface =
+      (await User.findById(input.userId)) ?? ({} as UserInterface);
 
     if (isBusinessNameExist) {
       return res
@@ -597,11 +639,10 @@ export class BusinessDetailsController {
         .json({ error: { message: "Business Name Already Exists." } });
     }
     // get onboarding value of user
-  
+
     // input.businessOpeningHours=JSON.parse(input.businessOpeningHours)
     try {
-      let dataToSave: any = {
-        userId: input?.userId,
+      let dataToSave: Partial<BusinessDetailsInterface> = {
         businessIndustry: Business?.businessIndustry,
         businessName: Business?.businessName,
         businessDescription: input?.businessDescription,
@@ -616,21 +657,28 @@ export class BusinessDetailsController {
         // businessOpeningHours: (input?.businessOpeningHours),
       };
       if (req?.file) {
-        //@ts-ignore
         dataToSave.businessLogo = `${FileEnum.PROFILEIMAGE}${req?.file.filename}`;
       }
       const userData = await BusinessDetails.create(dataToSave);
 
-      const industry = await BuisnessIndustries.findOne({
-        industry: input?.businessIndustry,
+      const industry: BuisnessIndustriesInterface =
+        (await BuisnessIndustries.findOne({
+          industry: input?.businessIndustry,
+        })) ?? ({} as BuisnessIndustriesInterface);
+      const additionalColumns: any = additionalColumnsForLeads(
+        industry?.columns.length
+      );
+      industry?.columns.push(additionalColumns);
+      await LeadTablePreference.create({
+        userId: input.userId,
+        columns: industry?.columns,
       });
-   await LeadTablePreference.create({userId:input.userId, columns:industry?.columns})
       await User.findByIdAndUpdate(input.userId, {
         businessDetailsId: new ObjectId(userData._id),
         leadCost: industry?.leadCost,
         businessIndustryId: industry?.id,
       });
-     
+
       if (input.accreditations) {
         input.accreditations = JSON.parse(input.accreditations);
       }
@@ -666,7 +714,7 @@ export class BusinessDetailsController {
         service,
         leadCost: user?.leadCost,
       });
-      const params: any = {
+      const params: CreateCustomerInput = {
         email: user?.email,
         firstName: user?.firstName,
         lastName: user?.lastName,
@@ -680,6 +728,7 @@ export class BusinessDetailsController {
         // country_name: input.businessCountry,
         phone: input?.businessSalesNumber,
         businessId: userData?.id,
+        country_name: "",
       };
       const paramsObj = Object.values(params).some(
         (value: any) => value === undefined
@@ -690,7 +739,7 @@ export class BusinessDetailsController {
             console.log("Customer created!!!!");
           })
           .catch((ERR) => {
-            console.log("ERROR while creating customer");
+            console.log("error while creating customer");
           });
       }
     } catch (error) {

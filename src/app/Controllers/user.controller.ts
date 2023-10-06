@@ -9,7 +9,6 @@ import { sort } from "../../utils/Enums/sorting.enum";
 import { transactionTitle } from "../../utils/Enums/transaction.title.enum";
 import { refreshToken } from "../../utils/XeroApiIntegration/createContact";
 import { generatePDF } from "../../utils/XeroApiIntegration/generatePDF";
-import { managePaymentsByPaymentMethods } from "../../utils/payment";
 import { RegisterInput } from "../Inputs/Register.input";
 import { sendEmailForUpdatedDetails } from "../Middlewares/mail";
 import { BusinessDetails } from "../Models/BusinessDetails";
@@ -21,12 +20,17 @@ import { UserLeadsDetails } from "../Models/UserLeadsDetails";
 import { ClientTablePreferenceInterface } from "../../types/clientTablePrefrenceInterface";
 import { ClientTablePreference } from "../Models/ClientTablePrefrence";
 import { Column } from "../../types/ColumnsPreferenceInterface";
-import { Admins } from "../Models/Admins";
 import { deleteCustomerOnRyft } from "../../utils/createCustomer/deleteFromRyft";
 import { MODEL_ENUM } from "../../utils/Enums/model.enum";
 import { ACTION } from "../../utils/Enums/actionType.enum";
 import { ActivityLogs } from "../Models/ActivityLogs";
 import { findUpdatedFields } from "../../utils/Functions/findModifiedColumns";
+import { Leads } from "../Models/Leads";
+import { UserInterface } from "../../types/UserInterface";
+import { leadsStatusEnums } from "../../utils/Enums/leads.status.enum";
+import { PAYMENT_STATUS } from "../../utils/Enums/payment.status";
+import { createSessionUnScheduledPayment } from "../../utils/payment/createPaymentToRYFT";
+import { FILTER_FOR_CLIENT } from "../../utils/Enums/billableFilterEnum";
 const ObjectId = mongoose.Types.ObjectId;
 
 const LIMIT = 10;
@@ -112,8 +116,16 @@ export class UsersControllers {
 
   static index = async (_req: any, res: Response): Promise<Response> => {
     try {
-      let sortingOrder = _req.query.sortingOrder || sort.DESC;
-      let sortKey = _req.query.sortKey || "createdAt";
+      let sortingOrder = _req.query.sortBy
+        ? JSON.parse(_req.query.sortBy)[0]?.order || sort.DESC
+        : "";
+
+      let filter = _req.query.clientType;
+      let accountManagerBoolean = _req.query.accountManager;
+      let accountManagerId = _req.query.accountManagerId;
+      let sortKey = _req.query.sortBy
+        ? JSON.parse(_req.query.sortBy)[0]?.id || "createdAt"
+        : "";
       let isArchived = _req.query.isArchived || "false";
       let isActive = _req.query.isActive || "true";
       if (sortingOrder == sort.ASC) {
@@ -140,12 +152,30 @@ export class UsersControllers {
 
       let dataToFind: any = {
         role: {
-          $nin: [RolesEnum.ADMIN, RolesEnum.INVITED, RolesEnum.SUPER_ADMIN],
+          $nin: [
+            RolesEnum.ADMIN,
+            RolesEnum.INVITED,
+            RolesEnum.SUPER_ADMIN,
+            RolesEnum.ACCOUNT_MANAGER,
+            RolesEnum.SUBSCRIBER,
+          ],
         },
         // role:{$ne: RolesEnum.INVITED },
         isDeleted: false,
         isArchived: JSON.parse(isArchived?.toLowerCase()),
       };
+      if (filter === FILTER_FOR_CLIENT.ALL && !accountManagerBoolean) {
+        dataToFind.role = { $in: [RolesEnum.NON_BILLABLE, RolesEnum.USER] };
+      }
+      if (filter === FILTER_FOR_CLIENT.BILLABLE && !accountManagerBoolean) {
+        dataToFind.role = { $in: [RolesEnum.USER] };
+      }
+      if (filter === FILTER_FOR_CLIENT.NON_BILLABLE && !accountManagerBoolean) {
+        dataToFind.role = { $in: [RolesEnum.NON_BILLABLE] };
+      }
+      if (accountManagerBoolean) {
+        dataToFind.role = RolesEnum.ACCOUNT_MANAGER;
+      }
       if (_req.query.isActive) {
         dataToFind.isActive = JSON.parse(isActive?.toLowerCase());
         dataToFind.isArchived = false;
@@ -155,6 +185,9 @@ export class UsersControllers {
       }
       if (_req.query.industryId) {
         dataToFind.businessIndustryId = new ObjectId(_req.query.industryId);
+      }
+      if (accountManagerId != "" && accountManagerId) {
+        dataToFind.accountManager = new ObjectId(_req.query.accountManagerId);
       }
       if (_req.query.search) {
         dataToFind = {
@@ -181,12 +214,19 @@ export class UsersControllers {
         };
         skip = 0;
       }
-      const sortObject: Record<string, 1 | -1> = {};
-      sortObject[sortKey] = sortingOrder;
+      let sortObject: Record<string, 1 | -1>;
+      if (accountManagerBoolean) {
+        sortObject = { firstName: 1 };
+      } else {
+        sortObject = {};
+        sortObject[sortKey] = sortingOrder;
+      }
+      console.log("data", dataToFind);
       const [query]: any = await User.aggregate([
         {
           $facet: {
             results: [
+              { $match: dataToFind },
               {
                 $lookup: {
                   from: "businessdetails",
@@ -194,6 +234,17 @@ export class UsersControllers {
                   foreignField: "_id",
                   as: "businessDetailsId",
                 },
+              },
+              {
+                $lookup: {
+                  from: "users",
+                  localField: "accountManager",
+                  foreignField: "_id",
+                  as: "accountManager",
+                },
+              },
+              {
+                $unwind: "$accountManager",
               },
               {
                 $lookup: {
@@ -211,7 +262,6 @@ export class UsersControllers {
                   as: "userServiceId",
                 },
               },
-              { $match: dataToFind },
 
               //@ts-ignore
               { $sort: sortObject },
@@ -252,7 +302,7 @@ export class UsersControllers {
                 $addFields: {
                   createdAt: {
                     $dateToString: {
-                      format: "%Y-%m-%d", // Define your desired format here
+                      format: "%d/%m/%Y", // Define your desired format here
                       date: "$createdAt", // Replace "createdAt" with your actual field name
                     },
                   },
@@ -266,6 +316,7 @@ export class UsersControllers {
           },
         },
       ]);
+
       query.results.map((item: any) => {
         let businessDetailsId = Object.assign({}, item["businessDetailsId"][0]);
         let userLeadsDetailsId = Object.assign(
@@ -278,6 +329,8 @@ export class UsersControllers {
         item.businessDetailsId = businessDetailsId;
         item.userServiceId = userServiceId;
         item.businessDetailsId.daily = item.userLeadsDetailsId.daily;
+        item.accountManager =
+          item.accountManager.firstName + (item.accountManager.lastName || "");
       });
 
       const userCount = query.userCount[0]?.count || 0;
@@ -323,6 +376,17 @@ export class UsersControllers {
                 },
                 {
                   $lookup: {
+                    from: "users",
+                    localField: "accountManager",
+                    foreignField: "_id",
+                    as: "accountManager",
+                  },
+                },
+                {
+                  $unwind: "$accountManager",
+                },
+                {
+                  $lookup: {
                     from: "userleadsdetails",
                     localField: "userLeadsDetailsId",
                     foreignField: "_id",
@@ -356,16 +420,11 @@ export class UsersControllers {
           item.userLeadsDetailsId = userLeadsDetailsId;
           item.businessDetailsId = businessDetailsId;
           item.cardDetailsId = cardDetailsId;
+          item.accountManager =
+            item.accountManager.firstName +
+            (item.accountManager.lastName || "");
         });
-        if (query.results.length == 0) {
-          [query] = await Admins.aggregate([
-            {
-              $facet: {
-                results: [{ $match: { _id: new ObjectId(id) } }],
-              },
-            },
-          ]);
-        }
+
         return res.json({ data: query.results[0] });
       } else {
         [query] = await User.aggregate([
@@ -416,15 +475,7 @@ export class UsersControllers {
           item.businessDetailsId = businessDetailsId;
           item.cardDetailsId = cardDetailsId;
         });
-        if (query.results.length == 0) {
-          [query] = await Admins.aggregate([
-            {
-              $facet: {
-                results: [{ $match: { _id: new ObjectId(id) } }],
-              },
-            },
-          ]);
-        }
+
         return res.json({ data: query.results[0] });
       }
     } catch (err) {
@@ -507,7 +558,9 @@ export class UsersControllers {
 
     try {
       const checkUser = await User.findById(id);
-      const businesBeforeUpdate=await BusinessDetails.findById(checkUser?.businessDetailsId)
+      const businesBeforeUpdate = await BusinessDetails.findById(
+        checkUser?.businessDetailsId
+      );
       // const userLeadDetailsBeforeUpdate=await UserLeadsDetails.findById(checkUser?.userLeadsDetailsId)
       const userForActivity = await User.findById(
         id,
@@ -571,19 +624,9 @@ export class UsersControllers {
         }
       }
       if (!checkUser) {
-        const admin = await Admins.findById(id);
-        if (!admin) {
-          return res
-            .status(404)
-            .json({ error: { message: "Admin and User to update does not exists." } });
-        } else if (!checkUser && !admin) {
-          return res
-            .status(404)
-            .json({ error: { message: "User to update does not exists." } });
-        } else {
-          const data = await Admins.findByIdAndUpdate(id, input, { new: true });
-          return res.json({ data: data });
-        }
+        return res
+          .status(404)
+          .json({ error: { message: "User to update does not exists." } });
       }
 
       const cardExist = await CardDetails.findOne({
@@ -616,14 +659,17 @@ export class UsersControllers {
         });
         if (businesses.length > 0) {
           let array: mongoose.Types.ObjectId[] = [];
-          businesses.map((i) => {
-            array.push(i._id);
+          businesses.map((business) => {
+            array.push(business._id);
           });
-          const bString = checkUser?.businessDetailsId.toString();
+          const businessDetailsIdInString =
+            checkUser?.businessDetailsId.toString();
 
-          const containsB = array.some((item) => item.toString() === bString);
+          const ids = array.some(
+            (item) => item.toString() === businessDetailsIdInString
+          );
 
-          if (!containsB) {
+          if (!ids) {
             return res
               .status(400)
               .json({ error: { message: "Business Name Already Exists." } });
@@ -851,8 +897,8 @@ export class UsersControllers {
           cardId: cardExist?.id,
         };
 
-        managePaymentsByPaymentMethods(params)
-          .then(async (res) => {
+        createSessionUnScheduledPayment(params)
+          .then(async (_res: any) => {
             if (!checkUser.xeroContactId) {
               console.log("xeroContact ID not found. Failed to generate pdf.");
             }
@@ -873,7 +919,8 @@ export class UsersControllers {
                 transactionTitle.CREDITS_ADDED,
                 //@ts-ignore
                 input?.credits,
-                0
+                0,
+                _res.data.id
               )
                 .then(async (res: any) => {
                   const dataToSaveInInvoice: any = {
@@ -887,7 +934,7 @@ export class UsersControllers {
                     invoiceId: res.data.Invoices[0].InvoiceID,
                   });
 
-                  console.log("PDF generated");
+                  console.log("pdf generated");
                 })
                 .catch(async (err) => {
                   refreshToken().then(async (res) => {
@@ -896,7 +943,8 @@ export class UsersControllers {
                       transactionTitle.CREDITS_ADDED,
                       //@ts-ignore
                       input.credits,
-                      0
+                      0,
+                      _res.data.id
                     ).then(async (res: any) => {
                       const dataToSaveInInvoice: any = {
                         userId: checkUser?.id,
@@ -909,7 +957,7 @@ export class UsersControllers {
                         invoiceId: res.data.Invoices[0].InvoiceID,
                       });
 
-                      console.log("PDF generated");
+                      console.log("pdf generated");
                     });
                   });
                 });
@@ -1009,7 +1057,6 @@ export class UsersControllers {
             originalValues: fields.oldFields,
             modifiedValues: fields.updatedFields,
           };
-          console.log("activity", activity);
           await ActivityLogs.create(activity);
         }
 
@@ -1030,34 +1077,48 @@ export class UsersControllers {
             data: result,
           });
         } else {
-          if(input.businessIndustry || input.businessName || input.businessLogo || input.address1 || input.address2 || input.businessSalesNumber || input.businessCountry || input.businessPostCode || input.businessOpeningHours)
-          {
-            const businesAfterUpdate=await BusinessDetails.findById(checkUser.businessDetailsId," -_id  -createdAt -updatedAt").lean()
-            
-            const fields = findUpdatedFields(businesBeforeUpdate, businesAfterUpdate);
+          if (
+            input.businessIndustry ||
+            input.businessName ||
+            input.businessLogo ||
+            input.address1 ||
+            input.address2 ||
+            input.businessSalesNumber ||
+            input.businessCountry ||
+            input.businessPostCode ||
+            input.businessOpeningHours
+          ) {
+            const businesAfterUpdate = await BusinessDetails.findById(
+              checkUser.businessDetailsId,
+              " -_id  -createdAt -updatedAt"
+            ).lean();
+
+            const fields = findUpdatedFields(
+              businesBeforeUpdate,
+              businesAfterUpdate
+            );
             const isEmpty = Object.keys(fields.updatedFields).length === 0;
-            if(!isEmpty && user?.isSignUpCompleteWithCredit){const activity={
-              //@ts-ignore
-              actionBy:req?.user?.role,
-              actionType:ACTION.UPDATING,
-              targetModel:MODEL_ENUM.BUSINESS_DETAILS,
-              //@ts-ignore
-              userEntity:checkUser?.id,
-              originalValues:fields.oldFields,
-              modifiedValues:fields.updatedFields
+            if (!isEmpty && user?.isSignUpCompleteWithCredit) {
+              const activity = {
+                //@ts-ignore
+                actionBy: req?.user?.role,
+                actionType: ACTION.UPDATING,
+                targetModel: MODEL_ENUM.BUSINESS_DETAILS,
+                //@ts-ignore
+                userEntity: checkUser?.id,
+                originalValues: fields.oldFields,
+                modifiedValues: fields.updatedFields,
+              };
+              await ActivityLogs.create(activity);
             }
-            await ActivityLogs.create(activity)}
-      
           }
           return res.json({ message: "Updated Successfully", data: result });
         }
       }
-console.log("----here--------")
-     
     } catch (err) {
       return res
         .status(500)
-        .json({ error: { message: "Something went wrong." ,err} });
+        .json({ error: { message: "Something went wrong.", err } });
     }
   };
 
@@ -1101,10 +1162,10 @@ console.log("----here--------")
   static reOrderIndex = async (req: Request, res: Response): Promise<any> => {
     const input = req.body;
     try {
-      input.forEach(async (i: { _id: any; rowIndex: any }) => {
+      input.forEach(async (key: { _id: any; rowIndex: any }) => {
         await User.findByIdAndUpdate(
-          { _id: i._id },
-          { rowIndex: i.rowIndex },
+          { _id: key._id },
+          { rowIndex: key.rowIndex },
           { new: true }
         );
       });
@@ -1249,6 +1310,640 @@ console.log("----here--------")
       });
     }
   };
+
+  static createAccountManager = async (req: any, res: Response) => {
+    try {
+      const input = req.body;
+      let data;
+      const exists = await User.findOne({
+        firstName: input.firstName,
+        lastName: input.lastName,
+        role: RolesEnum.ACCOUNT_MANAGER,
+        isDeleted: false,
+      });
+      if (exists) {
+        return res
+          .status(400)
+          .json({ message: "Account Manager already exists" });
+      } else {
+        const dataToSave = {
+          firstName: input.firstName,
+          lastName: input.lastName,
+          role: RolesEnum.ACCOUNT_MANAGER,
+        };
+        data = await User.create(dataToSave);
+      }
+      return res.json({ data: data });
+    } catch (err) {
+      return res.status(500).json({
+        error: {
+          message: "something went wrong",
+          err,
+        },
+      });
+    }
+  };
+
+  static accountManagerStats = async (req: any, res: Response) => {
+    try {
+      const input = req.body;
+      const startDate = new Date(input.startDate);
+      const endDate = new Date(input.endDate);
+      const year: any = new Date().getFullYear();
+      const difference: number = endDate.getTime() - startDate.getTime();
+      const differenceMs: number = Math.floor(
+        difference / (1000 * 60 * 60 * 24)
+      );
+
+      let days = [
+        1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20,
+        21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31,
+      ];
+      const labels = [
+        "Jan",
+        "Feb",
+        "Mar",
+        "Apr",
+        "May",
+        "Jun",
+        "Jul",
+        "Aug",
+        "Sep",
+        "Oct",
+        "Nov",
+        "Dec",
+      ];
+      let accountManagersId = input.accountManagerIds;
+      let userObj: Object[] = [];
+      let rawDataInDaysForRejectedLeads;
+      let rawDataInDaysForRequestedLeads;
+      await Promise.all(
+        accountManagersId.map(async (id: string) => {
+          let bids: string[] = [];
+          let credits: number[] = [];
+          let txn: number[] = [];
+          let leadsRequested;
+          let leadRejected;
+          const manager = await User.findById(id);
+          if (manager) {
+            const res = await User.find({
+              accountManager: id,
+              createdAt: { $gte: startDate, $lte: endDate },
+            }).populate("accountManager");
+            let obj: Record<string, string | number> = {};
+            //@ts-ignore
+            obj.name = manager?.firstName;
+
+            res.forEach(async (user: UserInterface) => {
+              if (user.buyerId) bids.push(user.buyerId);
+              credits.push(user.credits);
+              let txns = await Transaction.find({
+                userId: user?.id,
+
+                title: transactionTitle.CREDITS_ADDED,
+
+                status: PAYMENT_STATUS.CAPTURED,
+
+                createdAt: { $gte: startDate, $lte: endDate },
+              });
+              if (txns) txn.push(txns.length);
+            });
+            if (differenceMs < 30) {
+              leadRejected = await Leads.find({
+                bid: { $in: bids },
+                status: leadsStatusEnums.REPORT_REJECTED,
+                createdAt: { $gte: startDate, $lte: endDate },
+              });
+
+              leadsRequested = await Leads.aggregate([
+                {
+                  $match: {
+                    bid: { $in: bids },
+                    status: leadsStatusEnums.VALID,
+                    createdAt: {
+                      $gte: startDate,
+                      $lt: endDate,
+                    },
+                  },
+                },
+                {
+                  $addFields: {
+                    dayOfMonth: { $dayOfMonth: "$createdAt" },
+                  },
+                },
+                {
+                  $group: {
+                    _id: {
+                      dayOfMonth: "$dayOfMonth",
+                      year: { $year: "$createdAt" },
+                    },
+                    count: { $sum: 1 },
+                  },
+                },
+
+                {
+                  $project: {
+                    _id: 0,
+                    dayOfMonth: "$_id.dayOfMonth",
+                    year: "$_id.year",
+                    count: 1,
+                  },
+                },
+                {
+                  $sort: {
+                    dayOfMonth: 1,
+                  },
+                },
+              ]);
+              (rawDataInDaysForRejectedLeads = leadRejected.length),
+                (rawDataInDaysForRequestedLeads = convertDataForDaysInMonth(
+                  leadsRequested,
+                  days,
+                  year
+                ));
+            } else {
+              leadRejected = await Leads.find({
+                bid: { $in: bids },
+                status: leadsStatusEnums.REPORT_REJECTED,
+                createdAt: { $gte: startDate, $lte: endDate },
+              });
+              leadsRequested = await Leads.aggregate([
+                {
+                  $match: {
+                    bid: { $in: bids },
+                    status: leadsStatusEnums.VALID,
+                    createdAt: {
+                      $gte: startDate,
+                      $lt: endDate,
+                    },
+                  },
+                },
+                {
+                  $group: {
+                    _id: {
+                      year: { $year: "$createdAt" },
+
+                      month: { $month: "$createdAt" },
+                    },
+                    count: { $sum: 1 },
+                  },
+                },
+                {
+                  $addFields: {
+                    monthName: {
+                      $let: {
+                        vars: {
+                          monthsInString: [
+                            null,
+                            "Jan",
+                            "Feb",
+                            "Mar",
+                            "Apr",
+                            "May",
+                            "Jun",
+                            "Jul",
+                            "Aug",
+                            "Sep",
+                            "Oct",
+                            "Nov",
+                            "Dec",
+                          ],
+                        },
+                        in: {
+                          $arrayElemAt: ["$$monthsInString", "$_id.month"],
+                        },
+                      },
+                    },
+                  },
+                },
+                {
+                  $project: {
+                    _id: 0,
+                    year: "$_id.year",
+                    month: "$_id.month",
+                    monthName: 1,
+                    count: 1,
+                  },
+                },
+                {
+                  $sort: {
+                    year: 1,
+                    month: 1,
+                  },
+                },
+              ]);
+              rawDataInDaysForRejectedLeads = leadRejected.length;
+              rawDataInDaysForRequestedLeads = convertData(
+                leadsRequested,
+                labels,
+                year
+              );
+            }
+
+            //@ts-ignore
+            obj.leadsRejectedCount = rawDataInDaysForRejectedLeads;
+            //@ts-ignore
+            obj.leadsRequestedCount = rawDataInDaysForRequestedLeads;
+            let creditsTotal;
+            if (credits.length > 0) {
+              creditsTotal = credits.reduce((acc, cor) => {
+                return acc + cor;
+              });
+            } else {
+              creditsTotal = 0;
+            }
+
+            let txnTotal;
+            if (txn && txn.length > 0) {
+              txnTotal = txn.reduce((acc, cor) => {
+                return acc + cor;
+              });
+            } else {
+              txnTotal = 0;
+            }
+
+            obj.creditsSum = creditsTotal;
+            // console.log("txnTotal", txnTotal);
+            if (txnTotal > 0) {
+              obj.creditsCount = txnTotal;
+              obj.creditsAvg = Math.ceil(creditsTotal / txnTotal);
+            } else {
+              obj.creditsCount = 0;
+              obj.creditsAvg = creditsTotal;
+            }
+
+            userObj.push(obj);
+          }
+        })
+      );
+      return res.json({ data: userObj });
+    } catch (err) {
+      return res.status(500).json({
+        error: {
+          message: "something went wrong",
+          err,
+        },
+      });
+    }
+  };
+
+  static accountManagerStatsNew = async (req: any, res: Response) => {
+    try {
+      const input = req.body;
+      const startDate = new Date(input.startDate);
+      const endDate = new Date(input.endDate);
+      const year: any = new Date().getFullYear();
+      const differenceMs: number = endDate.getTime() - startDate.getTime();
+      let days = [
+        1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20,
+        21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31,
+      ];
+      const labels = [
+        "Jan",
+        "Feb",
+        "Mar",
+        "Apr",
+        "May",
+        "Jun",
+        "Jul",
+        "Aug",
+        "Sep",
+        "Oct",
+        "Nov",
+        "Dec",
+      ];
+      let accountManagersId = input.accountManagerIds;
+      let userObj: Object[] = [];
+      let rawDataInDaysForRejectedLeads;
+      let rawDataInDaysForRequestedLeads;
+      await Promise.all(
+        accountManagersId.map(async (id: string) => {
+          let bids: string[] = [];
+          let credits: number[] = [];
+          let txn: number[] = [];
+          let leadsRequested;
+          let leadRejected;
+          const manager = await User.findById(id);
+          const res = await User.find({
+            accountManager: id,
+            createdAt: { $gte: startDate, $lte: endDate },
+          }).populate("accountManager");
+          let obj: Record<string, string | number> = {};
+          //@ts-ignore
+          obj.name = manager?.firstName;
+
+          res.forEach(async (user: UserInterface) => {
+            if (user.buyerId) bids.push(user.buyerId);
+            credits.push(user.credits);
+            let txns = await Transaction.find({
+              userId: user?.id,
+
+              title: transactionTitle.CREDITS_ADDED,
+
+              status: PAYMENT_STATUS.CAPTURED,
+
+              createdAt: { $gte: startDate, $lte: endDate },
+            });
+            if (txns) txn.push(txns.length);
+          });
+          if (differenceMs < 30) {
+            leadsRequested = await Leads.aggregate([
+              {
+                $match: {
+                  bid: { $in: bids },
+                  status: leadsStatusEnums.VALID,
+                  createdAt: {
+                    $gte: startDate,
+                    $lt: endDate,
+                  },
+                },
+              },
+              {
+                $addFields: {
+                  dayOfMonth: { $dayOfMonth: "$createdAt" },
+                },
+              },
+              {
+                $group: {
+                  _id: {
+                    dayOfMonth: "$dayOfMonth",
+                    // dayOfWeek: "$dayOfWeek",
+                    year: { $year: "$createdAt" },
+                    // month: { $month: "$createdAt" },
+                  },
+                  count: { $sum: 1 },
+                },
+              },
+
+              {
+                $project: {
+                  _id: 0,
+                  dayOfMonth: "$_id.dayOfMonth",
+
+                  year: "$_id.year",
+                  // month: "$_id.month",
+                  // monthName: 1,
+                  count: 1,
+                },
+              },
+              {
+                $sort: {
+                  dayOfMonth: 1,
+                  // year:1
+                },
+              },
+            ]);
+            leadRejected = await Leads.aggregate([
+              {
+                $match: {
+                  bid: { $in: bids },
+                  status: leadsStatusEnums.VALID,
+                  createdAt: {
+                    $gte: startDate,
+                    $lt: endDate,
+                  },
+                },
+              },
+              {
+                $addFields: {
+                  dayOfMonth: { $dayOfMonth: "$createdAt" },
+                },
+              },
+              {
+                $group: {
+                  _id: {
+                    dayOfMonth: "$dayOfMonth",
+                    // dayOfWeek: "$dayOfWeek",
+                    year: { $year: "$createdAt" },
+                    // month: { $month: "$createdAt" },
+                  },
+                  count: { $sum: 1 },
+                },
+              },
+
+              {
+                $project: {
+                  _id: 0,
+                  dayOfMonth: "$_id.dayOfMonth",
+
+                  year: "$_id.year",
+                  // month: "$_id.month",
+                  // monthName: 1,
+                  count: 1,
+                },
+              },
+              {
+                $sort: {
+                  dayOfMonth: 1,
+                  // year:1
+                },
+              },
+            ]);
+            rawDataInDaysForRequestedLeads = convertDataForDaysInMonth(
+              leadsRequested,
+              days,
+              year
+            );
+            rawDataInDaysForRejectedLeads = convertDataForDaysInMonth(
+              leadRejected,
+              days,
+              year
+            );
+            // let rawDataInMonth = convertData(leadRejected, labels, year);
+          } else {
+            leadsRequested = await Leads.aggregate([
+              {
+                $match: {
+                  bid: { $in: bids },
+                  status: leadsStatusEnums.VALID,
+                  createdAt: {
+                    $gte: startDate,
+                    $lt: endDate,
+                  },
+                },
+              },
+              {
+                $group: {
+                  _id: {
+                    year: { $year: "$createdAt" },
+
+                    month: { $month: "$createdAt" },
+                  },
+                  count: { $sum: 1 },
+                },
+              },
+              {
+                $addFields: {
+                  monthName: {
+                    $let: {
+                      vars: {
+                        monthsInString: [
+                          null,
+                          "Jan",
+                          "Feb",
+                          "Mar",
+                          "Apr",
+                          "May",
+                          "Jun",
+                          "Jul",
+                          "Aug",
+                          "Sep",
+                          "Oct",
+                          "Nov",
+                          "Dec",
+                        ],
+                      },
+                      in: {
+                        $arrayElemAt: ["$$monthsInString", "$_id.month"],
+                      },
+                    },
+                  },
+                },
+              },
+              {
+                $project: {
+                  _id: 0,
+                  year: "$_id.year",
+                  month: "$_id.month",
+                  monthName: 1,
+                  count: 1,
+                },
+              },
+              {
+                $sort: {
+                  year: 1,
+                  month: 1,
+                },
+              },
+            ]);
+            leadRejected = await Leads.aggregate([
+              {
+                $match: {
+                  bid: { $in: bids },
+                  status: leadsStatusEnums.REPORT_REJECTED,
+                  createdAt: {
+                    $gte: startDate,
+                    $lt: endDate,
+                  },
+                },
+              },
+              {
+                $group: {
+                  _id: {
+                    year: { $year: "$createdAt" },
+
+                    month: { $month: "$createdAt" },
+                  },
+                  count: { $sum: 1 },
+                },
+              },
+              {
+                $addFields: {
+                  monthName: {
+                    $let: {
+                      vars: {
+                        monthsInString: [
+                          null,
+                          "Jan",
+                          "Feb",
+                          "Mar",
+                          "Apr",
+                          "May",
+                          "Jun",
+                          "Jul",
+                          "Aug",
+                          "Sep",
+                          "Oct",
+                          "Nov",
+                          "Dec",
+                        ],
+                      },
+                      in: {
+                        $arrayElemAt: ["$$monthsInString", "$_id.month"],
+                      },
+                    },
+                  },
+                },
+              },
+              {
+                $project: {
+                  _id: 0,
+                  year: "$_id.year",
+                  month: "$_id.month",
+                  monthName: 1,
+                  count: 1,
+                },
+              },
+              {
+                $sort: {
+                  year: 1,
+                  month: 1,
+                },
+              },
+            ]);
+            rawDataInDaysForRequestedLeads = convertData(
+              leadsRequested,
+              labels,
+              year
+            );
+            rawDataInDaysForRejectedLeads = convertData(
+              leadRejected,
+              labels,
+              year
+            );
+          }
+          // const leadsRejected = await Leads.find({
+          //   bid: { $in: bids },
+
+          //   status: leadsStatusEnums.REPORT_REJECTED,
+          //   createdAt: { $gte: startDate, $lte: endDate },
+          // });
+
+          //@ts-ignore
+          obj.leadsRejectedCount = rawDataInDaysForRequestedLeads;
+          //@ts-ignore
+          obj.leadsRequestedCount = rawDataInDaysForRejectedLeads;
+          let creditsTotal;
+          if (credits.length > 0) {
+            creditsTotal = credits.reduce((acc, cor) => {
+              return acc + cor;
+            });
+          } else {
+            creditsTotal = 0;
+          }
+
+          let txnTotal;
+          if (txn && txn.length > 0) {
+            txnTotal = txn.reduce((acc, cor) => {
+              return acc + cor;
+            });
+          } else {
+            txnTotal = 0;
+          }
+
+          obj.creditsSum = creditsTotal;
+          // console.log("txnTotal", txnTotal);
+          if (txnTotal > 0) {
+            obj.creditsCount = txnTotal;
+            obj.creditsAvg = creditsTotal / txnTotal;
+          } else {
+            obj.creditsCount = 0;
+            obj.creditsAvg = creditsTotal;
+          }
+
+          userObj.push(obj);
+        })
+      );
+      return res.json({ data: userObj });
+    } catch (err) {
+      return res.status(500).json({
+        error: {
+          message: "something went wrong",
+          err,
+        },
+      });
+    }
+  };
 }
 
 function convertArray(arr: any) {
@@ -1274,6 +1969,7 @@ function convertArray(arr: any) {
     return newObj;
   });
 }
+
 function filterAndTransformData(
   columns: Column[],
   dataArray: DataObject[]
@@ -1289,4 +1985,50 @@ function filterAndTransformData(
 
     return filteredData;
   });
+}
+
+function convertData(data: any, labels: any, year: any) {
+  // Initialize an array of 12 elements with all zeros
+  const dataArr = Array(12).fill(0);
+
+  // Loop through each object in the data array and update the corresponding element in dataArr
+  data.forEach((obj: any) => {
+    const index = obj.month - 1;
+    if (obj.year != year) {
+    } else {
+      dataArr[index] += obj.count;
+    }
+  });
+  let years: any = [];
+  data.map((i: any) => {
+    if (!years.includes(i.year)) {
+      years.push(i.year);
+    }
+  });
+
+  // Create an object with labels and data properties
+  return { labels, data: dataArr, years: years };
+}
+
+function convertDataForDaysInMonth(data: any, labels: any, year: any) {
+  // Initialize an array of 12 elements with all zeros
+  const dataArr = Array(31).fill(0);
+
+  // Loop through each object in the data array and update the corresponding element in dataArr
+  data.forEach((obj: any) => {
+    const index = obj.dayOfMonth - 1;
+    if (obj.year != year) {
+    } else {
+      dataArr[index] += obj.count;
+    }
+  });
+  let years: any = [];
+  data.map((i: any) => {
+    if (!years.includes(i.year)) {
+      years.push(i.year);
+    }
+  });
+
+  // Create an object with labels and data properties
+  return { labels, data: dataArr, years: years };
 }

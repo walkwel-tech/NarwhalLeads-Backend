@@ -9,16 +9,16 @@ const UserSchema = new Schema(
     },
     lastName: {
       type: String,
-      required: true,
+      // required: true,
     },
     email: {
       type: String,
-      required: true,
+      // required: true,
       // unique: true,
     },
     password: {
       type: String,
-      required: true,
+      // required: true,
     },
     role: {
       type: String,
@@ -185,6 +185,15 @@ const UserSchema = new Schema(
     isSignUpCompleteWithCredit: {
       type: Boolean,
       default: false,
+    },
+    isCreditsAndBillingEnabled: {
+      type: Boolean,
+      default: false,
+    },
+    accountManager: {
+      type: Types.ObjectId,
+      ref: "User",
+      default: null,
     },
   },
   { timestamps: true }
