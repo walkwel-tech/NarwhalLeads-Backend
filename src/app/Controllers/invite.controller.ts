@@ -17,9 +17,9 @@ export class invitedUsersController {
       _req.user ?? ({} as UserInterface);
 
     const input = _req.body;
-    const user = await User.findById(currentUser?.id).populate(
-      "businessDetailsId"
-    );
+    const user = await User.findById(currentUser?.id)
+      .populate("businessDetailsId")
+      .populate("userLeadsDetailsId");
     try {
       const checkExist = await User.findOne({
         invitedById: currentUser?.id,
@@ -32,6 +32,7 @@ export class invitedUsersController {
       }
       const existingCustomerCheck = await User.findOne({
         email: input.email,
+        isDeleted: false,
       });
       if (existingCustomerCheck) {
         return res
@@ -64,6 +65,9 @@ export class invitedUsersController {
           invitedById: _req.user._id,
           businessDetailsId: user?.businessDetailsId,
           userLeadsDetailsId: user?.userLeadsDetailsId,
+          accountManager: user?.accountManager,
+          userServiceId: user?.userServiceId,
+          businessIndustryId: user?.businessIndustryId,
           isActive: true,
           isVerified: true,
           //@ts-ignore
