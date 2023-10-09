@@ -38,6 +38,10 @@ import {
   CARD_DETAILS,
   LEAD_DETAILS,
 } from "../../utils/constantFiles/signupFields";
+import { CreateCustomerInput } from "../Inputs/createCustomerOnRyft&Lead.inputs";
+import { BusinessDetails } from "../Models/BusinessDetails";
+import { createCustomersOnRyftAndLeadByte } from "../../utils/createCustomer";
+import { Permissions } from "../Models/Permission";
 
 class AuthController {
   static register = async (req: Request, res: Response): Promise<any> => {
@@ -101,6 +105,7 @@ class AuthController {
           }
         }
         input.email = String(input.email).toLowerCase();
+        const permission = await Permissions.findOne({ role: RolesEnum.USER });
         let dataToSave: Partial<UserInterface> = {
           firstName: input.firstName,
           lastName: input.lastName,
@@ -109,7 +114,6 @@ class AuthController {
           smsPhoneNumber: input.phoneNumber,
           password: hashPassword,
           role: RolesEnum.USER,
-          // leadCost: adminSettings?.defaultLeadAmount,
           autoChargeAmount: adminSettings?.amount,
           isActive: true, //need to delete
           isVerified: true, //need to delete
@@ -144,20 +148,31 @@ class AuthController {
               dependencies: [],
             },
           ],
+          permissions: permission?.permissions,
         };
-        if (codeExists && checkCode?.topUpAmount === 0) {
+        const accManagers = await User.aggregate([
+          { $match: { role: RolesEnum.ACCOUNT_MANAGER } },
+          { $sample: { size: 1 } },
+        ]);
+        if (codeExists && checkCode && checkCode?.topUpAmount === 0) {
           dataToSave.premiumUser = PROMO_LINK.PREMIUM_USER_NO_TOP_UP;
           dataToSave.promoLinkId = checkCode?.id;
-          dataToSave.accountManager = checkCode.accountManager;
-        } else if (codeExists && checkCode?.topUpAmount != 0) {
+          if (checkCode.accountManager) {
+            dataToSave.accountManager = checkCode.accountManager;
+          } else {
+            let accountManager = accManagers[0];
+            dataToSave.accountManager = accountManager?._id;
+          }
+        } else if (codeExists && checkCode && checkCode?.topUpAmount != 0) {
           dataToSave.premiumUser = PROMO_LINK.PREMIUM_USER_TOP_UP;
           dataToSave.promoLinkId = checkCode?.id;
-          dataToSave.accountManager = checkCode?.accountManager;
+          if (checkCode.accountManager) {
+            dataToSave.accountManager = checkCode.accountManager;
+          } else {
+            let accountManager = accManagers[0];
+            dataToSave.accountManager = accountManager?._id;
+          }
         } else {
-          const accManagers = await User.aggregate([
-            { $match: { role: RolesEnum.ACCOUNT_MANAGER } },
-            { $sample: { size: 1 } },
-          ]);
           let accountManager = accManagers[0];
           dataToSave.accountManager = accountManager?._id;
         }
@@ -770,6 +785,55 @@ class AuthController {
           .status(500)
           .json({ error: { message: "Something went wrong.", error } });
       }
+    }
+  };
+
+  static createCustomerOnLeadByte = async (
+    req: Request,
+    res: Response
+  ): Promise<any> => {
+    try {
+      const input = req.body;
+      if (!input.email) {
+        return res
+          .status(400)
+          .json({ error: { message: "email is required" } });
+      }
+      const user: UserInterface | null = await User.findOne(input.email);
+      if (user) {
+        const business = await BusinessDetails.findById(user.businessDetailsId);
+        const params: CreateCustomerInput = {
+          email: user?.email,
+          firstName: user?.firstName,
+          lastName: user?.lastName,
+          company: input.businessName || business?.businessName,
+          userId: user?._id,
+          street1: input?.businessAddress || business?.businessAddress,
+          street2: input?.businessAddress || business?.businessAddress,
+          towncity: input?.businessCity || business?.businessCity,
+          // county:Name of county,
+          postcode: input?.businessPostCode || business?.businessPostCode,
+          // country_name: input.businessCountry,
+          phone: input?.businessSalesNumber || business?.businessSalesNumber,
+          businessId: business?.id,
+          country_name: "",
+        };
+        createCustomersOnRyftAndLeadByte(params)
+          .then(() => {
+            console.log("Customer created!!!!");
+          })
+          .catch((ERR) => {
+            console.log("error while creating customer");
+          });
+        const data = await User.findById(user.id);
+        return res.json({ data: data });
+      } else {
+        return res.status(400).json({ error: { message: "User Not Found" } });
+      }
+    } catch (error) {
+      return res
+        .status(500)
+        .json({ error: { message: "Something went wrong.", error } });
     }
   };
 }
