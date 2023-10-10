@@ -12,6 +12,7 @@ import { ClientTablePreferenceInterface } from "../../types/clientTablePrefrence
 import { UserInterface } from "../../types/UserInterface";
 import { columnsObjects } from "../../types/columnsInterface";
 import mongoose from "mongoose";
+import { Permissions } from "../Models/Permission";
 
 interface QueryParams {
   userId: string;
@@ -220,11 +221,63 @@ export class AdminSettingsController {
   };
 
   static userLogin = async (req: Request, res: Response) => {
-    const input = req.body;
-    const user: UserInterface =
-      (await User.findOne({ email: input.email, role: RolesEnum.INVITED })) ??
-      ({} as UserInterface);
-    const token = generateAuthToken(user);
-    return res.json({ token: token });
+    try {
+      const input = req.body;
+      const user: UserInterface =
+        (await User.findOne({ email: input.email, role: RolesEnum.INVITED })) ??
+        ({} as UserInterface);
+      const token = generateAuthToken(user);
+      return res.json({ token: token });
+    } catch (error) {
+      return res
+        .status(500)
+        .json({ error: { message: "Something went wrong" } });
+    }
+  };
+  static createPermissions = async (req: Request, res: Response) => {
+    try {
+      const input = req.body;
+      const permission = await Permissions.create(input);
+      return res.json({ data: permission });
+    } catch (error) {
+      return res
+        .status(500)
+        .json({ error: { message: "Something went wrong" } });
+    }
+  };
+
+  static updatePermissions = async (req: Request, res: Response) => {
+    try {
+      const input = req.body;
+      const role = input.role;
+      const permission = await Permissions.findOne({ role: role });
+      if (permission) {
+        const modulePermissions = permission.permissions?.find(
+          (p: any) => p.module === module
+        );
+        if (modulePermissions) {
+          permission.permissions.push(input.permission);
+          await Permissions.findOneAndUpdate(
+            { role: input.role },
+            { permissions: permission.permissions }
+          );
+        } else {
+          permission.permissions.push({
+            module: input.module,
+            permission: input.permission,
+          });
+          await Permissions.findOneAndUpdate(
+            { role: input.role },
+            { permissions: permission.permissions }
+          );
+        }
+      }
+
+      return res.json({ data: permission });
+    } catch (error) {
+      return res
+        .status(500)
+        .json({ error: { message: "Something went wrong" } });
+    }
   };
 }

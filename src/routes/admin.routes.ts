@@ -5,6 +5,11 @@ import { Auth, OnlyAdmins } from "../app/Middlewares";
 const adminSettings: Router = Router();
 
 adminSettings.post("/", OnlyAdmins, AdminSettingsController.create);
+adminSettings.post(
+  "/permissions",
+  OnlyAdmins,
+  AdminSettingsController.createPermissions
+);
 adminSettings.patch("/", OnlyAdmins, AdminSettingsController.update);
 adminSettings.get("/", OnlyAdmins, AdminSettingsController.show);
 adminSettings.get("/notifications", AdminSettingsController.notifications);
@@ -22,5 +27,9 @@ adminSettings.get("/FAQs", Auth, AdminSettingsController.showFaqs);
 adminSettings.patch("/FAQs", OnlyAdmins, AdminSettingsController.createFaqs);
 adminSettings.delete("/", OnlyAdmins, AdminSettingsController.delete);
 adminSettings.post("/user-login", AdminSettingsController.userLogin);
-
+adminSettings.post(
+  "/update-permissions",
+  OnlyAdmins,
+  AdminSettingsController.updatePermissions
+);
 export default adminSettings;

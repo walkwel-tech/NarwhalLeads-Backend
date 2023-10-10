@@ -1639,8 +1639,18 @@ export class LeadsController {
     //@ts-ignore
     const userId = req.user?._id;
     try {
-      const Preference = await LeadTablePreference.findOne({ userId: userId });
-      return res.json({ data: Preference });
+      const preference = await LeadTablePreference.findOne({ userId: userId });
+      let data;
+      if (!preference || preference.columns.length === 0) {
+        const user = await User.findById(userId);
+        const industry = await BuisnessIndustries.findById(
+          user?.businessIndustryId
+        );
+        data = industry?.columns;
+      } else {
+        data = preference;
+      }
+      return res.json({ data: data });
     } catch (error) {
       return res
         .status(500)
@@ -2221,6 +2231,37 @@ export class LeadsController {
       return res.json({
         data: filteredDataArray,
       });
+    } catch (err) {
+      return res.status(500).json({
+        error: {
+          message: "something went wrong",
+          err,
+        },
+      });
+    }
+  };
+
+  static leadsStat = async (_req: any, res: Response) => {
+    try {
+      const valid = await Leads.find({
+        status: leadsStatusEnums.VALID,
+      }).count();
+      const reported = await Leads.find({
+        status: leadsStatusEnums.REPORTED,
+      }).count();
+      const reportAccepted = await Leads.find({
+        status: leadsStatusEnums.REPORT_ACCEPTED,
+      }).count();
+      const reportRejected = await Leads.find({
+        status: leadsStatusEnums.REPORT_REJECTED,
+      }).count();
+      const dataToShow = {
+        validLeads: valid,
+        reportedLeads: reported,
+        reportAcceptedLeads: reportAccepted,
+        reportRejectedLeads: reportRejected,
+      };
+      return res.json({ data: dataToShow });
     } catch (err) {
       return res.status(500).json({
         error: {
