@@ -41,7 +41,7 @@ import {
 import { CreateCustomerInput } from "../Inputs/createCustomerOnRyft&Lead.inputs";
 import { BusinessDetails } from "../Models/BusinessDetails";
 import { createCustomersOnRyftAndLeadByte } from "../../utils/createCustomer";
-// import { Permissions } from "../Models/Permission";
+import { Permissions } from "../Models/Permission";
 
 class AuthController {
   static register = async (req: Request, res: Response): Promise<any> => {
@@ -105,7 +105,7 @@ class AuthController {
           }
         }
         input.email = String(input.email).toLowerCase();
-        // const permission = await Permissions.findOne({ role: RolesEnum.USER });
+        const permission = await Permissions.findOne({ role: RolesEnum.USER });
         let dataToSave: Partial<UserInterface> = {
           firstName: input.firstName,
           lastName: input.lastName,
@@ -148,7 +148,7 @@ class AuthController {
               dependencies: [],
             },
           ],
-          // permissions: permission?.permissions,
+          permissions: permission?.permissions,
         };
         const accManagers = await User.aggregate([
           { $match: { role: RolesEnum.ACCOUNT_MANAGER } },
@@ -824,9 +824,11 @@ class AuthController {
           })
           .catch((ERR) => {
             console.log("error while creating customer");
+          })
+          .finally(async () => {
+            const data = await User.findById(user.id);
+            return res.json({ data: data });
           });
-        const data = await User.findById(user.id);
-        return res.json({ data: data });
       } else {
         return res.status(400).json({ error: { message: "User Not Found" } });
       }

@@ -2,7 +2,6 @@ import { Request, Response } from "express";
 import { validate } from "class-validator";
 import { compareSync, hashSync, genSaltSync } from "bcryptjs";
 import { ChangePasswordInput } from "../Inputs/ChangePassword.input";
-import { UpdateUserInput } from "../Inputs/UpdateUser.input";
 import { ValidationErrorResponse } from "../../types/ValidationErrorResponse";
 import { User } from "../Models/User";
 
@@ -34,17 +33,15 @@ export class ProfileController {
         .json({ error: { message: "VALIDATION_ERROR", info: { errorsInfo } } });
     }
     if (!(input.newPassword == input.confirmPassword)) {
-      return res
-        .status(400)
-        .json({
-          error: { message: "newPassword and confirmPassword doesn't match." },
-        });
+      return res.status(400).json({
+        error: { message: "newPassword and confirmPassword doesn't match." },
+      });
     }
     try {
       const user = await User.findById(id);
       // const admin = await Admins.findById(id);
 
-      if (!user ) {
+      if (!user) {
         return res
           .status(400)
           .json({ error: { message: "User to update does not exists." } });
@@ -68,61 +65,8 @@ export class ProfileController {
             new: true,
           }
         );
-      } 
-      return res.json({ data: { message: "Password reset successfully." } });
-    } catch (error) {
-      return res
-        .status(500)
-        .json({ error: { message: "Something went wrong." } });
-    }
-  };
-
-  static updateProfile = async (req: any, res: Response): Promise<Response> => {
-    const input: UpdateUserInput = req.body;
-
-    const { id } = req.user;
-
-    const updateProfileInput = new UpdateUserInput();
-
-    // @ts-ignore
-    delete input.password;
-    const errors = await validate(updateProfileInput);
-
-    if (errors.length) {
-      const errorsInfo: ValidationErrorResponse[] = errors.map((error) => ({
-        property: error.property,
-        constraints: error.constraints,
-      }));
-
-      return res
-        .status(400)
-        .json({ error: { message: "VALIDATION_ERROR", info: { errorsInfo } } });
-    }
-
-    try {
-      const user = await User.findById(id);
-
-      if (!user) {
-        return res
-          .status(404)
-          .json({ error: { message: "User to update does not exists." } });
       }
-
-      await User.findByIdAndUpdate(
-        id,
-        {
-          firstName: input.firstName ? input.firstName : user.firstName,
-          lastName: input.lastName ? input.lastName : user.lastName,
-          leadCost: input.leadCost ? input.leadCost : user.leadCost,
-        },
-        {
-          new: true,
-        }
-      );
-      const updatedUser = await User.findById(id, "-password -__v");
-      return res.json({
-        data: { message: "Profile updated successfully.", data: updatedUser },
-      });
+      return res.json({ data: { message: "Password reset successfully." } });
     } catch (error) {
       return res
         .status(500)

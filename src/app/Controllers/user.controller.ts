@@ -31,6 +31,8 @@ import { leadsStatusEnums } from "../../utils/Enums/leads.status.enum";
 import { PAYMENT_STATUS } from "../../utils/Enums/payment.status";
 import { createSessionUnScheduledPayment } from "../../utils/payment/createPaymentToRYFT";
 import { FILTER_FOR_CLIENT } from "../../utils/Enums/billableFilterEnum";
+import { addCreditsToBuyer } from "../../utils/payment/addBuyerCredit";
+import { TransactionInterface } from "../../types/TransactionInterface";
 const ObjectId = mongoose.Types.ObjectId;
 
 const LIMIT = 10;
@@ -221,7 +223,6 @@ export class UsersControllers {
         sortObject = {};
         sortObject[sortKey] = sortingOrder;
       }
-      console.log("data", dataToFind);
       const [query]: any = await User.aggregate([
         {
           $facet: {
@@ -1587,354 +1588,73 @@ export class UsersControllers {
     }
   };
 
-  static accountManagerStatsNew = async (req: any, res: Response) => {
+  static userCreditsManualAdjustment = async (req: any, res: Response) => {
     try {
       const input = req.body;
-      const startDate = new Date(input.startDate);
-      const endDate = new Date(input.endDate);
-      const year: any = new Date().getFullYear();
-      const differenceMs: number = endDate.getTime() - startDate.getTime();
-      let days = [
-        1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20,
-        21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31,
-      ];
-      const labels = [
-        "Jan",
-        "Feb",
-        "Mar",
-        "Apr",
-        "May",
-        "Jun",
-        "Jul",
-        "Aug",
-        "Sep",
-        "Oct",
-        "Nov",
-        "Dec",
-      ];
-      let accountManagersId = input.accountManagerIds;
-      let userObj: Object[] = [];
-      let rawDataInDaysForRejectedLeads;
-      let rawDataInDaysForRequestedLeads;
-      await Promise.all(
-        accountManagersId.map(async (id: string) => {
-          let bids: string[] = [];
-          let credits: number[] = [];
-          let txn: number[] = [];
-          let leadsRequested;
-          let leadRejected;
-          const manager = await User.findById(id);
-          const res = await User.find({
-            accountManager: id,
-            createdAt: { $gte: startDate, $lte: endDate },
-          }).populate("accountManager");
-          let obj: Record<string, string | number> = {};
-          //@ts-ignore
-          obj.name = manager?.firstName;
-
-          res.forEach(async (user: UserInterface) => {
-            if (user.buyerId) bids.push(user.buyerId);
-            credits.push(user.credits);
-            let txns = await Transaction.find({
-              userId: user?.id,
-
-              title: transactionTitle.CREDITS_ADDED,
-
-              status: PAYMENT_STATUS.CAPTURED,
-
-              createdAt: { $gte: startDate, $lte: endDate },
-            });
-            if (txns) txn.push(txns.length);
+      const user = (await User.findById(input.userId)) ?? ({} as UserInterface);
+      if (user?.isDeleted) {
+        return res.status(400).json({
+          error: {
+            message: "User deleted",
+          },
+        });
+      } else if (!user?.buyerId) {
+        return res.status(400).json({
+          error: {
+            message: "User not regsitered on Lead-Byte",
+          },
+        });
+      } else if (!user) {
+        return res.status(404).json({
+          error: {
+            message: "User Not Found",
+          },
+        });
+      } else {
+        let amount: number;
+        const params = {
+          buyerId: user.buyerId,
+          fixedAmount: 0,
+        };
+        let dataToSave: Partial<TransactionInterface> = {
+          userId: user.id,
+          amount: input.credits,
+          status: PAYMENT_STATUS.CAPTURED,
+          title: transactionTitle.MANUAL_ADJUSTMENT,
+          paymentType: transactionTitle.MANUAL_ADJUSTMENT,
+        };
+        if (user?.credits > input.credits) {
+          const creditsDeductFromLeadByte = user.credits - input.credits;
+          amount = -creditsDeductFromLeadByte;
+          params.fixedAmount = amount;
+          // dataToSave.isCredited = false;
+          dataToSave.isDebited = true;
+          dataToSave.creditsLeft = input.credits;
+          addCreditsToBuyer(params).then(async (res) => {
+            await Transaction.create(dataToSave);
+            return res;
           });
-          if (differenceMs < 30) {
-            leadsRequested = await Leads.aggregate([
-              {
-                $match: {
-                  bid: { $in: bids },
-                  status: leadsStatusEnums.VALID,
-                  createdAt: {
-                    $gte: startDate,
-                    $lt: endDate,
-                  },
-                },
-              },
-              {
-                $addFields: {
-                  dayOfMonth: { $dayOfMonth: "$createdAt" },
-                },
-              },
-              {
-                $group: {
-                  _id: {
-                    dayOfMonth: "$dayOfMonth",
-                    // dayOfWeek: "$dayOfWeek",
-                    year: { $year: "$createdAt" },
-                    // month: { $month: "$createdAt" },
-                  },
-                  count: { $sum: 1 },
-                },
-              },
+        } else if (user?.credits < input.credits) {
+          const creditsAddToLeadByte = input.credits - user.credits;
+          amount = creditsAddToLeadByte;
+          (params.fixedAmount = amount), (dataToSave.isCredited = true);
+          dataToSave.creditsLeft = input.credits;
+          addCreditsToBuyer(params).then(async (res) => {
+            await Transaction.create(dataToSave);
+            return res;
+          });
+        } else {
+          return res.json({
+            data: {
+              message: "Credits remains the same",
+            },
+          });
+        }
 
-              {
-                $project: {
-                  _id: 0,
-                  dayOfMonth: "$_id.dayOfMonth",
-
-                  year: "$_id.year",
-                  // month: "$_id.month",
-                  // monthName: 1,
-                  count: 1,
-                },
-              },
-              {
-                $sort: {
-                  dayOfMonth: 1,
-                  // year:1
-                },
-              },
-            ]);
-            leadRejected = await Leads.aggregate([
-              {
-                $match: {
-                  bid: { $in: bids },
-                  status: leadsStatusEnums.VALID,
-                  createdAt: {
-                    $gte: startDate,
-                    $lt: endDate,
-                  },
-                },
-              },
-              {
-                $addFields: {
-                  dayOfMonth: { $dayOfMonth: "$createdAt" },
-                },
-              },
-              {
-                $group: {
-                  _id: {
-                    dayOfMonth: "$dayOfMonth",
-                    // dayOfWeek: "$dayOfWeek",
-                    year: { $year: "$createdAt" },
-                    // month: { $month: "$createdAt" },
-                  },
-                  count: { $sum: 1 },
-                },
-              },
-
-              {
-                $project: {
-                  _id: 0,
-                  dayOfMonth: "$_id.dayOfMonth",
-
-                  year: "$_id.year",
-                  // month: "$_id.month",
-                  // monthName: 1,
-                  count: 1,
-                },
-              },
-              {
-                $sort: {
-                  dayOfMonth: 1,
-                  // year:1
-                },
-              },
-            ]);
-            rawDataInDaysForRequestedLeads = convertDataForDaysInMonth(
-              leadsRequested,
-              days,
-              year
-            );
-            rawDataInDaysForRejectedLeads = convertDataForDaysInMonth(
-              leadRejected,
-              days,
-              year
-            );
-            // let rawDataInMonth = convertData(leadRejected, labels, year);
-          } else {
-            leadsRequested = await Leads.aggregate([
-              {
-                $match: {
-                  bid: { $in: bids },
-                  status: leadsStatusEnums.VALID,
-                  createdAt: {
-                    $gte: startDate,
-                    $lt: endDate,
-                  },
-                },
-              },
-              {
-                $group: {
-                  _id: {
-                    year: { $year: "$createdAt" },
-
-                    month: { $month: "$createdAt" },
-                  },
-                  count: { $sum: 1 },
-                },
-              },
-              {
-                $addFields: {
-                  monthName: {
-                    $let: {
-                      vars: {
-                        monthsInString: [
-                          null,
-                          "Jan",
-                          "Feb",
-                          "Mar",
-                          "Apr",
-                          "May",
-                          "Jun",
-                          "Jul",
-                          "Aug",
-                          "Sep",
-                          "Oct",
-                          "Nov",
-                          "Dec",
-                        ],
-                      },
-                      in: {
-                        $arrayElemAt: ["$$monthsInString", "$_id.month"],
-                      },
-                    },
-                  },
-                },
-              },
-              {
-                $project: {
-                  _id: 0,
-                  year: "$_id.year",
-                  month: "$_id.month",
-                  monthName: 1,
-                  count: 1,
-                },
-              },
-              {
-                $sort: {
-                  year: 1,
-                  month: 1,
-                },
-              },
-            ]);
-            leadRejected = await Leads.aggregate([
-              {
-                $match: {
-                  bid: { $in: bids },
-                  status: leadsStatusEnums.REPORT_REJECTED,
-                  createdAt: {
-                    $gte: startDate,
-                    $lt: endDate,
-                  },
-                },
-              },
-              {
-                $group: {
-                  _id: {
-                    year: { $year: "$createdAt" },
-
-                    month: { $month: "$createdAt" },
-                  },
-                  count: { $sum: 1 },
-                },
-              },
-              {
-                $addFields: {
-                  monthName: {
-                    $let: {
-                      vars: {
-                        monthsInString: [
-                          null,
-                          "Jan",
-                          "Feb",
-                          "Mar",
-                          "Apr",
-                          "May",
-                          "Jun",
-                          "Jul",
-                          "Aug",
-                          "Sep",
-                          "Oct",
-                          "Nov",
-                          "Dec",
-                        ],
-                      },
-                      in: {
-                        $arrayElemAt: ["$$monthsInString", "$_id.month"],
-                      },
-                    },
-                  },
-                },
-              },
-              {
-                $project: {
-                  _id: 0,
-                  year: "$_id.year",
-                  month: "$_id.month",
-                  monthName: 1,
-                  count: 1,
-                },
-              },
-              {
-                $sort: {
-                  year: 1,
-                  month: 1,
-                },
-              },
-            ]);
-            rawDataInDaysForRequestedLeads = convertData(
-              leadsRequested,
-              labels,
-              year
-            );
-            rawDataInDaysForRejectedLeads = convertData(
-              leadRejected,
-              labels,
-              year
-            );
-          }
-          // const leadsRejected = await Leads.find({
-          //   bid: { $in: bids },
-
-          //   status: leadsStatusEnums.REPORT_REJECTED,
-          //   createdAt: { $gte: startDate, $lte: endDate },
-          // });
-
-          //@ts-ignore
-          obj.leadsRejectedCount = rawDataInDaysForRequestedLeads;
-          //@ts-ignore
-          obj.leadsRequestedCount = rawDataInDaysForRejectedLeads;
-          let creditsTotal;
-          if (credits.length > 0) {
-            creditsTotal = credits.reduce((acc, cor) => {
-              return acc + cor;
-            });
-          } else {
-            creditsTotal = 0;
-          }
-
-          let txnTotal;
-          if (txn && txn.length > 0) {
-            txnTotal = txn.reduce((acc, cor) => {
-              return acc + cor;
-            });
-          } else {
-            txnTotal = 0;
-          }
-
-          obj.creditsSum = creditsTotal;
-          // console.log("txnTotal", txnTotal);
-          if (txnTotal > 0) {
-            obj.creditsCount = txnTotal;
-            obj.creditsAvg = creditsTotal / txnTotal;
-          } else {
-            obj.creditsCount = 0;
-            obj.creditsAvg = creditsTotal;
-          }
-
-          userObj.push(obj);
-        })
-      );
-      return res.json({ data: userObj });
+        return res.json({
+          data: { message: "Credits Adjusted" },
+        });
+      }
     } catch (err) {
       return res.status(500).json({
         error: {

@@ -1127,6 +1127,66 @@ export function sendEmailToInvitedAdmin(send_to: string, message: any) {
   // }
 }
 
+export function sendEmailToInvitedAccountManager(
+  send_to: string,
+  message: any
+) {
+  const msg = {
+    to: send_to, // Change to your recipient
+    from: {
+      name: process.env.VERIFIED_SENDER_ON_SENDGRID_FROM_NAME,
+      email: process.env.VERIFIED_SENDER_ON_SENDGRID,
+    },
+    // Change to your verified sender
+    trackingSettings: {
+      clickTracking: {
+        enable: false,
+        enableText: false,
+      },
+      openTracking: {
+        enable: false,
+      },
+    },
+
+    // html: "<strong>and easy to do anywhere, even with Node.js</strong>",
+    // templateId: "d-dad1bae4e3454fa8afea119f9de08b45",
+    templateId: TEMPLATES_ID.INVITED_ACCOUNT_MANAGER,
+    dynamic_template_data: {
+      name: message.name,
+      password: message.password,
+    },
+  };
+  // if (checkAccess()) {
+  if (process.env.APP_ENV !== APP_ENV.PRODUCTION) {
+    msg.to = process.env.SENDGRID_TO_EMAIL || "" || "";
+  }
+  sgMail
+    .send(msg)
+    .then(() => {
+      console.log("Email sent");
+      const params = {
+        email: send_to,
+        title: TEMPLATES_TITLE.INVITED_ACCOUNT_MANAGER,
+        templateId: TEMPLATES_ID.INVITED_ACCOUNT_MANAGER,
+        status: NOTIFICATION_STATUS.SUCCESS,
+      };
+      saveNotifications(params);
+    })
+    .catch((error: any) => {
+      console.error(error);
+      const params = {
+        email: send_to,
+        title: TEMPLATES_TITLE.INVITED_ACCOUNT_MANAGER,
+        templateId: TEMPLATES_ID.INVITED_ACCOUNT_MANAGER,
+        status: NOTIFICATION_STATUS.FAIL,
+      };
+      saveNotifications(params);
+    });
+  // } else {
+  //   console.log("Emails access only on production");
+  // }
+}
+
 export function sendEmailForBelow5LeadsPending(send_to: string, message: any) {
   const msg = {
     to: send_to, // Change to your recipient
