@@ -1647,8 +1647,8 @@ export class LeadsController {
         const industry = await BuisnessIndustries.findById(
           user?.businessIndustryId
         );
-        data = industry?.columns;
-        await LeadTablePreference.create({ userId: userId, columns: data });
+        // data = industry?.columns;
+        data = await LeadTablePreference.create({ userId: userId, columns: industry?.columns });
       } else {
         data = preference;
       }
