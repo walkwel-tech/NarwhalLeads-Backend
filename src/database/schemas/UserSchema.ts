@@ -195,6 +195,9 @@ const UserSchema = new Schema(
       ref: "User",
       default: null,
     },
+    permissions: {
+      type: Array,
+    },
   },
   { timestamps: true }
 );

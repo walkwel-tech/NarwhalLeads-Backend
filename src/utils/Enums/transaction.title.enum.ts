@@ -6,4 +6,5 @@ export const transactionTitle = {
   FREE_CREDITS: "Free Credits",
   INVOICES_VAT: "VAT",
   SESSION_CREATED: "session created",
+  MANUAL_ADJUSTMENT: "Manual Adjustment",
 };

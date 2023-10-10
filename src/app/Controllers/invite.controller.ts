@@ -2,6 +2,7 @@ import { genSaltSync, hashSync } from "bcryptjs";
 import { Request, Response } from "express";
 import { RolesEnum } from "../../types/RolesEnum";
 import {
+  sendEmailToInvitedAccountManager,
   sendEmailToInvitedAdmin,
   sendEmailToInvitedUser,
 } from "../Middlewares/mail";
@@ -293,56 +294,98 @@ export class invitedUsersController {
   static addAdmins = async (_req: Request, res: Response) => {
     const input = _req.body;
     input.email = String(input.email).toLowerCase();
-    input.role = RolesEnum.ADMIN;
+
     input.isActive = true;
 
     try {
-      const data = await User.find({
-        email: input.email,
-        isDeleted: false,
-        role: RolesEnum.ADMIN,
-      });
-      //  const user=await User.find({email:input.email,isDeleted:false})
-      if (data.length > 0) {
-        return res
-          .status(400)
-          .json({ error: { message: "Admin already exist" } });
+      if (input.role === RolesEnum.ADMIN) {
+        input.role = RolesEnum.ADMIN;
+        const data = await User.find({
+          email: input.email,
+          isDeleted: false,
+          role: RolesEnum.ADMIN,
+        });
+        if (data.length > 0) {
+          return res
+            .status(400)
+            .json({ error: { message: "Admin already exist" } });
+        } else {
+          const salt = genSaltSync(10);
+          const text = randomString(8, true);
+          const dataToSend = {
+            name: `${input.firstName} ${input.lastName}`,
+            password: text,
+          };
+          const hashPassword = hashSync(text, salt);
+          console.log("password", text);
+          input.password = hashPassword;
+          sendEmailToInvitedAdmin(input.email, dataToSend);
+          const data = await User.create(input);
+          const adminExist: any = await User.findOne({
+            role: RolesEnum.SUPER_ADMIN,
+          });
+          const adminPref: any = await LeadTablePreference.findOne({
+            userId: adminExist.id,
+          });
+          const adminClientPref: any = await ClientTablePreference.findOne({
+            userId: adminExist._id,
+          });
+          await LeadTablePreference.create({
+            userId: data.id,
+            columns: adminPref.columns,
+          });
+          await ClientTablePreference.create({
+            columns: adminClientPref.columns,
+            userId: data.id,
+          });
+          const show = await User.findById(data.id, "-password");
+          return res.json({ data: show });
+        }
+      } else if (input.role === RolesEnum.ACCOUNT_MANAGER) {
+        input.role = RolesEnum.ACCOUNT_MANAGER;
+        const data = await User.find({
+          email: input.email,
+          isDeleted: false,
+          role: RolesEnum.ACCOUNT_MANAGER,
+        });
+        if (data.length > 0) {
+          return res
+            .status(400)
+            .json({ error: { message: "Account Manager already exist" } });
+        } else {
+          const salt = genSaltSync(10);
+          const text = randomString(8, true);
+          const dataToSend = {
+            name: input.firstName + " " + input.lastName,
+            password: text,
+          };
+          const hashPassword = hashSync(text, salt);
+          console.log("password", text);
+          input.password = hashPassword;
+          sendEmailToInvitedAccountManager(input.email, dataToSend);
+          const data = await User.create(input);
+          const adminExist: any = await User.findOne({
+            role: RolesEnum.SUPER_ADMIN,
+          });
+          const adminPref: any = await LeadTablePreference.findOne({
+            userId: adminExist.id,
+          });
+          const adminClientPref: any = await ClientTablePreference.findOne({
+            userId: adminExist._id,
+          });
+          await LeadTablePreference.create({
+            userId: data.id,
+            columns: adminPref.columns,
+          });
+          await ClientTablePreference.create({
+            columns: adminClientPref.columns,
+            userId: data.id,
+          });
+          const show = await User.findById(data.id, "-password");
+          return res.json({ data: show });
+        }
       }
-      //  else if(user.length>0){
-      //   return res.status(400).json({error:{message:"Email already registered with an User."}})
-      //  }
-      else {
-        const salt = genSaltSync(10);
-        const text = randomString(8, true);
-        const dataToSend = {
-          name: input.firstName + " " + input.lastName,
-          password: text,
-        };
-        const hashPassword = hashSync(text, salt);
-        console.log("password", text);
-        input.password = hashPassword;
-        sendEmailToInvitedAdmin(input.email, dataToSend);
-        const data = await User.create(input);
-        const adminExist: any = await User.findOne({
-          role: RolesEnum.SUPER_ADMIN,
-        });
-        const adminPref: any = await LeadTablePreference.findOne({
-          userId: adminExist.id,
-        });
-        const adminClientPref: any = await ClientTablePreference.findOne({
-          userId: adminExist._id,
-        });
-        await LeadTablePreference.create({
-          userId: data.id,
-          columns: adminPref.columns,
-        });
-        await ClientTablePreference.create({
-          columns: adminClientPref.columns,
-          userId: data.id,
-        });
-        const show = await User.findById(data.id, "-password");
-        return res.json({ data: show });
-      }
+      return;
     } catch (error) {
       return res
         .status(500)
@@ -383,7 +426,7 @@ export class invitedUsersController {
       perPage;
     let dataToFind: any = {
       isDeleted: false,
-      role: RolesEnum.ADMIN,
+      role: { $in: [RolesEnum.ADMIN, RolesEnum.ACCOUNT_MANAGER] },
     };
     if (_req.query.search) {
       dataToFind = {

@@ -3,6 +3,10 @@ import { CreateCustomerInput } from "../../app/Inputs/createCustomerOnRyft&Lead.
 import { User } from "../../app/Models/User";
 import { checkAccess } from "../../app/Middlewares/serverAccess";
 import FormData from "form-data";
+import { LOGS_STATUS } from "../Enums/logs.status.enum";
+import { PORTAL } from "../Enums/portal.enum";
+import { saveLogs } from "../Functions/saveLogs";
+import { REGISTRATION_IDS } from "../constantFiles/errorConstants";
 // let FormData = require("form-data");
 
 const POST = "post";
@@ -35,9 +39,24 @@ export const createCustomerOnLeadByte = (params: CreateCustomerInput) => {
               buyerId: response.data.bid,
             });
           }
+          const logsData = {
+            userId: params.userId,
+            registrationId: response.data.bid,
+            status: LOGS_STATUS.SUCCESS,
+            portal: PORTAL.LEAD_BYTE,
+          };
+          await saveLogs(logsData);
           resolve(response);
         })
-        .catch((err) => {
+        .catch(async (err) => {
+          const logsData = {
+            userId: params.userId,
+            registrationId: REGISTRATION_IDS.NO_REGISTRATION_IDS,
+            status: LOGS_STATUS.FAIL,
+            portal: PORTAL.LEAD_BYTE,
+            notes: err.response?.data,
+          };
+          await saveLogs(logsData);
           reject(err.response?.data);
         });
     }
