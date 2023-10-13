@@ -42,10 +42,10 @@ import { APP_ENV } from "../../utils/Enums/serverModes.enum";
 import { UserInterface } from "../../types/UserInterface";
 import { leadReprocessWebhook } from "../../utils/webhookUrls/leadsReprocessWebhook";
 import { LeadsInterface } from "../../types/LeadsInterface";
-import {
-  UserLeadsDetailsInterface,
-  isUserLeadDetailsObject,
-} from "../../types/LeadDetailsInterface";
+// import {
+//   UserLeadsDetailsInterface,
+//   isUserLeadDetailsObject,
+// } from "../../types/LeadDetailsInterface";
 const ObjectId = mongoose.Types.ObjectId;
 
 const LIMIT = 10;
