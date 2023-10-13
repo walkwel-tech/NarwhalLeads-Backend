@@ -221,12 +221,21 @@ export class LeadsController {
         isDeleted: false,
       }).populate("userLeadsDetailsId");
 
-      invitedUsers.map((iUser) => {
+/*      invitedUsers.map((iUser) => {
         const userLeadFreq: UserLeadsDetailsInterface | null =
           isUserLeadDetailsObject(user?.userLeadsDetailsId)
             ? user?.userLeadsDetailsId
             : null;
         if (userLeadFreq?.leadAlertsFrequency == leadsAlertsEnums.INSTANT) {
+          emails.push(iUser.email);
+        }
+      });*/
+      invitedUsers.map((iUser) => {
+        if (
+            //@ts-ignore
+            iUser?.userLeadsDetailsId?.leadAlertsFrequency ===
+            leadsAlertsEnums.INSTANT
+        ) {
           emails.push(iUser.email);
         }
       });
