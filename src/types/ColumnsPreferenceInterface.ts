@@ -3,4 +3,6 @@ export interface Column {
     isVisible: boolean;
     index: number;
     newName?: string;
+    displayName?: any;
+    originalName?: any;
   }
