@@ -2314,12 +2314,17 @@ function filterAndTransformData(
 ): DataObject[] {
   return dataArray.map((dataObj: DataObject) => {
     const filteredData: DataObject = {};
+    // columns.forEach((column: Column) => {
+    //   if (column.isVisible) {
+    //     filteredData[column.newName || column.name] = dataObj[column.name];
+    //   }
+    // });
     columns.forEach((column: Column) => {
       if (column.isVisible) {
-        filteredData[column.newName || column.name] = dataObj[column.name];
+        filteredData[column.displayName || column.originalName] =
+            dataObj[column.originalName];
       }
     });
-
     return filteredData;
   });
 }

@@ -1977,9 +1977,15 @@ function filterAndTransformData(
   return dataArray.map((dataObj: DataObject) => {
     const filteredData: DataObject = {};
 
+    // columns.forEach((column: Column) => {
+    //   if (column.isVisible && column.name in dataObj) {
+    //     filteredData[column.newName || column.name] = dataObj[column.name];
+    //   }
+    // });
     columns.forEach((column: Column) => {
-      if (column.isVisible && column.name in dataObj) {
-        filteredData[column.newName || column.name] = dataObj[column.name];
+      if (column.isVisible) {
+        filteredData[column.displayName || column.originalName] =
+            dataObj[column.originalName];
       }
     });
 
