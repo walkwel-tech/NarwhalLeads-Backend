@@ -190,7 +190,7 @@ export class LeadsController {
         creditsLeft: user?.credits - leadcpl,
       };
       await Transaction.create(dataToSave);
-    } else {
+    } else if (user.role === RolesEnum.USER) {
       return res
         .status(404)
         .json({ error: { message: "Card details not found" } });
@@ -286,7 +286,8 @@ export class LeadsController {
       }
       if (
         input.status === leadsStatusEnums.REPROCESS &&
-        lead.status !== leadsStatusEnums.REPORT_REJECTED
+        lead.status !== leadsStatusEnums.REPORT_REJECTED &&
+        lead.status !== leadsStatusEnums.REPROCESS
       ) {
         return res.status(400).json({
           error: {
@@ -775,6 +776,7 @@ export class LeadsController {
 
   static index = async (_req: any, res: Response): Promise<any> => {
     let sortingOrder = _req.query.sortingOrder || sort.DESC;
+    // let accountManagerId = _req.query.accountManager
     const userId = _req.user?.id;
     // const archive: Boolean = _req.query.archive || false;
     const status = _req.query.status;
@@ -819,6 +821,7 @@ export class LeadsController {
         };
         skip = 0;
       }
+
       const [query]: any = await Leads.aggregate([
         {
           $facet: {
@@ -896,6 +899,7 @@ export class LeadsController {
           },
         },
       ]);
+
       query.results.map((item: any) => {
         item.leads.clientName =
           item["clientName"][0]?.firstName +
@@ -927,7 +931,6 @@ export class LeadsController {
       //   .then((updatedResults) => {'
       // Handle the updatedResults here
       const leadsCount = query.leadsCount[0]?.count || 0;
-
       const totalPages = Math.ceil(leadsCount / perPage);
       return res.json({
         data: query.results,
@@ -1390,6 +1393,8 @@ export class LeadsController {
     _req: any,
     res: Response
   ): Promise<any> => {
+    let accountManagerId = _req.query.accountManager;
+
     let sortingOrder = _req.query.sortingOrder || sort.DESC;
 
     const status = _req.query.status;
@@ -1430,17 +1435,13 @@ export class LeadsController {
       if (_req.query.industryId) {
         dataToFind.industryId = new ObjectId(_req.query.industryId);
       }
-      let bids: string[] = [];
-      if (_req.query.accountManagerId != "" && _req.query.accountManagerId) {
-        const users = await User.find({
-          accountManager: _req.query.accountManagerId,
+      if (accountManagerId != "" && accountManagerId) {
+        const accountManagerUsers = await User.find({
+          accountManager: accountManagerId,
         });
-        users.map((user: UserInterface) => {
-          return bids.push(user.buyerId);
-        });
-      }
-      if (_req.query.accountManagerId) {
-        dataToFind.bid = { $in: bids };
+
+        const buyerIds = accountManagerUsers.map((user) => user.buyerId);
+        dataToFind.bid = { $in: buyerIds };
       }
       if (_req.query.search) {
         dataToFind = {
@@ -1601,7 +1602,6 @@ export class LeadsController {
       });
     }
   };
-
   static createPreference = async (req: Request, res: Response) => {
     //@ts-ignore
     const userId = req.user?._id;
@@ -1646,7 +1646,11 @@ export class LeadsController {
         const industry = await BuisnessIndustries.findById(
           user?.businessIndustryId
         );
-        data = industry?.columns;
+        // data = industry?.columns;
+        data = await LeadTablePreference.create({
+          userId: userId,
+          columns: industry?.columns,
+        });
       } else {
         data = preference;
       }
@@ -2303,12 +2307,17 @@ function filterAndTransformData(
 ): DataObject[] {
   return dataArray.map((dataObj: DataObject) => {
     const filteredData: DataObject = {};
+    // columns.forEach((column: Column) => {
+    //   if (column.isVisible) {
+    //     filteredData[column.newName || column.name] = dataObj[column.name];
+    //   }
+    // });
     columns.forEach((column: Column) => {
       if (column.isVisible) {
-        filteredData[column.newName || column.name] = dataObj[column.name];
+        filteredData[column.displayName || column.originalName] =
+            dataObj[column.originalName];
       }
     });
-
     return filteredData;
   });
 }

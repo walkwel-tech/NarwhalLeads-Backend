@@ -244,9 +244,9 @@ export class UsersControllers {
                   as: "accountManager",
                 },
               },
-              {
-                $unwind: "$accountManager",
-              },
+              // {
+              //   $unwind: "$accountManager",
+              // },
               {
                 $lookup: {
                   from: "userleadsdetails",
@@ -317,7 +317,6 @@ export class UsersControllers {
           },
         },
       ]);
-
       query.results.map((item: any) => {
         let businessDetailsId = Object.assign({}, item["businessDetailsId"][0]);
         let userLeadsDetailsId = Object.assign(
@@ -331,7 +330,8 @@ export class UsersControllers {
         item.userServiceId = userServiceId;
         item.businessDetailsId.daily = item.userLeadsDetailsId.daily;
         item.accountManager =
-          item.accountManager.firstName + (item.accountManager.lastName || "");
+          item.accountManager[0]?.firstName +
+          (item.accountManager[0]?.lastName || "");
       });
 
       const userCount = query.userCount[0]?.count || 0;
@@ -1321,6 +1321,7 @@ export class UsersControllers {
         lastName: input.lastName,
         role: RolesEnum.ACCOUNT_MANAGER,
         isDeleted: false,
+        isActive: true,
       });
       if (exists) {
         return res
@@ -1664,6 +1665,33 @@ export class UsersControllers {
       });
     }
   };
+
+  static clientsStat = async (_req: any, res: Response) => {
+    try {
+      const active = await User.find({
+        role: { $in: [RolesEnum.USER, RolesEnum.NON_BILLABLE] },
+        isActive: true,
+        isDeleted: false,
+      }).count();
+      const paused = await Leads.find({
+        isActive: false,
+        isDeleted: false,
+      }).count();
+
+      const dataToShow = {
+        activeClients: active,
+        pausedClients: paused,
+      };
+      return res.json({ data: dataToShow });
+    } catch (err) {
+      return res.status(500).json({
+        error: {
+          message: "something went wrong",
+          err,
+        },
+      });
+    }
+  };
 }
 
 function convertArray(arr: any) {
@@ -1697,12 +1725,17 @@ function filterAndTransformData(
   return dataArray.map((dataObj: DataObject) => {
     const filteredData: DataObject = {};
 
+    // columns.forEach((column: Column) => {
+    //   if (column.isVisible && column.name in dataObj) {
+    //     filteredData[column.newName || column.name] = dataObj[column.name];
+    //   }
+    // });
     columns.forEach((column: Column) => {
-      if (column.isVisible && column.name in dataObj) {
-        filteredData[column.newName || column.name] = dataObj[column.name];
+      if (column.isVisible) {
+        filteredData[column.displayName || column.originalName] =
+            dataObj[column.originalName];
       }
     });
-
     return filteredData;
   });
 }
