@@ -55,6 +55,9 @@ const CardDetailsSchema = new Schema(
     status: {
       type: String,
     },
+    cardType: {
+      type: String,
+    },
   },
   { timestamps: true }
 );

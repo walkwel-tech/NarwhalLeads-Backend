@@ -224,7 +224,7 @@ export class AdminSettingsController {
     try {
       const input = req.body;
       const user: UserInterface =
-        (await User.findOne({ email: input.email, role: RolesEnum.INVITED })) ??
+        (await User.findOne({ email: input.email, role: RolesEnum.USER })) ??
         ({} as UserInterface);
       const token = generateAuthToken(user);
       return res.json({ token: token });
@@ -234,6 +234,7 @@ export class AdminSettingsController {
         .json({ error: { message: "Something went wrong" } });
     }
   };
+
   static createPermissions = async (req: Request, res: Response) => {
     try {
       const input = req.body;

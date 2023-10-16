@@ -90,12 +90,14 @@ user.get(
   checkPermissions([{ module: MODULE.CLIENTS, permission: PERMISSIONS.READ }]),
   UsersControllers.index
 );
+
 user.get(
   "/stats",
   OnlyAdmins,
   checkPermissions([{ module: MODULE.CLIENTS, permission: PERMISSIONS.READ }]),
   UsersControllers.clientsStat
 );
+
 user.get(
   "/export-csv-file",
   OnlyAdmins,

@@ -55,10 +55,6 @@ export const activityLogs = async () => {
     );
 
     const userData = await Promise.all(userDataPromises);
-    if (userData.length > 0) {
-      await activityLogsWebhookUrl(userData);
-    } else {
-      console.log("No Data For 10 minutes Cron job");
-    }
+    await activityLogsWebhookUrl(userData);
   });
 };

@@ -130,7 +130,7 @@ export class UsersControllers {
         : "";
       let isArchived = _req.query.isArchived || "false";
       let isActive = _req.query.isActive || "true";
-      if (sortingOrder == sort.ASC) {
+      if (sortingOrder === sort.ASC) {
         sortingOrder = 1;
       } else {
         sortingOrder = -1;
@@ -223,7 +223,7 @@ export class UsersControllers {
         sortObject = {};
         sortObject[sortKey] = sortingOrder;
       }
-      const [query]: any = await User.aggregate([
+      let pipeline = [
         {
           $facet: {
             results: [
@@ -309,14 +309,22 @@ export class UsersControllers {
                   },
                 },
               },
-              { $skip: skip },
-              { $limit: perPage },
+              // { $skip: skip },
+              // { $limit: perPage },
               // { $sort: { firstName: 1 } },
             ],
             userCount: [{ $match: dataToFind }, { $count: "count" }],
           },
         },
-      ]);
+      ];
+
+      if (!accountManagerBoolean === true) {
+        //@ts-ignore
+        pipeline[0].$facet.results.push({ $skip: skip });
+        //@ts-ignore
+        pipeline[0].$facet.results.push({ $limit: perPage });
+      }
+      const [query]: any = await User.aggregate(pipeline);
       query.results.map((item: any) => {
         let businessDetailsId = Object.assign({}, item["businessDetailsId"][0]);
         let userLeadsDetailsId = Object.assign(
@@ -1241,6 +1249,7 @@ export class UsersControllers {
         {
           $facet: {
             results: [
+              { $match: dataToFind },
               {
                 $lookup: {
                   from: "businessdetails",
@@ -1257,7 +1266,6 @@ export class UsersControllers {
                   as: "userLeadsDetailsId",
                 },
               },
-              { $match: dataToFind },
               { $sort: { createdAt: sortingOrder } },
               {
                 $project: {
@@ -1292,7 +1300,6 @@ export class UsersControllers {
       });
       const pref: ClientTablePreferenceInterface | null =
         await ClientTablePreference.findOne({ userId: _req.user.id });
-
       const filteredDataArray: DataObject[] = filterAndTransformData(
         //@ts-ignore
         pref?.columns,
@@ -1565,7 +1572,6 @@ export class UsersControllers {
             }
 
             obj.creditsSum = creditsTotal;
-            // console.log("txnTotal", txnTotal);
             if (txnTotal > 0) {
               obj.creditsCount = txnTotal;
               obj.creditsAvg = Math.ceil(creditsTotal / txnTotal);
@@ -1725,17 +1731,13 @@ function filterAndTransformData(
   return dataArray.map((dataObj: DataObject) => {
     const filteredData: DataObject = {};
 
-    // columns.forEach((column: Column) => {
-    //   if (column.isVisible && column.name in dataObj) {
-    //     filteredData[column.newName || column.name] = dataObj[column.name];
-    //   }
-    // });
     columns.forEach((column: Column) => {
-      if (column.isVisible) {
+      if (column.isVisible && column.originalName in dataObj) {
         filteredData[column.displayName || column.originalName] =
-            dataObj[column.originalName];
+          dataObj[column.originalName];
       }
     });
+
     return filteredData;
   });
 }
