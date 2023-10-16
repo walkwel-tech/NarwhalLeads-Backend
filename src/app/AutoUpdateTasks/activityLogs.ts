@@ -57,6 +57,6 @@ export const activityLogs = async () => {
         } else {
             console.log("No Data Found for 10 minutes activity logs");
         }
-        await activityLogsWebhookUrl(userData);
+        // await activityLogsWebhookUrl(userData);
     });
 };
