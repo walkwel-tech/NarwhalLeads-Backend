@@ -42,6 +42,9 @@ import { CreateCustomerInput } from "../Inputs/createCustomerOnRyft&Lead.inputs"
 import { BusinessDetails } from "../Models/BusinessDetails";
 import { createCustomersOnRyftAndLeadByte } from "../../utils/createCustomer";
 import { Permissions } from "../Models/Permission";
+import { CARD } from "../../utils/Enums/cardType.enum";
+import { createCustomerOnStripe } from "../../utils/createCustomer/createOnStripe";
+import { Types } from "mongoose";
 
 class AuthController {
   static register = async (req: Request, res: Response): Promise<any> => {
@@ -217,32 +220,54 @@ class AuthController {
                 .json({ data: "User is deleted.Please contact admin" });
             }
             const authToken = generateAuthToken(user);
-            const params: Record<string, any> = {
+            const params: Record<string, string | Types.ObjectId> = {
               email: user.email,
               firstName: user.firstName,
               lastName: user.lastName,
               userId: user.id,
             };
-
-            createCustomerOnRyft(params)
-              .then(async () => {
-                //@ts-ignore
-                user.password = undefined;
-                res.send({
-                  message: "successfully registered",
-                  data: user,
-                  token: authToken,
+            if (process.env.PAYMENT_MODE === CARD.STRIPE) {
+              //fixme:
+              //@ts-ignore
+              createCustomerOnStripe(params)
+                .then(async () => {
+                  //@ts-ignore
+                  user.password = undefined;
+                  res.send({
+                    message: "successfully registered",
+                    data: user,
+                    token: authToken,
+                  });
+                })
+                .catch(async () => {
+                  await User.findByIdAndDelete(user.id);
+                  return res.status(400).json({
+                    data: {
+                      message: "Error while creating customer on stripe",
+                    },
+                  });
                 });
-              })
-              .catch(async () => {
-                await User.findByIdAndDelete(user.id);
-                return res.status(400).json({
-                  data: {
-                    message:
-                      "Email already exist on RYFT. please try again with another email.",
-                  },
+            } else {
+              createCustomerOnRyft(params)
+                .then(async () => {
+                  //@ts-ignore
+                  user.password = undefined;
+                  res.send({
+                    message: "successfully registered",
+                    data: user,
+                    token: authToken,
+                  });
+                })
+                .catch(async () => {
+                  await User.findByIdAndDelete(user.id);
+                  return res.status(400).json({
+                    data: {
+                      message:
+                        "Email already exist on RYFT. please try again with another email.",
+                    },
+                  });
                 });
-              });
+            }
           }
         )(req, res);
       } else {

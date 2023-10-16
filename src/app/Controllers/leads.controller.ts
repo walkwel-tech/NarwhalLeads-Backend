@@ -42,10 +42,10 @@ import { APP_ENV } from "../../utils/Enums/serverModes.enum";
 import { UserInterface } from "../../types/UserInterface";
 import { leadReprocessWebhook } from "../../utils/webhookUrls/leadsReprocessWebhook";
 import { LeadsInterface } from "../../types/LeadsInterface";
-import {
-  UserLeadsDetailsInterface,
-  isUserLeadDetailsObject,
-} from "../../types/LeadDetailsInterface";
+// import {
+//   UserLeadsDetailsInterface,
+//   isUserLeadDetailsObject,
+// } from "../../types/LeadDetailsInterface";
 const ObjectId = mongoose.Types.ObjectId;
 
 const LIMIT = 10;
@@ -220,13 +220,12 @@ export class LeadsController {
         invitedById: user.id,
         isDeleted: false,
       }).populate("userLeadsDetailsId");
-
       invitedUsers.map((iUser) => {
-        const userLeadFreq: UserLeadsDetailsInterface | null =
-          isUserLeadDetailsObject(user?.userLeadsDetailsId)
-            ? user?.userLeadsDetailsId
-            : null;
-        if (userLeadFreq?.leadAlertsFrequency == leadsAlertsEnums.INSTANT) {
+        if (
+          //@ts-ignore
+          iUser?.userLeadsDetailsId?.leadAlertsFrequency ===
+          leadsAlertsEnums.INSTANT
+        ) {
           emails.push(iUser.email);
         }
       });
@@ -776,7 +775,6 @@ export class LeadsController {
 
   static index = async (_req: any, res: Response): Promise<any> => {
     let sortingOrder = _req.query.sortingOrder || sort.DESC;
-    // let accountManagerId = _req.query.accountManager
     const userId = _req.user?.id;
     // const archive: Boolean = _req.query.archive || false;
     const status = _req.query.status;
@@ -821,7 +819,6 @@ export class LeadsController {
         };
         skip = 0;
       }
-
       const [query]: any = await Leads.aggregate([
         {
           $facet: {
@@ -899,7 +896,6 @@ export class LeadsController {
           },
         },
       ]);
-
       query.results.map((item: any) => {
         item.leads.clientName =
           item["clientName"][0]?.firstName +
@@ -931,6 +927,7 @@ export class LeadsController {
       //   .then((updatedResults) => {'
       // Handle the updatedResults here
       const leadsCount = query.leadsCount[0]?.count || 0;
+
       const totalPages = Math.ceil(leadsCount / perPage);
       return res.json({
         data: query.results,
@@ -1393,8 +1390,6 @@ export class LeadsController {
     _req: any,
     res: Response
   ): Promise<any> => {
-    let accountManagerId = _req.query.accountManager;
-
     let sortingOrder = _req.query.sortingOrder || sort.DESC;
 
     const status = _req.query.status;
@@ -1435,13 +1430,17 @@ export class LeadsController {
       if (_req.query.industryId) {
         dataToFind.industryId = new ObjectId(_req.query.industryId);
       }
-      if (accountManagerId != "" && accountManagerId) {
-        const accountManagerUsers = await User.find({
-          accountManager: accountManagerId,
+      let bids: string[] = [];
+      if (_req.query.accountManagerId != "" && _req.query.accountManagerId) {
+        const users = await User.find({
+          accountManager: _req.query.accountManagerId,
         });
-
-        const buyerIds = accountManagerUsers.map((user) => user.buyerId);
-        dataToFind.bid = { $in: buyerIds };
+        users.map((user: UserInterface) => {
+          return bids.push(user.buyerId);
+        });
+      }
+      if (_req.query.accountManagerId) {
+        dataToFind.bid = { $in: bids };
       }
       if (_req.query.search) {
         dataToFind = {
@@ -1602,6 +1601,7 @@ export class LeadsController {
       });
     }
   };
+
   static createPreference = async (req: Request, res: Response) => {
     //@ts-ignore
     const userId = req.user?._id;
@@ -2307,17 +2307,13 @@ function filterAndTransformData(
 ): DataObject[] {
   return dataArray.map((dataObj: DataObject) => {
     const filteredData: DataObject = {};
-    // columns.forEach((column: Column) => {
-    //   if (column.isVisible) {
-    //     filteredData[column.newName || column.name] = dataObj[column.name];
-    //   }
-    // });
     columns.forEach((column: Column) => {
       if (column.isVisible) {
         filteredData[column.displayName || column.originalName] =
-            dataObj[column.originalName];
+          dataObj[column.originalName];
       }
     });
+
     return filteredData;
   });
 }
