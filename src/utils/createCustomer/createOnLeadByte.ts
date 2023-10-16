@@ -49,12 +49,13 @@ export const createCustomerOnLeadByte = (params: CreateCustomerInput) => {
           resolve(response);
         })
         .catch(async (err) => {
+          console.log("lead byte error", err);
           const logsData = {
             userId: params.userId,
             registrationId: REGISTRATION_IDS.NO_REGISTRATION_IDS,
             status: LOGS_STATUS.FAIL,
             portal: PORTAL.LEAD_BYTE,
-            notes: err.response?.data,
+            notes: err,
           };
           await saveLogs(logsData);
           reject(err.response?.data);

@@ -124,6 +124,12 @@ const UserSchema = new Schema(
       type: String,
       // default: false,
     },
+    stripeClientId: {
+      type: String,
+    },
+    isStripeCustomer: {
+      type: Boolean,
+    },
     rowIndex: {
       type: Number,
       default: 0,

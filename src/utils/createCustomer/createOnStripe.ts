@@ -1,49 +1,56 @@
 import axios from "axios";
-// import { CreateCustomerInput } from "../../app/Inputs/createCustomerOnRyft&Lead.inputs";
 import { User } from "../../app/Models/User";
+import { Types } from "mongoose";
 import { LOGS_STATUS } from "../Enums/logs.status.enum";
 import { PORTAL } from "../Enums/portal.enum";
 import { saveLogs } from "../Functions/saveLogs";
 import { REGISTRATION_IDS } from "../constantFiles/errorConstants";
 const POST = "post";
+const qs = require("qs");
 
-export const createCustomerOnRyft = (params: Record<string, any>) => {
+export const createCustomerOnStripe = (params: {
+  email: string;
+  firstName: string;
+  lastName: string;
+  userId: Types.ObjectId;
+}) => {
   return new Promise((resolve, reject) => {
     const config = {
       method: POST,
-      url: process.env.CREATE_CUSTOMER_ON_RYFT_URL,
+      url: process.env.STRIPE_CUSTOMER_CREATE_URL,
       headers: {
-        Authorization: process.env.RYFT_SECRET_KEY,
+        Authorization: `Bearer ${process.env.STRIPE_SECRET_KEY}`,
       },
-      data: {
-        email: params.email,
-        firstName: params.firstName,
-        lastName: params.lastName,
-      },
+
+      data: qs.stringify({
+        name: `${params.firstName} ${params.lastName}`,
+        email: params?.email,
+      }),
     };
     axios(config)
       .then(async (response) => {
-        await User.findByIdAndUpdate(params.userId, {
-          isRyftCustomer: true,
-          ryftClientId: response.data.id,
-        });
+        if (response.data.id) {
+          await User.findByIdAndUpdate(params.userId, {
+            isStripeCustomer: true,
+            stripeClientId: response.data.id,
+          });
+        }
         const logsData = {
           userId: params.userId,
           registrationId: response.data.id,
           status: LOGS_STATUS.SUCCESS,
-          portal: PORTAL.RYFT,
+          portal: PORTAL.STRIPE,
         };
         await saveLogs(logsData);
         resolve(response);
       })
       .catch(async (err) => {
-        console.log("ryft error", err.response?.data);
         const logsData = {
           userId: params.userId,
           registrationId: REGISTRATION_IDS.NO_REGISTRATION_IDS,
           status: LOGS_STATUS.FAIL,
-          portal: PORTAL.RYFT,
-          notes: err?.response?.data,
+          portal: PORTAL.STRIPE,
+          notes: err?.data?.message,
         };
         await saveLogs(logsData);
         reject(err.response?.data);

@@ -10,10 +10,17 @@ cardDetails.post(
   "/payment-status",
   CardDetailsControllers.handlepaymentStatusWebhook
 );
+
+cardDetails.post(
+  "/stripe-payment-status",
+  CardDetailsControllers.handlepaymentStatusWebhookStripe
+);
+
 cardDetails.post(
   "/create-session",
   CardDetailsControllers.createInitialSessionRyft
 );
+
 cardDetails.post(
   "/addCredits",
   Auth,
@@ -30,6 +37,7 @@ cardDetails.post(
   ]),
   CardDetailsControllers.addCard
 );
+cardDetails.get("/strip-return-url", CardDetailsControllers.stripeReturnURL);
 cardDetails.post("/session-new", CardDetailsControllers.ryftPaymentSession);
 cardDetails.get("/session", CardDetailsControllers.retrievePaymentSssion);
 cardDetails.post(
