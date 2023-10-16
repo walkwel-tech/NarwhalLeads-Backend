@@ -221,8 +221,8 @@ export class UsersControllers {
         sortObject = {};
         sortObject[sortKey] = sortingOrder;
       }
-      console.log("data", dataToFind);
-      const [query]: any = await User.aggregate([
+
+      let pipeline = [
         {
           $facet: {
             results: [
@@ -243,9 +243,9 @@ export class UsersControllers {
                   as: "accountManager",
                 },
               },
-              {
-                $unwind: "$accountManager",
-              },
+              // {
+              //   $unwind: "$accountManager",
+              // },
               {
                 $lookup: {
                   from: "userleadsdetails",
@@ -308,14 +308,22 @@ export class UsersControllers {
                   },
                 },
               },
-              { $skip: skip },
-              { $limit: perPage },
+              // { $skip: skip },
+              // { $limit: perPage },
               // { $sort: { firstName: 1 } },
             ],
             userCount: [{ $match: dataToFind }, { $count: "count" }],
           },
         },
-      ]);
+      ];
+
+      if (!accountManagerBoolean === true) {
+        //@ts-ignore
+        pipeline[0].$facet.results.push({ $skip: skip });
+        //@ts-ignore
+        pipeline[0].$facet.results.push({ $limit: perPage });
+      }
+      const [query]: any = await User.aggregate(pipeline);
 
       query.results.map((item: any) => {
         let businessDetailsId = Object.assign({}, item["businessDetailsId"][0]);
