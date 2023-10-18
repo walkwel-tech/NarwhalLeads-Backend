@@ -77,6 +77,8 @@ import {
 } from "../../utils/payment/stripe/paymentMethods";
 import { createPaymentOnStrip } from "../../utils/payment/stripe/createPaymentToStripe";
 import { STRIPE_PAYMENT_STATUS } from "../../utils/Enums/stripe.payment.status.enum";
+import { createCustomerOnStripe } from "../../utils/createCustomer/createOnStripe";
+import { getPaymentStatus } from "../../utils/payment/stripe/retrievePaymentStatus";
 // import { managePaymentsByPaymentMethods } from "../../utils/payment";
 // import { managePaymentsByPaymentMethods } from "../../utils/payment";
 
@@ -468,132 +470,6 @@ export class CardDetailsControllers {
     }
   };
 
-  // static addCreditsManually = async (
-  //   req: Request,
-  //   res: Response
-  // ): Promise<any> => {
-  //   let curentUser: Partial<UserInterface> = req.user ?? ({} as UserInterface);
-
-  //   const userId = curentUser?.id;
-  //   const input = req.body;
-
-  //   let user: UserInterface | null = await User.findById(userId);
-  //   try {
-  //     if (!user) {
-  //       return res
-  //         .status(404)
-  //         .json({ error: { message: "User does not exist" } });
-  //     }
-
-  //     if (user && (!user.isRyftCustomer || !user.isLeadbyteCustomer)) {
-  //       return res.status(403).json({
-  //         error: {
-  //           message: "You are not register on RYFT or Lead Byte.",
-  //         },
-  //       });
-  //     }
-
-  //     if (!user?.xeroContactId) {
-  //       try {
-  //         user = await addUserXeroId(userId);
-  //       } catch (error) {}
-  //     }
-
-  //     if (
-  //       user?.paymentMethod != paymentMethodEnum.MANUALLY_ADD_CREDITS_METHOD
-  //     ) {
-  //       return res.status(400).json({
-  //         error: { message: "please select manual top-up payment method" },
-  //       });
-  //     }
-  //     const card = await CardDetails.findOne({
-  //       userId: userId,
-  //       isDefault: true,
-  //       status: PAYMENT_STATUS.CAPTURED,
-  //     });
-  //     if (!card) {
-  //       return res
-  //         .status(404)
-  //         .json({ error: { message: "Card Details not found" } });
-  //     }
-  //     const adminSettings: AdminSettingsInterface =
-  //       (await AdminSettings.findOne()) ?? ({} as AdminSettingsInterface);
-  //     const params: any = {
-  //       fixedAmount:
-  //         parseInt(input?.amount) + (parseInt(input?.amount) * VAT) / 100 ||
-  //         adminSettings?.minimumUserTopUpAmount,
-  //       email: user?.email,
-  //       cardNumber: card?.cardNumber,
-  //       expiryMonth: card?.expiryMonth,
-  //       expiryYear: card?.expiryYear,
-  //       cvc: card?.cvc,
-  //       buyerId: user?.buyerId,
-  //       freeCredits: 0,
-  //       clientId: user?.ryftClientId,
-  //       cardId: card.id,
-  //       paymentSessionId: card?.paymentSessionID,
-  //     };
-
-  //     const paymentMethodsExists = await RyftPaymentMethods.findOne({
-  //       cardId: card.id,
-  //     });
-
-  //     if (!paymentMethodsExists) {
-  //       return res
-  //         .status(404)
-  //         .json({ data: { message: "Payment methods does not found." } });
-  //     } else {
-  //       params.paymentMethodId = paymentMethodsExists?.paymentMethod;
-  //       createSessionUnScheduledPayment(params)
-  //         .then(async (_res: any) => {
-  //           console.log("payment initiated!");
-  //           if (!user?.xeroContactId) {
-  //             console.log("xeroContact ID not found. Failed to generate pdf.");
-  //           }
-  //           let response: PaymentResponse = {
-  //             message: "In progress",
-  //             status: 200,
-  //           };
-  //           if (_res.data.status == "PendingAction") {
-  //             const sessionInformation: any = await createSessionInitial(
-  //               params
-  //             );
-  //             response.message = "Further Action Required";
-  //             response.manualPaymentConfig = {
-  //               clientSecret: sessionInformation?.data?.clientSecret,
-  //               paymentType: sessionInformation?.data?.paymentType,
-  //               publicKey: process.env.RYFT_PUBLIC_KEY,
-  //               customerPaymentMethods: _res.data.paymentMethod,
-  //             };
-  //             response.sessionID = _res.data?.id;
-
-  //             response.status = "manual_payment_required";
-  //           } else {
-  //             response.message =
-  //               "Your payment was successful, please refresh in few minutes to see your new balance";
-  //             response.status = 200;
-  //             response.sessionID = _res.data?.id;
-  //           }
-
-  //           return res.json({
-  //             data: response,
-  //           });
-  //         })
-  //         .catch(async (err) => {
-  //           console.log("error in payment Api", err.response.data);
-  //           //fixme: store error transacation in db also
-  //           return res.status(400).json({
-  //             data: err.response.data,
-  //           });
-  //         });
-  //     }
-  //   } catch (err) {
-  //     return res
-  //       .status(500)
-  //       .json({ error: { message: "Something went wrong." } });
-  //   }
-  // };
-
   static addCreditsManually = async (
     req: Request,
     res: Response
@@ -612,24 +488,10 @@ export class CardDetailsControllers {
           .json({ error: { message: "User does not exist" } });
       }
 
-      if (
-        user &&
-        process.env.PAYMENT_MODE === CARD.RYFT &&
-        (!user.isRyftCustomer || !user.isLeadbyteCustomer)
-      ) {
+      if (user && !user.isLeadbyteCustomer) {
         return res.status(403).json({
           error: {
-            message: "You are not register on RYFT or Lead Byte.",
-          },
-        });
-      } else if (
-        user &&
-        process.env.PAYMENT_MODE === CARD.STRIPE &&
-        !user.isStripeCustomer
-      ) {
-        return res.status(403).json({
-          error: {
-            message: "You are not register on Stripe.",
+            message: "You are not register on Lead Byte.",
           },
         });
       }
@@ -659,7 +521,7 @@ export class CardDetailsControllers {
       }
       const adminSettings: AdminSettingsInterface =
         (await AdminSettings.findOne()) ?? ({} as AdminSettingsInterface);
-      if (process.env.PAYMENT_MODE === CARD.RYFT) {
+      if (user?.isRyftCustomer) {
         const params: any = {
           fixedAmount:
             parseInt(input?.amount) + (parseInt(input?.amount) * VAT) / 100 ||
@@ -747,7 +609,6 @@ export class CardDetailsControllers {
           cardId: card.id,
           paymentMethod: card?.paymentMethod,
         };
-        console.log("araters", params);
         createPaymentOnStrip(params)
           .then(async (_res: any) => {
             console.log("payment initiated!");
@@ -761,7 +622,8 @@ export class CardDetailsControllers {
             response.message =
               "Your payment was successful, please refresh in few minutes to see your new balance";
             response.status = 200;
-            response.sessionID = _res.data?.id;
+            response.sessionID = _res.id;
+            response.paymentMethods = _res.payment_method;
             return res.json({
               data: response,
             });
@@ -780,25 +642,31 @@ export class CardDetailsControllers {
         .json({ error: { message: "Something went wrong." } });
     }
   };
-  static createInitialSessionRyft = async (
+  static createInitialSession = async (
     req: Request,
     res: Response
   ): Promise<any> => {
     const input = req.body;
     let sessionObject: any = {};
     if (process.env.PAYMENT_MODE === CARD.STRIPE) {
+      if (input.clientId === "") {
+        const user = await User.findById(input.userId);
+        if (user) {
+          const params = {
+            email: user?.email,
+            firstName: user?.firstName,
+            lastName: user?.lastName,
+            userId: user?._id,
+          };
+          const response: any = await createCustomerOnStripe(params);
+          input.clientId = response?.data?.id;
+        }
+      }
       paymentIntent(input)
         .then(async (response: any) => {
-          console.log("response---------------", response);
           (sessionObject.clientSecret = response.client_secret),
             (sessionObject.status = response?.status);
           sessionObject.sessionID = response.id;
-
-          // sessionObject.paymentType = response.data.paymentType;
-          // const paymentMethods: any = await customerPaymentMethods(
-          //   response.data.customerDetails.id
-          // );
-          // sessionObject.paymentMethods = paymentMethods.data;
           return res.json({ data: sessionObject });
         })
         .catch(async (error) => {
@@ -1139,36 +1007,15 @@ export class CardDetailsControllers {
     const input = req.body;
     try {
       const customerId = input.data.object?.customer;
-      let userId: UserInterface =
-        (await User.findOne({
-          stripeClientId: customerId,
-        })) ?? ({} as UserInterface);
-      const card =
-        (await CardDetails.findOne({
-          paymentMethod: input.data.object?.payment_method,
-        })) ?? ({} as CardDetailsInterface);
-      let originalAmount = parseInt(input.data.object?.amount) / 100;
-      let isFreeCredited: boolean;
-      const txn: TransactionInterface[] =
-        (await Transaction.find({
-          userId: userId?.id,
-          title: transactionTitle.CREDITS_ADDED,
-          isCredited: true,
-          status: PAYMENT_STATUS.CAPTURED,
-          amount: { $gt: 0 },
-        })) ?? ([] as TransactionInterface[]);
-      if (txn?.length > 0) {
-        isFreeCredited = true;
-      } else {
-        isFreeCredited = false;
-      }
+      const paymentMethodId = input.data.object?.payment_method;
+      const user = await getUserDetails(customerId, paymentMethodId);
+      let userId = user.user ?? ({} as UserInterface);
+      const card = user.card;
+      const amount = parseInt(input.data.object?.amount);
+      let originalAmount = getOriginalAmountForStripe(amount);
       if (userId) {
         if (input.type == STRIPE_PAYMENT_STATUS.FAILED) {
-          userId = (await User.findById(userId?.id)) ?? ({} as UserInterface);
-
-          const business = await BusinessDetails.findById(
-            userId?.businessDetailsId
-          );
+          const business = user.business;
           const message = {
             firstName: userId?.firstName,
             amount: parseInt(input.data.object.amount) / 100,
@@ -1180,7 +1027,7 @@ export class CardDetailsControllers {
           sendEmailForPaymentFailure(userId?.email, message);
           let dataToSaveInTransaction: Partial<TransactionInterface> = {
             userId: userId?.id,
-            amount: input?.data?.object?.amount,
+            amount: originalAmount,
             status: PAYMENT_STATUS.DECLINE,
             title: transactionTitle.PAYMNET_FAILED,
             isCredited: false,
@@ -1214,56 +1061,36 @@ export class CardDetailsControllers {
             fixedAmount: originalAmount,
           };
 
-          //TODO: THIS WILL BE ONLY ON 1 TRANSATION
-          if (
-            promoLink &&
-            !userId.promoCodeUsed &&
-            userId?.promoLinkId &&
-            userId.premiumUser == PROMO_LINK.PREMIUM_USER_TOP_UP &&
-            originalAmount >=
-              promoLink?.topUpAmount * parseInt(userId?.leadCost) &&
-            !isFreeCredited
-          ) {
-            params.freeCredits =
-              promoLink?.freeCredits * parseInt(userId?.leadCost);
-          } else if (
-            promoLink?.spotDiffPremiumPlan &&
-            originalAmount >=
-              promoLink?.topUpAmount * parseInt(userId?.leadCost) &&
-            userId.promoCodeUsed &&
-            !isFreeCredited
-          ) {
-            params.freeCredits =
-              promoLink?.freeCredits * parseInt(userId?.leadCost);
-          } else if (
-            !userId.promoCodeUsed &&
-            originalAmount >=
-              PREMIUM_PROMOLINK.TOP_UP * parseInt(userId?.leadCost) &&
-            !isFreeCredited
-          ) {
-            params.freeCredits =
-              PREMIUM_PROMOLINK.FREE_CREDITS * parseInt(userId?.leadCost);
-          }
+          params.freeCredits = await checkUserUsedPromoCode(
+            userId.id,
+            promoLink?.id,
+            originalAmount
+          );
+          let commonDataSaveInTransaction = {
+            userId: userId?.id,
+            amount: originalAmount,
+            status: "",
+            title: "",
+            invoiceId: "",
+            paymentSessionId: input.data.object.id,
+            cardId: card?._id,
+            creditsLeft: userId?.credits || 0 - (params.freeCredits || 0),
+            paymentMethod: input.data?.object?.payment_method,
+            paymentType: "",
+            isCredited: true,
+          };
           addCreditsToBuyer(params)
             .then(async (res: any) => {
               userId =
                 (await User.findById(userId?.id)) ?? ({} as UserInterface);
-              let dataToSaveInTransaction: Partial<TransactionInterface> = {
-                userId: userId?.id,
-                amount: originalAmount,
-                status: PAYMENT_STATUS.CAPTURED,
-                title: transactionTitle.CREDITS_ADDED,
-                isCredited: true,
-                invoiceId: "",
-                paymentSessionId: input.data.object.id,
-                cardId: card?._id,
-                creditsLeft: userId?.credits || 0 - (params.freeCredits || 0),
-                paymentMethod: input.data?.object?.payment_method,
-              };
+
+              (commonDataSaveInTransaction.status = PAYMENT_STATUS.CAPTURED),
+                (commonDataSaveInTransaction.title =
+                  transactionTitle.CREDITS_ADDED);
               if (
                 userId?.paymentMethod === paymentMethodEnum.AUTOCHARGE_METHOD
               ) {
-                dataToSaveInTransaction.paymentType =
+                commonDataSaveInTransaction.paymentType =
                   PAYMENT_TYPE_ENUM.AUTO_CHARGE;
               }
               const prevTransaction = await Transaction.find({
@@ -1285,32 +1112,32 @@ export class CardDetailsControllers {
                 sendEmailForFullySignupToAdmin(data);
               }
               const transaction = await Transaction.create(
-                dataToSaveInTransaction
+                commonDataSaveInTransaction
               );
-              const save: Partial<TransactionInterface> = {
-                userId: userId?.id,
-                amount: input?.data?.object?.amount,
-                status: PAYMENT_STATUS.CAPTURED,
-                title: transactionTitle.INVOICES_VAT,
-                isCredited: true,
-                invoiceId: "",
-                paymentSessionId: input.data.object?.id,
-                cardId: card?._id,
-                creditsLeft: userId?.credits || 0 - (params.freeCredits || 0),
-                paymentMethod: input.data?.object?.payment_method,
-              };
+
+              (commonDataSaveInTransaction.status = PAYMENT_STATUS.CAPTURED),
+                (commonDataSaveInTransaction.title =
+                  transactionTitle.INVOICES_VAT),
+                (commonDataSaveInTransaction.isCredited = true),
+                (commonDataSaveInTransaction.invoiceId = ""),
+                (commonDataSaveInTransaction.creditsLeft =
+                  userId?.credits || 0 - (params.freeCredits || 0));
+
               if (
                 userId?.paymentMethod === paymentMethodEnum.AUTOCHARGE_METHOD
               ) {
-                save.paymentType = PAYMENT_TYPE_ENUM.AUTO_CHARGE;
+                commonDataSaveInTransaction.paymentType =
+                  PAYMENT_TYPE_ENUM.AUTO_CHARGE;
               }
-              const transactionForVat = await Transaction.create(save);
+              const transactionForVat = await Transaction.create(
+                commonDataSaveInTransaction
+              );
               const business = await BusinessDetails.findById(
                 userId?.businessDetailsId
               );
               const message = {
                 firstName: userId?.firstName,
-                amount: parseInt(input.data.object.amount) / 100,
+                amount: originalAmount,
                 cardHolderName: `${userId?.firstName} ${userId?.lastName}`,
                 cardNumberEnd: cardDetails?.cardNumber,
                 credits: userId?.credits,
@@ -1377,19 +1204,17 @@ export class CardDetailsControllers {
               if (params.freeCredits) {
                 userId =
                   (await User.findById(userId?.id)) ?? ({} as UserInterface);
-                const dataToSaveInTxn = {
-                  userId: userId?.id,
-                  amount: params.freeCredits,
-                  status: PAYMENT_STATUS.CAPTURED,
-                  title: transactionTitle.FREE_CREDITS,
-                  isCredited: true,
+
+                (commonDataSaveInTransaction.amount = params.freeCredits),
+                  (commonDataSaveInTransaction.status =
+                    PAYMENT_STATUS.CAPTURED),
+                  (commonDataSaveInTransaction.title =
+                    transactionTitle.FREE_CREDITS),
+                  (commonDataSaveInTransaction.isCredited = true),
                   //@ts-ignore
-                  invoiceId: invoice?.invoiceId,
-                  paymentSessionId: input.data.object.id,
-                  cardId: card?._id,
-                  creditsLeft: userId?.credits,
-                };
-                await Transaction.create(dataToSaveInTxn);
+                  (commonDataSaveInTransaction.invoiceId = invoice?.invoiceId),
+                  (commonDataSaveInTransaction.creditsLeft = userId?.credits),
+                  await Transaction.create(commonDataSaveInTransaction);
               }
             })
             .catch((error) => {
@@ -1562,26 +1387,35 @@ export class CardDetailsControllers {
     req: Request,
     res: Response
   ): Promise<any> => {
-    const sessionId = req.query.ps;
-    let config = {
-      method: "get",
-      url: `${process.env.RYFT_PAYMENT_METHODS_BY_PAYMENT_SESSION_ID}/${sessionId}`,
-      headers: {
-        Authorization: process.env.RYFT_SECRET_KEY,
-      },
-    };
-    axios(config)
-      .then(async function (response: any) {
-        const sessionData = response.data;
-        const dataToShow = {
-          sessionId: sessionData.id,
-          status: sessionData.status,
-        };
-        return res.status(200).json({ data: dataToShow });
-      })
-      .catch(function (error: any) {
-        return res.status(400).json({ error: { message: "Fail" } });
-      });
+    const sessionId: any = req.query.ps;
+    let card = await CardDetails.findOne({
+      paymentMethod: req.query?.paymentMethods,
+    });
+
+    if (card?.cardType === CARD.STRIPE) {
+      const data = await getPaymentStatus(sessionId);
+      return res.status(200).json({ data: data });
+    } else {
+      let config = {
+        method: "get",
+        url: `${process.env.RYFT_PAYMENT_METHODS_BY_PAYMENT_SESSION_ID}/${sessionId}`,
+        headers: {
+          Authorization: process.env.RYFT_SECRET_KEY,
+        },
+      };
+      axios(config)
+        .then(async function (response: any) {
+          const sessionData = response.data;
+          const dataToShow = {
+            sessionId: sessionData.id,
+            status: sessionData.status,
+          };
+          return res.status(200).json({ data: dataToShow });
+        })
+        .catch(function (error: any) {
+          return res.status(400).json({ error: { message: "Fail" } });
+        });
+    }
   };
 
   static stripeReturnURL = async (
@@ -1599,46 +1433,56 @@ export class CardDetailsControllers {
         const user = await User.findOne({
           stripeClientId: details.customer,
         });
-        const cards = await CardDetails.findOne(user?._id);
-        let dataToSave = {
-          paymentMethod: details.payment_method,
-          paymentSessionID: details.id,
-          status: PAYMENT_STATUS.CAPTURED,
-          userId: user?._id,
-          cardHolderName: user?.firstName,
+        const cards = await CardDetails.findOne({ userId: user?._id });
+        const checkExists = await CardDetails.find({
           cardNumber: userDetails.card?.last4,
-          expiryMonth: userDetails.card?.exp_month,
-          expiryYear: userDetails.card?.exp_year,
-          isDefault: false,
-        };
-        if (!cards) {
-          dataToSave.isDefault = true;
+          userId: user?._id,
+          isDeleted: false,
+        });
+        if (checkExists.length > 0) {
+          res.redirect(`${process.env.TEMP_RETURN_URL}/?status_code=400` || "");
+        } else {
+          let dataToSave = {
+            paymentMethod: details.payment_method,
+            paymentSessionID: details.id,
+            status: PAYMENT_STATUS.CAPTURED,
+            userId: user?._id,
+            cardHolderName: user?.firstName,
+            cardNumber: userDetails.card?.last4,
+            expiryMonth: userDetails.card?.exp_month,
+            expiryYear: userDetails.card?.exp_year,
+            cardType: CARD.STRIPE,
+            isDefault: false,
+          };
+          if (!cards) {
+            dataToSave.isDefault = true;
+          }
+          await CardDetails.create(dataToSave);
+          await User.findByIdAndUpdate(
+            user?._id,
+            {
+              onBoarding: [
+                {
+                  key: ONBOARDING_KEYS.BUSINESS_DETAILS,
+                  pendingFields: [],
+                  dependencies: [],
+                },
+                {
+                  key: ONBOARDING_KEYS.LEAD_DETAILS,
+                  pendingFields: [],
+                  dependencies: [],
+                },
+                {
+                  key: ONBOARDING_KEYS.CARD_DETAILS,
+                  pendingFields: [],
+                  dependencies: [],
+                },
+              ],
+            },
+            { new: true }
+          );
+          res.status(302).redirect(process.env.TEMP_RETURN_URL || "");
         }
-        await CardDetails.create(dataToSave);
-        await User.findByIdAndUpdate(
-          user?._id,
-          {
-            onBoarding: [
-              {
-                key: ONBOARDING_KEYS.BUSINESS_DETAILS,
-                pendingFields: [],
-                dependencies: [],
-              },
-              {
-                key: ONBOARDING_KEYS.LEAD_DETAILS,
-                pendingFields: [],
-                dependencies: [],
-              },
-              {
-                key: ONBOARDING_KEYS.CARD_DETAILS,
-                pendingFields: [],
-                dependencies: [],
-              },
-            ],
-          },
-          { new: true }
-        );
-        res.status(302).redirect(process.env.RETURN_URL || "");
       }
     } catch (err) {
       return res
@@ -1646,4 +1490,70 @@ export class CardDetailsControllers {
         .json({ error: { message: "Something went wrong.", err } });
     }
   };
+}
+
+async function getUserDetails(cid: string, pid: string) {
+  const user = await User.findOne({ stripeClientId: cid });
+  const card = await CardDetails.findOne({
+    paymentMethod: pid,
+  });
+  const business = await BusinessDetails.findById(user?.businessDetailsId);
+
+  const obj = { user: user, card: card, business: business };
+  return obj;
+}
+
+function getOriginalAmountForStripe(amount: number) {
+  const originalAmount = amount / 100;
+  return originalAmount;
+}
+
+async function isUserFreeCredited(userId: string) {
+  const txn = await Transaction.find({
+    userId: userId,
+    title: transactionTitle.CREDITS_ADDED,
+    isCredited: true,
+    status: PAYMENT_STATUS.CAPTURED,
+    amount: { $gt: 0 },
+  });
+  if (txn?.length > 0) {
+    return true;
+  } else {
+    return false;
+  }
+}
+
+async function checkUserUsedPromoCode(
+  userId: string,
+  promoLinkId: string,
+  amount: number
+) {
+  const user = (await User.findById(userId)) ?? ({} as UserInterface);
+  const promoLink = await FreeCreditsLink.findById(promoLinkId);
+  const isFreeCredited = isUserFreeCredited(userId);
+  let freeCredits;
+  if (
+    promoLink &&
+    !user.promoCodeUsed &&
+    user?.promoLinkId &&
+    user.premiumUser == PROMO_LINK.PREMIUM_USER_TOP_UP &&
+    amount >= promoLink?.topUpAmount * parseInt(user?.leadCost) &&
+    !isFreeCredited
+  ) {
+    freeCredits = promoLink?.freeCredits * parseInt(user?.leadCost);
+  } else if (
+    promoLink?.spotDiffPremiumPlan &&
+    amount >= promoLink?.topUpAmount * parseInt(user?.leadCost) &&
+    user.promoCodeUsed &&
+    !isFreeCredited
+  ) {
+    freeCredits = promoLink?.freeCredits * parseInt(user?.leadCost);
+  } else if (
+    !user.promoCodeUsed &&
+    amount >= PREMIUM_PROMOLINK.TOP_UP * parseInt(user?.leadCost) &&
+    !isFreeCredited
+  ) {
+    freeCredits = PREMIUM_PROMOLINK.FREE_CREDITS * parseInt(user?.leadCost);
+  }
+  return freeCredits;
 }

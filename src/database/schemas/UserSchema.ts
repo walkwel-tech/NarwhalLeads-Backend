@@ -194,7 +194,7 @@ const UserSchema = new Schema(
     },
     isCreditsAndBillingEnabled: {
       type: Boolean,
-      default: false,
+      default: true,
     },
     accountManager: {
       type: Types.ObjectId,

@@ -230,4 +230,30 @@ export class freeCreditsLinkController {
       res.status(500).json({ error: { message: "something Went wrong." } });
     }
   };
+
+  static stats = async (_req: any, res: Response) => {
+    try {
+      const active = await FreeCreditsLink.find({
+        isDisabled: false,
+        isDeleted: false,
+      }).count();
+      const paused = await FreeCreditsLink.find({
+        isDisabled: true,
+        isDeleted: false,
+      }).count();
+
+      const dataToShow = {
+        liveLinks: active,
+        expiredLinks: paused,
+      };
+      return res.json({ data: dataToShow });
+    } catch (err) {
+      return res.status(500).json({
+        error: {
+          message: "something went wrong",
+          err,
+        },
+      });
+    }
+  };
 }
