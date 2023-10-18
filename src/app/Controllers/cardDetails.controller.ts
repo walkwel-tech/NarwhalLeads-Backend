@@ -1504,8 +1504,11 @@ async function getUserDetails(cid: string, pid: string) {
 }
 
 function getOriginalAmountForStripe(amount: number) {
-  const originalAmount = amount / 100;
+
+  const originalAmount = (amount / 100 )/ (1+(VAT/100));
+
   return originalAmount;
+
 }
 
 async function isUserFreeCredited(userId: string) {
