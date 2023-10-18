@@ -41,4 +41,13 @@ freeCreditsLinkRoutes.post(
   freeCreditsLinkController.expire
 );
 
+freeCreditsLinkRoutes.get(
+  "/stats",
+  Auth,
+  checkPermissions([
+    { module: MODULE.PROMO_LINKS, permission: PERMISSIONS.READ },
+  ]),
+  OnlyAdmins,
+  freeCreditsLinkController.stats
+);
 export default freeCreditsLinkRoutes;

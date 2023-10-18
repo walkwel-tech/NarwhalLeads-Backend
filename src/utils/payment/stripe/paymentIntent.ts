@@ -15,6 +15,8 @@ export interface IntentInterface {
   paymentMethod?: string;
 }
 
+const OFF_SESSION = "off_session";
+
 export const paymentIntent = async (params: {
   amount: number;
   clientId: string;
@@ -29,7 +31,7 @@ export const paymentIntent = async (params: {
       param.payment_method_types = [SRIPE_CONSTANT.CARD];
       data = await stripe.setupIntents.create({
         //fixme:
-        usage: "off_session",
+        usage: OFF_SESSION,
         payment_method_types: [SRIPE_CONSTANT.CARD],
         customer: params.clientId,
       });
@@ -37,10 +39,7 @@ export const paymentIntent = async (params: {
       data = await stripe.paymentIntents.create({
         amount: params.amount,
         currency: `${process.env.STRIPE_CURRENCY}`,
-        // customer: params.clientId,
         automatic_payment_methods: { enabled: true },
-        // return_url: "http://localhost:3004/api/v1/cardDetails/test2",
-        // confirm: true,
       });
     }
     return data;

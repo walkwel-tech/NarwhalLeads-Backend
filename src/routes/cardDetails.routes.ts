@@ -18,7 +18,7 @@ cardDetails.post(
 
 cardDetails.post(
   "/create-session",
-  CardDetailsControllers.createInitialSessionRyft
+  CardDetailsControllers.createInitialSession
 );
 
 cardDetails.post(

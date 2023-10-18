@@ -1,19 +1,26 @@
 import { Schema } from "mongoose";
+import { json } from "../../utils/constantFiles/businessIndustryJson";
 
-const BuisnessIndustriesSchema = new Schema({
+const BuisnessIndustriesSchema = new Schema(
+  {
     industry: {
-        type: String,
+      type: String,
     },
     leadCost: {
-        type: Number,
+      type: Number,
     },
-    columns:{
-        type: Array,
+    columns: {
+      type: Array,
     },
-    isActive:{
-        type:Boolean,
-        default:true
-    }
-    
-}, {timestamps: true});
-export {BuisnessIndustriesSchema};
+    isActive: {
+      type: Boolean,
+      default: true,
+    },
+    json: {
+      type: Object,
+      default: json,
+    },
+  },
+  { timestamps: true }
+);
+export { BuisnessIndustriesSchema };

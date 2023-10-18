@@ -17,6 +17,7 @@ type UserPromise = {
 
 export const activityLogs = async () => {
   cron.schedule("*/10 * * * *", async () => {
+    // cron.schedule("* * * * *", async () => {
     const currentTime = new Date();
     const tenMinutesAgo = new Date(currentTime);
     tenMinutesAgo.setMinutes(currentTime.getMinutes() - 10);
@@ -55,6 +56,10 @@ export const activityLogs = async () => {
     );
 
     const userData = await Promise.all(userDataPromises);
-    await activityLogsWebhookUrl(userData);
+    if (userData.length > 0) {
+      await activityLogsWebhookUrl(userData);
+    } else {
+      console.log("No Data Found for 10 minutes activity logs");
+    }
   });
 };
