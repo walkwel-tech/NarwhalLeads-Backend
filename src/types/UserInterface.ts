@@ -58,4 +58,6 @@ export interface UserInterface extends Document {
     module: string;
     permission: string[];
   }>;
+  isStripeCustomer: boolean;
+  stripeClientId: string;
 }

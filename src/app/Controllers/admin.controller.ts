@@ -13,6 +13,7 @@ import { UserInterface } from "../../types/UserInterface";
 import { columnsObjects } from "../../types/columnsInterface";
 import mongoose from "mongoose";
 import { Permissions } from "../Models/Permission";
+import { PlanPackages } from "../Models/PlanPackages";
 
 interface QueryParams {
   userId: string;
@@ -224,7 +225,7 @@ export class AdminSettingsController {
     try {
       const input = req.body;
       const user: UserInterface =
-        (await User.findOne({ email: input.email, role: RolesEnum.INVITED })) ??
+        (await User.findOne({ email: input.email, role: RolesEnum.USER })) ??
         ({} as UserInterface);
       const token = generateAuthToken(user);
       return res.json({ token: token });
@@ -234,6 +235,7 @@ export class AdminSettingsController {
         .json({ error: { message: "Something went wrong" } });
     }
   };
+
   static createPermissions = async (req: Request, res: Response) => {
     try {
       const input = req.body;
@@ -274,6 +276,30 @@ export class AdminSettingsController {
       }
 
       return res.json({ data: permission });
+    } catch (error) {
+      return res
+        .status(500)
+        .json({ error: { message: "Something went wrong" } });
+    }
+  };
+
+  static createPlanPackages = async (req: Request, res: Response) => {
+    try {
+      const input = req.body;
+
+      const data = await PlanPackages.create(input);
+      return res.json({ data: data });
+    } catch (error) {
+      return res
+        .status(500)
+        .json({ error: { message: "Something went wrong" } });
+    }
+  };
+
+  static getPlanPackages = async (req: Request, res: Response) => {
+    try {
+      const data = await PlanPackages.find();
+      return res.json({ data: data });
     } catch (error) {
       return res
         .status(500)

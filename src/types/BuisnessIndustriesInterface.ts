@@ -6,4 +6,5 @@ export interface BuisnessIndustriesInterface extends Document {
   leadCost: number;
   columns: columnsObjects[];
   isActive: boolean;
+  json: Object;
 }

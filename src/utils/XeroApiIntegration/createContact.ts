@@ -71,7 +71,7 @@ export const createContactOnXero = (
           registrationId: REGISTRATION_IDS.NO_REGISTRATION_IDS,
           status: LOGS_STATUS.FAIL,
           portal: PORTAL.XERO,
-          notes: err.response?.data,
+          notes: err,
         };
         await saveLogs(logsData);
         reject(err);

@@ -54,9 +54,8 @@ user.post(
 );
 user.post(
   "/:id",
-  OnlyAdminOrUserLogin,
+  Auth,
   checkPermissions([
-    { module: MODULE.CLIENTS, permission: PERMISSIONS.UPDATE },
     { module: MODULE.PROFILE, permission: PERMISSIONS.UPDATE },
   ]),
   upload.single("image"),
@@ -91,6 +90,14 @@ user.get(
   checkPermissions([{ module: MODULE.CLIENTS, permission: PERMISSIONS.READ }]),
   UsersControllers.index
 );
+
+user.get(
+  "/stats",
+  OnlyAdmins,
+  checkPermissions([{ module: MODULE.CLIENTS, permission: PERMISSIONS.READ }]),
+  UsersControllers.clientsStat
+);
+
 user.get(
   "/export-csv-file",
   OnlyAdmins,
@@ -108,16 +115,6 @@ user.get(
   UsersControllers.show
 );
 user.patch(
-  "/:id",
-  OnlyAdminOrUserLogin,
-  checkPermissions([
-    { module: MODULE.CLIENTS, permission: PERMISSIONS.UPDATE },
-  ]),
-  upload.single("image"),
-  fileSizeLimitErrorHandler,
-  UsersControllers.update
-);
-user.post(
   "/:id",
   OnlyAdminOrUserLogin,
   checkPermissions([

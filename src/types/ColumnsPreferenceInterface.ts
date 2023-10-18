@@ -1,6 +1,8 @@
 export interface Column {
-    name: string;
-    isVisible: boolean;
-    index: number;
-    newName?: string;
-  }
+  originalName?: any;
+  displayName?: any;
+  name: string;
+  isVisible: boolean;
+  index: number;
+  newName?: string;
+}
