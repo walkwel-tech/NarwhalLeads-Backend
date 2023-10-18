@@ -32,4 +32,16 @@ adminSettings.post(
   OnlyAdmins,
   AdminSettingsController.updatePermissions
 );
+adminSettings.post(
+  "/plan-packages",
+  Auth,
+  AdminSettingsController.createPlanPackages
+);
+
+adminSettings.get(
+  "/plan-packages",
+  Auth,
+  AdminSettingsController.getPlanPackages
+);
+
 export default adminSettings;

@@ -37,6 +37,14 @@ industry.get(
   IndustryController.view
 );
 industry.get(
+  "/stats",
+  OnlyAdmins,
+  checkPermissions([
+    { module: MODULE.BUSINESS_INDUSTRIES, permission: PERMISSIONS.READ },
+  ]),
+  IndustryController.stats
+);
+industry.get(
   "/industry",
   Auth,
   checkPermissions([

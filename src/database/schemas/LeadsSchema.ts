@@ -20,11 +20,11 @@ const LeadsSchema = new Schema(
     },
     invalidLeadReason: {
       type: String,
-      default: '',
+      default: "",
     },
     feedbackForNMG: {
       type: String,
-      default: '',
+      default: "",
     },
     createdAt: {
       type: Date,
@@ -34,17 +34,17 @@ const LeadsSchema = new Schema(
       type: Number,
       default: 0,
     },
-    reportedAt:{
-      type:Date
+    reportedAt: {
+      type: Date,
     },
-    statusUpdatedAt:{
-      type:Date
+    statusUpdatedAt: {
+      type: Date,
     },
-    reportAcceptedAt:{
-      type:Date
+    reportAcceptedAt: {
+      type: Date,
     },
-    reportRejectedAt:{
-      type:Date
+    reportRejectedAt: {
+      type: Date,
     },
     clientNotes: {
       type: String,
@@ -56,16 +56,23 @@ const LeadsSchema = new Schema(
     },
     webhookHitsCounts: {
       type: Number,
-      default:0
+      default: 0,
     },
     industryId: {
       type: Types.ObjectId,
       ref: "BuisnessIndustries",
     },
-    contactStatus:{
+    contactStatus: {
       type: String,
       default: "",
-    }
+    },
+    isReprocessed: {
+      type: Boolean,
+      default: false,
+    },
+    reprocessedAt: {
+      type: Date,
+    },
   },
   { timestamps: true }
 );

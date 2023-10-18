@@ -9,6 +9,7 @@ import { ValidationErrorResponse } from "../../types/ValidationErrorResponse";
 import { LeadTablePreference } from "../Models/LeadTablePreference";
 import { BuisnessIndustriesInterface } from "../../types/BuisnessIndustriesInterface";
 import { columnsObjects } from "../../types/columnsInterface";
+import { json } from "../../utils/constantFiles/businessIndustryJson";
 const LIMIT = 10;
 export class IndustryController {
   static create = async (req: Request, res: Response) => {
@@ -33,6 +34,7 @@ export class IndustryController {
       industry: input.industry,
       leadCost: input.leadCost,
       columns: order,
+      json: json,
     };
 
     try {
@@ -270,6 +272,32 @@ export class IndustryController {
       return res
         .status(500)
         .json({ error: { message: "Something went wrong.", error } });
+    }
+  };
+
+  static stats = async (_req: any, res: Response) => {
+    try {
+      const active = await BuisnessIndustries.find({
+        isActive: true,
+        isDeleted: false,
+      }).count();
+      const paused = await BuisnessIndustries.find({
+        isActive: false,
+        isDeleted: false,
+      }).count();
+
+      const dataToShow = {
+        activeBusinessIndustries: active,
+        pausedBusinessIndustries: paused,
+      };
+      return res.json({ data: dataToShow });
+    } catch (err) {
+      return res.status(500).json({
+        error: {
+          message: "something went wrong",
+          err,
+        },
+      });
     }
   };
 }
