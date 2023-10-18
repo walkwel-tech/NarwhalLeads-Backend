@@ -337,8 +337,7 @@ export class UsersControllers {
         item.businessDetailsId = businessDetailsId;
         item.userServiceId = userServiceId;
         item.businessDetailsId.daily = item.userLeadsDetailsId.daily;
-        item.accountManager =
-          item.accountManager.firstName + (item.accountManager.lastName || "");
+        item.accountManager = item.accountManager[0]?.firstName + (item.accountManager[0]?.lastName || "");
       });
 
       const userCount = query.userCount[0]?.count || 0;
