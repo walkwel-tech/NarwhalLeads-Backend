@@ -40,12 +40,9 @@ import { BusinessDetails } from "../Models/BusinessDetails";
 import { notify } from "../../utils/notifications/leadNotificationToUser";
 import { APP_ENV } from "../../utils/Enums/serverModes.enum";
 import { UserInterface } from "../../types/UserInterface";
-import { leadReprocessWebhook } from "../../utils/webhookUrls/leadsReprocessWebhook";
+// import { leadReprocessWebhookLeadCenter } from "../../utils/webhookUrls/leadsReprocessWebhook";
 import { LeadsInterface } from "../../types/LeadsInterface";
-// import {
-//   UserLeadsDetailsInterface,
-//   isUserLeadDetailsObject,
-// } from "../../types/LeadDetailsInterface";
+
 const ObjectId = mongoose.Types.ObjectId;
 
 const LIMIT = 10;
@@ -238,12 +235,14 @@ export class LeadsController {
   static update = async (req: Request, res: Response): Promise<any> => {
     const leadId = req.params.id;
     const input = req.body;
-    const lead = await Leads.findById(leadId);
+    const lead: any = (await Leads.findById(leadId)) ?? ({} as LeadsInterface);
     try {
       if (!lead) {
         return res.status(404).json({ error: { message: "Lead Not Found" } });
       }
-      const user: any = await User.findOne({ buyerId: lead?.bid });
+      const user: any = await User.findOne({ buyerId: lead?.bid })
+        .populate("businessDetailsId")
+        .populate("businessIndustryId");
       if (!user) {
         return res
           .status(400)
@@ -283,22 +282,34 @@ export class LeadsController {
           { new: true }
         );
       }
-      if (
-        input.status === leadsStatusEnums.REPROCESS &&
-        lead.status !== leadsStatusEnums.REPORT_REJECTED &&
-        lead.status !== leadsStatusEnums.REPROCESS
-      ) {
-        return res.status(400).json({
-          error: {
-            message: `You can not reprocess the ${lead.status} lead.`,
+
+      if (input.isReprocessed) {
+        // const dataToSend = {
+        //   lead_id: lead.bid,
+
+        //   industry: user.businessIndustryId.industry,
+
+        //   client: user.businessDetailsId.businessName,
+
+        //   supplier: lead?.leads?.sid,
+
+        //   cpl: user.leadCost,
+
+        //   reason: lead.invalidLeadReason,
+
+        //   reason_detail: lead.clientNotes,
+        // };
+
+        await Leads.findByIdAndUpdate(
+          leadId,
+          {
+            isReprocessed: true,
+            reprocessedAt: new Date(),
           },
-        });
-      }
-      if (input.status === leadsStatusEnums.REPROCESS) {
-        const dataToSend = {
-          leadId: lead.bid,
-        };
-        leadReprocessWebhook(dataToSend);
+          { new: true }
+        );
+        // leadReprocessWebhook(dataToSend);
+        // leadReprocessWebhookLeadCenter(dataToSend);
       }
       if (
         lead?.status != leadsStatusEnums.REPORTED &&
@@ -980,7 +991,6 @@ export class LeadsController {
                 leadsStatusEnums.REPORTED,
                 leadsStatusEnums.REPORT_ACCEPTED,
                 leadsStatusEnums.REPORT_REJECTED,
-                leadsStatusEnums.REPROCESS,
                 leadsStatusEnums.ARCHIVED,
               ],
             },
@@ -1415,7 +1425,6 @@ export class LeadsController {
                 leadsStatusEnums.REPORTED,
                 leadsStatusEnums.REPORT_ACCEPTED,
                 leadsStatusEnums.REPORT_REJECTED,
-                leadsStatusEnums.REPROCESS,
                 leadsStatusEnums.ARCHIVED,
 
                 leadsStatusEnums.VALID,
