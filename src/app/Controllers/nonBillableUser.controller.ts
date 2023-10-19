@@ -137,7 +137,7 @@ export class nonBillableUsersController {
           },
         ],
       };
-      skip = 0;
+      // skip = 0;
     }
     try {
       const invitedUsers = await User.find(dataToFind, "-password")
