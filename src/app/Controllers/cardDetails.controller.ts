@@ -521,7 +521,7 @@ export class CardDetailsControllers {
       }
       const adminSettings: AdminSettingsInterface =
         (await AdminSettings.findOne()) ?? ({} as AdminSettingsInterface);
-      if (user?.isRyftCustomer) {
+      if (card.cardType === CARD.RYFT) {
         const params: any = {
           fixedAmount:
             parseInt(input?.amount) + (parseInt(input?.amount) * VAT) / 100 ||
@@ -1504,11 +1504,9 @@ async function getUserDetails(cid: string, pid: string) {
 }
 
 function getOriginalAmountForStripe(amount: number) {
-
-  const originalAmount = (amount / 100 )/ (1+(VAT/100));
+  const originalAmount = amount / 100 / (1 + VAT / 100);
 
   return originalAmount;
-
 }
 
 async function isUserFreeCredited(userId: string) {
