@@ -468,7 +468,7 @@ export class LeadsController {
             { "leads.county": { $regex: _req.query.search, $options: "i" } },
           ],
         };
-        skip = 0;
+        // skip = 0;
       }
 
       const [query]: any = await Leads.aggregate([
@@ -824,11 +824,11 @@ export class LeadsController {
             { bid: { $regex: _req.query.search, $options: "i" } },
             { status: { $regex: _req.query.search, $options: "i" } },
             { "leads.email": { $regex: _req.query.search, $options: "i" } },
-            { "leads.firstName": { $regex: _req.query.search, $options: "i" } },
-            { "leads.lastName": { $regex: _req.query.search, $options: "i" } },
+            { "leads.firstname": { $regex: _req.query.search, $options: "i" } },
+            { "leads.lastname": { $regex: _req.query.search, $options: "i" } },
           ],
         };
-        skip = 0;
+        // skip = 0;
       }
       const [query]: any = await Leads.aggregate([
         {
@@ -1030,11 +1030,11 @@ export class LeadsController {
             { bid: { $regex: _req.query.search, $options: "i" } },
             { status: { $regex: _req.query.search, $options: "i" } },
             { "leads.email": { $regex: _req.query.search, $options: "i" } },
-            { "leads.firstName": { $regex: _req.query.search, $options: "i" } },
-            { "leads.lastName": { $regex: _req.query.search, $options: "i" } },
+            { "leads.firstname": { $regex: _req.query.search, $options: "i" } },
+            { "leads.lastname": { $regex: _req.query.search, $options: "i" } },
           ],
         };
-        skip = 0;
+        // skip = 0;
       }
       if (status) {
         dataToFind.status = status;
@@ -1247,11 +1247,11 @@ export class LeadsController {
             { bid: { $regex: _req.query.search, $options: "i" } },
             { status: { $regex: _req.query.search, $options: "i" } },
             { "leads.email": { $regex: _req.query.search, $options: "i" } },
-            { "leads.firstName": { $regex: _req.query.search, $options: "i" } },
-            { "leads.lastName": { $regex: _req.query.search, $options: "i" } },
+            { "leads.firstname": { $regex: _req.query.search, $options: "i" } },
+            { "leads.lastname": { $regex: _req.query.search, $options: "i" } },
           ],
         };
-        skip = 0;
+        // skip = 0;
       }
 
       const [query]: any = await Leads.aggregate([
@@ -1462,12 +1462,13 @@ export class LeadsController {
             { bid: { $regex: _req.query.search, $options: "i" } },
             { status: { $regex: _req.query.search, $options: "i" } },
             { "leads.email": { $regex: _req.query.search, $options: "i" } },
-            { "leads.firstName": { $regex: _req.query.search, $options: "i" } },
-            { "leads.lastName": { $regex: _req.query.search, $options: "i" } },
+            { "leads.firstname": { $regex: _req.query.search, $options: "i" } },
+            { "leads.lastname": { $regex: _req.query.search, $options: "i" } },
           ],
         };
-        skip = 0;
+        // skip = 0;
       }
+
       const [query]: any = await Leads.aggregate([
         {
           $facet: {
@@ -2155,6 +2156,7 @@ export class LeadsController {
   static exportCsvFileAdminLeads = async (_req: any, res: Response) => {
     const status = _req.query.status;
     let id = _req.query.id;
+    let industry = _req.query.industry;
     let sortingOrder = _req.query.sortingOrder || sort.DESC;
     if (sortingOrder == sort.ASC) {
       sortingOrder = 1;
@@ -2180,6 +2182,14 @@ export class LeadsController {
       if (id) {
         const user = await User.findById(id);
         dataToFind.bid = user?.buyerId;
+      }
+      if (industry) {
+        let bids: any = [];
+        const users = await User.find({ businessIndustryId: industry });
+        users.map((user) => {
+          return bids.push(user.buyerId);
+        });
+        dataToFind.bid = { $in: bids };
       }
       if (_req.query.search) {
         dataToFind = {

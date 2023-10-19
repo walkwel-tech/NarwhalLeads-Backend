@@ -214,7 +214,7 @@ export class UsersControllers {
             },
           ],
         };
-        skip = 0;
+        // skip = 0;
       }
       let sortObject: Record<string, 1 | -1>;
       if (accountManagerBoolean) {
@@ -1211,6 +1211,7 @@ export class UsersControllers {
     } else {
       sortingOrder = -1;
     }
+    const industry = _req.query.industry;
     try {
       let dataToFind: any = {
         role: {
@@ -1244,6 +1245,14 @@ export class UsersControllers {
       }
       if (id) {
         dataToFind._id = new ObjectId(id);
+      }
+      if (industry) {
+        let ids: any = [];
+        const users = await User.find({ businessIndustryId: industry });
+        users.map((user) => {
+          return ids.push(new ObjectId(user._id));
+        });
+        dataToFind._id = { $in: ids };
       }
       const [query]: any = await User.aggregate([
         {

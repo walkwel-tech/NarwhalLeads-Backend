@@ -1,3 +1,9 @@
+import { CardDetails } from "../../../app/Models/CardDetails";
+import { Transaction } from "../../../app/Models/Transaction";
+import { User } from "../../../app/Models/User";
+import { CARD } from "../../Enums/cardType.enum";
+import { TRANSACTION_STATUS } from "../../Enums/transaction.status.enum";
+import { transactionTitle } from "../../Enums/transaction.title.enum";
 import { IntentInterface } from "./paymentIntent";
 import axios from "axios";
 const qs = require("qs");
@@ -27,10 +33,44 @@ export const createPaymentOnStrip = async (params: IntentInterface) => {
 
     axios
       .request(config)
-      .then((response: any) => {
+      .then(async (response: any) => {
+        console.log("response", response.data);
+        const user = await User.findOne({
+          stripeClientId: response?.data?.customer,
+        });
+        const card = await CardDetails.findOne({
+          paymentMethod: response?.data?.payment_method,
+        });
+        await Transaction.create({
+          userId: user?.id,
+          cardId: card?.id,
+          amount: response.data.amount / 100,
+          paymentSessionId: response.data.id,
+          status: TRANSACTION_STATUS.SUCCESS,
+          paymentMethod: response.data?.payment_method,
+          title: transactionTitle.SESSION_CREATED,
+          transactionType: CARD.STRIPE,
+        });
         resolve(response.data);
       })
-      .catch((error: any) => {
+      .catch(async (error: any) => {
+        const user = await User.findOne({
+          stripeClientId: params.customer,
+        });
+        const card = await CardDetails.findOne({
+          paymentMethod: params.paymentMethod,
+        });
+        await Transaction.create({
+          userId: user?.id,
+          cardId: card?.id,
+          amount: params.amount,
+          paymentSessionId: "",
+          status: TRANSACTION_STATUS.FAIL,
+          paymentMethod: params.paymentMethod,
+          title: transactionTitle.SESSION_CREATED,
+          transactionType: CARD.STRIPE,
+        });
+
         reject(error);
       });
   });

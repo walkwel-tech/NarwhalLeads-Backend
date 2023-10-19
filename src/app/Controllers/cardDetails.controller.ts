@@ -1440,7 +1440,7 @@ export class CardDetailsControllers {
           isDeleted: false,
         });
         if (checkExists.length > 0) {
-          res.redirect(`${process.env.TEMP_RETURN_URL}/?status_code=400` || "");
+          res.redirect(`${process.env.TEMP_RETURN_URL}/?status_code=420` || "");
         } else {
           let dataToSave = {
             paymentMethod: details.payment_method,
