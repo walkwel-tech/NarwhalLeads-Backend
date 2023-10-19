@@ -129,7 +129,7 @@ export class invitedUsersController {
           },
         ],
       };
-      skip = 0;
+      // skip = 0;
     }
     try {
       const invitedUsers = await User.find(dataToFind, "-password")
@@ -271,7 +271,7 @@ export class invitedUsersController {
           { lastName: { $regex: _req.query.search, $options: "i" } },
         ],
       };
-      skip = 0;
+      // skip = 0;
     }
     try {
       const invitedUsers = await User.find(dataToFind)
@@ -438,7 +438,7 @@ export class invitedUsersController {
           { lastName: { $regex: _req.query.search, $options: "i" } },
         ],
       };
-      skip = 0;
+      // skip = 0;
     }
     try {
       const invitedUsers = await User.find(dataToFind, "-password")

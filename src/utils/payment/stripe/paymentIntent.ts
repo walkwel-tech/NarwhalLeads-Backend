@@ -1,5 +1,10 @@
 import Stripe from "stripe";
 import { SRIPE_CONSTANT } from "../../constantFiles/stripeConstants";
+import { Transaction } from "../../../app/Models/Transaction";
+import { User } from "../../../app/Models/User";
+import { TRANSACTION_STATUS } from "../../Enums/transaction.status.enum";
+import { transactionTitle } from "../../Enums/transaction.title.enum";
+import { CARD } from "../../Enums/cardType.enum";
 const stripe = new Stripe(`${process.env.STRIPE_SECRET_KEY}`, {
   //fixme:
   apiVersion: "2023-08-16",
@@ -21,11 +26,14 @@ export const paymentIntent = async (params: {
   amount: number;
   clientId: string;
 }) => {
+  const user = await User.findOne({ stripeClientId: params.clientId });
+
   try {
     let param: IntentInterface = {
       customer: params.clientId,
     };
     let data;
+
     if (params.amount === 0) {
       param.usage = SRIPE_CONSTANT.OFF_SESSION;
       param.payment_method_types = [SRIPE_CONSTANT.CARD];
@@ -34,6 +42,14 @@ export const paymentIntent = async (params: {
         usage: OFF_SESSION,
         payment_method_types: [SRIPE_CONSTANT.CARD],
         customer: params.clientId,
+      });
+      await Transaction.create({
+        userId: user?.id,
+        amount: 0,
+        status: TRANSACTION_STATUS.SUCCESS,
+        paymentSessionId: data.id,
+        title: transactionTitle.SESSION_CREATED,
+        transactionType: CARD.STRIPE,
       });
     } else {
       data = await stripe.paymentIntents.create({
@@ -44,6 +60,14 @@ export const paymentIntent = async (params: {
     }
     return data;
   } catch (err) {
+    await Transaction.create({
+      userId: user?.id,
+      amount: 0,
+      status: TRANSACTION_STATUS.SUCCESS,
+      paymentSessionId: "",
+      title: transactionTitle.SESSION_CREATED,
+      transactionType: CARD.STRIPE,
+    });
     return err;
   }
 };

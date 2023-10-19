@@ -2,6 +2,7 @@ import { Request, Response } from "express";
 import { FreeCreditsLink } from "../Models/freeCreditsLink";
 import { freeCreditsLinkInterface } from "../../types/FreeCreditsLinkInterface";
 import { UserInterface } from "../../types/UserInterface";
+import { ObjectId } from "mongodb";
 
 let alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
 
@@ -84,7 +85,7 @@ export class freeCreditsLinkController {
       dataToFind.isDisabled = false;
     }
     if (req.query.accountManager) {
-      dataToFind.accountManager = req.query.accountManager;
+      dataToFind.accountManager = new ObjectId(req.query.accountManager);
     }
     try {
       let query = await FreeCreditsLink.aggregate([
