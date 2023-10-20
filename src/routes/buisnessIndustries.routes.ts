@@ -30,7 +30,7 @@ industry.post(
 );
 industry.get(
   "/",
-  OnlyAdmins,
+  Auth,
   checkPermissions([
     { module: MODULE.BUSINESS_INDUSTRIES, permission: PERMISSIONS.READ },
   ]),

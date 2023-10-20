@@ -1,7 +1,7 @@
 import { Router } from "express";
 
 import { LeadsController } from "../app/Controllers";
-import { Auth, OnlyAdmins } from "../app/Middlewares";
+import { Auth } from "../app/Middlewares";
 import { checkPermissions } from "../app/Middlewares/roleBasedAuthentication";
 import { MODULE, PERMISSIONS } from "../utils/Enums/permissions.enum";
 
@@ -107,7 +107,7 @@ leads.get(
   ),
   leads.get(
     "/export-csv-file-admin-leads",
-    OnlyAdmins,
+    Auth,
     checkPermissions([
       { module: MODULE.LEADS_CSV, permission: PERMISSIONS.READ },
     ]),
@@ -115,13 +115,13 @@ leads.get(
   ),
   leads.get(
     "/allLeads/:id",
-    OnlyAdmins,
+    Auth,
     checkPermissions([{ module: MODULE.LEADS, permission: PERMISSIONS.READ }]),
     LeadsController.showAllLeadsToAdminByUserId
   );
 leads.get(
   "/allLeads",
-  OnlyAdmins,
+  Auth,
   checkPermissions([{ module: MODULE.LEADS, permission: PERMISSIONS.READ }]),
   LeadsController.showAllLeadsToAdmin
 );
