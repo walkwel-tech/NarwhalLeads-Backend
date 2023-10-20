@@ -137,8 +137,25 @@ export class freeCreditsLinkController {
             users: {
               $mergeObjects: [
                 {
-                  userData: "$usersData", // Replace with the actual path to the user's _id field
-                  // userCount: "$user.userCount"
+                  userData: {
+                    $map: {
+                      input: "$usersData",
+                      as: "user",
+                      in: {
+                        $mergeObjects: [
+                          "$$user",
+                          {
+                            createdAt: {
+                              $dateToString: {
+                                format: "%d/%m/%Y", // Define your desired format here
+                                date: "$$user.createdAt", // Replace "createdAt" with your actual field name
+                              },
+                            },
+                          },
+                        ],
+                      },
+                    },
+                  },
                 },
                 {
                   businessDetailsId: "$businessDetails", // Populate "businessDetailsId" with the "businessDetails" data

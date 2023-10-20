@@ -33,7 +33,7 @@ import { WHITE_LIST_IP } from "../../local";
 import { BuisnessIndustries } from "../Models/BuisnessIndustries";
 import { LeadTablePreferenceInterface } from "../../types/LeadTablePreferenceInterface";
 import { Column } from "../../types/ColumnsPreferenceInterface";
-import mongoose from "mongoose";
+import mongoose, { Types } from "mongoose";
 import { PREMIUM_PROMOLINK } from "../../utils/constantFiles/spotDif.offers.promoLink";
 import { Notifications } from "../Models/Notifications";
 import { BusinessDetails } from "../Models/BusinessDetails";
@@ -51,6 +51,9 @@ interface DataObject {
   [key: string]: any;
 }
 
+type BidFilter = {
+  $in: string[];
+};
 export class LeadsController {
   static create = async (req: Request, res: Response) => {
     if (process.env.APP_ENV === APP_ENV.PRODUCTION) {
@@ -107,14 +110,6 @@ export class LeadsController {
       (await Leads.findOne({ bid: user?.buyerId })
         .sort({ rowIndex: -1 })
         .limit(1)) ?? ({} as LeadsInterface);
-    const leadsSave = await Leads.create({
-      bid: bid,
-      leadsCost: user.leadCost,
-      leads: input,
-      status: leadsStatusEnums.VALID,
-      industryId: user.businessIndustryId,
-      rowIndex: leads?.rowIndex + 1 || 0,
-    });
 
     if (user.isSmsNotificationActive) {
       const dataToSent = {
@@ -135,9 +130,18 @@ export class LeadsController {
       isDefault: true,
       isDeleted: false,
     });
+    let leadsSave;
     if (cardDetails) {
       const credits = user?.credits;
       let leftCredits;
+      leadsSave = await Leads.create({
+        bid: bid,
+        leadsCost: user.leadCost,
+        leads: input,
+        status: leadsStatusEnums.VALID,
+        industryId: user.businessIndustryId,
+        rowIndex: leads?.rowIndex + 1 || 0,
+      });
       if (user.isLeadCostCheck) {
         leadcpl = user.leadCost;
         leftCredits = credits - user?.leadCost;
@@ -192,6 +196,7 @@ export class LeadsController {
         .status(404)
         .json({ error: { message: "Card details not found" } });
     }
+
     if (
       user.userLeadsDetailsId?.leadAlertsFrequency == leadsAlertsEnums.INSTANT
     ) {
@@ -211,7 +216,7 @@ export class LeadsController {
         phone: input.phone1,
         email: input.email,
       };
-      let emails: string[] = [];
+      let emails: string[] = [user.email];
       const invitedUsers = await User.find({
         role: RolesEnum.INVITED,
         invitedById: user.id,
@@ -1468,7 +1473,15 @@ export class LeadsController {
         };
         // skip = 0;
       }
-
+      if (_req.user.role === RolesEnum.ACCOUNT_MANAGER) {
+        const users = await User.find({
+          accountManager: _req.user._id,
+        });
+        users.map((user: UserInterface) => {
+          return bids.push(user.buyerId);
+        });
+        dataToFind.bid = { $in: bids };
+      }
       const [query]: any = await Leads.aggregate([
         {
           $facet: {
@@ -2266,18 +2279,52 @@ export class LeadsController {
 
   static leadsStat = async (_req: any, res: Response) => {
     try {
-      const valid = await Leads.find({
+      let dataToFindForValid: Record<
+        string,
+        string | Types.ObjectId | string[] | BidFilter
+      > = {
         status: leadsStatusEnums.VALID,
-      }).count();
-      const reported = await Leads.find({
+      };
+      let dataToFindForReported: Record<
+        string,
+        string | Types.ObjectId | string[] | BidFilter
+      > = {
         status: leadsStatusEnums.REPORTED,
-      }).count();
-      const reportAccepted = await Leads.find({
+      };
+      let dataToFindForReportAccepted: Record<
+        string,
+        string | Types.ObjectId | string[] | BidFilter
+      > = {
         status: leadsStatusEnums.REPORT_ACCEPTED,
-      }).count();
-      const reportRejected = await Leads.find({
+      };
+      let dataToFindForReportRejected: Record<
+        string,
+        string | Types.ObjectId | string[] | BidFilter
+      > = {
         status: leadsStatusEnums.REPORT_REJECTED,
-      }).count();
+      };
+
+      if (_req.user.role === RolesEnum.ACCOUNT_MANAGER) {
+        let bids: string[] = [];
+        const users = await User.find({
+          accountManager: _req.user._id,
+        });
+        users.map((user: UserInterface) => {
+          return bids.push(user.buyerId);
+        });
+        dataToFindForReportAccepted.bid = { $in: bids };
+        dataToFindForReportRejected.bid = { $in: bids };
+        dataToFindForReported.bid = { $in: bids };
+        dataToFindForValid.bid = { $in: bids };
+      }
+      const valid = await Leads.find(dataToFindForValid).count();
+      const reported = await Leads.find(dataToFindForReported).count();
+      const reportAccepted = await Leads.find(
+        dataToFindForReportAccepted
+      ).count();
+      const reportRejected = await Leads.find(
+        dataToFindForReportRejected
+      ).count();
       const dataToShow = {
         validLeads: valid,
         reportedLeads: reported,

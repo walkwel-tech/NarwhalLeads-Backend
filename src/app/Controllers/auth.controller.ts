@@ -153,31 +153,22 @@ class AuthController {
           ],
           permissions: permission?.permissions,
         };
-        const accManagers = await User.aggregate([
-          { $match: { role: RolesEnum.ACCOUNT_MANAGER } },
-          { $sample: { size: 1 } },
-        ]);
+        // const accManagers = await User.aggregate([
+        //   { $match: { role: RolesEnum.ACCOUNT_MANAGER } },
+        //   { $sample: { size: 1 } },
+        // ]);
         if (codeExists && checkCode && checkCode?.topUpAmount === 0) {
           dataToSave.premiumUser = PROMO_LINK.PREMIUM_USER_NO_TOP_UP;
           dataToSave.promoLinkId = checkCode?.id;
           if (checkCode.accountManager) {
             dataToSave.accountManager = checkCode.accountManager;
-          } else {
-            let accountManager = accManagers[0];
-            dataToSave.accountManager = accountManager?._id;
           }
         } else if (codeExists && checkCode && checkCode?.topUpAmount != 0) {
           dataToSave.premiumUser = PROMO_LINK.PREMIUM_USER_TOP_UP;
           dataToSave.promoLinkId = checkCode?.id;
           if (checkCode.accountManager) {
             dataToSave.accountManager = checkCode.accountManager;
-          } else {
-            let accountManager = accManagers[0];
-            dataToSave.accountManager = accountManager?._id;
           }
-        } else {
-          let accountManager = accManagers[0];
-          dataToSave.accountManager = accountManager?._id;
         }
         await User.create(dataToSave);
         if (input.code) {

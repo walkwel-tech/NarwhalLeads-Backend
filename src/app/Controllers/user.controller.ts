@@ -1,7 +1,7 @@
 import { genSaltSync, hashSync } from "bcryptjs";
 import { validate } from "class-validator";
 import { Request, Response } from "express";
-import mongoose from "mongoose";
+import mongoose, { Types } from "mongoose";
 import { RolesEnum } from "../../types/RolesEnum";
 import { ValidationErrorResponse } from "../../types/ValidationErrorResponse";
 import { paymentMethodEnum } from "../../utils/Enums/payment.method.enum";
@@ -40,7 +40,9 @@ const LIMIT = 10;
 interface DataObject {
   [key: string]: any;
 }
-
+type RoleFilter = {
+  $in: (RolesEnum.USER | RolesEnum.NON_BILLABLE)[];
+};
 export class UsersControllers {
   static create = async (req: Request, res: Response): Promise<Response> => {
     const input = req.body;
@@ -191,6 +193,9 @@ export class UsersControllers {
       if (accountManagerId != "" && accountManagerId) {
         dataToFind.accountManager = new ObjectId(_req.query.accountManagerId);
       }
+      if (_req.user.role === RolesEnum.ACCOUNT_MANAGER) {
+        dataToFind.accountManager = new ObjectId(_req.user._id);
+      }
       if (_req.query.search) {
         dataToFind = {
           ...dataToFind,
@@ -338,7 +343,7 @@ export class UsersControllers {
         item.userServiceId = userServiceId;
         item.businessDetailsId.daily = item.userLeadsDetailsId.daily;
         item.accountManager =
-          item.accountManager[0]?.firstName +
+          (item.accountManager[0]?.firstName || "") +
           (item.accountManager[0]?.lastName || "");
       });
 
@@ -363,13 +368,19 @@ export class UsersControllers {
     }
   };
 
-  static show = async (req: Request, res: Response): Promise<Response> => {
+  static show = async (req: any, res: Response): Promise<Response> => {
     const { id } = req.params;
     const business = req.query.business;
     let query;
     try {
       if (business) {
         const business = await BusinessDetails.findById(id);
+        let dataTpFind: Record<string, string | Types.ObjectId> = {
+          businessDetailsId: business?.id,
+        };
+        if (req.user.role === RolesEnum.ACCOUNT_MANAGER) {
+          dataTpFind.accountManager = new ObjectId(req.user._id);
+        }
         const users = await User.findOne({ businessDetailsId: business?.id });
         [query] = await User.aggregate([
           {
@@ -1328,40 +1339,6 @@ export class UsersControllers {
     }
   };
 
-  static createAccountManager = async (req: any, res: Response) => {
-    try {
-      const input = req.body;
-      let data;
-      const exists = await User.findOne({
-        firstName: input.firstName,
-        lastName: input.lastName,
-        role: RolesEnum.ACCOUNT_MANAGER,
-        isDeleted: false,
-        isActive: true,
-      });
-      if (exists) {
-        return res
-          .status(400)
-          .json({ message: "Account Manager already exists" });
-      } else {
-        const dataToSave = {
-          firstName: input.firstName,
-          lastName: input.lastName,
-          role: RolesEnum.ACCOUNT_MANAGER,
-        };
-        data = await User.create(dataToSave);
-      }
-      return res.json({ data: data });
-    } catch (err) {
-      return res.status(500).json({
-        error: {
-          message: "something went wrong",
-          err,
-        },
-      });
-    }
-  };
-
   static accountManagerStats = async (req: any, res: Response) => {
     try {
       const input = req.body;
@@ -1683,15 +1660,28 @@ export class UsersControllers {
 
   static clientsStat = async (_req: any, res: Response) => {
     try {
-      const active = await User.find({
+      let dataToFindActive: Record<
+        string,
+        string | Types.ObjectId | string[] | boolean | RoleFilter
+      > = {
         role: { $in: [RolesEnum.USER, RolesEnum.NON_BILLABLE] },
         isActive: true,
         isDeleted: false,
-      }).count();
-      const paused = await Leads.find({
+      };
+      let dataToFindPaused: Record<
+        string,
+        string | Types.ObjectId | string[] | boolean | RoleFilter
+      > = {
+        role: { $in: [RolesEnum.USER, RolesEnum.NON_BILLABLE] },
         isActive: false,
         isDeleted: false,
-      }).count();
+      };
+      if (_req.user.role === RolesEnum.ACCOUNT_MANAGER) {
+        dataToFindActive.accountManager = _req.user._id;
+        dataToFindPaused.accountManager = _req.user._id;
+      }
+      const active = await User.find(dataToFindActive).count();
+      const paused = await User.find(dataToFindPaused).count();
 
       const dataToShow = {
         activeClients: active,
