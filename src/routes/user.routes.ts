@@ -37,14 +37,6 @@ user.post(
 );
 
 user.post(
-  "/account-manager",
-  OnlyAdmins,
-  checkPermissions([
-    { module: MODULE.ACCOUNT_MANAGERS, permission: PERMISSIONS.CREATE },
-  ]),
-  UsersControllers.createAccountManager
-);
-user.post(
   "/manual-adjustment",
   OnlyAdmins,
   checkPermissions([
@@ -70,7 +62,7 @@ user.get(
 );
 user.get(
   "/show",
-  OnlyAdmins,
+  Auth,
   checkPermissions([{ module: MODULE.CLIENTS, permission: PERMISSIONS.READ }]),
   UsersControllers.indexName
 );
@@ -86,14 +78,14 @@ user.post(
 );
 user.get(
   "/",
-  OnlyAdmins,
+  Auth,
   checkPermissions([{ module: MODULE.CLIENTS, permission: PERMISSIONS.READ }]),
   UsersControllers.index
 );
 
 user.get(
   "/stats",
-  OnlyAdmins,
+  Auth,
   checkPermissions([{ module: MODULE.CLIENTS, permission: PERMISSIONS.READ }]),
   UsersControllers.clientsStat
 );
@@ -110,7 +102,7 @@ user.patch("/reorder", OnlyAdmins, UsersControllers.reOrderIndex);
 user.post("/reorder", OnlyAdmins, UsersControllers.reOrderIndex);
 user.get(
   "/:id",
-  OnlyAdminOrUserLogin,
+  Auth,
   checkPermissions([{ module: MODULE.PROFILE, permission: PERMISSIONS.READ }]),
   UsersControllers.show
 );

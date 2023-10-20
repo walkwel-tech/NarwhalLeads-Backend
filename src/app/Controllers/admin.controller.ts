@@ -132,8 +132,9 @@ export class AdminSettingsController {
     const input = req.body;
     let user: Partial<UserInterface> = req.user ?? ({} as UserInterface);
     try {
-      const checkExist = await ClientTablePreference.findOne();
-
+      const checkExist = await ClientTablePreference.findOne({
+        userId: user.id,
+      });
       if (!checkExist) {
         const columns = input?.columns.sort(
           (a: columnsObjects, b: columnsObjects) => a.index - b.index

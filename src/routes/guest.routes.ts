@@ -50,5 +50,10 @@ guestRoutes.post(
   OnlyAdmins,
   GuestController.setBusinessDetails
 );
+guestRoutes.post(
+  "/set-permissions",
+  OnlyAdmins,
+  GuestController.assignPermissionsToAllUsers
+);
 
 export default guestRoutes;

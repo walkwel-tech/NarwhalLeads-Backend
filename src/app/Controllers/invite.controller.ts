@@ -10,6 +10,7 @@ import { LeadTablePreference } from "../Models/LeadTablePreference";
 import { User } from "../Models/User";
 import { ClientTablePreference } from "../Models/ClientTablePrefrence";
 import { UserInterface } from "../../types/UserInterface";
+import { Permissions } from "../Models/Permission";
 
 const LIMIT = 10;
 export class invitedUsersController {
@@ -320,6 +321,10 @@ export class invitedUsersController {
           console.log("password", text);
           input.password = hashPassword;
           sendEmailToInvitedAdmin(input.email, dataToSend);
+          const permission = await Permissions.findOne({
+            role: RolesEnum.ADMIN,
+          });
+          input.permissions = permission?.permissions;
           const data = await User.create(input);
           const adminExist: any = await User.findOne({
             role: RolesEnum.SUPER_ADMIN,
@@ -363,6 +368,10 @@ export class invitedUsersController {
           console.log("password", text);
           input.password = hashPassword;
           sendEmailToInvitedAccountManager(input.email, dataToSend);
+          const permission = await Permissions.findOne({
+            role: RolesEnum.ACCOUNT_MANAGER,
+          });
+          input.permissions = permission?.permissions;
           const data = await User.create(input);
           const adminExist: any = await User.findOne({
             role: RolesEnum.SUPER_ADMIN,
