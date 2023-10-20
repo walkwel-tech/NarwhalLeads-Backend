@@ -57,7 +57,7 @@ class AuthController {
     const errors = await validate(registerInput);
 
     const adminSettings: AdminSettingsInterface =
-      (await AdminSettings.findOne()) ?? ({} as AdminSettingsInterface);
+        (await AdminSettings.findOne()) ?? ({} as AdminSettingsInterface);
     if (errors.length) {
       const errorsInfo: ValidationErrorResponse[] = errors.map((error) => ({
         property: error.property,
@@ -65,8 +65,8 @@ class AuthController {
       }));
 
       return res
-        .status(400)
-        .json({ error: { message: "VALIDATIONS_ERROR", info: errorsInfo } });
+          .status(400)
+          .json({ error: { message: "VALIDATIONS_ERROR", info: errorsInfo } });
     }
     try {
       const user = await User.findOne({
@@ -78,8 +78,8 @@ class AuthController {
         const salt = genSaltSync(10);
         const hashPassword = hashSync(input.password, salt);
         const showUsers: UserInterface =
-          (await User.findOne().sort({ rowIndex: -1 }).limit(1)) ??
-          ({} as UserInterface);
+            (await User.findOne().sort({ rowIndex: -1 }).limit(1)) ??
+            ({} as UserInterface);
         let checkCode;
         let codeExists;
         if (input.code) {
@@ -94,12 +94,12 @@ class AuthController {
             return res.status(400).json({ data: { message: "Link Invalid!" } });
           }
           if (
-            checkCode.maxUseCounts &&
-            checkCode.maxUseCounts <= checkCode.useCounts
+              checkCode.maxUseCounts &&
+              checkCode.maxUseCounts <= checkCode.useCounts
           ) {
             return res
-              .status(400)
-              .json({ data: { message: "Link has reached maximum limit!" } });
+                .status(400)
+                .json({ data: { message: "Link has reached maximum limit!" } });
           } else {
             codeExists = true;
           }
@@ -150,39 +150,30 @@ class AuthController {
           ],
           // permissions: permission?.permissions,
         };
-        const accManagers = await User.aggregate([
-          { $match: { role: RolesEnum.ACCOUNT_MANAGER } },
-          { $sample: { size: 1 } },
-        ]);
+        // const accManagers = await User.aggregate([
+        //   { $match: { role: RolesEnum.ACCOUNT_MANAGER } },
+        //   { $sample: { size: 1 } },
+        // ]);
         if (codeExists && checkCode && checkCode?.topUpAmount === 0) {
           dataToSave.premiumUser = PROMO_LINK.PREMIUM_USER_NO_TOP_UP;
           dataToSave.promoLinkId = checkCode?.id;
           if (checkCode.accountManager) {
             dataToSave.accountManager = checkCode.accountManager;
-          } else {
-            let accountManager = accManagers[0];
-            dataToSave.accountManager = accountManager?._id;
           }
         } else if (codeExists && checkCode && checkCode?.topUpAmount != 0) {
           dataToSave.premiumUser = PROMO_LINK.PREMIUM_USER_TOP_UP;
           dataToSave.promoLinkId = checkCode?.id;
           if (checkCode.accountManager) {
             dataToSave.accountManager = checkCode.accountManager;
-          } else {
-            let accountManager = accManagers[0];
-            dataToSave.accountManager = accountManager?._id;
           }
-        } else {
-          let accountManager = accManagers[0];
-          dataToSave.accountManager = accountManager?._id;
         }
         await User.create(dataToSave);
         if (input.code) {
           const checkCode: freeCreditsLinkInterface =
-            (await FreeCreditsLink.findOne({
-              code: input.code,
-              isDeleted: false,
-            })) ?? ({} as freeCreditsLinkInterface);
+              (await FreeCreditsLink.findOne({
+                code: input.code,
+                isDeleted: false,
+              })) ?? ({} as freeCreditsLinkInterface);
           const dataToSave: Partial<freeCreditsLinkInterface> = {
             isUsed: true,
             usedAt: new Date(),
@@ -195,65 +186,65 @@ class AuthController {
         sendEmailForRegistration(input.email, input.firstName);
 
         passport.authenticate(
-          "local",
-          { session: false },
-          (err: any, user: UserInterface, message: Object): any => {
-            if (!user) {
-              if (err) {
-                return res.status(400).json({ error: err });
+            "local",
+            { session: false },
+            (err: any, user: UserInterface, message: Object): any => {
+              if (!user) {
+                if (err) {
+                  return res.status(400).json({ error: err });
+                }
+                return res.status(401).json({ error: message });
+              } else if (!user.isActive) {
+                return res
+                    .status(401)
+                    .json({ data: "User not active.Please contact admin." });
+              } else if (!user.isVerified) {
+                return res.status(401).json({
+                  data: "User not verified.Please verify your account",
+                });
+              } else if (user.isDeleted) {
+                return res
+                    .status(401)
+                    .json({ data: "User is deleted.Please contact admin" });
               }
-              return res.status(401).json({ error: message });
-            } else if (!user.isActive) {
-              return res
-                .status(401)
-                .json({ data: "User not active.Please contact admin." });
-            } else if (!user.isVerified) {
-              return res.status(401).json({
-                data: "User not verified.Please verify your account",
-              });
-            } else if (user.isDeleted) {
-              return res
-                .status(401)
-                .json({ data: "User is deleted.Please contact admin" });
-            }
-            const authToken = generateAuthToken(user);
-            const params: Record<string, any> = {
-              email: user.email,
-              firstName: user.firstName,
-              lastName: user.lastName,
-              userId: user.id,
-            };
+              const authToken = generateAuthToken(user);
+              const params: Record<string, any> = {
+                email: user.email,
+                firstName: user.firstName,
+                lastName: user.lastName,
+                userId: user.id,
+              };
 
-            createCustomerOnRyft(params)
-              .then(async () => {
-                //@ts-ignore
-                user.password = undefined;
-                res.send({
-                  message: "successfully registered",
-                  data: user,
-                  token: authToken,
-                });
-              })
-              .catch(async () => {
-                await User.findByIdAndDelete(user.id);
-                return res.status(400).json({
-                  data: {
-                    message:
-                      "Email already exist on RYFT. please try again with another email.",
-                  },
-                });
-              });
-          }
+              createCustomerOnRyft(params)
+                  .then(async () => {
+                    //@ts-ignore
+                    user.password = undefined;
+                    res.send({
+                      message: "successfully registered",
+                      data: user,
+                      token: authToken,
+                    });
+                  })
+                  .catch(async () => {
+                    await User.findByIdAndDelete(user.id);
+                    return res.status(400).json({
+                      data: {
+                        message:
+                            "Email already exist on RYFT. please try again with another email.",
+                      },
+                    });
+                  });
+            }
         )(req, res);
       } else {
         return res
-          .status(400)
-          .json({ data: { message: "User already exists with same email." } });
+            .status(400)
+            .json({ data: { message: "User already exists with same email." } });
       }
     } catch (error) {
       return res
-        .status(500)
-        .json({ error: { message: "Something went wrong." } });
+          .status(500)
+          .json({ error: { message: "Something went wrong." } });
     }
   };
 

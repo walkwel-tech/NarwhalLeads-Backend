@@ -214,7 +214,8 @@ export class LeadsController {
         phone: input.phone1,
         email: input.email,
       };
-      let emails: string[] = [];
+      //hot-fix for production
+      let emails: string[] = [user.email];
       const invitedUsers = await User.find({
         role: RolesEnum.INVITED,
         invitedById: user.id,
