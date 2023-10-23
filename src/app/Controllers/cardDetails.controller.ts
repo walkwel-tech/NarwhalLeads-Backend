@@ -903,7 +903,8 @@ export class CardDetailsControllers {
                   transactionTitle.CREDITS_ADDED,
                   originalAmount,
                   freeCredits,
-                  input.data.id
+                  input.data.id,
+                  false
                 )
                   .then(async (res: any) => {
                     const dataToSaveInInvoice: Partial<InvoiceInterface> = {
@@ -929,7 +930,8 @@ export class CardDetailsControllers {
                         transactionTitle.CREDITS_ADDED,
                         originalAmount,
                         freeCredits,
-                        input.data.id
+                        input.data.id,
+                        false
                       ).then(async (res: any) => {
                         const dataToSaveInInvoice: Partial<InvoiceInterface> = {
                           userId: userId?.id,
@@ -1157,7 +1159,8 @@ export class CardDetailsControllers {
                   transactionTitle.CREDITS_ADDED,
                   originalAmount,
                   freeCredits,
-                  input.data.object.id
+                  input.data.object.id,
+                  false
                 )
                   .then(async (res: any) => {
                     const dataToSaveInInvoice: Partial<InvoiceInterface> = {
@@ -1183,7 +1186,8 @@ export class CardDetailsControllers {
                         transactionTitle.CREDITS_ADDED,
                         originalAmount,
                         freeCredits,
-                        input.data.object?.id
+                        input.data.object?.id,
+                        false
                       ).then(async (res: any) => {
                         const dataToSaveInInvoice: Partial<InvoiceInterface> = {
                           userId: userId?.id,

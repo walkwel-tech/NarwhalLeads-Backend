@@ -328,6 +328,10 @@ class AuthController {
           return res.status(401).json({
             error: { message: "Admin not active.Please contact super admin." },
           });
+        } else if (!user.isActive && user.role === RolesEnum.ACCOUNT_MANAGER) {
+          return res.status(401).json({
+            error: { message: "Admin not active.Please contact super admin." },
+          });
         } else if (!user.isVerified && user.role === RolesEnum.USER) {
           return res.status(401).json({
             error: {
@@ -339,6 +343,10 @@ class AuthController {
             error: { message: "User is deleted.Please contact admin" },
           });
         } else if (user.isDeleted && user.role === RolesEnum.ADMIN) {
+          return res.status(401).json({
+            error: { message: "Admin is deleted.Please contact super admin" },
+          });
+        } else if (user.isDeleted && user.role === RolesEnum.ACCOUNT_MANAGER) {
           return res.status(401).json({
             error: { message: "Admin is deleted.Please contact super admin" },
           });

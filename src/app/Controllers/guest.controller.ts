@@ -295,15 +295,21 @@ export class GuestController {
 
   static assignPermissionsToAllUsers = async (_req: any, res: Response) => {
     const users = await User.find({ isDeleted: false });
-    users.map((user) => {
+    const data = users.map((user) => {
       return new Promise(async (res, rej) => {
         const permissions = await Permissions.findOne({ role: user.role });
-        await User.findByIdAndUpdate(user.id, {
-          permissions: permissions?.permissions,
-        });
+        const data = await User.findByIdAndUpdate(
+          user.id,
+          {
+            permissions: permissions?.permissions,
+          },
+          { new: true }
+        );
+        res(data);
       });
     });
-    return res.json({ data: users });
+    const result = await Promise.all(data);
+    return res.json({ data: result });
   };
 }
 
