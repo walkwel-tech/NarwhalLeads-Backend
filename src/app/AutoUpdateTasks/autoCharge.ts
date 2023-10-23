@@ -161,7 +161,8 @@ export const weeklypayment = async () => {
                         transactionTitle.CREDITS_ADDED,
                         addCredits,
                         0,
-                        _res_.data?.id
+                        _res_.data?.id,
+                        false
                       )
                         .then(async (res: any) => {
                           const dataToSaveInInvoice: Partial<InvoiceInterface> =
@@ -181,7 +182,8 @@ export const weeklypayment = async () => {
                               transactionTitle.CREDITS_ADDED,
                               addCredits,
                               0,
-                              _res_.data?.id
+                              _res_.data?.id,
+                              false
                             ).then(async (res: any) => {
                               const dataToSaveInInvoice: Partial<InvoiceInterface> =
                                 {

@@ -3,6 +3,7 @@ import { FreeCreditsLink } from "../Models/freeCreditsLink";
 import { freeCreditsLinkInterface } from "../../types/FreeCreditsLinkInterface";
 import { UserInterface } from "../../types/UserInterface";
 import { ObjectId } from "mongodb";
+import { LINK_FILTERS } from "../../utils/Enums/promoLink.enum";
 
 let alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
 
@@ -78,10 +79,10 @@ export class freeCreditsLinkController {
     if (req.query.spotDiffPremiumPlan) {
       dataToFind.spotDiffPremiumPlan = true;
     }
-    if (req.query.expired) {
+    if (req.query.status === LINK_FILTERS.EXPIRED) {
       dataToFind.isDisabled = true;
     }
-    if (req.query.live) {
+    if (req.query.status === LINK_FILTERS.LIVE) {
       dataToFind.isDisabled = false;
     }
     if (req.query.accountManager) {
@@ -144,14 +145,14 @@ export class freeCreditsLinkController {
                       in: {
                         $mergeObjects: [
                           "$$user",
-                          {
-                            createdAt: {
-                              $dateToString: {
-                                format: "%d/%m/%Y", // Define your desired format here
-                                date: "$$user.createdAt", // Replace "createdAt" with your actual field name
-                              },
-                            },
-                          },
+                          // {
+                          //   createdAt: {
+                          //     $dateToString: {
+                          //       format: "%d/%m/%Y", // Define your desired format here
+                          //       date: "$$user.createdAt", // Replace "createdAt" with your actual field name
+                          //     },
+                          //   },
+                          // },
                         ],
                       },
                     },

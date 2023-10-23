@@ -372,6 +372,7 @@ export class invitedUsersController {
             role: RolesEnum.ACCOUNT_MANAGER,
           });
           input.permissions = permission?.permissions;
+          input.isActive = true;
           const data = await User.create(input);
           const adminExist: any = await User.findOne({
             role: RolesEnum.SUPER_ADMIN,
