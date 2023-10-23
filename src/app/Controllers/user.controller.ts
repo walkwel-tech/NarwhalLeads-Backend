@@ -1624,7 +1624,6 @@ export class UsersControllers {
         amount = credits;
         (params.fixedAmount = amount), (dataToSave.isCredited = true);
         dataToSave.creditsLeft = credits;
-        let invoice;
         addCreditsToBuyer(params).then(async (res) => {
           const transaction = await Transaction.create(dataToSave);
           generatePDF(
@@ -1642,7 +1641,7 @@ export class UsersControllers {
                 price: credits,
                 invoiceId: res.data.Invoices[0].InvoiceID,
               };
-              invoice = await Invoice.create(dataToSaveInInvoice);
+              await Invoice.create(dataToSaveInInvoice);
               await Transaction.findByIdAndUpdate(transaction.id, {
                 invoiceId: res.data.Invoices[0].InvoiceID,
               });
@@ -1665,7 +1664,7 @@ export class UsersControllers {
                     price: credits,
                     invoiceId: res.data.Invoices[0].InvoiceID,
                   };
-                  invoice = await Invoice.create(dataToSaveInInvoice);
+                  await Invoice.create(dataToSaveInInvoice);
                   await Transaction.findByIdAndUpdate(transaction.id, {
                     invoiceId: res.data.Invoices[0].InvoiceID,
                   });
