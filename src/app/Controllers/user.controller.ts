@@ -33,6 +33,7 @@ import { createSessionUnScheduledPayment } from "../../utils/payment/createPayme
 import { FILTER_FOR_CLIENT } from "../../utils/Enums/billableFilterEnum";
 import { addCreditsToBuyer } from "../../utils/payment/addBuyerCredit";
 import { TransactionInterface } from "../../types/TransactionInterface";
+import { InvoiceInterface } from "../../types/InvoiceInterface";
 const ObjectId = mongoose.Types.ObjectId;
 
 const LIMIT = 10;
@@ -940,7 +941,8 @@ export class UsersControllers {
                 //@ts-ignore
                 input?.credits,
                 0,
-                _res.data.id
+                _res.data.id,
+                false
               )
                 .then(async (res: any) => {
                   const dataToSaveInInvoice: any = {
@@ -964,7 +966,8 @@ export class UsersControllers {
                       //@ts-ignore
                       input.credits,
                       0,
-                      _res.data.id
+                      _res.data.id,
+                      false
                     ).then(async (res: any) => {
                       const dataToSaveInInvoice: any = {
                         userId: checkUser?.id,
@@ -1585,6 +1588,7 @@ export class UsersControllers {
     try {
       const input = req.body;
       const user = (await User.findById(input.userId)) ?? ({} as UserInterface);
+      const credits = input.credits * parseInt(user?.leadCost);
       if (user?.isDeleted) {
         return res.status(400).json({
           error: {
@@ -1611,38 +1615,73 @@ export class UsersControllers {
         };
         let dataToSave: Partial<TransactionInterface> = {
           userId: user.id,
-          amount: input.credits,
+          amount: credits,
           status: PAYMENT_STATUS.CAPTURED,
           title: transactionTitle.MANUAL_ADJUSTMENT,
           paymentType: transactionTitle.MANUAL_ADJUSTMENT,
         };
-        if (user?.credits > input.credits) {
-          const creditsDeductFromLeadByte = user.credits - input.credits;
-          amount = -creditsDeductFromLeadByte;
-          params.fixedAmount = amount;
-          // dataToSave.isCredited = false;
-          dataToSave.isDebited = true;
-          dataToSave.creditsLeft = input.credits;
-          addCreditsToBuyer(params).then(async (res) => {
-            await Transaction.create(dataToSave);
-            return res;
-          });
-        } else if (user?.credits < input.credits) {
-          const creditsAddToLeadByte = input.credits - user.credits;
-          amount = creditsAddToLeadByte;
-          (params.fixedAmount = amount), (dataToSave.isCredited = true);
-          dataToSave.creditsLeft = input.credits;
-          addCreditsToBuyer(params).then(async (res) => {
-            await Transaction.create(dataToSave);
-            return res;
-          });
-        } else {
-          return res.json({
-            data: {
-              message: "Credits remains the same",
-            },
-          });
-        }
+        // if (user?.credits < credits) {
+        amount = credits;
+        (params.fixedAmount = amount), (dataToSave.isCredited = true);
+        dataToSave.creditsLeft = credits;
+        let invoice;
+        addCreditsToBuyer(params).then(async (res) => {
+          const transaction = await Transaction.create(dataToSave);
+          generatePDF(
+            user?.xeroContactId,
+            transactionTitle.CREDITS_ADDED,
+            0,
+            credits,
+            "Manual Adjustment",
+            true
+          )
+            .then(async (res: any) => {
+              const dataToSaveInInvoice: Partial<InvoiceInterface> = {
+                userId: user?.id,
+                transactionId: transaction.id,
+                price: credits,
+                invoiceId: res.data.Invoices[0].InvoiceID,
+              };
+              invoice = await Invoice.create(dataToSaveInInvoice);
+              await Transaction.findByIdAndUpdate(transaction.id, {
+                invoiceId: res.data.Invoices[0].InvoiceID,
+              });
+
+              console.log("pdf generated");
+            })
+            .catch(async (err) => {
+              refreshToken().then(async (res) => {
+                generatePDF(
+                  user?.xeroContactId,
+                  transactionTitle.CREDITS_ADDED,
+                  0,
+                  credits,
+                  "Manual Adjustment",
+                  true
+                ).then(async (res: any) => {
+                  const dataToSaveInInvoice: Partial<InvoiceInterface> = {
+                    userId: user?.id,
+                    transactionId: transaction.id,
+                    price: credits,
+                    invoiceId: res.data.Invoices[0].InvoiceID,
+                  };
+                  invoice = await Invoice.create(dataToSaveInInvoice);
+                  await Transaction.findByIdAndUpdate(transaction.id, {
+                    invoiceId: res.data.Invoices[0].InvoiceID,
+                  });
+
+                  console.log("pdf generated");
+                });
+              });
+            });
+        });
+        // } else {
+        //   return res.json({
+        //     data: {
+        //       message: "Credits remains the same",
+        //     },
+        //   });
+        // }
 
         return res.json({
           data: { message: "Credits Adjusted" },
