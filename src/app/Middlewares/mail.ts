@@ -8,6 +8,7 @@ import {
 } from "../../utils/constantFiles/email.templateIDs";
 import { Notifications } from "../Models/Notifications";
 import { User } from "../Models/User";
+import { checkAccess } from "./serverAccess";
 // import { checkAccess } from "./serverAccess";
 
 const sgMail = require("@sendgrid/mail");
@@ -502,33 +503,32 @@ export function sendEmailForNewLead(send_to: string[], message: any) {
       email: message.email,
     },
   };
-  // if (checkAccess()) {
-
-  sgMail
-    .sendMultiple(msg)
-    .then(() => {
-      console.log("Email sent");
-      const params = {
-        email: send_to,
-        title: TEMPLATES_TITLE.NEW_LEAD,
-        templateId: TEMPLATES_ID.NEW_LEAD,
-        status: NOTIFICATION_STATUS.SUCCESS,
-      };
-      saveNotifications(params);
-    })
-    .catch((error: any) => {
-      console.error(error);
-      const params = {
-        email: send_to,
-        title: TEMPLATES_TITLE.NEW_LEAD,
-        templateId: TEMPLATES_ID.NEW_LEAD,
-        status: NOTIFICATION_STATUS.FAIL,
-      };
-      saveNotifications(params);
-    });
-  // } else {
-  //   console.log("Emails access only on production");
-  // }
+  if (checkAccess()) {
+    sgMail
+      .sendMultiple(msg)
+      .then(() => {
+        console.log("Email sent");
+        const params = {
+          email: send_to,
+          title: TEMPLATES_TITLE.NEW_LEAD,
+          templateId: TEMPLATES_ID.NEW_LEAD,
+          status: NOTIFICATION_STATUS.SUCCESS,
+        };
+        saveNotifications(params);
+      })
+      .catch((error: any) => {
+        console.error(error);
+        const params = {
+          email: send_to,
+          title: TEMPLATES_TITLE.NEW_LEAD,
+          templateId: TEMPLATES_ID.NEW_LEAD,
+          status: NOTIFICATION_STATUS.FAIL,
+        };
+        saveNotifications(params);
+      });
+  } else {
+    console.log("Emails access only on production");
+  }
 }
 
 export function sendEmaiForTotalLead(send_to: string, message: any) {
