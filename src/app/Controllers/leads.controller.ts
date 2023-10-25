@@ -93,11 +93,19 @@ export class LeadsController {
         $lt: endOfDay,
       },
     });
+
     if (previous.length >= user.userLeadsDetailsId?.daily) {
+      const ukOffset = 0;
+      const utcDatePlus1Hour = new Date(new Date().getTime() + 60 * 60 * 1000);
+      const ukDate = new Date(
+        utcDatePlus1Hour.getTime() + ukOffset * 60 * 60 * 1000
+      );
+      const ukDateString = ukDate.toUTCString();
+
       const debuggingLogs = {
         yesterday: today.toUTCString(),
         today: endOfDay.toUTCString(),
-        currentServerTime: new Date().toUTCString(),
+        currentServerTime: ukDateString,
       };
       return res.status(400).json({
         error: {

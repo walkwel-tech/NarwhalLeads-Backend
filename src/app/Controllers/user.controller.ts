@@ -1705,6 +1705,7 @@ export class UsersControllers {
         role: { $in: [RolesEnum.USER, RolesEnum.NON_BILLABLE] },
         isActive: true,
         isDeleted: false,
+        isArchived: false,
       };
       let dataToFindPaused: Record<
         string,
@@ -1713,6 +1714,7 @@ export class UsersControllers {
         role: { $in: [RolesEnum.USER, RolesEnum.NON_BILLABLE] },
         isActive: false,
         isDeleted: false,
+        isArchived: false,
       };
       if (_req.user.role === RolesEnum.ACCOUNT_MANAGER) {
         dataToFindActive.accountManager = _req.user._id;
