@@ -4,7 +4,10 @@ import mongoose from "mongoose";
 import { FileEnum } from "../../types/FileEnum";
 import { RolesEnum } from "../../types/RolesEnum";
 import { ValidationErrorResponse } from "../../types/ValidationErrorResponse";
-import { ONBOARDING_KEYS } from "../../utils/constantFiles/OnBoarding.keys";
+import {
+  ONBOARDING_KEYS,
+  ONBOARDING_PERCENTAGE,
+} from "../../utils/constantFiles/OnBoarding.keys";
 import { createCustomersOnRyftAndLeadByte } from "../../utils/createCustomer";
 import { DeleteFile } from "../../utils/removeFile";
 import { BusinessDetailsInput } from "../Inputs/BusinessDetails.input";
@@ -148,7 +151,7 @@ export class BusinessDetailsController {
         businessDetailsId: new ObjectId(userData._id),
         leadCost: industry?.leadCost,
         businessIndustryId: industry?.id,
-        onBoardingPercentage: input?.onBoardingPercentage,
+        onBoardingPercentage: ONBOARDING_PERCENTAGE.BUSINESS_DETAILS,
       });
       const user: UserInterface =
         (await User.findById(input.userId)) ?? ({} as UserInterface);
@@ -286,7 +289,7 @@ export class BusinessDetailsController {
           .then(() => {
             console.log("Customer created!!!!");
           })
-          .catch((ERR) => {
+          .catch((err) => {
             console.log("error while creating customer");
           });
       }

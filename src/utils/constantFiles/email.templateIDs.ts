@@ -18,6 +18,7 @@ export const TEMPLATES_ID = {
   BELOW_5_LEADS_PENDING: "d-c4b0c33a54b3474ca1a8c0cb3855aad9",
   OUT_OF_FUNDS: "d-3045292d88954e578d2ba9a875724b90",
   INVITED_ACCOUNT_MANAGER: "d-6d0be07496084fdcbf78a0be22651fb3",
+  USER_25_PERCENT_SIGNUP: "d-d39ac61c21a84352b80dabd6a3d0f238",
 };
 
 export const TEMPLATES_TITLE = {
@@ -40,4 +41,5 @@ export const TEMPLATES_TITLE = {
   BELOW_5_LEADS_PENDING: "below5LeadsPending",
   OUT_OF_FUNDS: "outOfFunds",
   INVITED_ACCOUNT_MANAGER: "invitedAccountManager",
+  USER_25_PERCENT_SIGNUP: "user25PercentSignup",
 };
