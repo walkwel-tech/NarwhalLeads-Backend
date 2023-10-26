@@ -138,63 +138,57 @@ export class LeadsController {
       isDefault: true,
       isDeleted: false,
     });
-    if (cardDetails) {
-      const credits = user?.credits;
-      let leftCredits;
-      if (user.isLeadCostCheck) {
-        leadcpl = user.leadCost;
-        leftCredits = credits - user?.leadCost;
-      } else {
-        const industry: any = await BuisnessIndustries.findById(
-          user.businessIndustryId
-        );
-        leftCredits = credits - industry?.leadCost;
-        leadcpl = industry?.leadCost;
-      }
-      const userf = await User.findByIdAndUpdate(user?.id, {
-        credits: leftCredits,
-      });
-      if (leftCredits < leadcpl * PREMIUM_PROMOLINK.LEADS_THRESHOLD) {
-        const txn = await Transaction.find({
-          title: transactionTitle.CREDITS_ADDED,
-        }).sort({ createdAt: -1 });
-        const notify: any = await Notifications.find({
-          title: "BELOW_5_LEADS_PENDING",
-        }).sort({ createdAt: -1 });
-        if (txn[0]?.createdAt > notify[0]?.createdAt) {
-          sendEmailForBelow5LeadsPending(user.email, {
-            credits: leftCredits,
-            name: user?.firstName + " " + user?.lastName,
-          });
-        } else {
-          console.log("Email already send.");
-        }
-      }
-      if (leftCredits <= 0) {
-        sendEmailForOutOfFunds(user.email, {
-          name: user.firstName + " " + user.lastName,
-          credits: user.credits,
-        });
-      }
-      await User.updateMany(
-        { invitedById: user?.id },
-        { $set: { credits: userf?.credits } }
+    const credits = user?.credits;
+    let leftCredits;
+    if (user.isLeadCostCheck) {
+      leadcpl = user.leadCost;
+      leftCredits = credits - user?.leadCost;
+    } else {
+      const industry: any = await BuisnessIndustries.findById(
+        user.businessIndustryId
       );
-      const dataToSave: any = {
-        userId: user.id,
-        cardId: cardDetails?.id,
-        isDebited: true,
-        title: transactionTitle.NEW_LEAD,
-        amount: leadcpl,
-        status: "success",
-        creditsLeft: user?.credits - leadcpl,
-      };
-      await Transaction.create(dataToSave);
-    } else if (user.role === RolesEnum.USER) {
-      return res
-        .status(404)
-        .json({ error: { message: "Card details not found" } });
+      leftCredits = credits - industry?.leadCost;
+      leadcpl = industry?.leadCost;
     }
+    const userf = await User.findByIdAndUpdate(user?.id, {
+      credits: leftCredits,
+    });
+    if (leftCredits < leadcpl * PREMIUM_PROMOLINK.LEADS_THRESHOLD) {
+      const txn = await Transaction.find({
+        title: transactionTitle.CREDITS_ADDED,
+      }).sort({ createdAt: -1 });
+      const notify: any = await Notifications.find({
+        title: "BELOW_5_LEADS_PENDING",
+      }).sort({ createdAt: -1 });
+      if (txn[0]?.createdAt > notify[0]?.createdAt) {
+        sendEmailForBelow5LeadsPending(user.email, {
+          credits: leftCredits,
+          name: user?.firstName + " " + user?.lastName,
+        });
+      } else {
+        console.log("Email already send.");
+      }
+    }
+    if (leftCredits <= 0) {
+      sendEmailForOutOfFunds(user.email, {
+        name: user.firstName + " " + user.lastName,
+        credits: user.credits,
+      });
+    }
+    await User.updateMany(
+      { invitedById: user?.id },
+      { $set: { credits: userf?.credits } }
+    );
+    const dataToSave: any = {
+      userId: user.id,
+      cardId: cardDetails?.id,
+      isDebited: true,
+      title: transactionTitle.NEW_LEAD,
+      amount: leadcpl,
+      status: "success",
+      creditsLeft: user?.credits - leadcpl,
+    };
+    await Transaction.create(dataToSave);
     if (
       user.userLeadsDetailsId?.leadAlertsFrequency == leadsAlertsEnums.INSTANT
     ) {
@@ -222,7 +216,7 @@ export class LeadsController {
         isDeleted: false,
       }).populate("userLeadsDetailsId");
 
-/*      invitedUsers.map((iUser) => {
+      /*      invitedUsers.map((iUser) => {
         const userLeadFreq: UserLeadsDetailsInterface | null =
           isUserLeadDetailsObject(user?.userLeadsDetailsId)
             ? user?.userLeadsDetailsId
@@ -233,9 +227,9 @@ export class LeadsController {
       });*/
       invitedUsers.map((iUser) => {
         if (
-            //@ts-ignore
-            iUser?.userLeadsDetailsId?.leadAlertsFrequency ===
-            leadsAlertsEnums.INSTANT
+          //@ts-ignore
+          iUser?.userLeadsDetailsId?.leadAlertsFrequency ===
+          leadsAlertsEnums.INSTANT
         ) {
           emails.push(iUser.email);
         }
@@ -1658,7 +1652,10 @@ export class LeadsController {
           user?.businessIndustryId
         );
         // data = industry?.columns;
-        data = await LeadTablePreference.create({ userId: userId, columns: industry?.columns });
+        data = await LeadTablePreference.create({
+          userId: userId,
+          columns: industry?.columns,
+        });
       } else {
         data = preference;
       }
@@ -2323,7 +2320,7 @@ function filterAndTransformData(
     columns.forEach((column: Column) => {
       if (column.isVisible) {
         filteredData[column.displayName || column.originalName] =
-            dataObj[column.originalName];
+          dataObj[column.originalName];
       }
     });
     return filteredData;
