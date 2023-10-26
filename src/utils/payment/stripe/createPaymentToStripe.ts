@@ -34,7 +34,6 @@ export const createPaymentOnStrip = async (params: IntentInterface) => {
     axios
       .request(config)
       .then(async (response: any) => {
-        console.log("response", response.data);
         const user = await User.findOne({
           stripeClientId: response?.data?.customer,
         });

@@ -4,7 +4,10 @@ import { RolesEnum } from "../../types/RolesEnum";
 import { ValidationErrorResponse } from "../../types/ValidationErrorResponse";
 import { leadsAlertsEnums } from "../../utils/Enums/leads.Alerts.enum";
 import { checkOnbOardingComplete } from "../../utils/Functions/OnboardingComplete";
-import { ONBOARDING_KEYS } from "../../utils/constantFiles/OnBoarding.keys";
+import {
+  ONBOARDING_KEYS,
+  ONBOARDING_PERCENTAGE,
+} from "../../utils/constantFiles/OnBoarding.keys";
 import { UserLeadDetailsInput } from "../Inputs/user.leadDetails.input";
 import {
   // sendEmailForNewRegistration,
@@ -122,7 +125,7 @@ export class UserLeadsController {
       const details = await UserLeadsDetails.create(dataToSave);
       await User.findByIdAndUpdate(input.userId, {
         userLeadsDetailsId: details._id,
-        onBoardingPercentage: input?.onBoardingPercentage,
+        onBoardingPercentage: ONBOARDING_PERCENTAGE.LEAD_DETAILS,
       });
       if (
         (checkOnbOardingComplete(user) && !user.registrationMailSentToAdmin) ||

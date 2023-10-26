@@ -50,7 +50,6 @@ import {
 import { PROMO_LINK } from "../../utils/Enums/promoLink.enum";
 import { VAT } from "../../utils/constantFiles/Invoices";
 import mongoose from "mongoose";
-const ObjectId = mongoose.Types.ObjectId;
 import { PaymentResponse } from "../../types/PaymentResponseInterface";
 import { PREMIUM_PROMOLINK } from "../../utils/constantFiles/spotDif.offers.promoLink";
 import { PAYMENT_TYPE_ENUM } from "../../utils/Enums/paymentType.enum";
@@ -79,8 +78,10 @@ import { createPaymentOnStrip } from "../../utils/payment/stripe/createPaymentTo
 import { STRIPE_PAYMENT_STATUS } from "../../utils/Enums/stripe.payment.status.enum";
 import { createCustomerOnStripe } from "../../utils/createCustomer/createOnStripe";
 import { getPaymentStatus } from "../../utils/payment/stripe/retrievePaymentStatus";
+import { AMOUNT } from "../../utils/constantFiles/stripeConstants";
 // import { managePaymentsByPaymentMethods } from "../../utils/payment";
 // import { managePaymentsByPaymentMethods } from "../../utils/payment";
+const ObjectId = mongoose.Types.ObjectId;
 
 export class CardDetailsControllers {
   //not in use
@@ -201,7 +202,12 @@ export class CardDetailsControllers {
           area: `${formattedPostCodes}`,
           leadCost: user?.leadCost,
         };
-        sendEmailForNewRegistration(message);
+        let subscribers: string[] = [`${process.env.ADMIN_EMAIL}`];
+        const data = await User.find({ role: RolesEnum.SUBSCRIBER });
+        data.map((subscriber) => subscribers.push(subscriber.email));
+        subscribers.map((subs) => {
+          sendEmailForNewRegistration(subs, message);
+        });
         await User.findByIdAndUpdate(user.id, {
           registrationMailSentToAdmin: true,
         });
@@ -594,6 +600,17 @@ export class CardDetailsControllers {
             });
         }
       } else {
+        const amountToPay =
+          (parseInt(input?.amount) + (parseInt(input?.amount) * VAT) / 100) *
+          100;
+        const validateAmount = amountToPay / 100;
+        if (validateAmount > AMOUNT.MAX) {
+          return res.status(400).json({
+            error: {
+              message: `Charged amount should be less than ${AMOUNT.MAX}.`,
+            },
+          });
+        }
         const params: any = {
           amount:
             (parseInt(input?.amount) + (parseInt(input?.amount) * VAT) / 100) *

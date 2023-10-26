@@ -70,6 +70,9 @@ export class LeadsController {
 
     const bid = req.params.buyerId;
     const input = req.body;
+    if (Object.keys(input).length === 0) {
+      return res.status(400).json({ error: { message: "Data Required." } });
+    }
     const user: any = await User.findOne({ buyerId: bid })
       .populate("userLeadsDetailsId")
       .populate("businessDetailsId");
@@ -234,7 +237,9 @@ export class LeadsController {
           emails.push(iUser.email);
         }
       });
-      sendEmailForNewLead(emails, message);
+      emails.map((users) => {
+        sendEmailForNewLead(users, message);
+      });
     }
 
     return res.json({ data: leadsSave });
@@ -1572,7 +1577,6 @@ export class LeadsController {
         item.leads.businessName = "Deleted";
         item.leads.businessIndustry = "Deleted";
         item.leads.status = item?.status;
-
         // Use explicit Promise construction
         return new Promise((resolve, reject) => {
           BusinessDetails.findById(item["clientName"][0]?.businessDetailsId)
@@ -1584,10 +1588,10 @@ export class LeadsController {
                 item.leads.businessName = "Deleted";
                 item.leads.businessIndustry = "Deleted";
               }
-
               resolve(item); // Resolve the promise with the modified item
             })
             .catch((error) => {
+              console.log("err", error);
               // item.leads.businessName = "Deleted";
               // item.leads.businessIndustry = "Deleted";
               reject(error); // Reject the promise if there's an error
@@ -2315,6 +2319,17 @@ export class LeadsController {
         users.map((user: UserInterface) => {
           return bids.push(user.buyerId);
         });
+        dataToFindForReportAccepted.bid = { $in: bids };
+        dataToFindForReportRejected.bid = { $in: bids };
+        dataToFindForReported.bid = { $in: bids };
+        dataToFindForValid.bid = { $in: bids };
+      }
+
+      if (_req.user.role === RolesEnum.USER) {
+        let bids: string[] = [];
+        const users =
+          (await User.findById(_req.user._id)) ?? ({} as UserInterface);
+        bids.push(users?.buyerId);
         dataToFindForReportAccepted.bid = { $in: bids };
         dataToFindForReportRejected.bid = { $in: bids };
         dataToFindForReported.bid = { $in: bids };

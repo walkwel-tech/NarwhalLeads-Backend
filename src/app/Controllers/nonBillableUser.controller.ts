@@ -59,6 +59,7 @@ export class nonBillableUsersController {
           rowIndex: allInvites?.rowIndex + 1 || 0,
           credits: 0,
           accountManager: accountManager._id,
+          isCreditsAndBillingEnabled: false,
           onBoarding: [
             {
               key: ONBOARDING_KEYS.BUSINESS_DETAILS,

@@ -11,7 +11,10 @@ import { UserInterface } from "../../types/UserInterface";
 
 import { RolesEnum } from "../../types/RolesEnum";
 import { paymentMethodEnum } from "../../utils/Enums/payment.method.enum";
-import { ONBOARDING_KEYS } from "../../utils/constantFiles/OnBoarding.keys";
+import {
+  ONBOARDING_KEYS,
+  ONBOARDING_PERCENTAGE,
+} from "../../utils/constantFiles/OnBoarding.keys";
 import { createCustomerOnRyft } from "../../utils/createCustomer/createOnRyft";
 import { generateAuthToken } from "../../utils/jwt";
 import { LoginInput } from "../Inputs/Login.input";
@@ -122,6 +125,7 @@ class AuthController {
           isVerified: true, //need to delete
           rowIndex: showUsers?.rowIndex + 1 || 0,
           paymentMethod: paymentMethodEnum.MANUALLY_ADD_CREDITS_METHOD,
+          onBoardingPercentage: ONBOARDING_PERCENTAGE.USER_DETAILS,
           onBoarding: [
             {
               key: ONBOARDING_KEYS.BUSINESS_DETAILS,
