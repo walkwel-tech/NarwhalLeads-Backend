@@ -44,6 +44,8 @@ import { BusinessDetailsInterface } from "../../types/BusinessInterface";
 import { BuisnessIndustriesInterface } from "../../types/BuisnessIndustriesInterface";
 import { AccessTokenInterface } from "../../types/AccessTokenInterface";
 import { CreateCustomerInput } from "../Inputs/createCustomerOnRyft&Lead.inputs";
+import { cmsUpdateBuyerWebhook } from "../../utils/webhookUrls/cmsUpdateBuyerWebhook";
+import { CardDetails } from "../Models/CardDetails";
 
 const ObjectId = mongoose.Types.ObjectId;
 
@@ -525,6 +527,13 @@ export class BusinessDetailsController {
             await ActivityLogs.create(activity);
           }
         }
+        const card = await CardDetails.findOne({
+          userId: userr?.id,
+          isDeleted: false,
+          isDefault: true,
+        });
+        cmsUpdateBuyerWebhook(userr?.id, card?.id);
+
         return res.json({
           data: {
             message: "businessDetails updated successfully.",

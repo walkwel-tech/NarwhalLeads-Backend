@@ -816,7 +816,7 @@ export class LeadsController {
       perPage;
 
     try {
-      let dataToFind: any = {};
+      let dataToFind: any = { status: { $nin: [leadsStatusEnums.ARCHIVED] } };
       const user = await User.findById(userId);
       if (user?.role == RolesEnum.INVITED) {
         const invitedBy = await User.findOne({ _id: user?.invitedById });

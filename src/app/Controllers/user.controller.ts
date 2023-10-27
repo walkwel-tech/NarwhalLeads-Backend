@@ -34,6 +34,7 @@ import { FILTER_FOR_CLIENT } from "../../utils/Enums/billableFilterEnum";
 import { addCreditsToBuyer } from "../../utils/payment/addBuyerCredit";
 import { TransactionInterface } from "../../types/TransactionInterface";
 import { InvoiceInterface } from "../../types/InvoiceInterface";
+import { cmsUpdateBuyerWebhook } from "../../utils/webhookUrls/cmsUpdateBuyerWebhook";
 const ObjectId = mongoose.Types.ObjectId;
 
 const LIMIT = 10;
@@ -1135,6 +1136,8 @@ export class UsersControllers {
               await ActivityLogs.create(activity);
             }
           }
+          cmsUpdateBuyerWebhook(id, cardExist?.id);
+
           return res.json({ message: "Updated Successfully", data: result });
         }
       }
