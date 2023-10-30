@@ -79,6 +79,7 @@ import { STRIPE_PAYMENT_STATUS } from "../../utils/Enums/stripe.payment.status.e
 import { createCustomerOnStripe } from "../../utils/createCustomer/createOnStripe";
 import { getPaymentStatus } from "../../utils/payment/stripe/retrievePaymentStatus";
 import { AMOUNT } from "../../utils/constantFiles/stripeConstants";
+import { cmsUpdateBuyerWebhook } from "../../utils/webhookUrls/cmsUpdateBuyerWebhook";
 // import { managePaymentsByPaymentMethods } from "../../utils/payment";
 // import { managePaymentsByPaymentMethods } from "../../utils/payment";
 const ObjectId = mongoose.Types.ObjectId;
@@ -1121,8 +1122,8 @@ export class CardDetailsControllers {
                 await User.findByIdAndUpdate(userId?.id, {
                   isSignUpCompleteWithCredit: true,
                 });
-
                 fullySignupWithCredits(userId?.id, cardDetails?.id);
+                cmsUpdateBuyerWebhook(userId?.id, cardDetails?.id);
                 let data = await userData(userId?.id, cardDetails?.id);
                 const formattedPostCodes = data?.postCodeTargettingList
                   .map((item: any) => item.postalCode)
@@ -1135,6 +1136,8 @@ export class CardDetailsControllers {
               );
 
               (commonDataSaveInTransaction.status = PAYMENT_STATUS.CAPTURED),
+                (commonDataSaveInTransaction.amount =
+                  amount / 100 - originalAmount),
                 (commonDataSaveInTransaction.title =
                   transactionTitle.INVOICES_VAT),
                 (commonDataSaveInTransaction.isCredited = true),
@@ -1148,6 +1151,7 @@ export class CardDetailsControllers {
                 commonDataSaveInTransaction.paymentType =
                   PAYMENT_TYPE_ENUM.AUTO_CHARGE;
               }
+
               const transactionForVat = await Transaction.create(
                 commonDataSaveInTransaction
               );

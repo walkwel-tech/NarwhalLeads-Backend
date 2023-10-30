@@ -35,11 +35,22 @@ export class invitedUsersController {
       const existingCustomerCheck = await User.findOne({
         email: input.email,
         isDeleted: false,
+        role: {
+          $in: [
+            RolesEnum.ADMIN,
+            RolesEnum.USER,
+            RolesEnum.SUBSCRIBER,
+            RolesEnum.SUPER_ADMIN,
+            RolesEnum.ACCOUNT_MANAGER,
+            RolesEnum.NON_BILLABLE,
+            RolesEnum.INVITED,
+          ],
+        },
       });
       if (existingCustomerCheck) {
         return res
           .status(400)
-          .json({ error: { message: "Already a member of this portal" } });
+          .json({ error: { message: "Email already exists" } });
       } else {
         const salt = genSaltSync(10);
         const text = randomString(8, true);
@@ -208,12 +219,22 @@ export class invitedUsersController {
       const data = await User.find({
         email: input.email,
         isDeleted: false,
-        role: RolesEnum.SUBSCRIBER,
+        role: {
+          $in: [
+            RolesEnum.ADMIN,
+            RolesEnum.USER,
+            RolesEnum.SUBSCRIBER,
+            RolesEnum.SUPER_ADMIN,
+            RolesEnum.ACCOUNT_MANAGER,
+            RolesEnum.NON_BILLABLE,
+            RolesEnum.INVITED,
+          ],
+        },
       });
       if (data.length > 0) {
         return res
           .status(400)
-          .json({ error: { message: "Subscriber already exist" } });
+          .json({ error: { message: "Email already exist" } });
       } else {
         const data = await User.create(input);
         return res.json({ data: data });
@@ -304,12 +325,22 @@ export class invitedUsersController {
         const data = await User.find({
           email: input.email,
           isDeleted: false,
-          role: RolesEnum.ADMIN,
+          role: {
+            $in: [
+              RolesEnum.ADMIN,
+              RolesEnum.USER,
+              RolesEnum.SUBSCRIBER,
+              RolesEnum.SUPER_ADMIN,
+              RolesEnum.ACCOUNT_MANAGER,
+              RolesEnum.NON_BILLABLE,
+              RolesEnum.INVITED,
+            ],
+          },
         });
         if (data.length > 0) {
           return res
             .status(400)
-            .json({ error: { message: "Admin already exist" } });
+            .json({ error: { message: "Email already exist" } });
         } else {
           const salt = genSaltSync(10);
           const text = randomString(8, true);

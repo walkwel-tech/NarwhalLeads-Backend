@@ -29,6 +29,8 @@ import {
 } from "../../utils/Functions/findModifiedColumns";
 import { ActivityLogs } from "../Models/ActivityLogs";
 import { fullySignupForNonBillableClients } from "../../utils/webhookUrls/fullySignupForNonBillableClients";
+import { cmsUpdateBuyerWebhook } from "../../utils/webhookUrls/cmsUpdateBuyerWebhook";
+import { CardDetails } from "../Models/CardDetails";
 
 export class UserLeadsController {
   static create = async (req: Request, res: Response) => {
@@ -403,6 +405,12 @@ export class UserLeadsController {
             await ActivityLogs.create(activity);
           }
         }
+        const card = await CardDetails.findOne({
+          userId: userr?.id,
+          isDeleted: false,
+          isDefault: true,
+        });
+        cmsUpdateBuyerWebhook(userr?.id, card?.id);
         return res.json({
           data: {
             message: "UserLeadsDetails updated successfully.",

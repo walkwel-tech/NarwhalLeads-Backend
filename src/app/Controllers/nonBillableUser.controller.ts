@@ -21,11 +21,22 @@ export class nonBillableUsersController {
         //@ts-ignore
         email: input.email,
         isDeleted: false,
+        role: {
+          $in: [
+            RolesEnum.ADMIN,
+            RolesEnum.USER,
+            RolesEnum.SUBSCRIBER,
+            RolesEnum.SUPER_ADMIN,
+            RolesEnum.ACCOUNT_MANAGER,
+            RolesEnum.NON_BILLABLE,
+            RolesEnum.INVITED,
+          ],
+        },
       });
       if (checkExist) {
         return res
           .status(400)
-          .json({ error: { message: "Already a member of this portal" } });
+          .json({ error: { message: "Eamil already exist" } });
       } else {
         const salt = genSaltSync(10);
         const text = randomString(8, true);
