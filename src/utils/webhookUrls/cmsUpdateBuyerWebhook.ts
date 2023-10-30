@@ -11,7 +11,7 @@ export const cmsUpdateBuyerWebhook = async (userId: String, cardId: String) => {
       url: process.env.CMS_UPDATE_BUYER_WEBHOOK_URL,
       headers: {
         "Content-Type": "application/json",
-        "API-KEY": process.env.BUSINESS_DETAILS_SUBMISSION_API_KEY,
+        Authorization: `Bearer ${process.env.CMS_UPDATE_BUYER_WEBHOOK_KEY}`,
       },
       data: data,
     };
