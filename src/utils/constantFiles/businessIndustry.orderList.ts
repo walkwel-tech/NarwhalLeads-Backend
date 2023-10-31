@@ -24,7 +24,7 @@ export const order = [
     displayName:"Email"
   },
   {
-    originalName: "street",
+    originalName: "street1",
     isVisible: true,
     index: 4,
     displayName:"Street Address"
