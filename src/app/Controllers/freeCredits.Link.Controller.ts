@@ -2,6 +2,8 @@ import { Request, Response } from "express";
 import { FreeCreditsLink } from "../Models/freeCreditsLink";
 import { freeCreditsLinkInterface } from "../../types/FreeCreditsLinkInterface";
 import { UserInterface } from "../../types/UserInterface";
+import { ObjectId } from "mongodb";
+import { LINK_FILTERS } from "../../utils/Enums/promoLink.enum";
 
 let alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
 
@@ -77,14 +79,14 @@ export class freeCreditsLinkController {
     if (req.query.spotDiffPremiumPlan) {
       dataToFind.spotDiffPremiumPlan = true;
     }
-    if (req.query.expired) {
+    if (req.query.status === LINK_FILTERS.EXPIRED) {
       dataToFind.isDisabled = true;
     }
-    if (req.query.live) {
+    if (req.query.status === LINK_FILTERS.LIVE) {
       dataToFind.isDisabled = false;
     }
     if (req.query.accountManager) {
-      dataToFind.accountManager = req.query.accountManager;
+      dataToFind.accountManager = new ObjectId(req.query.accountManager);
     }
     try {
       let query = await FreeCreditsLink.aggregate([
@@ -136,8 +138,25 @@ export class freeCreditsLinkController {
             users: {
               $mergeObjects: [
                 {
-                  userData: "$usersData", // Replace with the actual path to the user's _id field
-                  // userCount: "$user.userCount"
+                  userData: {
+                    $map: {
+                      input: "$usersData",
+                      as: "user",
+                      in: {
+                        $mergeObjects: [
+                          "$$user",
+                          // {
+                          //   createdAt: {
+                          //     $dateToString: {
+                          //       format: "%d/%m/%Y", // Define your desired format here
+                          //       date: "$$user.createdAt", // Replace "createdAt" with your actual field name
+                          //     },
+                          //   },
+                          // },
+                        ],
+                      },
+                    },
+                  },
                 },
                 {
                   businessDetailsId: "$businessDetails", // Populate "businessDetailsId" with the "businessDetails" data
@@ -228,6 +247,32 @@ export class freeCreditsLinkController {
       return res.json({ data: data });
     } catch (error) {
       res.status(500).json({ error: { message: "something Went wrong." } });
+    }
+  };
+
+  static stats = async (_req: any, res: Response) => {
+    try {
+      const active = await FreeCreditsLink.find({
+        isDisabled: false,
+        isDeleted: false,
+      }).count();
+      const paused = await FreeCreditsLink.find({
+        isDisabled: true,
+        isDeleted: false,
+      }).count();
+
+      const dataToShow = {
+        liveLinks: active,
+        expiredLinks: paused,
+      };
+      return res.json({ data: dataToShow });
+    } catch (err) {
+      return res.status(500).json({
+        error: {
+          message: "something went wrong",
+          err,
+        },
+      });
     }
   };
 }

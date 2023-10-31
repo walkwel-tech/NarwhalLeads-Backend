@@ -1,18 +1,18 @@
-import { Router } from 'express';
-import multer from "multer";
+import { Router } from "express";
 
-import { ProfileController } from '../app/Controllers/';
-import { storeFile } from "../app/Middlewares/fileUpload";
+import { ProfileController } from "../app/Controllers/";
 
-import { FileEnum } from "../types/FileEnum";
+import { checkPermissions } from "../app/Middlewares/roleBasedAuthentication";
+import { MODULE, PERMISSIONS } from "../utils/Enums/permissions.enum";
 
 const profile: Router = Router();
-// let maxSize = 1 * 1000 * 1000;
 
-
-const upload = multer({ storage: storeFile(`${process.cwd()}${FileEnum.PUBLICDIR}${FileEnum.PROFILEIMAGE}`) })
-
-profile.post('/change-password', ProfileController.changePassword);
-profile.patch('/update-profile', upload.single('image'), ProfileController.updateProfile);
+profile.post(
+  "/change-password",
+  checkPermissions([
+    { module: MODULE.PROFILE, permission: PERMISSIONS.UPDATE },
+  ]),
+  ProfileController.changePassword
+);
 
 export default profile;

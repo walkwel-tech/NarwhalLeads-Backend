@@ -10,7 +10,8 @@ export const generatePDF = (
   desc: string,
   amount: number,
   freeCredits: number,
-  sessionId: string
+  sessionId: string,
+  isManualAdjustment: boolean
 ) => {
   return new Promise(async (resolve, reject) => {
     const industry: any = await User.findOne({
@@ -45,9 +46,21 @@ export const generatePDF = (
         },
       ],
     };
-    if (freeCredits > 0) {
+    if (freeCredits > 0 && !isManualAdjustment) {
       const quantity = freeCredits / parseInt(industry.leadCost);
       data.Invoices[0].LineItems[1] = {
+        Description: `${industry?.businessDetailsId?.businessIndustry} - ${transactionTitle.FREE_CREDITS}`,
+        //@ts-ignore
+        Quantity: parseInt(quantity),
+        UnitAmount: unitAmount,
+        AccountCode: "214",
+        //@ts-ignore
+        DiscountRate: "100",
+        LeadDepartment: industry?.businessDetailsId?.businessIndustry,
+      };
+    } else if (freeCredits > 0 && isManualAdjustment) {
+      const quantity = freeCredits / parseInt(industry.leadCost);
+      data.Invoices[0].LineItems[0] = {
         Description: `${industry?.businessDetailsId?.businessIndustry} - ${transactionTitle.FREE_CREDITS}`,
         //@ts-ignore
         Quantity: parseInt(quantity),

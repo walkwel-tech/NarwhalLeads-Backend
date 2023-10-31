@@ -12,6 +12,8 @@ import { ClientTablePreferenceInterface } from "../../types/clientTablePrefrence
 import { UserInterface } from "../../types/UserInterface";
 import { columnsObjects } from "../../types/columnsInterface";
 import mongoose from "mongoose";
+import { Permissions } from "../Models/Permission";
+import { PlanPackages } from "../Models/PlanPackages";
 
 interface QueryParams {
   userId: string;
@@ -130,8 +132,9 @@ export class AdminSettingsController {
     const input = req.body;
     let user: Partial<UserInterface> = req.user ?? ({} as UserInterface);
     try {
-      const checkExist = await ClientTablePreference.findOne();
-
+      const checkExist = await ClientTablePreference.findOne({
+        userId: user.id,
+      });
       if (!checkExist) {
         const columns = input?.columns.sort(
           (a: columnsObjects, b: columnsObjects) => a.index - b.index
@@ -220,11 +223,88 @@ export class AdminSettingsController {
   };
 
   static userLogin = async (req: Request, res: Response) => {
-    const input = req.body;
-    const user: UserInterface =
-      (await User.findOne({ email: input.email, role: RolesEnum.INVITED })) ??
-      ({} as UserInterface);
-    const token = generateAuthToken(user);
-    return res.json({ token: token });
+    try {
+      const input = req.body;
+      const user: UserInterface =
+        (await User.findOne({ email: input.email, role: RolesEnum.USER })) ??
+        ({} as UserInterface);
+      const token = generateAuthToken(user);
+      return res.json({ token: token });
+    } catch (error) {
+      return res
+        .status(500)
+        .json({ error: { message: "Something went wrong" } });
+    }
+  };
+
+  static createPermissions = async (req: Request, res: Response) => {
+    try {
+      const input = req.body;
+      const permission = await Permissions.create(input);
+      return res.json({ data: permission });
+    } catch (error) {
+      return res
+        .status(500)
+        .json({ error: { message: "Something went wrong" } });
+    }
+  };
+
+  static updatePermissions = async (req: Request, res: Response) => {
+    try {
+      const input = req.body;
+      const role = input.role;
+      const permission = await Permissions.findOne({ role: role });
+      if (permission) {
+        const modulePermissions = permission.permissions?.find(
+          (p: any) => p.module === module
+        );
+        if (modulePermissions) {
+          permission.permissions.push(input.permission);
+          await Permissions.findOneAndUpdate(
+            { role: input.role },
+            { permissions: permission.permissions }
+          );
+        } else {
+          permission.permissions.push({
+            module: input.module,
+            permission: input.permission,
+          });
+          await Permissions.findOneAndUpdate(
+            { role: input.role },
+            { permissions: permission.permissions }
+          );
+        }
+      }
+
+      return res.json({ data: permission });
+    } catch (error) {
+      return res
+        .status(500)
+        .json({ error: { message: "Something went wrong" } });
+    }
+  };
+
+  static createPlanPackages = async (req: Request, res: Response) => {
+    try {
+      const input = req.body;
+
+      const data = await PlanPackages.create(input);
+      return res.json({ data: data });
+    } catch (error) {
+      return res
+        .status(500)
+        .json({ error: { message: "Something went wrong" } });
+    }
+  };
+
+  static getPlanPackages = async (req: Request, res: Response) => {
+    try {
+      const data = await PlanPackages.find();
+      return res.json({ data: data });
+    } catch (error) {
+      return res
+        .status(500)
+        .json({ error: { message: "Something went wrong" } });
+    }
   };
 }

@@ -7,6 +7,7 @@ import { UserInterface } from "../../types/UserInterface";
 import { ClientTablePreference } from "../Models/ClientTablePrefrence";
 import { BusinessDetails } from "../Models/BusinessDetails";
 import { Leads } from "../Models/Leads";
+import { Permissions } from "../Models/Permission";
 
 export class GuestController {
   static setLeadPreferenceAccordingToIndustryInDB = async (
@@ -290,6 +291,25 @@ export class GuestController {
       });
     });
     return res.json({ data: users });
+  };
+
+  static assignPermissionsToAllUsers = async (_req: any, res: Response) => {
+    const users = await User.find({ isDeleted: false });
+    const data = users.map((user) => {
+      return new Promise(async (res, rej) => {
+        const permissions = await Permissions.findOne({ role: user.role });
+        const data = await User.findByIdAndUpdate(
+          user.id,
+          {
+            permissions: permissions?.permissions,
+          },
+          { new: true }
+        );
+        res(data);
+      });
+    });
+    const result = await Promise.all(data);
+    return res.json({ data: result });
   };
 }
 

@@ -4,7 +4,10 @@ import { RolesEnum } from "../../types/RolesEnum";
 import { ValidationErrorResponse } from "../../types/ValidationErrorResponse";
 import { leadsAlertsEnums } from "../../utils/Enums/leads.Alerts.enum";
 import { checkOnbOardingComplete } from "../../utils/Functions/OnboardingComplete";
-import { ONBOARDING_KEYS } from "../../utils/constantFiles/OnBoarding.keys";
+import {
+  ONBOARDING_KEYS,
+  ONBOARDING_PERCENTAGE,
+} from "../../utils/constantFiles/OnBoarding.keys";
 import { UserLeadDetailsInput } from "../Inputs/user.leadDetails.input";
 import {
   // sendEmailForNewRegistration,
@@ -26,6 +29,8 @@ import {
 } from "../../utils/Functions/findModifiedColumns";
 import { ActivityLogs } from "../Models/ActivityLogs";
 import { fullySignupForNonBillableClients } from "../../utils/webhookUrls/fullySignupForNonBillableClients";
+import { cmsUpdateBuyerWebhook } from "../../utils/webhookUrls/cmsUpdateBuyerWebhook";
+import { CardDetails } from "../Models/CardDetails";
 
 export class UserLeadsController {
   static create = async (req: Request, res: Response) => {
@@ -122,7 +127,7 @@ export class UserLeadsController {
       const details = await UserLeadsDetails.create(dataToSave);
       await User.findByIdAndUpdate(input.userId, {
         userLeadsDetailsId: details._id,
-        onBoardingPercentage: input?.onBoardingPercentage,
+        onBoardingPercentage: ONBOARDING_PERCENTAGE.LEAD_DETAILS,
       });
       if (
         (checkOnbOardingComplete(user) && !user.registrationMailSentToAdmin) ||
@@ -400,6 +405,12 @@ export class UserLeadsController {
             await ActivityLogs.create(activity);
           }
         }
+        const card = await CardDetails.findOne({
+          userId: userr?.id,
+          isDeleted: false,
+          isDefault: true,
+        });
+        cmsUpdateBuyerWebhook(userr?.id, card?.id);
         return res.json({
           data: {
             message: "UserLeadsDetails updated successfully.",

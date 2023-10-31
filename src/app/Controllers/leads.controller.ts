@@ -31,21 +31,17 @@ import { sort } from "../../utils/Enums/sorting.enum";
 import { sendLeadDataToZap } from "../../utils/webhookUrls/sendDataZap";
 import { WHITE_LIST_IP } from "../../local";
 import { BuisnessIndustries } from "../Models/BuisnessIndustries";
-import { LeadTablePreferenceInterface } from "../../types/LeadTablePreferenceInterface";
 import { Column } from "../../types/ColumnsPreferenceInterface";
-import mongoose from "mongoose";
+import mongoose, { Types } from "mongoose";
 import { PREMIUM_PROMOLINK } from "../../utils/constantFiles/spotDif.offers.promoLink";
 import { Notifications } from "../Models/Notifications";
 import { BusinessDetails } from "../Models/BusinessDetails";
 import { notify } from "../../utils/notifications/leadNotificationToUser";
 import { APP_ENV } from "../../utils/Enums/serverModes.enum";
 import { UserInterface } from "../../types/UserInterface";
-import { leadReprocessWebhook } from "../../utils/webhookUrls/leadsReprocessWebhook";
+// import { leadReprocessWebhookLeadCenter } from "../../utils/webhookUrls/leadsReprocessWebhook";
 import { LeadsInterface } from "../../types/LeadsInterface";
-// import {
-//   UserLeadsDetailsInterface,
-//   isUserLeadDetailsObject,
-// } from "../../types/LeadDetailsInterface";
+
 const ObjectId = mongoose.Types.ObjectId;
 
 const LIMIT = 10;
@@ -54,6 +50,9 @@ interface DataObject {
   [key: string]: any;
 }
 
+type BidFilter = {
+  $in: string[];
+};
 export class LeadsController {
   static create = async (req: Request, res: Response) => {
     if (process.env.APP_ENV === APP_ENV.PRODUCTION) {
@@ -70,6 +69,9 @@ export class LeadsController {
 
     const bid = req.params.buyerId;
     const input = req.body;
+    if (Object.keys(input).length === 0) {
+      return res.status(400).json({ error: { message: "Data Required." } });
+    }
     const user: any = await User.findOne({ buyerId: bid })
       .populate("userLeadsDetailsId")
       .populate("businessDetailsId");
@@ -93,11 +95,19 @@ export class LeadsController {
         $lt: endOfDay,
       },
     });
+
     if (previous.length >= user.userLeadsDetailsId?.daily) {
+      const ukOffset = 0;
+      const utcDatePlus1Hour = new Date(new Date().getTime() + 60 * 60 * 1000);
+      const ukDate = new Date(
+        utcDatePlus1Hour.getTime() + ukOffset * 60 * 60 * 1000
+      );
+      const ukDateString = ukDate.toUTCString();
+
       const debuggingLogs = {
         yesterday: today.toUTCString(),
         today: endOfDay.toUTCString(),
-        currentServerTime: new Date().toUTCString(),
+        currentServerTime: ukDateString,
       };
       return res.status(400).json({
         error: {
@@ -110,14 +120,6 @@ export class LeadsController {
       (await Leads.findOne({ bid: user?.buyerId })
         .sort({ rowIndex: -1 })
         .limit(1)) ?? ({} as LeadsInterface);
-    const leadsSave = await Leads.create({
-      bid: bid,
-      leadsCost: user.leadCost,
-      leads: input,
-      status: leadsStatusEnums.VALID,
-      industryId: user.businessIndustryId,
-      rowIndex: leads?.rowIndex + 1 || 0,
-    });
 
     if (user.isSmsNotificationActive) {
       const dataToSent = {
@@ -138,8 +140,18 @@ export class LeadsController {
       isDefault: true,
       isDeleted: false,
     });
+    let leadsSave;
+    // if (cardDetails) {
     const credits = user?.credits;
     let leftCredits;
+    leadsSave = await Leads.create({
+      bid: bid,
+      leadsCost: user.leadCost,
+      leads: input,
+      status: leadsStatusEnums.VALID,
+      industryId: user.businessIndustryId,
+      rowIndex: leads?.rowIndex + 1 || 0,
+    });
     if (user.isLeadCostCheck) {
       leadcpl = user.leadCost;
       leftCredits = credits - user?.leadCost;
@@ -189,6 +201,7 @@ export class LeadsController {
       creditsLeft: user?.credits - leadcpl,
     };
     await Transaction.create(dataToSave);
+
     if (
       user.userLeadsDetailsId?.leadAlertsFrequency == leadsAlertsEnums.INSTANT
     ) {
@@ -208,23 +221,12 @@ export class LeadsController {
         phone: input.phone1,
         email: input.email,
       };
-      //hot-fix for production
       let emails: string[] = [user.email];
       const invitedUsers = await User.find({
         role: RolesEnum.INVITED,
         invitedById: user.id,
         isDeleted: false,
       }).populate("userLeadsDetailsId");
-
-      /*      invitedUsers.map((iUser) => {
-        const userLeadFreq: UserLeadsDetailsInterface | null =
-          isUserLeadDetailsObject(user?.userLeadsDetailsId)
-            ? user?.userLeadsDetailsId
-            : null;
-        if (userLeadFreq?.leadAlertsFrequency == leadsAlertsEnums.INSTANT) {
-          emails.push(iUser.email);
-        }
-      });*/
       invitedUsers.map((iUser) => {
         if (
           //@ts-ignore
@@ -234,7 +236,9 @@ export class LeadsController {
           emails.push(iUser.email);
         }
       });
-      sendEmailForNewLead(emails, message);
+      emails.map((users) => {
+        sendEmailForNewLead(users, message);
+      });
     }
 
     return res.json({ data: leadsSave });
@@ -243,12 +247,14 @@ export class LeadsController {
   static update = async (req: Request, res: Response): Promise<any> => {
     const leadId = req.params.id;
     const input = req.body;
-    const lead = await Leads.findById(leadId);
+    const lead: any = (await Leads.findById(leadId)) ?? ({} as LeadsInterface);
     try {
       if (!lead) {
         return res.status(404).json({ error: { message: "Lead Not Found" } });
       }
-      const user: any = await User.findOne({ buyerId: lead?.bid });
+      const user: any = await User.findOne({ buyerId: lead?.bid })
+        .populate("businessDetailsId")
+        .populate("businessIndustryId");
       if (!user) {
         return res
           .status(400)
@@ -288,22 +294,34 @@ export class LeadsController {
           { new: true }
         );
       }
-      if (
-        input.status === leadsStatusEnums.REPROCESS &&
-        lead.status !== leadsStatusEnums.REPORT_REJECTED &&
-        lead.status !== leadsStatusEnums.REPROCESS
-      ) {
-        return res.status(400).json({
-          error: {
-            message: `You can not reprocess the ${lead.status} lead.`,
+
+      if (input.isReprocessed) {
+        // const dataToSend = {
+        //   lead_id: lead.bid,
+
+        //   industry: user.businessIndustryId.industry,
+
+        //   client: user.businessDetailsId.businessName,
+
+        //   supplier: lead?.leads?.sid,
+
+        //   cpl: user.leadCost,
+
+        //   reason: lead.invalidLeadReason,
+
+        //   reason_detail: lead.clientNotes,
+        // };
+
+        await Leads.findByIdAndUpdate(
+          leadId,
+          {
+            isReprocessed: true,
+            reprocessedAt: new Date(),
           },
-        });
-      }
-      if (input.status === leadsStatusEnums.REPROCESS) {
-        const dataToSend = {
-          leadId: lead.bid,
-        };
-        leadReprocessWebhook(dataToSend);
+          { new: true }
+        );
+        // leadReprocessWebhook(dataToSend);
+        // leadReprocessWebhookLeadCenter(dataToSend);
       }
       if (
         lead?.status != leadsStatusEnums.REPORTED &&
@@ -462,7 +480,7 @@ export class LeadsController {
             { "leads.county": { $regex: _req.query.search, $options: "i" } },
           ],
         };
-        skip = 0;
+        // skip = 0;
       }
 
       const [query]: any = await Leads.aggregate([
@@ -797,7 +815,7 @@ export class LeadsController {
       perPage;
 
     try {
-      let dataToFind: any = {};
+      let dataToFind: any = { status: { $nin: [leadsStatusEnums.ARCHIVED] } };
       const user = await User.findById(userId);
       if (user?.role == RolesEnum.INVITED) {
         const invitedBy = await User.findOne({ _id: user?.invitedById });
@@ -818,11 +836,11 @@ export class LeadsController {
             { bid: { $regex: _req.query.search, $options: "i" } },
             { status: { $regex: _req.query.search, $options: "i" } },
             { "leads.email": { $regex: _req.query.search, $options: "i" } },
-            { "leads.firstName": { $regex: _req.query.search, $options: "i" } },
-            { "leads.lastName": { $regex: _req.query.search, $options: "i" } },
+            { "leads.firstname": { $regex: _req.query.search, $options: "i" } },
+            { "leads.lastname": { $regex: _req.query.search, $options: "i" } },
           ],
         };
-        skip = 0;
+        // skip = 0;
       }
       const [query]: any = await Leads.aggregate([
         {
@@ -985,7 +1003,6 @@ export class LeadsController {
                 leadsStatusEnums.REPORTED,
                 leadsStatusEnums.REPORT_ACCEPTED,
                 leadsStatusEnums.REPORT_REJECTED,
-                leadsStatusEnums.REPROCESS,
                 leadsStatusEnums.ARCHIVED,
               ],
             },
@@ -1025,11 +1042,11 @@ export class LeadsController {
             { bid: { $regex: _req.query.search, $options: "i" } },
             { status: { $regex: _req.query.search, $options: "i" } },
             { "leads.email": { $regex: _req.query.search, $options: "i" } },
-            { "leads.firstName": { $regex: _req.query.search, $options: "i" } },
-            { "leads.lastName": { $regex: _req.query.search, $options: "i" } },
+            { "leads.firstname": { $regex: _req.query.search, $options: "i" } },
+            { "leads.lastname": { $regex: _req.query.search, $options: "i" } },
           ],
         };
-        skip = 0;
+        // skip = 0;
       }
       if (status) {
         dataToFind.status = status;
@@ -1242,11 +1259,11 @@ export class LeadsController {
             { bid: { $regex: _req.query.search, $options: "i" } },
             { status: { $regex: _req.query.search, $options: "i" } },
             { "leads.email": { $regex: _req.query.search, $options: "i" } },
-            { "leads.firstName": { $regex: _req.query.search, $options: "i" } },
-            { "leads.lastName": { $regex: _req.query.search, $options: "i" } },
+            { "leads.firstname": { $regex: _req.query.search, $options: "i" } },
+            { "leads.lastname": { $regex: _req.query.search, $options: "i" } },
           ],
         };
-        skip = 0;
+        // skip = 0;
       }
 
       const [query]: any = await Leads.aggregate([
@@ -1420,7 +1437,6 @@ export class LeadsController {
                 leadsStatusEnums.REPORTED,
                 leadsStatusEnums.REPORT_ACCEPTED,
                 leadsStatusEnums.REPORT_REJECTED,
-                leadsStatusEnums.REPROCESS,
                 leadsStatusEnums.ARCHIVED,
 
                 leadsStatusEnums.VALID,
@@ -1458,11 +1474,20 @@ export class LeadsController {
             { bid: { $regex: _req.query.search, $options: "i" } },
             { status: { $regex: _req.query.search, $options: "i" } },
             { "leads.email": { $regex: _req.query.search, $options: "i" } },
-            { "leads.firstName": { $regex: _req.query.search, $options: "i" } },
-            { "leads.lastName": { $regex: _req.query.search, $options: "i" } },
+            { "leads.firstname": { $regex: _req.query.search, $options: "i" } },
+            { "leads.lastname": { $regex: _req.query.search, $options: "i" } },
           ],
         };
-        skip = 0;
+        // skip = 0;
+      }
+      if (_req.user.role === RolesEnum.ACCOUNT_MANAGER) {
+        const users = await User.find({
+          accountManager: _req.user._id,
+        });
+        users.map((user: UserInterface) => {
+          return bids.push(user.buyerId);
+        });
+        dataToFind.bid = { $in: bids };
       }
       const [query]: any = await Leads.aggregate([
         {
@@ -1485,9 +1510,9 @@ export class LeadsController {
                   as: "accountManager",
                 },
               },
-              {
-                $unwind: "$accountManager",
-              },
+              // {
+              //   $unwind: "$accountManager",
+              // },
               { $sort: { createdAt: sortingOrder } },
 
               { $skip: skip },
@@ -1542,16 +1567,15 @@ export class LeadsController {
             item["clientName"][0]?.lastName;
 
           item.leads.accountManager =
-            item["accountManager"]?.firstName +
+            (item["accountManager"][0]?.firstName || "") +
             " " +
-            (item["accountManager"].lastName || "");
+            (item["accountManager"][0]?.lastName || "");
         } else {
           item.leads.clientName = "Deleted User";
         }
         item.leads.businessName = "Deleted";
         item.leads.businessIndustry = "Deleted";
         item.leads.status = item?.status;
-
         // Use explicit Promise construction
         return new Promise((resolve, reject) => {
           BusinessDetails.findById(item["clientName"][0]?.businessDetailsId)
@@ -1563,10 +1587,10 @@ export class LeadsController {
                 item.leads.businessName = "Deleted";
                 item.leads.businessIndustry = "Deleted";
               }
-
               resolve(item); // Resolve the promise with the modified item
             })
             .catch((error) => {
+              console.log("err", error);
               // item.leads.businessName = "Deleted";
               // item.leads.businessIndustry = "Deleted";
               reject(error); // Reject the promise if there's an error
@@ -2122,8 +2146,7 @@ export class LeadsController {
           " " +
           item["clientName"][0]?.lastName;
       });
-      const pref: LeadTablePreferenceInterface | null =
-        await LeadTablePreference.findOne({ userId: user?.id });
+      const pref = await BuisnessIndustries.findById(user?.businessIndustryId);
       let filteredDataArray: DataObject[];
       if (!pref) {
         filteredDataArray = [{}];
@@ -2135,8 +2158,15 @@ export class LeadsController {
         );
       }
 
+      const resultArray = filteredDataArray.map((obj) => {
+        const newObj: Record<string, string> = {};
+        for (const key in obj) {
+          newObj[key] = obj[key] === undefined ? "" : obj[key];
+        }
+        return newObj;
+      });
       return res.json({
-        data: filteredDataArray,
+        data: resultArray,
       });
     } catch (err) {
       return res.status(500).json({
@@ -2151,6 +2181,7 @@ export class LeadsController {
   static exportCsvFileAdminLeads = async (_req: any, res: Response) => {
     const status = _req.query.status;
     let id = _req.query.id;
+    let industry = _req.query.industry;
     let sortingOrder = _req.query.sortingOrder || sort.DESC;
     if (sortingOrder == sort.ASC) {
       sortingOrder = 1;
@@ -2176,6 +2207,14 @@ export class LeadsController {
       if (id) {
         const user = await User.findById(id);
         dataToFind.bid = user?.buyerId;
+      }
+      if (industry) {
+        let bids: any = [];
+        const users = await User.find({ businessIndustryId: industry });
+        users.map((user) => {
+          return bids.push(user.buyerId);
+        });
+        dataToFind.bid = { $in: bids };
       }
       if (_req.query.search) {
         dataToFind = {
@@ -2229,16 +2268,55 @@ export class LeadsController {
           " " +
           item["clientName"][0]?.lastName;
       });
-      const pref: LeadTablePreferenceInterface | null =
-        await LeadTablePreference.findOne({ userId: _req.user.id });
-
+      // const pref: LeadTablePreferenceInterface | null =
+      //   await LeadTablePreference.findOne({ userId: _req.user.id });
+      const pref = await BuisnessIndustries.aggregate([
+        {
+          $unwind: "$columns",
+        },
+        {
+          $group: {
+            _id: "$columns.originalName",
+            isVisible: { $first: "$columns.isVisible" },
+            displayName: { $first: "$columns.displayName" },
+            index: { $first: "$columns.index" },
+          },
+        },
+        {
+          $project: {
+            _id: 0,
+            isVisible: 1,
+            originalName: "$_id",
+            displayName: 1,
+            index: 1,
+          },
+        },
+        {
+          $group: {
+            _id: null,
+            columns: { $push: "$$ROOT" },
+          },
+        },
+        {
+          $project: {
+            _id: 0,
+          },
+        },
+      ]);
       const filteredDataArray: DataObject[] = filterAndTransformData(
         //@ts-ignore
-        pref?.columns,
+        pref[0]?.columns,
         convertArray(query.results)
       );
+      const resultArray = filteredDataArray.map((obj) => {
+        const newObj: Record<string, string> = {};
+        for (const key in obj) {
+          newObj[key] = obj[key] === undefined ? "" : obj[key];
+        }
+        return newObj;
+      });
       return res.json({
-        data: filteredDataArray,
+        data: resultArray,
       });
     } catch (err) {
       return res.status(500).json({
@@ -2252,18 +2330,63 @@ export class LeadsController {
 
   static leadsStat = async (_req: any, res: Response) => {
     try {
-      const valid = await Leads.find({
+      let dataToFindForValid: Record<
+        string,
+        string | Types.ObjectId | string[] | BidFilter
+      > = {
         status: leadsStatusEnums.VALID,
-      }).count();
-      const reported = await Leads.find({
+      };
+      let dataToFindForReported: Record<
+        string,
+        string | Types.ObjectId | string[] | BidFilter
+      > = {
         status: leadsStatusEnums.REPORTED,
-      }).count();
-      const reportAccepted = await Leads.find({
+      };
+      let dataToFindForReportAccepted: Record<
+        string,
+        string | Types.ObjectId | string[] | BidFilter
+      > = {
         status: leadsStatusEnums.REPORT_ACCEPTED,
-      }).count();
-      const reportRejected = await Leads.find({
+      };
+      let dataToFindForReportRejected: Record<
+        string,
+        string | Types.ObjectId | string[] | BidFilter
+      > = {
         status: leadsStatusEnums.REPORT_REJECTED,
-      }).count();
+      };
+
+      if (_req.user.role === RolesEnum.ACCOUNT_MANAGER) {
+        let bids: string[] = [];
+        const users = await User.find({
+          accountManager: _req.user._id,
+        });
+        users.map((user: UserInterface) => {
+          return bids.push(user.buyerId);
+        });
+        dataToFindForReportAccepted.bid = { $in: bids };
+        dataToFindForReportRejected.bid = { $in: bids };
+        dataToFindForReported.bid = { $in: bids };
+        dataToFindForValid.bid = { $in: bids };
+      }
+
+      if (_req.user.role === RolesEnum.USER) {
+        let bids: string[] = [];
+        const users =
+          (await User.findById(_req.user._id)) ?? ({} as UserInterface);
+        bids.push(users?.buyerId);
+        dataToFindForReportAccepted.bid = { $in: bids };
+        dataToFindForReportRejected.bid = { $in: bids };
+        dataToFindForReported.bid = { $in: bids };
+        dataToFindForValid.bid = { $in: bids };
+      }
+      const valid = await Leads.find(dataToFindForValid).count();
+      const reported = await Leads.find(dataToFindForReported).count();
+      const reportAccepted = await Leads.find(
+        dataToFindForReportAccepted
+      ).count();
+      const reportRejected = await Leads.find(
+        dataToFindForReportRejected
+      ).count();
       const dataToShow = {
         validLeads: valid,
         reportedLeads: reported,
@@ -2312,11 +2435,6 @@ function filterAndTransformData(
 ): DataObject[] {
   return dataArray.map((dataObj: DataObject) => {
     const filteredData: DataObject = {};
-    // columns.forEach((column: Column) => {
-    //   if (column.isVisible) {
-    //     filteredData[column.newName || column.name] = dataObj[column.name];
-    //   }
-    // });
     columns.forEach((column: Column) => {
       if (column.isVisible) {
         filteredData[column.displayName || column.originalName] =

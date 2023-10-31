@@ -1,45 +1,41 @@
 import axios from "axios";
-import { checkAccess } from "../../app/Middlewares/serverAccess";
 import { User } from "../../app/Models/User";
 import { CardDetails } from "../../app/Models/CardDetails";
-const POST = "post";
-export const fully_signup_with_credits =async (userId: String, cardId: String) => {
-  const data =await userData(userId, cardId);
 
+const POST = "post";
+export const cmsUpdateBuyerWebhook = async (userId: String, cardId: String) => {
+  const data = await userData(userId, cardId);
   return new Promise((resolve, reject) => {
     let config = {
       method: POST,
-      url: process.env.FULLY_SIGNUP_USER_WEBHOOK_URL,
+      url: process.env.CMS_UPDATE_BUYER_WEBHOOK_URL,
       headers: {
         "Content-Type": "application/json",
-        "API-KEY": process.env.BUSINESS_DETAILS_SUBMISSION_API_KEY,
+        Authorization: `Bearer ${process.env.CMS_UPDATE_BUYER_WEBHOOK_KEY}`,
       },
       data: data,
     };
-    if (checkAccess()) {
-      axios(config)
-        .then(async (response) => {
-          console.log("fully_signup_with_credits webhook hits successfully", response.data);
-        })
-        .catch((err) => {
-          console.log("fully_signup_with_credits webhook hits error", err.response?.data);
-        });
-    } else {
-      console.log(
-        "No Access for hitting business submission webhook to this " +
-          process.env.APP_ENV
-      );
-    }
+
+    axios(config)
+      .then(async (response) => {
+        console.log(
+          "cms update buyer webhook hits successfully",
+          response.data
+        );
+      })
+      .catch((err) => {
+        console.log("cms update buyer webhook hits error", err.response?.data);
+      });
   });
 };
 
-export const userData = async (userId: String, cardId: String) => {
+const userData = async (userId: String, cardId: String) => {
   const user: any = await User.findById(userId)
     .populate("businessDetailsId")
     .populate("userLeadsDetailsId")
     .populate("userServiceId");
   const cards = await CardDetails.findById(cardId);
-  let data:any = {
+  let data: any = {
     firstName: user?.firstName,
     lastName: user?.lastName,
     email: user?.email,
@@ -66,8 +62,10 @@ export const userData = async (userId: String, cardId: String) => {
     smsPhoneNumber: user?.smsPhoneNumber,
     isSignUpCompleteWithCredit: user?.isSignUpCompleteWithCredit,
     daily: user?.userLeadsDetailsId?.daily,
-    leadSchedule: user?.userLeadsDetailsId?.leadSchedule,
-    postCodeTargettingList: user?.userLeadsDetailsId?.postCodeTargettingList,
+    leadSchedule: JSON.stringify(user?.userLeadsDetailsId?.leadSchedule),
+    postCodeTargettingList: JSON.stringify(
+      user?.userLeadsDetailsId?.postCodeTargettingList
+    ),
     leadAlertsFrequency: user?.userLeadsDetailsId?.leadAlertsFrequency,
     zapierUrl: user?.userLeadsDetailsId?.zapierUrl,
     sendDataToZapier: user?.userLeadsDetailsId?.sendDataToZapier,
@@ -80,13 +78,15 @@ export const userData = async (userId: String, cardId: String) => {
     businessAddress: user?.businessDetailsId?.businessAddress,
     businessCity: user?.businessDetailsId?.businessCity,
     businessPostCode: user?.businessDetailsId?.businessPostCode,
-    businessOpeningHours: user?.businessDetailsId?.businessOpeningHours,
+    businessOpeningHours: JSON.stringify(
+      user?.businessDetailsId?.businessOpeningHours
+    ),
     financeOffers: user?.userServiceId?.financeOffers,
     prices: user?.userServiceId?.prices,
     accreditations: user?.userServiceId?.accreditations,
     avgInstallTime: user?.userServiceId?.avgInstallTime,
     trustpilotReviews: user?.userServiceId?.trustpilotReviews,
-    criteria: user?.userServiceId?.criteria,
+    criteria: JSON.stringify(user?.userServiceId?.criteria),
     cardHolderName: cards?.cardHolderName,
     cardNumber: cards?.cardNumber,
     amount: cards?.amount,
@@ -94,10 +94,10 @@ export const userData = async (userId: String, cardId: String) => {
     paymentMethod: cards?.paymentMethod,
     paymentSessionID: cards?.paymentSessionID,
     status: cards?.status,
-    leadUrl:`${process.env.APP_URL}/api/v1/leads/${user?.buyerId}`
+    leadUrl: `${process.env.APP_URL}/api/v1/leads/${user?.buyerId}`,
   };
-  if(user?.businessDetailsId?.businessLogo){
-    data.businessLogo = `${process.env.APP_URL}${user?.businessDetailsId?.businessLogo}`
+  if (user?.businessDetailsId?.businessLogo) {
+    data.businessLogo = `${process.env.APP_URL}${user?.businessDetailsId?.businessLogo}`;
   }
 
   return data;

@@ -1,16 +1,72 @@
-import { Router} from "express";
-import {IndustryController} from "../app/Controllers/industry.controller";
-import {OnlyAdmins } from "../app/Middlewares";
+import { Router } from "express";
+import { IndustryController } from "../app/Controllers/industry.controller";
+import { Auth, OnlyAdmins } from "../app/Middlewares";
+import { checkPermissions } from "../app/Middlewares/roleBasedAuthentication";
+import { MODULE, PERMISSIONS } from "../utils/Enums/permissions.enum";
 const industry: Router = Router();
-industry.post("/:id",OnlyAdmins,IndustryController.update);
-industry.patch("/:id",OnlyAdmins,IndustryController.update);
-industry.post("/",OnlyAdmins,IndustryController.create);
-industry.get("/",OnlyAdmins,IndustryController.view);
-industry.get("/industry",IndustryController.showIndustries);
-industry.delete("/:id",OnlyAdmins,IndustryController.delete);
-industry.get("/:id",OnlyAdmins,IndustryController.viewbyId);
-industry.patch("/renameColumns/:id",OnlyAdmins,IndustryController.renameCustomColumns);
-industry.get("/renameColumns/:id",OnlyAdmins,IndustryController.showCustomColumnsName);
-
+industry.post(
+  "/:id",
+  OnlyAdmins,
+  checkPermissions([
+    { module: MODULE.BUSINESS_INDUSTRIES, permission: PERMISSIONS.UPDATE },
+  ]),
+  IndustryController.update
+);
+industry.patch(
+  "/:id",
+  OnlyAdmins,
+  checkPermissions([
+    { module: MODULE.BUSINESS_INDUSTRIES, permission: PERMISSIONS.UPDATE },
+  ]),
+  IndustryController.update
+);
+industry.post(
+  "/",
+  OnlyAdmins,
+  checkPermissions([
+    { module: MODULE.BUSINESS_INDUSTRIES, permission: PERMISSIONS.CREATE },
+  ]),
+  IndustryController.create
+);
+industry.get(
+  "/",
+  Auth,
+  checkPermissions([
+    { module: MODULE.BUSINESS_INDUSTRIES, permission: PERMISSIONS.READ },
+  ]),
+  IndustryController.view
+);
+industry.get(
+  "/stats",
+  OnlyAdmins,
+  checkPermissions([
+    { module: MODULE.BUSINESS_INDUSTRIES, permission: PERMISSIONS.READ },
+  ]),
+  IndustryController.stats
+);
+industry.get(
+  "/industry",
+  Auth,
+  checkPermissions([
+    { module: MODULE.BUSINESS_INDUSTRIES, permission: PERMISSIONS.READ },
+  ]),
+  IndustryController.showIndustries
+);
+industry.delete(
+  "/:id",
+  OnlyAdmins,
+  checkPermissions([
+    { module: MODULE.BUSINESS_INDUSTRIES, permission: PERMISSIONS.DELETE },
+  ]),
+  IndustryController.delete
+);
+industry.get(
+  "/:id",
+  OnlyAdmins,
+  checkPermissions([
+    { module: MODULE.BUSINESS_INDUSTRIES, permission: PERMISSIONS.READ },
+  ]),
+  IndustryController.viewbyId
+);
 
 export default industry;
