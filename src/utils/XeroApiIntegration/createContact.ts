@@ -5,13 +5,17 @@ import { BusinessDetails } from "../../app/Models/BusinessDetails";
 import { createNotesOnXero } from "./addNotesToCustomer";
 // let FormData = require("form-data");
 import FormData from "form-data";
+import { LOGS_STATUS } from "../Enums/logs.status.enum";
+import { PORTAL } from "../Enums/portal.enum";
+import { saveLogs } from "../Functions/saveLogs";
+import { REGISTRATION_IDS } from "../constantFiles/errorConstants";
 
 const POST = "post";
 export const createContactOnXero = (
   paramsToCreateContact: any,
   token: string
 ) => {
-  let data:any = {
+  let data: any = {
     Name: paramsToCreateContact?.businessName,
     FirstName: paramsToCreateContact?.firstName,
     LastName: paramsToCreateContact?.lastName,
@@ -26,8 +30,8 @@ export const createContactOnXero = (
       },
     ],
   };
-  if(paramsToCreateContact.ContactID){
-    data.ContactID=paramsToCreateContact.ContactID
+  if (paramsToCreateContact.ContactID) {
+    data.ContactID = paramsToCreateContact.ContactID;
   }
   return new Promise(async (resolve, reject) => {
     const config = {
@@ -41,41 +45,69 @@ export const createContactOnXero = (
       },
       data: JSON.stringify(data),
     };
+    let user = await User.findOne(paramsToCreateContact.email);
     axios(config)
-      .then((data) => {
-        const params={contactID:data.data.Contacts[0].ContactID,email:paramsToCreateContact.emailAddress}
-        createNotesOnXero(params,token).then(()=>console.log("notes added on xero")).catch((err)=>console.log("error while adding notes on xero."))
+      .then(async (data) => {
+        const params = {
+          contactID: data?.data?.Contacts[0]?.ContactID,
+          email: paramsToCreateContact.emailAddress,
+        };
+        createNotesOnXero(params, token)
+          .then(() => console.log("notes added on xero"))
+          .catch((err) => console.log("error while adding notes on xero."));
+        const logsData = {
+          userId: user?.id,
+          registrationId: data?.data?.Contacts[0]?.ContactID,
+          status: LOGS_STATUS.SUCCESS,
+          portal: PORTAL.XERO,
+        };
+        await saveLogs(logsData);
         resolve(data);
       })
       .catch(async (err) => {
         console.log("Xero Error", err?.response?.data);
+        const logsData = {
+          userId: user?.id,
+          registrationId: REGISTRATION_IDS.NO_REGISTRATION_IDS,
+          status: LOGS_STATUS.FAIL,
+          portal: PORTAL.XERO,
+          notes: err,
+        };
+        await saveLogs(logsData);
         reject(err);
       });
   });
 };
 
 export const addUserXeroId = async (userId: string) => {
-  let user =await User.findById(userId);
-  let business=await BusinessDetails.findById(user?.businessDetailsId)
-  const paramsToCreateContact={
-    name : user?.firstName + " " + user?.lastName,
-    firstName:user?.firstName,
-    lastName:user?.lastName,
-    emailAddress:user?.email,
-    addressLine1:business?.businessIndustry,
-    addressLine2:business?.businessName,
-    city:business?.businessCity,
-    postalCode:business?.businessPostCode
-  }
+  let user = await User.findById(userId);
+  let business = await BusinessDetails.findById(user?.businessDetailsId);
+  const paramsToCreateContact = {
+    name: user?.firstName + " " + user?.lastName,
+    firstName: user?.firstName,
+    lastName: user?.lastName,
+    emailAddress: user?.email,
+    addressLine1: business?.businessIndustry,
+    addressLine2: business?.businessName,
+    city: business?.businessCity,
+    postalCode: business?.businessPostCode,
+  };
   let token: any = await AccessToken.findOne();
   //@ts-ignore
   await refreshToken();
   token = await AccessToken.findOne();
-  const res = await createContactOnXero(paramsToCreateContact, token?.access_token);
+  const res: any = await createContactOnXero(
+    paramsToCreateContact,
+    token?.access_token
+  );
   await User.findOneAndUpdate(
     { _id: userId },
-    //@ts-ignore
-    { $set: { xeroContactId: res?.data?.Contacts[0]?.ContactID , isXeroCustomer:true} }
+    {
+      $set: {
+        xeroContactId: res?.data?.Contacts[0]?.ContactID,
+        isXeroCustomer: true,
+      },
+    }
   );
   //@ts-ignore
   user = await User.findById(userId);

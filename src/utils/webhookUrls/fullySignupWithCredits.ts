@@ -3,8 +3,11 @@ import { checkAccess } from "../../app/Middlewares/serverAccess";
 import { User } from "../../app/Models/User";
 import { CardDetails } from "../../app/Models/CardDetails";
 const POST = "post";
-export const fullySignupWithCredits =async (userId: String, cardId: String) => {
-  const data =await userData(userId, cardId);
+export const fullySignupWithCredits = async (
+  userId: String,
+  cardId: String
+) => {
+  const data = await userData(userId, cardId);
   return new Promise((resolve, reject) => {
     let config = {
       method: POST,
@@ -18,14 +21,20 @@ export const fullySignupWithCredits =async (userId: String, cardId: String) => {
     if (checkAccess()) {
       axios(config)
         .then(async (response) => {
-          console.log("fullySignupWithCredits webhook hits successfully", response.data);
+          console.log(
+            "fullySignupWithCredits webhook hits successfully",
+            response.data
+          );
         })
         .catch((err) => {
-          console.log("fullySignupWithCredits webhook hits error", err.response?.data);
+          console.log(
+            "fullySignupWithCredits webhook hits error",
+            err.response?.data
+          );
         });
     } else {
       console.log(
-        "No Access for hitting business submission webhook to this " +
+        "No Access for hitting fullySignupWithCredits webhook to this " +
           process.env.APP_ENV
       );
     }
@@ -38,7 +47,7 @@ export const userData = async (userId: String, cardId: String) => {
     .populate("userLeadsDetailsId")
     .populate("userServiceId");
   const cards = await CardDetails.findById(cardId);
-  let data:any = {
+  let data: any = {
     firstName: user?.firstName,
     lastName: user?.lastName,
     email: user?.email,
@@ -93,10 +102,10 @@ export const userData = async (userId: String, cardId: String) => {
     paymentMethod: cards?.paymentMethod,
     paymentSessionID: cards?.paymentSessionID,
     status: cards?.status,
-    leadUrl:`${process.env.APP_URL}/api/v1/leads/${user?.buyerId}`
+    leadUrl: `${process.env.APP_URL}/api/v1/leads/${user?.buyerId}`,
   };
-  if(user?.businessDetailsId?.businessLogo){
-    data.businessLogo = `${process.env.APP_URL}${user?.businessDetailsId?.businessLogo}`
+  if (user?.businessDetailsId?.businessLogo) {
+    data.businessLogo = `${process.env.APP_URL}${user?.businessDetailsId?.businessLogo}`;
   }
 
   return data;

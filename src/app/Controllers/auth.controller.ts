@@ -11,7 +11,10 @@ import { UserInterface } from "../../types/UserInterface";
 
 import { RolesEnum } from "../../types/RolesEnum";
 import { paymentMethodEnum } from "../../utils/Enums/payment.method.enum";
-import { ONBOARDING_KEYS } from "../../utils/constantFiles/OnBoarding.keys";
+import {
+  ONBOARDING_KEYS,
+  ONBOARDING_PERCENTAGE,
+} from "../../utils/constantFiles/OnBoarding.keys";
 import { createCustomerOnRyft } from "../../utils/createCustomer/createOnRyft";
 import { generateAuthToken } from "../../utils/jwt";
 import { LoginInput } from "../Inputs/Login.input";
@@ -41,7 +44,10 @@ import {
 import { CreateCustomerInput } from "../Inputs/createCustomerOnRyft&Lead.inputs";
 import { BusinessDetails } from "../Models/BusinessDetails";
 import { createCustomersOnRyftAndLeadByte } from "../../utils/createCustomer";
-// import { Permissions } from "../Models/Permission";
+import { Permissions } from "../Models/Permission";
+import { CARD } from "../../utils/Enums/cardType.enum";
+import { createCustomerOnStripe } from "../../utils/createCustomer/createOnStripe";
+import { Types } from "mongoose";
 
 class AuthController {
   static register = async (req: Request, res: Response): Promise<any> => {
@@ -57,7 +63,7 @@ class AuthController {
     const errors = await validate(registerInput);
 
     const adminSettings: AdminSettingsInterface =
-        (await AdminSettings.findOne()) ?? ({} as AdminSettingsInterface);
+      (await AdminSettings.findOne()) ?? ({} as AdminSettingsInterface);
     if (errors.length) {
       const errorsInfo: ValidationErrorResponse[] = errors.map((error) => ({
         property: error.property,
@@ -65,8 +71,8 @@ class AuthController {
       }));
 
       return res
-          .status(400)
-          .json({ error: { message: "VALIDATIONS_ERROR", info: errorsInfo } });
+        .status(400)
+        .json({ error: { message: "VALIDATIONS_ERROR", info: errorsInfo } });
     }
     try {
       const user = await User.findOne({
@@ -78,8 +84,8 @@ class AuthController {
         const salt = genSaltSync(10);
         const hashPassword = hashSync(input.password, salt);
         const showUsers: UserInterface =
-            (await User.findOne().sort({ rowIndex: -1 }).limit(1)) ??
-            ({} as UserInterface);
+          (await User.findOne().sort({ rowIndex: -1 }).limit(1)) ??
+          ({} as UserInterface);
         let checkCode;
         let codeExists;
         if (input.code) {
@@ -94,18 +100,18 @@ class AuthController {
             return res.status(400).json({ data: { message: "Link Invalid!" } });
           }
           if (
-              checkCode.maxUseCounts &&
-              checkCode.maxUseCounts <= checkCode.useCounts
+            checkCode.maxUseCounts &&
+            checkCode.maxUseCounts <= checkCode.useCounts
           ) {
             return res
-                .status(400)
-                .json({ data: { message: "Link has reached maximum limit!" } });
+              .status(400)
+              .json({ data: { message: "Link has reached maximum limit!" } });
           } else {
             codeExists = true;
           }
         }
         input.email = String(input.email).toLowerCase();
-        // const permission = await Permissions.findOne({ role: RolesEnum.USER });
+        const permission = await Permissions.findOne({ role: RolesEnum.USER });
         let dataToSave: Partial<UserInterface> = {
           firstName: input.firstName,
           lastName: input.lastName,
@@ -119,6 +125,7 @@ class AuthController {
           isVerified: true, //need to delete
           rowIndex: showUsers?.rowIndex + 1 || 0,
           paymentMethod: paymentMethodEnum.MANUALLY_ADD_CREDITS_METHOD,
+          onBoardingPercentage: ONBOARDING_PERCENTAGE.USER_DETAILS,
           onBoarding: [
             {
               key: ONBOARDING_KEYS.BUSINESS_DETAILS,
@@ -148,7 +155,7 @@ class AuthController {
               dependencies: [],
             },
           ],
-          // permissions: permission?.permissions,
+          permissions: permission?.permissions,
         };
         // const accManagers = await User.aggregate([
         //   { $match: { role: RolesEnum.ACCOUNT_MANAGER } },
@@ -170,10 +177,10 @@ class AuthController {
         await User.create(dataToSave);
         if (input.code) {
           const checkCode: freeCreditsLinkInterface =
-              (await FreeCreditsLink.findOne({
-                code: input.code,
-                isDeleted: false,
-              })) ?? ({} as freeCreditsLinkInterface);
+            (await FreeCreditsLink.findOne({
+              code: input.code,
+              isDeleted: false,
+            })) ?? ({} as freeCreditsLinkInterface);
           const dataToSave: Partial<freeCreditsLinkInterface> = {
             isUsed: true,
             usedAt: new Date(),
@@ -186,65 +193,87 @@ class AuthController {
         sendEmailForRegistration(input.email, input.firstName);
 
         passport.authenticate(
-            "local",
-            { session: false },
-            (err: any, user: UserInterface, message: Object): any => {
-              if (!user) {
-                if (err) {
-                  return res.status(400).json({ error: err });
-                }
-                return res.status(401).json({ error: message });
-              } else if (!user.isActive) {
-                return res
-                    .status(401)
-                    .json({ data: "User not active.Please contact admin." });
-              } else if (!user.isVerified) {
-                return res.status(401).json({
-                  data: "User not verified.Please verify your account",
-                });
-              } else if (user.isDeleted) {
-                return res
-                    .status(401)
-                    .json({ data: "User is deleted.Please contact admin" });
+          "local",
+          { session: false },
+          (err: any, user: UserInterface, message: Object): any => {
+            if (!user) {
+              if (err) {
+                return res.status(400).json({ error: err });
               }
-              const authToken = generateAuthToken(user);
-              const params: Record<string, any> = {
-                email: user.email,
-                firstName: user.firstName,
-                lastName: user.lastName,
-                userId: user.id,
-              };
-
-              createCustomerOnRyft(params)
-                  .then(async () => {
-                    //@ts-ignore
-                    user.password = undefined;
-                    res.send({
-                      message: "successfully registered",
-                      data: user,
-                      token: authToken,
-                    });
-                  })
-                  .catch(async () => {
-                    await User.findByIdAndDelete(user.id);
-                    return res.status(400).json({
-                      data: {
-                        message:
-                            "Email already exist on RYFT. please try again with another email.",
-                      },
-                    });
-                  });
+              return res.status(401).json({ error: message });
+            } else if (!user.isActive) {
+              return res
+                .status(401)
+                .json({ data: "User not active.Please contact admin." });
+            } else if (!user.isVerified) {
+              return res.status(401).json({
+                data: "User not verified.Please verify your account",
+              });
+            } else if (user.isDeleted) {
+              return res
+                .status(401)
+                .json({ data: "User is deleted.Please contact admin" });
             }
+            const authToken = generateAuthToken(user);
+            const params: Record<string, string | Types.ObjectId> = {
+              email: user.email,
+              firstName: user.firstName,
+              lastName: user.lastName,
+              userId: user.id,
+            };
+            if (process.env.PAYMENT_MODE === CARD.STRIPE) {
+              //fixme:
+              //@ts-ignore
+              createCustomerOnStripe(params)
+                .then(async () => {
+                  //@ts-ignore
+                  user.password = undefined;
+                  res.send({
+                    message: "successfully registered",
+                    data: user,
+                    token: authToken,
+                  });
+                })
+                .catch(async () => {
+                  await User.findByIdAndDelete(user.id);
+                  return res.status(400).json({
+                    data: {
+                      message: "Error while creating customer on stripe",
+                    },
+                  });
+                });
+            } else {
+              createCustomerOnRyft(params)
+                .then(async () => {
+                  //@ts-ignore
+                  user.password = undefined;
+                  res.send({
+                    message: "successfully registered",
+                    data: user,
+                    token: authToken,
+                  });
+                })
+                .catch(async () => {
+                  await User.findByIdAndDelete(user.id);
+                  return res.status(400).json({
+                    data: {
+                      message:
+                        "Email already exist on RYFT. please try again with another email.",
+                    },
+                  });
+                });
+            }
+          }
         )(req, res);
       } else {
         return res
-            .status(400)
-            .json({ data: { message: "User already exists with same email." } });
+          .status(400)
+          .json({ data: { message: "User already exists with same email." } });
       }
     } catch (error) {
       return res
-          .status(500)
-          .json({ error: { message: "Something went wrong." } });
+        .status(500)
+        .json({ error: { message: "Something went wrong." } });
     }
   };
 
@@ -303,6 +332,10 @@ class AuthController {
           return res.status(401).json({
             error: { message: "Admin not active.Please contact super admin." },
           });
+        } else if (!user.isActive && user.role === RolesEnum.ACCOUNT_MANAGER) {
+          return res.status(401).json({
+            error: { message: "Admin not active.Please contact super admin." },
+          });
         } else if (!user.isVerified && user.role === RolesEnum.USER) {
           return res.status(401).json({
             error: {
@@ -314,6 +347,10 @@ class AuthController {
             error: { message: "User is deleted.Please contact admin" },
           });
         } else if (user.isDeleted && user.role === RolesEnum.ADMIN) {
+          return res.status(401).json({
+            error: { message: "Admin is deleted.Please contact super admin" },
+          });
+        } else if (user.isDeleted && user.role === RolesEnum.ACCOUNT_MANAGER) {
           return res.status(401).json({
             error: { message: "Admin is deleted.Please contact super admin" },
           });
@@ -815,9 +852,11 @@ class AuthController {
           })
           .catch((ERR) => {
             console.log("error while creating customer");
+          })
+          .finally(async () => {
+            const data = await User.findById(user.id);
+            return res.json({ data: data });
           });
-        const data = await User.findById(user.id);
-        return res.json({ data: data });
       } else {
         return res.status(400).json({ error: { message: "User Not Found" } });
       }

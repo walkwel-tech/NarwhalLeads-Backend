@@ -23,24 +23,27 @@ const NotificationsSchema = new Schema(
       type: String,
       default: NOTIFICATION_TYPE.EMAIL,
     },
-    MessageSid:{
+    MessageSid: {
       type: String,
       default: null,
     },
-    accountId:{
+    accountId: {
       type: String,
       default: null,
     },
-    MessageStatus:{
+    MessageStatus: {
       type: String,
     },
-    toPhoneNumber:{
-      type:String
+    toPhoneNumber: {
+      type: String,
     },
     createdAt: { type: Date },
-    status:{
+    status: {
       type: String,
-    }
+    },
+    notes: {
+      type: String,
+    },
   },
   { timestamps: true }
 );

@@ -86,19 +86,19 @@ export class Server {
     this.app.use(express.static("public"));
 
     this.app.use("/api/v1/auth", AuthRoutes);
-    this.app.use("/api/v1/auth/business", BusinessDetailsRoutes);
+    this.app.use("/api/v1/auth/business", Auth, BusinessDetailsRoutes);
     this.app.use("/api/v1/profile", Auth, ProfileRoutes);
     this.app.use("/api/v1/cardDetails", CardDetailsRoutes);
     // need to add middleware here for security of only admin or only user login can update themself.
-    this.app.use("/api/v1/user", UserRoutes);
+    this.app.use("/api/v1/user", Auth, UserRoutes);
     this.app.use("/api/v1/adminSettings", AdminSettingsRoutes);
     this.app.use("/api/v1/leads", LeadsRoutes);
     this.app.use("/api/v1/transactions", Auth, TransactionsRoutes);
-    this.app.use("/api/v1/userLeadsDetails", userLeadsDetailsRoutes);
+    this.app.use("/api/v1/userLeadsDetails", Auth, userLeadsDetailsRoutes);
     this.app.use("/api/v1/invitedUsers", Auth, invitedUserRoutes);
     this.app.use("/api/v1/termsAndConditions", TermsAndConditionsRoutes);
-    this.app.use("/api/v1/freeCredits", freeCreditsLinkRoutes);
-    this.app.use("/api/v1/businessIndustry", BusinessIndustriesRoutes);
+    this.app.use("/api/v1/freeCredits", Auth, freeCreditsLinkRoutes);
+    this.app.use("/api/v1/businessIndustry", Auth, BusinessIndustriesRoutes);
     this.app.use("/api/v1/service", Auth, serviceRoutes);
     this.app.use("/api/v1/non-billable-users", Auth, nonBillablesUsers);
     this.app.use("/api/v1/guest", Auth, guestRoutes);

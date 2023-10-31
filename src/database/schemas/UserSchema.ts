@@ -27,7 +27,6 @@ const UserSchema = new Schema(
     },
     leadCost: {
       type: Number,
-      default: 10,
       required: false,
     },
     phoneNumber: {
@@ -124,6 +123,12 @@ const UserSchema = new Schema(
       type: String,
       // default: false,
     },
+    stripeClientId: {
+      type: String,
+    },
+    isStripeCustomer: {
+      type: Boolean,
+    },
     rowIndex: {
       type: Number,
       default: 0,
@@ -188,12 +193,15 @@ const UserSchema = new Schema(
     },
     isCreditsAndBillingEnabled: {
       type: Boolean,
-      default: false,
+      default: true,
     },
     accountManager: {
       type: Types.ObjectId,
       ref: "User",
       default: null,
+    },
+    permissions: {
+      type: Array,
     },
   },
   { timestamps: true }
