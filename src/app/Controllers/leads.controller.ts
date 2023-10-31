@@ -919,7 +919,7 @@ export class LeadsController {
           },
         },
       ]);
-      query.results.map((item: any) => {
+     const promises =  query.results.map((item: any) => {
         item.leads.clientName =
           item["clientName"][0]?.firstName +
           " " +
@@ -946,8 +946,8 @@ export class LeadsController {
       });
 
       // Use Promise.all to wait for all promises to resolve
-      // Promise.all(promi'ses)
-      //   .then((updatedResults) => {'
+      Promise.all(promises)
+        .then((updatedResults) => {
       // Handle the updatedResults here
       const leadsCount = query.leadsCount[0]?.count || 0;
 
@@ -961,10 +961,10 @@ export class LeadsController {
           total: leadsCount,
         },
       });
-      // })
-      // .catch((error) => {
-      //   console.error(error);
-      // });
+      })
+      .catch((error) => {
+        console.error(error);
+      });
     } catch (err) {
       return res.status(500).json({
         error: {
