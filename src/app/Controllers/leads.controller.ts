@@ -914,7 +914,7 @@ export class LeadsController {
                   "clientName.buyerId": 0,
                   "clientName.role": 0,
                   "clientName.permissions": 0,
-                  // "clientName.lastName": 1,
+                  "accountManager.password": 0,
                   // "clientName.businessDetailsId": 1,
                 },
               },
@@ -939,7 +939,11 @@ export class LeadsController {
         BuisnessIndustries.findById(user?.businessIndustryId).then(
           (industry) => {
             industry?.columns.map((column: columnsObjects) => {
-              if (column.displayName && column.originalName) {
+              if (
+                column.displayName &&
+                column.originalName &&
+                column.isVisible === true
+              ) {
                 columnMapping[column.displayName] = column.originalName;
               }
             });
@@ -1145,6 +1149,7 @@ export class LeadsController {
                   "clientName.__v": 0,
                   "clientName.buyerId": 0,
                   "clientName.role": 0,
+                  "accountManager.password": 0,
                 },
               },
             ],
@@ -1360,6 +1365,7 @@ export class LeadsController {
                   "clientName.buyerId": 0,
                   "clientName.role": 0,
                   "clientName.permissions": 0,
+                  "accountManager.password": 0,
                 },
               },
             ],
@@ -1387,7 +1393,11 @@ export class LeadsController {
         BuisnessIndustries.findById(user?.businessIndustryId).then(
           (industry) => {
             industry?.columns.map((column: columnsObjects) => {
-              if (column.displayName && column.originalName) {
+              if (
+                column.displayName &&
+                column.originalName &&
+                column.isVisible === true
+              ) {
                 columnMapping[column.displayName] = column.originalName;
               }
             });
@@ -1597,6 +1607,7 @@ export class LeadsController {
                   "clientName.buyerId": 0,
                   "clientName.role": 0,
                   "clientName.permissions": 0,
+                  "accountManager.password": 0,
                 },
               },
             ],
@@ -1627,7 +1638,11 @@ export class LeadsController {
           item["clientName"][0]?.businessIndustryId
         ).then((industry) => {
           industry?.columns.map((column: columnsObjects) => {
-            if (column.displayName && column.originalName) {
+            if (
+              column.displayName &&
+              column.originalName &&
+              column.isVisible === true
+            ) {
               columnMapping[column.displayName] = column.originalName;
             }
           });
@@ -2439,6 +2454,19 @@ export class LeadsController {
         let bids: string[] = [];
         const users =
           (await User.findById(_req.user._id)) ?? ({} as UserInterface);
+        bids.push(users?.buyerId);
+        dataToFindForReportAccepted.bid = { $in: bids };
+        dataToFindForReportRejected.bid = { $in: bids };
+        dataToFindForReported.bid = { $in: bids };
+        dataToFindForValid.bid = { $in: bids };
+      }
+
+      if (_req.user.role === RolesEnum.INVITED) {
+        let bids: string[] = [];
+        const user =
+          (await User.findById(_req.user._id)) ?? ({} as UserInterface);
+        const users =
+          (await User.findById(user.invitedById)) ?? ({} as UserInterface);
         bids.push(users?.buyerId);
         dataToFindForReportAccepted.bid = { $in: bids };
         dataToFindForReportRejected.bid = { $in: bids };
