@@ -38,7 +38,10 @@ export class IndustryController {
     };
 
     try {
-      const exist = await BuisnessIndustries.find({ industry: input.industry });
+      const exist = await BuisnessIndustries.find({
+        industry: input.industry,
+        isDeleted: false,
+      });
       if (exist.length > 0) {
         return res
           .status(400)
@@ -166,7 +169,7 @@ export class IndustryController {
       } else {
         sortOrder = -1;
       }
-      let dataToFind = {};
+      let dataToFind: any = {};
       if (req.query.search) {
         dataToFind = {
           ...dataToFind,
@@ -217,7 +220,11 @@ export class IndustryController {
   static viewbyId = async (req: Request, res: Response) => {
     try {
       const data = await BuisnessIndustries.findById(req.params.id);
-
+      if (data?.isDeleted) {
+        return res
+          .status(404)
+          .json({ error: { message: "Business Industry is deleted" } });
+      }
       data?.columns.sort((a: any, b: any) => a.index - b.index);
 
       return res.json({ data: data });
@@ -243,7 +250,12 @@ export class IndustryController {
           },
         });
       } else {
-        const data = await BuisnessIndustries.findByIdAndDelete(req.params.id);
+        await BuisnessIndustries.findByIdAndUpdate(req.params.id, {
+          isDeleted: true,
+          deletedAt: new Date(),
+        });
+        const data = await BuisnessIndustries.findById(req.params.id);
+
         return res.json({ data: data });
       }
     } catch (error) {

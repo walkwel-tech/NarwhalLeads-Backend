@@ -1162,8 +1162,12 @@ export class UsersControllers {
         isDeleted: true,
         deletedAt: new Date(),
       });
-      await BusinessDetails.findByIdAndDelete(userExist?.businessDetailsId);
-      await UserLeadsDetails.findByIdAndDelete(userExist?.userLeadsDetailsId);
+      await BusinessDetails.findByIdAndUpdate(userExist?.businessDetailsId, {
+        isDeleted: true,
+      });
+      await UserLeadsDetails.findByIdAndUpdate(userExist?.userLeadsDetailsId, {
+        isDeleted: true,
+      });
       await CardDetails.deleteMany({ userId: userExist?.id });
 
       //@ts-ignore

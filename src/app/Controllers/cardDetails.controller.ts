@@ -756,7 +756,9 @@ export class CardDetailsControllers {
             (await CardDetails.findOne({
               paymentMethod: input.data?.paymentMethod?.id,
             })) ?? ({} as CardDetailsInterface);
-          await CardDetails.findByIdAndDelete(cardDelete?.id);
+          await CardDetails.findByIdAndUpdate(cardDelete?.id, {
+            isDeleted: true,
+          });
           const business = await BusinessDetails.findById(
             userId?.businessDetailsId
           );
