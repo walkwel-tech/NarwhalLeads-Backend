@@ -1,7 +1,6 @@
 import { Request, Response } from "express";
 import { order } from "../../utils/constantFiles/businessIndustry.orderList";
 import { BuisnessIndustries } from "../Models/BuisnessIndustries";
-import { CustomColumnNames } from "../Models/CustomColumns.leads";
 import { User } from "../Models/User";
 import { RolesEnum } from "../../types/RolesEnum";
 import { IndustryInput } from "../Inputs/Industry.input";
@@ -9,7 +8,8 @@ import { validate } from "class-validator";
 import { ValidationErrorResponse } from "../../types/ValidationErrorResponse";
 import { LeadTablePreference } from "../Models/LeadTablePreference";
 import { BuisnessIndustriesInterface } from "../../types/BuisnessIndustriesInterface";
-import { columnsObjects } from "../../types/columnsInterface"
+import { columnsObjects } from "../../types/columnsInterface";
+import { json } from "../../utils/constantFiles/businessIndustryJson";
 const LIMIT = 10;
 export class IndustryController {
   static create = async (req: Request, res: Response) => {
@@ -34,10 +34,14 @@ export class IndustryController {
       industry: input.industry,
       leadCost: input.leadCost,
       columns: order,
+      json: json,
     };
 
     try {
-      const exist = await BuisnessIndustries.find({ industry: input.industry });
+      const exist = await BuisnessIndustries.find({
+        industry: input.industry,
+        isDeleted: false,
+      });
       if (exist.length > 0) {
         return res
           .status(400)
@@ -71,7 +75,9 @@ export class IndustryController {
           .status(404)
           .json({ error: { message: "Business Industry not found." } });
       }
-      updatedData?.columns.sort((a: columnsObjects, b: columnsObjects) => a.index - b.index);
+      updatedData?.columns.sort(
+        (a: columnsObjects, b: columnsObjects) => a.index - b.index
+      );
 
       if (input.leadCost) {
         await User.updateMany(
@@ -93,13 +99,23 @@ export class IndustryController {
     try {
       if (input.columns) {
         const users = await User.find({ businessIndustryId: req.params.id });
-       const data= users.map(async (user: any) => {
-          
-        await LeadTablePreference.findOneAndUpdate({userId:user.id}, {
-            columns: input.columns,
-          },{new:true});
+        const data = users.map(async (user: any) => {
+          return new Promise(async (resolve, reject) => {
+            try {
+              const updatedUser = await LeadTablePreference.findOneAndUpdate(
+                { userId: user.id },
+                {
+                  columns: input.columns,
+                },
+                { new: true }
+              );
+              resolve(updatedUser); // Resolve the promise with the result
+            } catch (error) {
+              reject(error); // Reject the promise if an error occurs
+            }
+          });
         });
-        Promise.all(data)
+        await Promise.all(data);
       }
 
       const updatedData = await BuisnessIndustries.findByIdAndUpdate(
@@ -153,7 +169,7 @@ export class IndustryController {
       } else {
         sortOrder = -1;
       }
-      let dataToFind = {};
+      let dataToFind: any = {};
       if (req.query.search) {
         dataToFind = {
           ...dataToFind,
@@ -204,7 +220,11 @@ export class IndustryController {
   static viewbyId = async (req: Request, res: Response) => {
     try {
       const data = await BuisnessIndustries.findById(req.params.id);
-
+      if (data?.isDeleted) {
+        return res
+          .status(404)
+          .json({ error: { message: "Business Industry is deleted" } });
+      }
       data?.columns.sort((a: any, b: any) => a.index - b.index);
 
       return res.json({ data: data });
@@ -223,16 +243,19 @@ export class IndustryController {
         role: RolesEnum.USER,
       });
       if (users.length > 0) {
-        return res
-          .status(400)
-          .json({
-            error: {
-              message:
-                "Users already registered with this industry. kindly first delete those users.",
-            },
-          });
+        return res.status(400).json({
+          error: {
+            message:
+              "Users already registered with this industry. kindly first delete those users.",
+          },
+        });
       } else {
-        const data = await BuisnessIndustries.findByIdAndDelete(req.params.id);
+        await BuisnessIndustries.findByIdAndUpdate(req.params.id, {
+          isDeleted: true,
+          deletedAt: new Date(),
+        });
+        const data = await BuisnessIndustries.findById(req.params.id);
+
         return res.json({ data: data });
       }
     } catch (error) {
@@ -264,39 +287,29 @@ export class IndustryController {
     }
   };
 
-  static renameCustomColumns = async (req: Request, res: Response) => {
-    const input = req.body;
-    const query = { industryId: req.params.id };
-    let update = { columnsNames: input.columnsNames }; // update the city property of the address sub-document } }
+  static stats = async (_req: any, res: Response) => {
     try {
-      await CustomColumnNames.updateOne(query, update);
-      const updatedData = await CustomColumnNames.find({
-        industryId: req.params.id,
-      });
-      if (updatedData.length == 0 || !updatedData) {
-        return res.status(404).json({ error: { message: "Data not found" } });
-      }
-      return res.json({ data: updatedData });
-    } catch (error) {
-      return res
-        .status(500)
-        .json({ error: { message: "Something went wrong." } });
-    }
-  };
+      const active = await BuisnessIndustries.find({
+        isActive: true,
+        isDeleted: false,
+      }).count();
+      const paused = await BuisnessIndustries.find({
+        isActive: false,
+        isDeleted: false,
+      }).count();
 
-  static showCustomColumnsName = async (req: Request, res: Response) => {
-    try {
-      const updatedData = await CustomColumnNames.find({
-        industryId: req.params.id,
+      const dataToShow = {
+        activeBusinessIndustries: active,
+        pausedBusinessIndustries: paused,
+      };
+      return res.json({ data: dataToShow });
+    } catch (err) {
+      return res.status(500).json({
+        error: {
+          message: "something went wrong",
+          err,
+        },
       });
-      if (updatedData.length == 0 || !updatedData) {
-        return res.status(404).json({ error: { message: "Data not found" } });
-      }
-      return res.json({ data: updatedData });
-    } catch (error) {
-      return res
-        .status(500)
-        .json({ error: { message: "Something went wrong." } });
     }
   };
 }

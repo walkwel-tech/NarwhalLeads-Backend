@@ -7,6 +7,7 @@ import { PAYMENT_STATUS } from "../Enums/payment.status";
 import { Transaction } from "../../app/Models/Transaction";
 import { TRANSACTION_STATUS } from "../Enums/transaction.status.enum";
 import { transactionTitle } from "../Enums/transaction.title.enum";
+import { PAYMENT_TYPE } from "../constantFiles/ryftPayment.constant";
 
 const POST = "post";
 
@@ -17,15 +18,14 @@ export const createSession = (params: any) => {
       currency: process.env.CURRENCY,
       customerEmail: params.email,
       customerDetails: {
-        id: params.clientId || null
+        id: params.clientId || null,
       },
 
       returnUrl: process.env.RETURN_URL,
-    }
-     
+    };
+
     const data = JSON.stringify(body);
-   
-    
+
     const config = {
       method: POST,
       url: process.env.CREATE_SESSION_URL,
@@ -48,7 +48,7 @@ export const createSession = (params: any) => {
 };
 
 export const deleteCustomerById = (customerId: any) => {
-  // 
+  //
   return new Promise((resolve, reject) => {
     const config = {
       method: "DELETE",
@@ -68,7 +68,7 @@ export const deleteCustomerById = (customerId: any) => {
         reject(err);
       });
   });
-}
+};
 
 export const attemptToPayment = (response: any, params: any) => {
   return new Promise((resolve, reject) => {
@@ -166,12 +166,10 @@ export const attemptToPaymentBy_PaymentMethods = (
     };
     axios(config)
       .then(async function (res) {
-          resolve(res);
-      
+        resolve(res);
       })
       .catch(function (error) {
         reject(error);
-       
       });
   });
 };
@@ -213,39 +211,39 @@ export const getPaymentMethodByPaymentSessionID = (
         Authorization: process.env.RYFT_SECRET_KEY,
       },
     };
-  
+
     axios(config)
       .then(function (response) {
         resolve(response.data);
       })
       .catch(function (error) {
-        reject(error)
+        reject(error);
       });
-  })
-
+  });
 };
 
-
 export const createSessionInitial = (params: any) => {
-  return new Promise(async(resolve, reject) => {
+  return new Promise(async (resolve, reject) => {
     let body = {
       //@ts-ignore
       amount: parseInt(params?.fixedAmount * 100) || 0,
       currency: process.env.CURRENCY,
       customerEmail: params.email,
       customerDetails: {
-        id: params.clientId || null
+        id: params.clientId || null,
       },
       returnUrl: process.env.RYFT_RETURN_URL,
       verifyAccount: true,
-      paymentType:"Unscheduled"
+      paymentType: "Unscheduled",
+    };
+    if (params?.fixedAmount && params.fixedAmount > 0) {
+      body.verifyAccount = false;
     }
-    if(params?.fixedAmount && params.fixedAmount >0){
-      body.verifyAccount=false      
-    }
-    const user=await User.findOne({email:params.email})
-    const card=await CardDetails.findOne({paymentMethod:params.paymentMethodId})
-    const data = JSON.stringify(body);    
+    const user = await User.findOne({ email: params.email });
+    const card = await CardDetails.findOne({
+      paymentMethod: params.paymentMethodId,
+    });
+    const data = JSON.stringify(body);
     const config = {
       method: POST,
       url: process.env.CREATE_SESSION_URL,
@@ -258,41 +256,38 @@ export const createSessionInitial = (params: any) => {
       data: data,
     };
     axios(config)
-      .then(async(response) => {
+      .then(async (response) => {
         await Transaction.create({
           userId: user?.id,
           cardId: card?.id,
-          amount:
-          (params?.fixedAmount * 100) || 0,
+          amount: params?.fixedAmount * 100 || 0,
           status: TRANSACTION_STATUS.SUCCESS,
           paymentSessionId: card?.paymentSessionID,
           paymentMethod: card?.paymentMethod,
-          title:transactionTitle.SESSION_CREATED
+          title: transactionTitle.SESSION_CREATED,
         });
         resolve(response);
       })
-      .catch(async(err) => {
+      .catch(async (err) => {
         await Transaction.create({
           userId: user?.id,
           cardId: card?.id,
-          amount:
-          (params?.fixedAmount * 100) || 0,
+          amount: params?.fixedAmount * 100 || 0,
           status: TRANSACTION_STATUS.FAIL,
           paymentSessionId: card?.paymentSessionID,
           paymentMethod: card?.paymentMethod,
-          title:transactionTitle.SESSION_CREATED,
-          notes:err.response.data.errors[0].message,
+          title: transactionTitle.SESSION_CREATED,
+          notes: err?.response?.data?.errors[0].message,
         });
         reject(err);
       });
   });
 };
 
-export const attemptToPaymentInitial = ( params: any) => {
+export const attemptToPaymentInitial = (params: any) => {
   return new Promise((resolve, reject) => {
     const paymentData = JSON.stringify({
       clientSecret: params.clientSecret,
- 
     });
     const config = {
       method: "post",
@@ -307,8 +302,7 @@ export const attemptToPaymentInitial = ( params: any) => {
     };
     axios(config)
       .then(async function (res) {
-        resolve(res)
-    
+        resolve(res);
       })
       .catch(function (error) {
         reject(error);
@@ -316,29 +310,33 @@ export const attemptToPaymentInitial = ( params: any) => {
   });
 };
 
-export const createSessionUnScheduledPayment=async (params: any) => {
-  params.fixedAmount=parseInt(params?.fixedAmount)
-  return new Promise(async(resolve, reject) => {
+export const createSessionUnScheduledPayment = async (params: any) => {
+  params.fixedAmount = parseInt(params?.fixedAmount);
+  return new Promise(async (resolve, reject) => {
     let body = {
-      amount: (params?.fixedAmount * 100) || 0,
+      amount: params?.fixedAmount * 100 || 0,
       currency: process.env.CURRENCY,
       customerEmail: params.email,
       customerDetails: {
-        id: params.clientId || null
+        id: params.clientId || null,
       },
-      paymentType: "Unscheduled",
-      previousPayment: { // must reference an initial 3DS mandated payment in the series
-          id: params.paymentSessionId
+      paymentType: PAYMENT_TYPE.UNSCHEDULED,
+      previousPayment: {
+        // must reference an initial 3DS mandated payment in the series
+        id: params.paymentSessionId,
       },
-      attemptPayment: { // immediately charge the card on creation of this payment session
-          paymentMethod: {
-              id: params.paymentMethodId // must match the card used on the initial payment
-          }
-      }
-    }
-     const user=await User.findOne({email:params.email})
-     const card=await CardDetails.findOne({paymentMethod:params.paymentMethodId})
-    const data = JSON.stringify(body);    
+      attemptPayment: {
+        // immediately charge the card on creation of this payment session
+        paymentMethod: {
+          id: params.paymentMethodId, // must match the card used on the initial payment
+        },
+      },
+    };
+    const user = await User.findOne({ email: params.email });
+    const card = await CardDetails.findOne({
+      paymentMethod: params.paymentMethodId,
+    });
+    const data = JSON.stringify(body);
     const config = {
       method: POST,
       url: process.env.CREATE_SESSION_URL,
@@ -351,30 +349,28 @@ export const createSessionUnScheduledPayment=async (params: any) => {
       data: data,
     };
     axios(config)
-      .then(async(response) => {
+      .then(async (response) => {
         await Transaction.create({
           userId: user?.id,
           cardId: card?.id,
-          amount:
-          (params?.fixedAmount * 100) || 0,
+          amount: params?.fixedAmount * 100 || 0,
           status: TRANSACTION_STATUS.SUCCESS,
           paymentSessionId: card?.paymentSessionID,
           paymentMethod: card?.paymentMethod,
-          title:transactionTitle.SESSION_CREATED
+          title: transactionTitle.SESSION_CREATED,
         });
         resolve(response);
       })
-      .catch(async(err) => {
+      .catch(async (err) => {
         await Transaction.create({
           userId: user?.id,
           cardId: card?.id,
-          amount:
-          (params?.fixedAmount * 100) || 0,
+          amount: params?.fixedAmount * 100 || 0,
           status: TRANSACTION_STATUS.FAIL,
           paymentSessionId: card?.paymentSessionID,
           paymentMethod: card?.paymentMethod,
-          title:transactionTitle.SESSION_CREATED,
-          notes:err.response.data.errors[0].message,
+          title: transactionTitle.SESSION_CREATED,
+          notes: err?.response?.data?.errors[0]?.message,
         });
         reject(err);
       });

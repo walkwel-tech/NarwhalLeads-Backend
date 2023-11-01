@@ -3,55 +3,54 @@ export const order = [
     originalName: "firstname",
     isVisible: true,
     index: 0,
-    displayName:"First Name"
+    displayName: "First Name",
   },
   {
     originalName: "lastname",
     isVisible: true,
     index: 1,
-    displayName:"Last Name"
+    displayName: "Last Name",
   },
   {
     originalName: "phone1",
     isVisible: true,
     index: 2,
-    displayName:"Phone Number"
+    displayName: "Phone Number",
   },
   {
     originalName: "email",
     isVisible: true,
     index: 3,
-    displayName:"Email"
+    displayName: "Email",
   },
   {
-    originalName: "street",
+    originalName: "street1",
     isVisible: true,
     index: 4,
-    displayName:"Street Address"
+    displayName: "Street Address",
   },
   {
     originalName: "postcode",
     isVisible: true,
     index: 5,
-    displayName:"Postcode"
+    displayName: "Postcode",
   },
   {
     originalName: "leadid",
     isVisible: true,
     index: 6,
-    displayName:"Lead ID"
+    displayName: "Lead ID",
   },
   {
     originalName: "sid",
     isVisible: true,
     index: 7,
-    displayName:"SID"
+    displayName: "SID",
   },
   {
     originalName: "recieved",
     isVisible: true,
     index: 8,
-    displayName:"Date"
-  }
-]
-
+    displayName: "Date",
+  },
+];

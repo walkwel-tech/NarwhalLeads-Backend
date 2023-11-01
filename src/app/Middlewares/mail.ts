@@ -1,5 +1,4 @@
 // import { NotificationsParams } from "../../types/NotificationsParams";
-import { RolesEnum } from "../../types/RolesEnum";
 import { NOTIFICATION_STATUS } from "../../utils/Enums/notificationType.enum";
 import { APP_ENV } from "../../utils/Enums/serverModes.enum";
 import {
@@ -8,6 +7,7 @@ import {
 } from "../../utils/constantFiles/email.templateIDs";
 import { Notifications } from "../Models/Notifications";
 import { User } from "../Models/User";
+import { checkAccess } from "./serverAccess";
 // import { checkAccess } from "./serverAccess";
 
 const sgMail = require("@sendgrid/mail");
@@ -314,16 +314,19 @@ export function sendEmailForAddCredits(send_to: any, message: any) {
   // }
 }
 
-export async function sendEmailForNewRegistration(message: any) {
+export async function sendEmailForNewRegistration(
+  send_to: string,
+  message: any
+) {
   if (message.openingHours) {
     message.openingHours = mapHours(message.openingHours);
   }
   if (message.leadsHours) {
     message.leadsHours = mapHours(message.leadsHours);
   }
-  let Subscriber: string[] = ["leads@nmg.group"];
-  const data = await User.find({ role: RolesEnum.SUBSCRIBER });
-  data.map((subscriber) => Subscriber.push(subscriber.email));
+  // let Subscriber: string[] = [ process.env.ADMIN_EMAIL];
+  // const data = await User.find({ role: RolesEnum.SUBSCRIBER });
+  // data.map((subscriber) => Subscriber.push(subscriber.email));
   if (message?.financeOffers === false) {
     message.financeOffers = "No";
   }
@@ -332,7 +335,7 @@ export async function sendEmailForNewRegistration(message: any) {
   }
   const msg = {
     // to: "radhika.walkweltech@gmail.com", // Change to your recipient
-    to: Subscriber,
+    to: send_to,
     from: {
       name: process.env.VERIFIED_SENDER_ON_SENDGRID_FROM_NAME,
       email: process.env.VERIFIED_SENDER_ON_SENDGRID,
@@ -348,7 +351,7 @@ export async function sendEmailForNewRegistration(message: any) {
       },
     },
 
-    isMultiple: true,
+    // isMultiple: true,
 
     // html: "<strong>and easy to do anywhere, even with Node.js</strong>",
     // templateId: "d-4fffc73a3ca34d69a10b68d02c4b8c22",
@@ -384,29 +387,29 @@ export async function sendEmailForNewRegistration(message: any) {
     msg.to = process.env.SENDGRID_TO_EMAIL;
   }
   sgMail
-    .sendMultiple(msg)
+    .send(msg)
     .then(() => {
       console.log("Email sent");
-      Subscriber.map((email) => {
-        const params = {
-          email: email,
-          title: TEMPLATES_TITLE.NEW_REGISTRATION,
-          templateId: TEMPLATES_ID.NEW_REGISTRATION,
-          status: NOTIFICATION_STATUS.SUCCESS,
-        };
-        saveNotifications(params);
-      });
+      // Subscriber.map((email) => {
+      const params = {
+        email: send_to,
+        title: TEMPLATES_TITLE.NEW_REGISTRATION,
+        templateId: TEMPLATES_ID.NEW_REGISTRATION,
+        status: NOTIFICATION_STATUS.SUCCESS,
+      };
+      saveNotifications(params);
+      // });
     })
     .catch((error: any) => {
       console.error(error);
       //TODO:
-      // const params = {
-      //   email: i,
-      //   title: "NEW_REGISTRATION",
-      //   templateId: TEMPLATES_ID.NEW_REGISTRATION,
-      //   status:NOTIFICATION_STATUS.SUCCESS
-      // };
-      // saveNotifications(params);
+      const params = {
+        email: send_to,
+        title: TEMPLATES_TITLE.NEW_REGISTRATION,
+        templateId: TEMPLATES_ID.NEW_REGISTRATION,
+        status: NOTIFICATION_STATUS.SUCCESS,
+      };
+      saveNotifications(params);
     });
   // } else {
   //   console.log("Emails access only on production");
@@ -471,7 +474,7 @@ export function sendEmailToInvitedUser(send_to: string, message: any) {
   // }
 }
 
-export function sendEmailForNewLead(send_to: string[], message: any) {
+export function sendEmailForNewLead(send_to: string, message: any) {
   const msg = {
     to: send_to, // Change to your recipient
     // to: "radhika.walkweltech@gmail.com",
@@ -489,7 +492,7 @@ export function sendEmailForNewLead(send_to: string[], message: any) {
         enable: false,
       },
     },
-    isMultiple: true,
+    // isMultiple: true,
 
     // html: "<strong>and easy to do anywhere, even with Node.js</strong>",
     // templateId: "d-ca4e694d81ce4b3c8738b304a7a2368e",
@@ -502,33 +505,34 @@ export function sendEmailForNewLead(send_to: string[], message: any) {
       email: message.email,
     },
   };
-  // if (checkAccess()) {
-
-  sgMail
-    .sendMultiple(msg)
-    .then(() => {
-      console.log("Email sent");
-      const params = {
-        email: send_to,
-        title: TEMPLATES_TITLE.NEW_LEAD,
-        templateId: TEMPLATES_ID.NEW_LEAD,
-        status: NOTIFICATION_STATUS.SUCCESS,
-      };
-      saveNotifications(params);
-    })
-    .catch((error: any) => {
-      console.error(error);
-      const params = {
-        email: send_to,
-        title: TEMPLATES_TITLE.NEW_LEAD,
-        templateId: TEMPLATES_ID.NEW_LEAD,
-        status: NOTIFICATION_STATUS.FAIL,
-      };
-      saveNotifications(params);
-    });
-  // } else {
-  //   console.log("Emails access only on production");
-  // }
+  if (checkAccess()) {
+    sgMail
+      .send(msg)
+      .then(() => {
+        console.log("Email sent");
+        // send_to.map(async (emails) => {
+        const params = {
+          email: send_to,
+          title: TEMPLATES_TITLE.NEW_LEAD,
+          templateId: TEMPLATES_ID.NEW_LEAD,
+          status: NOTIFICATION_STATUS.SUCCESS,
+        };
+        saveNotifications(params);
+        // });
+      })
+      .catch((error: any) => {
+        console.error(error);
+        const params = {
+          email: send_to,
+          title: TEMPLATES_TITLE.NEW_LEAD,
+          templateId: TEMPLATES_ID.NEW_LEAD,
+          status: NOTIFICATION_STATUS.FAIL,
+        };
+        saveNotifications(params);
+      });
+  } else {
+    console.log("Emails access only on production");
+  }
 }
 
 export function sendEmaiForTotalLead(send_to: string, message: any) {
@@ -731,7 +735,7 @@ export function sendEmailForUpdatedDetails(message: any) {
   }
 
   const msg = {
-    to: "leads@nmg.group", // Change to your recipient
+    to: process.env.ADMIN_EMAIL, // Change to your recipient
     from: {
       name: process.env.VERIFIED_SENDER_ON_SENDGRID_FROM_NAME,
       email: process.env.VERIFIED_SENDER_ON_SENDGRID,
@@ -780,7 +784,7 @@ export function sendEmailForUpdatedDetails(message: any) {
     .then(() => {
       console.log("Email sent");
       const params = {
-        email: "leads@nmg.group",
+        email: process.env.ADMIN_EMAIL,
         title: TEMPLATES_TITLE.USER_UPDATE_DETAILS,
         templateId: TEMPLATES_ID.USER_UPDATE_DETAILS,
         status: NOTIFICATION_STATUS.SUCCESS,
@@ -790,7 +794,7 @@ export function sendEmailForUpdatedDetails(message: any) {
     .catch((error: any) => {
       console.error(error);
       const params = {
-        email: "leads@nmg.group",
+        email: process.env.ADMIN_EMAIL,
         title: TEMPLATES_TITLE.USER_UPDATE_DETAILS,
         templateId: TEMPLATES_ID.USER_UPDATE_DETAILS,
         status: NOTIFICATION_STATUS.FAIL,
@@ -928,7 +932,7 @@ export function sendEmailForPaymentFailure(send_to: any, message: any) {
 
 export function sendEmailForPaymentSuccess_to_admin(message: any) {
   const msg = {
-    to: "leads@nmg.group", // Change to your recipient
+    to: process.env.ADMIN_EMAIL, // Change to your recipient
     // to: "radhika.walkweltech@gmail.com",
     from: {
       name: process.env.VERIFIED_SENDER_ON_SENDGRID_FROM_NAME,
@@ -966,7 +970,7 @@ export function sendEmailForPaymentSuccess_to_admin(message: any) {
     .then(() => {
       console.log("Email sent");
       const params = {
-        email: "leads@nmg.group",
+        email: process.env.ADMIN_EMAIL,
         title: TEMPLATES_TITLE.PAYMENT_SUCCESS_TO_ADMIN,
         templateId: TEMPLATES_ID.PAYMENT_SUCCESS_TO_ADMIN,
         status: NOTIFICATION_STATUS.SUCCESS,
@@ -976,7 +980,7 @@ export function sendEmailForPaymentSuccess_to_admin(message: any) {
     .catch((error: any) => {
       console.error(error);
       const params = {
-        email: "leads@nmg.group",
+        email: process.env.ADMIN_EMAIL,
         title: TEMPLATES_TITLE.PAYMENT_SUCCESS_TO_ADMIN,
         templateId: TEMPLATES_ID.PAYMENT_SUCCESS_TO_ADMIN,
         status: NOTIFICATION_STATUS.FAIL,
@@ -990,7 +994,7 @@ export function sendEmailForPaymentSuccess_to_admin(message: any) {
 
 export function sendEmailForFullySignupToAdmin(message: any) {
   const msg = {
-    to: "leads@nmg.group", // Change to your recipient
+    to: process.env.ADMIN_EMAIL, // Change to your recipient
     // to: "radhika.walkweltech@gmail.com",
     from: {
       name: process.env.VERIFIED_SENDER_ON_SENDGRID_FROM_NAME,
@@ -1048,7 +1052,7 @@ export function sendEmailForFullySignupToAdmin(message: any) {
     .then(() => {
       console.log("Email sent");
       const params = {
-        email: "leads@nmg.group",
+        email: process.env.ADMIN_EMAIL,
         title: TEMPLATES_TITLE.PAYMENT_SUCCESS_TO_ADMIN,
         templateId: TEMPLATES_ID.PAYMENT_SUCCESS_TO_ADMIN,
         status: NOTIFICATION_STATUS.SUCCESS,
@@ -1058,7 +1062,7 @@ export function sendEmailForFullySignupToAdmin(message: any) {
     .catch((error: any) => {
       console.error(error);
       const params = {
-        email: "leads@nmg.group",
+        email: process.env.ADMIN_EMAIL,
         title: TEMPLATES_TITLE.PAYMENT_SUCCESS_TO_ADMIN,
         templateId: TEMPLATES_ID.PAYMENT_SUCCESS_TO_ADMIN,
         status: NOTIFICATION_STATUS.FAIL,
@@ -1118,6 +1122,66 @@ export function sendEmailToInvitedAdmin(send_to: string, message: any) {
         email: send_to,
         title: TEMPLATES_TITLE.INVITED_ADMIN,
         templateId: TEMPLATES_ID.INVITED_ADMIN,
+        status: NOTIFICATION_STATUS.FAIL,
+      };
+      saveNotifications(params);
+    });
+  // } else {
+  //   console.log("Emails access only on production");
+  // }
+}
+
+export function sendEmailToInvitedAccountManager(
+  send_to: string,
+  message: any
+) {
+  const msg = {
+    to: send_to, // Change to your recipient
+    from: {
+      name: process.env.VERIFIED_SENDER_ON_SENDGRID_FROM_NAME,
+      email: process.env.VERIFIED_SENDER_ON_SENDGRID,
+    },
+    // Change to your verified sender
+    trackingSettings: {
+      clickTracking: {
+        enable: false,
+        enableText: false,
+      },
+      openTracking: {
+        enable: false,
+      },
+    },
+
+    // html: "<strong>and easy to do anywhere, even with Node.js</strong>",
+    // templateId: "d-dad1bae4e3454fa8afea119f9de08b45",
+    templateId: TEMPLATES_ID.INVITED_ACCOUNT_MANAGER,
+    dynamic_template_data: {
+      name: message.name,
+      password: message.password,
+    },
+  };
+  // if (checkAccess()) {
+  if (process.env.APP_ENV !== APP_ENV.PRODUCTION) {
+    msg.to = process.env.SENDGRID_TO_EMAIL || "" || "";
+  }
+  sgMail
+    .send(msg)
+    .then(() => {
+      console.log("Email sent");
+      const params = {
+        email: send_to,
+        title: TEMPLATES_TITLE.INVITED_ACCOUNT_MANAGER,
+        templateId: TEMPLATES_ID.INVITED_ACCOUNT_MANAGER,
+        status: NOTIFICATION_STATUS.SUCCESS,
+      };
+      saveNotifications(params);
+    })
+    .catch((error: any) => {
+      console.error(error);
+      const params = {
+        email: send_to,
+        title: TEMPLATES_TITLE.INVITED_ACCOUNT_MANAGER,
+        templateId: TEMPLATES_ID.INVITED_ACCOUNT_MANAGER,
         status: NOTIFICATION_STATUS.FAIL,
       };
       saveNotifications(params);
@@ -1241,6 +1305,65 @@ export function sendEmailForOutOfFunds(send_to: string, message: any) {
   // }
 }
 
+export function sendEmailToRemindUser25PercentSignup(
+  send_to: string,
+  message: any
+) {
+  const msg = {
+    to: send_to, // Change to your recipient
+    from: {
+      name: process.env.VERIFIED_SENDER_ON_SENDGRID_FROM_NAME,
+      email: process.env.VERIFIED_SENDER_ON_SENDGRID,
+    },
+    // Change to your verified sender
+    trackingSettings: {
+      clickTracking: {
+        enable: false,
+        enableText: false,
+      },
+      openTracking: {
+        enable: false,
+      },
+    },
+    // isMultiple: true,
+
+    // html: "<strong>and easy to do anywhere, even with Node.js</strong>",
+    // templateId: "d-dad1bae4e3454fa8afea119f9de08b45",
+    templateId: "d-d39ac61c21a84352b80dabd6a3d0f238",
+    dynamic_template_data: {
+      name: message.name,
+    },
+  };
+  if (checkAccess()) {
+    sgMail
+      .send(msg)
+      .then(() => {
+        console.log("Email sent");
+        // send_to.map(async (emails) => {
+        const params = {
+          email: send_to,
+          title: TEMPLATES_TITLE.USER_25_PERCENT_SIGNUP,
+          templateId: TEMPLATES_ID.USER_25_PERCENT_SIGNUP,
+          status: NOTIFICATION_STATUS.SUCCESS,
+        };
+        saveNotifications(params);
+        // });
+      })
+      .catch((error: any) => {
+        console.error(error);
+        const params = {
+          email: send_to,
+          title: TEMPLATES_TITLE.USER_25_PERCENT_SIGNUP,
+          templateId: TEMPLATES_ID.USER_25_PERCENT_SIGNUP,
+          status: NOTIFICATION_STATUS.FAIL,
+        };
+        saveNotifications(params);
+      });
+  } else {
+    console.log("Emails access only on production");
+  }
+}
+
 async function saveNotifications(params: any) {
   const user = await User.findOne({ email: params?.email });
 
@@ -1253,13 +1376,5 @@ async function saveNotifications(params: any) {
       status: params.status,
     };
   }
-  //  else {
-  //   dataToSave = {
-  //     userId: admin?.id,
-  //     title: params.title,
-  //     templateId: params.templateId,
-  //     status:params.status
-  //   };
-  // }
   await Notifications.create(dataToSave);
 }

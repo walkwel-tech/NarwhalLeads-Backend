@@ -4,15 +4,14 @@ import { GuestController } from "../app/Controllers/guest.controller";
 import { OnlyAdmins } from "../app/Middlewares";
 
 const guestRoutes: Router = Router();
+guestRoutes.get(
+  "/assign-Randoms-AccountManager-To-Users",
+  GuestController.assignRandomsAccountManagersToUsers
+);
 guestRoutes.post(
   "/handle-Indutsry-Null-Values-In-Leads-Table",
   OnlyAdmins,
   GuestController.handleIndutsryNullValuesInLeadsTable
-);
-guestRoutes.get(
-  "/assign-Randoms-AccountManager-To-Users",
-  OnlyAdmins,
-  GuestController.assignRandomsAccountManagersToUsers
 );
 
 guestRoutes.post(
@@ -50,6 +49,11 @@ guestRoutes.post(
   "/set-Business-Details",
   OnlyAdmins,
   GuestController.setBusinessDetails
+);
+guestRoutes.post(
+  "/set-permissions",
+  OnlyAdmins,
+  GuestController.assignPermissionsToAllUsers
 );
 
 export default guestRoutes;
