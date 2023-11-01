@@ -86,6 +86,7 @@ export class invitedUsersController {
           //@ts-ignore
           rowIndex: allInvites?.rowIndex + 1 || 0,
           credits: user?.credits,
+          leadCost: user?.leadCost,
         };
 
         const data = await User.create(dataToSave);

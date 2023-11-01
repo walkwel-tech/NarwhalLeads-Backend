@@ -27,7 +27,6 @@ const UserSchema = new Schema(
     },
     leadCost: {
       type: Number,
-      default: 10,
       required: false,
     },
     phoneNumber: {

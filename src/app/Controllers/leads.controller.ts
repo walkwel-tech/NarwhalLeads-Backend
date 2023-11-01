@@ -31,7 +31,6 @@ import { sort } from "../../utils/Enums/sorting.enum";
 import { sendLeadDataToZap } from "../../utils/webhookUrls/sendDataZap";
 import { WHITE_LIST_IP } from "../../local";
 import { BuisnessIndustries } from "../Models/BuisnessIndustries";
-import { LeadTablePreferenceInterface } from "../../types/LeadTablePreferenceInterface";
 import { Column } from "../../types/ColumnsPreferenceInterface";
 import mongoose, { Types } from "mongoose";
 import { PREMIUM_PROMOLINK } from "../../utils/constantFiles/spotDif.offers.promoLink";
@@ -42,6 +41,7 @@ import { APP_ENV } from "../../utils/Enums/serverModes.enum";
 import { UserInterface } from "../../types/UserInterface";
 // import { leadReprocessWebhookLeadCenter } from "../../utils/webhookUrls/leadsReprocessWebhook";
 import { LeadsInterface } from "../../types/LeadsInterface";
+import { columnsObjects } from "../../types/columnsInterface";
 
 const ObjectId = mongoose.Types.ObjectId;
 
@@ -913,6 +913,9 @@ export class LeadsController {
                   "clientName.__v": 0,
                   "clientName.buyerId": 0,
                   "clientName.role": 0,
+                  "clientName.permissions": 0,
+                  // "clientName.lastName": 1,
+                  // "clientName.businessDetailsId": 1,
                 },
               },
             ],
@@ -920,7 +923,8 @@ export class LeadsController {
           },
         },
       ]);
-      query.results.map((item: any) => {
+
+      const promises = query.results.map((item: any) => {
         item.leads.clientName =
           item["clientName"][0]?.firstName +
           " " +
@@ -930,7 +934,27 @@ export class LeadsController {
           " " +
           (item["accountManager"].lastName || "");
         item.leads.status = item.status;
+        const columnMapping: Record<string, string> = {};
 
+        BuisnessIndustries.findById(user?.businessIndustryId).then(
+          (industry) => {
+            industry?.columns.map((column: columnsObjects) => {
+              if (column.displayName && column.originalName) {
+                columnMapping[column.displayName] = column.originalName;
+              }
+            });
+            for (const displayName in columnMapping) {
+              const originalName = columnMapping[displayName];
+              const leads = item.leads;
+              if (leads.hasOwnProperty(originalName)) {
+                leads[originalName] = leads[originalName];
+              } else {
+                leads[originalName] = "";
+              }
+            }
+            item.columns = industry?.columns;
+          }
+        );
         // Use explicit Promise construction
         return new Promise((resolve, reject) => {
           BusinessDetails.findById(item["clientName"][0]?.businessDetailsId)
@@ -947,25 +971,25 @@ export class LeadsController {
       });
 
       // Use Promise.all to wait for all promises to resolve
-      // Promise.all(promi'ses)
-      //   .then((updatedResults) => {'
-      // Handle the updatedResults here
-      const leadsCount = query.leadsCount[0]?.count || 0;
+      Promise.all(promises)
+        .then((updatedResults) => {
+          // Handle the updatedResults here
+          const leadsCount = query.leadsCount[0]?.count || 0;
 
-      const totalPages = Math.ceil(leadsCount / perPage);
-      return res.json({
-        data: query.results,
-        meta: {
-          perPage: perPage,
-          page: _req.query.page || 1,
-          pages: totalPages,
-          total: leadsCount,
-        },
-      });
-      // })
-      // .catch((error) => {
-      //   console.error(error);
-      // });
+          const totalPages = Math.ceil(leadsCount / perPage);
+          return res.json({
+            data: query.results,
+            meta: {
+              perPage: perPage,
+              page: _req.query.page || 1,
+              pages: totalPages,
+              total: leadsCount,
+            },
+          });
+        })
+        .catch((error) => {
+          console.error(error);
+        });
     } catch (err) {
       return res.status(500).json({
         error: {
@@ -1335,6 +1359,7 @@ export class LeadsController {
                   "clientName.__v": 0,
                   "clientName.buyerId": 0,
                   "clientName.role": 0,
+                  "clientName.permissions": 0,
                 },
               },
             ],
@@ -1358,7 +1383,26 @@ export class LeadsController {
         item.leads.status = item.status;
         item.leads.businessName = "Deleted";
         item.leads.businessIndustry = "Deleted";
-
+        const columnMapping: Record<string, string> = {};
+        BuisnessIndustries.findById(user?.businessIndustryId).then(
+          (industry) => {
+            industry?.columns.map((column: columnsObjects) => {
+              if (column.displayName && column.originalName) {
+                columnMapping[column.displayName] = column.originalName;
+              }
+            });
+            for (const displayName in columnMapping) {
+              const originalName = columnMapping[displayName];
+              const leads = item.leads;
+              if (leads.hasOwnProperty(originalName)) {
+                leads[originalName] = leads[originalName];
+              } else {
+                leads[originalName] = "";
+              }
+            }
+            item.columns = industry?.columns;
+          }
+        );
         // Use explicit Promise construction
         return new Promise((resolve, reject) => {
           BusinessDetails.findById(item["clientName"][0]?.businessDetailsId)
@@ -1552,7 +1596,7 @@ export class LeadsController {
                   "clientName.__v": 0,
                   "clientName.buyerId": 0,
                   "clientName.role": 0,
-                  // "clientName.accountManager": 1,
+                  "clientName.permissions": 0,
                 },
               },
             ],
@@ -1577,6 +1621,27 @@ export class LeadsController {
         item.leads.businessName = "Deleted";
         item.leads.businessIndustry = "Deleted";
         item.leads.status = item?.status;
+        const columnMapping: Record<string, string> = {};
+
+        BuisnessIndustries.findById(
+          item["clientName"][0]?.businessIndustryId
+        ).then((industry) => {
+          industry?.columns.map((column: columnsObjects) => {
+            if (column.displayName && column.originalName) {
+              columnMapping[column.displayName] = column.originalName;
+            }
+          });
+          for (const displayName in columnMapping) {
+            const originalName = columnMapping[displayName];
+            const leads = item.leads;
+            if (leads.hasOwnProperty(originalName)) {
+              leads[originalName] = leads[originalName];
+            } else {
+              leads[originalName] = "";
+            }
+          }
+          item.columns = industry?.columns;
+        });
         // Use explicit Promise construction
         return new Promise((resolve, reject) => {
           BusinessDetails.findById(item["clientName"][0]?.businessDetailsId)
@@ -2147,8 +2212,7 @@ export class LeadsController {
           " " +
           item["clientName"][0]?.lastName;
       });
-      const pref: LeadTablePreferenceInterface | null =
-        await LeadTablePreference.findOne({ userId: user?.id });
+      const pref = await BuisnessIndustries.findById(user?.businessIndustryId);
       let filteredDataArray: DataObject[];
       if (!pref) {
         filteredDataArray = [{}];
@@ -2160,8 +2224,15 @@ export class LeadsController {
         );
       }
 
+      const resultArray = filteredDataArray.map((obj) => {
+        const newObj: Record<string, string> = {};
+        for (const key in obj) {
+          newObj[key] = obj[key] === undefined ? "" : obj[key];
+        }
+        return newObj;
+      });
       return res.json({
-        data: filteredDataArray,
+        data: resultArray,
       });
     } catch (err) {
       return res.status(500).json({
@@ -2263,16 +2334,55 @@ export class LeadsController {
           " " +
           item["clientName"][0]?.lastName;
       });
-      const pref: LeadTablePreferenceInterface | null =
-        await LeadTablePreference.findOne({ userId: _req.user.id });
-
+      // const pref: LeadTablePreferenceInterface | null =
+      //   await LeadTablePreference.findOne({ userId: _req.user.id });
+      const pref = await BuisnessIndustries.aggregate([
+        {
+          $unwind: "$columns",
+        },
+        {
+          $group: {
+            _id: "$columns.originalName",
+            isVisible: { $first: "$columns.isVisible" },
+            displayName: { $first: "$columns.displayName" },
+            index: { $first: "$columns.index" },
+          },
+        },
+        {
+          $project: {
+            _id: 0,
+            isVisible: 1,
+            originalName: "$_id",
+            displayName: 1,
+            index: 1,
+          },
+        },
+        {
+          $group: {
+            _id: null,
+            columns: { $push: "$$ROOT" },
+          },
+        },
+        {
+          $project: {
+            _id: 0,
+          },
+        },
+      ]);
       const filteredDataArray: DataObject[] = filterAndTransformData(
         //@ts-ignore
-        pref?.columns,
+        pref[0]?.columns,
         convertArray(query.results)
       );
+      const resultArray = filteredDataArray.map((obj) => {
+        const newObj: Record<string, string> = {};
+        for (const key in obj) {
+          newObj[key] = obj[key] === undefined ? "" : obj[key];
+        }
+        return newObj;
+      });
       return res.json({
-        data: filteredDataArray,
+        data: resultArray,
       });
     } catch (err) {
       return res.status(500).json({
@@ -2397,7 +2507,6 @@ function filterAndTransformData(
           dataObj[column.originalName];
       }
     });
-
     return filteredData;
   });
 }
