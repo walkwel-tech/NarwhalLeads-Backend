@@ -169,7 +169,7 @@ export class IndustryController {
       } else {
         sortOrder = -1;
       }
-      let dataToFind: any = {};
+      let dataToFind: any = { isDeleted: false };
       if (req.query.search) {
         dataToFind = {
           ...dataToFind,

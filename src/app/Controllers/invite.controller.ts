@@ -26,6 +26,7 @@ export class invitedUsersController {
       const checkExist = await User.findOne({
         invitedById: currentUser?.id,
         email: input.email,
+        isDeleted: false,
       });
       if (checkExist) {
         return res
