@@ -956,7 +956,7 @@ export class LeadsController {
                 leads[originalName] = "";
               }
             }
-            item.columns = industry?.columns;
+            item.columns = industry?.columns ? industry.columns: [];
           }
         );
         // Use explicit Promise construction
