@@ -956,15 +956,19 @@ export class LeadsController {
                 leads[originalName] = "";
               }
             }
-            item.columns = industry?.columns;
+            // item.columns = industry?.columns ? industry.columns: [];
           }
-        );
+        ).catch((error:any)=>{
+          console.log("ERRORR: ", error);
+        });
         // Use explicit Promise construction
         return new Promise((resolve, reject) => {
           BusinessDetails.findById(item["clientName"][0]?.businessDetailsId)
-            .then((businesss) => {
+            .then(async  (businesss) => {
+              const industry = await BuisnessIndustries.findOne({industry: businesss?.businessIndustry});
               item.leads.businessName = businesss?.businessName;
               item.leads.businessIndustry = businesss?.businessIndustry;
+              item.columns = industry?.columns ?? [];
 
               resolve(item); // Resolve the promise with the modified item
             })
