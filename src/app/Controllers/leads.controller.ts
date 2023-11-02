@@ -964,11 +964,11 @@ export class LeadsController {
         // Use explicit Promise construction
         return new Promise((resolve, reject) => {
           BusinessDetails.findById(item["clientName"][0]?.businessDetailsId)
-            .then((businesss) => {
-              const industry = BuisnessIndustries.findOne({industry: businesss.businessIndustry});
+            .then(async  (businesss) => {
+              const industry = await BuisnessIndustries.findOne({industry: businesss?.businessIndustry});
               item.leads.businessName = businesss?.businessName;
               item.leads.businessIndustry = businesss?.businessIndustry;
-              item.columns = industry.columns;
+              item.columns = industry?.columns ?? [];
 
               resolve(item); // Resolve the promise with the modified item
             })
