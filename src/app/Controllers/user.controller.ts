@@ -35,6 +35,10 @@ import { addCreditsToBuyer } from "../../utils/payment/addBuyerCredit";
 import { TransactionInterface } from "../../types/TransactionInterface";
 import { InvoiceInterface } from "../../types/InvoiceInterface";
 import { cmsUpdateBuyerWebhook } from "../../utils/webhookUrls/cmsUpdateBuyerWebhook";
+import { ONBOARDING_KEYS } from "../../utils/constantFiles/OnBoarding.keys";
+import { CARD_DETAILS } from "../../utils/constantFiles/signupFields";
+// import { sendLeadDataToZap } from "../../utils/webhookUrls/sendDataZap";
+// import { BuisnessIndustries } from "../Models/BuisnessIndustries";
 const ObjectId = mongoose.Types.ObjectId;
 
 const LIMIT = 10;
@@ -626,6 +630,42 @@ export class UsersControllers {
           error: { message: "Please contact admin to change payment method" },
         });
       }
+
+      if (
+        input.isCreditsAndBillingEnabled === false &&
+        checkUser?.role === RolesEnum.USER
+      ) {
+        let object = checkUser.onBoarding;
+        object.map((fields) => {
+          if (fields.key === ONBOARDING_KEYS.CARD_DETAILS) {
+            fields.pendingFields = [];
+          }
+        });
+        await User.findByIdAndUpdate(checkUser?.id, {
+          isCreditsAndBillingEnabled: false,
+          onBoarding: object,
+        });
+      }
+
+      if (
+        input.isCreditsAndBillingEnabled === true &&
+        checkUser?.role === RolesEnum.NON_BILLABLE
+      ) {
+        let object = checkUser.onBoarding;
+
+        if (!areAllPendingFieldsEmpty(object)) {
+          object.map((fields) => {
+            if (fields.key === ONBOARDING_KEYS.CARD_DETAILS) {
+              fields.pendingFields = [CARD_DETAILS.CARD_NUMBER];
+            }
+          });
+          await User.findByIdAndUpdate(checkUser?.id, {
+            isCreditsAndBillingEnabled: false,
+            onBoarding: object,
+          });
+        }
+      }
+
       if (input.smsPhoneNumber) {
         const userExist = await User.findOne({
           smsPhoneNumber: input.smsPhoneNumber,
@@ -888,6 +928,18 @@ export class UsersControllers {
 
           { new: true }
         );
+        // const industry = await BuisnessIndustries.findById(
+        //   checkUser.businessIndustryId
+        // );
+        // const columns = industry?.columns;
+        // let keys = [];
+        // columns?.map((fields) => {
+        //   keys.push(Object.keys(fields));
+        // });
+        // const data = {};
+        // sendLeadDataToZap(input.zapierUrl, data)
+        //   .then((res) => {})
+        //   .catch((err) => {});
       }
       if (input.daily) {
         if (!checkUser.userLeadsDetailsId) {
@@ -1832,4 +1884,15 @@ function convertDataForDaysInMonth(data: any, labels: any, year: any) {
 
   // Create an object with labels and data properties
   return { labels, data: dataArr, years: years };
+}
+
+function areAllPendingFieldsEmpty(
+  object: { key: string; pendingFields: string[]; dependencies: string[] }[]
+) {
+  for (const item of object) {
+    if (item.pendingFields && item.pendingFields.length > 0) {
+      return false;
+    }
+  }
+  return true;
 }
