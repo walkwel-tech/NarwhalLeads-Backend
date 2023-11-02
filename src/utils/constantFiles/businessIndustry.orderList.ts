@@ -1,6 +1,6 @@
 export const order = [
   {
-    originalName: "recieved",
+    originalName: "received",
     isVisible: true,
     index: 0,
     displayName: "Date",
