@@ -37,6 +37,8 @@ import { InvoiceInterface } from "../../types/InvoiceInterface";
 import { cmsUpdateBuyerWebhook } from "../../utils/webhookUrls/cmsUpdateBuyerWebhook";
 import { ONBOARDING_KEYS } from "../../utils/constantFiles/OnBoarding.keys";
 import { CARD_DETAILS } from "../../utils/constantFiles/signupFields";
+import { BuisnessIndustries } from "../Models/BuisnessIndustries";
+import { sendLeadDataToZap } from "../../utils/webhookUrls/sendDataZap";
 // import { sendLeadDataToZap } from "../../utils/webhookUrls/sendDataZap";
 // import { BuisnessIndustries } from "../Models/BuisnessIndustries";
 const ObjectId = mongoose.Types.ObjectId;
@@ -922,24 +924,38 @@ export class UsersControllers {
             .status(404)
             .json({ error: { message: "lead details not found" } });
         }
+
+        const industry = await BuisnessIndustries.findById(
+          checkUser.businessIndustryId
+        );
+        const columns = industry?.columns;
+
+        const result: { [key: string]: string } = {};
+        if (columns) {
+          for (const item of columns) {
+            //@ts-ignore
+            result[item.originalName] = item.displayName;
+          }
+        }
+        const leadDetails = await UserLeadsDetails.findById(
+          checkUser.userLeadsDetailsId
+        );
+
+        if (
+          input.zapierUrl != leadDetails?.zapierUrl ||
+          leadDetails?.zapierUrl === ""
+        ) {
+          sendLeadDataToZap(input.zapierUrl, result)
+            .then((res) => {})
+            .catch((err) => {});
+        }
+
         await UserLeadsDetails.findByIdAndUpdate(
           checkUser?.userLeadsDetailsId,
           { zapierUrl: input.zapierUrl, sendDataToZapier: true },
 
           { new: true }
         );
-        // const industry = await BuisnessIndustries.findById(
-        //   checkUser.businessIndustryId
-        // );
-        // const columns = industry?.columns;
-        // let keys = [];
-        // columns?.map((fields) => {
-        //   keys.push(Object.keys(fields));
-        // });
-        // const data = {};
-        // sendLeadDataToZap(input.zapierUrl, data)
-        //   .then((res) => {})
-        //   .catch((err) => {});
       }
       if (input.daily) {
         if (!checkUser.userLeadsDetailsId) {
