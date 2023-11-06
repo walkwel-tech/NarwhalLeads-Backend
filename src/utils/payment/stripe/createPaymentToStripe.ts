@@ -39,6 +39,7 @@ export const createPaymentOnStrip = async (params: IntentInterface) => {
         });
         const card = await CardDetails.findOne({
           paymentMethod: response?.data?.payment_method,
+          isDeleted: false,
         });
         await Transaction.create({
           userId: user?.id,
@@ -58,6 +59,7 @@ export const createPaymentOnStrip = async (params: IntentInterface) => {
         });
         const card = await CardDetails.findOne({
           paymentMethod: params.paymentMethod,
+          isDeleted: false,
         });
         await Transaction.create({
           userId: user?.id,

@@ -180,10 +180,12 @@ export class UsersControllers {
         dataToFind.role = { $in: [RolesEnum.NON_BILLABLE, RolesEnum.USER] };
       }
       if (filter === FILTER_FOR_CLIENT.BILLABLE && !accountManagerBoolean) {
-        dataToFind.role = { $in: [RolesEnum.USER] };
+        // dataToFind.role = { $in: [RolesEnum.USER] };
+        dataToFind.isCreditsAndBillingEnabled = true;
       }
       if (filter === FILTER_FOR_CLIENT.NON_BILLABLE && !accountManagerBoolean) {
-        dataToFind.role = { $in: [RolesEnum.NON_BILLABLE] };
+        // dataToFind.role = { $in: [RolesEnum.NON_BILLABLE] };
+        dataToFind.isCreditsAndBillingEnabled = false;
       }
       if (accountManagerBoolean) {
         dataToFind.role = RolesEnum.ACCOUNT_MANAGER;
@@ -696,6 +698,7 @@ export class UsersControllers {
       const cardExist = await CardDetails.findOne({
         userId: checkUser?._id,
         isDefault: true,
+        isDeleted: false,
       });
 
       if (

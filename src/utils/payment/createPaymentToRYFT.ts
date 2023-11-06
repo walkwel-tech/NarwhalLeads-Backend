@@ -242,6 +242,7 @@ export const createSessionInitial = (params: any) => {
     const user = await User.findOne({ email: params.email });
     const card = await CardDetails.findOne({
       paymentMethod: params.paymentMethodId,
+      isDeleted: false,
     });
     const data = JSON.stringify(body);
     const config = {
@@ -335,6 +336,7 @@ export const createSessionUnScheduledPayment = async (params: any) => {
     const user = await User.findOne({ email: params.email });
     const card = await CardDetails.findOne({
       paymentMethod: params.paymentMethodId,
+      isDeleted: false,
     });
     const data = JSON.stringify(body);
     const config = {
