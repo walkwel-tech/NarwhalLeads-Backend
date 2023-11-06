@@ -394,6 +394,7 @@ export class LeadsController {
         const card = await CardDetails.findOne({
           userId: user?.id,
           isDefault: true,
+          isDeleted: false,
         });
         const payment: any = {
           buyerId: lead?.bid,
@@ -936,8 +937,8 @@ export class LeadsController {
         item.leads.status = item.status;
         const columnMapping: Record<string, string> = {};
 
-        BuisnessIndustries.findById(user?.businessIndustryId).then(
-          (industry) => {
+        BuisnessIndustries.findById(user?.businessIndustryId)
+          .then((industry) => {
             industry?.columns.map((column: columnsObjects) => {
               if (
                 column.displayName &&
@@ -957,24 +958,26 @@ export class LeadsController {
               }
             }
             // item.columns = industry?.columns ? industry.columns: [];
-          }
-        ).catch((error:any)=>{
-          console.log("ERRORR: ", error);
-        });
+          })
+          .catch((error: any) => {
+            console.log("ERRORR: ", error);
+          });
         // Use explicit Promise construction
         return new Promise((resolve, reject) => {
           BusinessDetails.findById(item["clientName"][0]?.businessDetailsId)
-              .then(async  (businesss) => {
-                const industry = await BuisnessIndustries.findOne({industry: businesss?.businessIndustry});
-                item.leads.businessName = businesss?.businessName;
-                item.leads.businessIndustry = businesss?.businessIndustry;
-                item.columns = industry?.columns ?? [];
-
-                resolve(item); // Resolve the promise with the modified item
-              })
-              .catch((error) => {
-                reject(error); // Reject the promise if there's an error
+            .then(async (businesss) => {
+              const industry = await BuisnessIndustries.findOne({
+                industry: businesss?.businessIndustry,
               });
+              item.leads.businessName = businesss?.businessName;
+              item.leads.businessIndustry = businesss?.businessIndustry;
+              item.columns = industry?.columns ?? [];
+
+              resolve(item); // Resolve the promise with the modified item
+            })
+            .catch((error) => {
+              reject(error); // Reject the promise if there's an error
+            });
         });
       });
 
@@ -1179,11 +1182,36 @@ export class LeadsController {
           item.leads.clientName = "Deleted User";
         }
         item.leads.status = item.status;
+        const columnMapping: Record<string, string> = {};
+
+        BuisnessIndustries.findById(
+          item["clientName"][0]?.businessIndustryId
+        ).then((industry) => {
+          industry?.columns.map((column: columnsObjects) => {
+            if (
+              column.displayName &&
+              column.originalName &&
+              column.isVisible === true
+            ) {
+              columnMapping[column.displayName] = column.originalName;
+            }
+          });
+          for (const displayName in columnMapping) {
+            const originalName = columnMapping[displayName];
+            const leads = item.leads;
+            if (leads.hasOwnProperty(originalName)) {
+              leads[originalName] = leads[originalName];
+            } else {
+              leads[originalName] = "";
+            }
+          }
+          // item.columns = industry?.columns;
+        });
 
         // Use explicit Promise construction
         return new Promise((resolve, reject) => {
           BusinessDetails.findById(item["clientName"][0]?.businessDetailsId)
-            .then((businesss) => {
+            .then(async (businesss) => {
               if (businesss) {
                 item.leads.businessName = businesss?.businessName;
                 item.leads.businessIndustry = businesss?.businessIndustry;
@@ -1191,7 +1219,11 @@ export class LeadsController {
                 item.leads.businessName = "Deleted Business Details";
                 item.leads.businessIndustry = "Deleted Business Industry";
               }
+              const industry = await BuisnessIndustries.findOne({
+                industry: businesss?.businessIndustry,
+              });
 
+              item.columns = industry?.columns ?? [];
               resolve(item); // Resolve the promise with the modified item
             })
             .catch((error) => {
@@ -1420,7 +1452,7 @@ export class LeadsController {
         // Use explicit Promise construction
         return new Promise((resolve, reject) => {
           BusinessDetails.findById(item["clientName"][0]?.businessDetailsId)
-            .then(async(businesss) => {
+            .then(async (businesss) => {
               if (businesss) {
                 item.leads.businessName = businesss?.businessName;
                 item.leads.businessIndustry = businesss?.businessIndustry;
@@ -1428,9 +1460,10 @@ export class LeadsController {
                 item.leads.businessName = "Deleted Business Details";
                 item.leads.businessIndustry = "Deleted Business Industry";
               }
-              const industry = await BuisnessIndustries.findOne({industry: businesss?.businessIndustry});
-              // item.leads.businessName = businesss?.businessName;
-              // item.leads.businessIndustry = businesss?.businessIndustry;
+              const industry = await BuisnessIndustries.findOne({
+                industry: businesss?.businessIndustry,
+              });
+
               item.columns = industry?.columns ?? [];
 
               resolve(item); // Resolve the promise with the modified item
@@ -1676,11 +1709,11 @@ export class LeadsController {
                 item.leads.businessName = "Deleted";
                 item.leads.businessIndustry = "Deleted";
               }
-              const industry = await BuisnessIndustries.findOne({industry: businesss?.businessIndustry});
-              // item.leads.businessName = businesss?.businessName;
-              // item.leads.businessIndustry = businesss?.businessIndustry;
-              item.columns = industry?.columns ?? [];
+              const industry = await BuisnessIndustries.findOne({
+                industry: businesss?.businessIndustry,
+              });
 
+              item.columns = industry?.columns ?? [];
               resolve(item); // Resolve the promise with the modified item
             })
             .catch((error) => {
@@ -2448,7 +2481,6 @@ export class LeadsController {
       > = {
         status: leadsStatusEnums.REPORT_REJECTED,
       };
-
       if (_req.user.role === RolesEnum.ACCOUNT_MANAGER) {
         let bids: string[] = [];
         const users = await User.find({
@@ -2486,6 +2518,7 @@ export class LeadsController {
         dataToFindForReported.bid = { $in: bids };
         dataToFindForValid.bid = { $in: bids };
       }
+
       const valid = await Leads.find(dataToFindForValid).count();
       const reported = await Leads.find(dataToFindForReported).count();
       const reportAccepted = await Leads.find(

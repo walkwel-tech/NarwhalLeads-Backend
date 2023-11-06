@@ -83,6 +83,7 @@ export const weeklypayment = async () => {
             const card = await CardDetails.findOne({
               userId: user?.id,
               isDefault: true,
+              isDeleted: false,
             });
 
             const leads = await Leads.find({
@@ -257,7 +258,7 @@ const chargeUser = async (params: paymentParams) => {
           (await User.findOne({ ryftClientId: params.clientId })) ??
           ({} as UserInterface);
         const cards: CardDetailsInterface[] =
-          (await CardDetails.find({ userId: user.id })) ??
+          (await CardDetails.find({ userId: user.id, isDeleted: false })) ??
           ([] as CardDetailsInterface[]);
         await handleFailedCharge(user, cards);
         reject(err);
@@ -301,6 +302,7 @@ const handleFailedCharge = async (
         (await CardDetails.findOne({
           paymentMethod: leftCards[0],
           userId: user.id,
+          isDeleted: false,
         })) ?? ({} as CardDetailsInterface);
       const params = {
         fixedAmount:
@@ -341,6 +343,7 @@ const autoTopUp = async (
   if (success) {
     const cardExist = await CardDetails.findOne({
       paymentSessionID: success.data.previousPayment.id,
+      isDeleted: false,
     });
     const text = {
       firstName: user.firstName,
