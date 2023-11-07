@@ -503,36 +503,40 @@ export function sendEmailForNewLead(send_to: string, message: any) {
       lastName: message.lastName,
       phone: message.phone,
       email: message.email,
+      id: message.id,
     },
   };
-  if (checkAccess()) {
-    sgMail
-      .send(msg)
-      .then(() => {
-        console.log("Email sent");
-        // send_to.map(async (emails) => {
-        const params = {
-          email: send_to,
-          title: TEMPLATES_TITLE.NEW_LEAD,
-          templateId: TEMPLATES_ID.NEW_LEAD,
-          status: NOTIFICATION_STATUS.SUCCESS,
-        };
-        saveNotifications(params);
-        // });
-      })
-      .catch((error: any) => {
-        console.error(error);
-        const params = {
-          email: send_to,
-          title: TEMPLATES_TITLE.NEW_LEAD,
-          templateId: TEMPLATES_ID.NEW_LEAD,
-          status: NOTIFICATION_STATUS.FAIL,
-        };
-        saveNotifications(params);
-      });
-  } else {
-    console.log("Emails access only on production");
+  // if (checkAccess()) {
+  if (process.env.APP_ENV !== APP_ENV.PRODUCTION) {
+    msg.to = process.env.SENDGRID_TO_EMAIL || "";
   }
+  sgMail
+    .send(msg)
+    .then(() => {
+      console.log("Email sent");
+      // send_to.map(async (emails) => {
+      const params = {
+        email: send_to,
+        title: TEMPLATES_TITLE.NEW_LEAD,
+        templateId: TEMPLATES_ID.NEW_LEAD,
+        status: NOTIFICATION_STATUS.SUCCESS,
+      };
+      saveNotifications(params);
+      // });
+    })
+    .catch((error: any) => {
+      console.error(error);
+      const params = {
+        email: send_to,
+        title: TEMPLATES_TITLE.NEW_LEAD,
+        templateId: TEMPLATES_ID.NEW_LEAD,
+        status: NOTIFICATION_STATUS.FAIL,
+      };
+      saveNotifications(params);
+    });
+  // } else {
+  //   console.log("Emails access only on production");
+  // }
 }
 
 export function sendEmaiForTotalLead(send_to: string, message: any) {
@@ -775,35 +779,35 @@ export function sendEmailForUpdatedDetails(message: any) {
       businessLogo: message?.logo,
     },
   };
-  // if (checkAccess()) {
-  if (process.env.APP_ENV !== APP_ENV.PRODUCTION) {
-    msg.to = process.env.SENDGRID_TO_EMAIL || "";
+  if (checkAccess()) {
+    if (process.env.APP_ENV !== APP_ENV.PRODUCTION) {
+      msg.to = process.env.SENDGRID_TO_EMAIL || "";
+    }
+    sgMail
+      .send(msg)
+      .then(() => {
+        console.log("Email sent");
+        const params = {
+          email: process.env.ADMIN_EMAIL,
+          title: TEMPLATES_TITLE.USER_UPDATE_DETAILS,
+          templateId: TEMPLATES_ID.USER_UPDATE_DETAILS,
+          status: NOTIFICATION_STATUS.SUCCESS,
+        };
+        saveNotifications(params);
+      })
+      .catch((error: any) => {
+        console.error(error);
+        const params = {
+          email: process.env.ADMIN_EMAIL,
+          title: TEMPLATES_TITLE.USER_UPDATE_DETAILS,
+          templateId: TEMPLATES_ID.USER_UPDATE_DETAILS,
+          status: NOTIFICATION_STATUS.FAIL,
+        };
+        saveNotifications(params);
+      });
+  } else {
+    console.log("Emails access only on production");
   }
-  sgMail
-    .send(msg)
-    .then(() => {
-      console.log("Email sent");
-      const params = {
-        email: process.env.ADMIN_EMAIL,
-        title: TEMPLATES_TITLE.USER_UPDATE_DETAILS,
-        templateId: TEMPLATES_ID.USER_UPDATE_DETAILS,
-        status: NOTIFICATION_STATUS.SUCCESS,
-      };
-      saveNotifications(params);
-    })
-    .catch((error: any) => {
-      console.error(error);
-      const params = {
-        email: process.env.ADMIN_EMAIL,
-        title: TEMPLATES_TITLE.USER_UPDATE_DETAILS,
-        templateId: TEMPLATES_ID.USER_UPDATE_DETAILS,
-        status: NOTIFICATION_STATUS.FAIL,
-      };
-      saveNotifications(params);
-    });
-  // } else {
-  //   console.log("Emails access only on production");
-  // }
 }
 
 export function sendEmailForPaymentSuccess(send_to: any, message: any) {
