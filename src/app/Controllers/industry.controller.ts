@@ -8,7 +8,7 @@ import { validate } from "class-validator";
 import { ValidationErrorResponse } from "../../types/ValidationErrorResponse";
 import { LeadTablePreference } from "../Models/LeadTablePreference";
 import { BuisnessIndustriesInterface } from "../../types/BuisnessIndustriesInterface";
-import { columnsObjects } from "../../types/columnsInterface";
+// import { columnsObjects } from "../../types/columnsInterface";
 import { json } from "../../utils/constantFiles/businessIndustryJson";
 const LIMIT = 10;
 export class IndustryController {
@@ -75,9 +75,6 @@ export class IndustryController {
           .status(404)
           .json({ error: { message: "Business Industry not found." } });
       }
-      updatedData?.columns.sort(
-        (a: columnsObjects, b: columnsObjects) => a.index - b.index
-      );
 
       if (input.leadCost) {
         await User.updateMany(
@@ -186,9 +183,6 @@ export class IndustryController {
       const dataWithoutPagination = await BuisnessIndustries.find(dataToFind)
         .collation({ locale: "en" })
         .sort({ industry: 1 });
-      data.map((data) => {
-        data?.columns.sort((a: any, b: any) => a.index - b.index);
-      });
       const totalPages = Math.ceil(dataWithoutPagination.length / perPage);
 
       if (data && req.query.perPage) {
@@ -225,7 +219,6 @@ export class IndustryController {
           .status(404)
           .json({ error: { message: "Business Industry is deleted" } });
       }
-      data?.columns.sort((a: any, b: any) => a.index - b.index);
 
       return res.json({ data: data });
     } catch (error) {
