@@ -282,13 +282,12 @@ export class CardDetailsControllers {
           );
         }
         let userData: CardDetailsInterface;
-        const cardExist = await CardDetails.findOne({ userId: user?.id });
         const cardExists = await CardDetails.find({
           userId: user?.id,
           isDeleted: false,
         });
 
-        if (!cardExist) {
+        if (!cardExists) {
           dataToSaveIncard.isDefault = true;
         }
         let existingCardNumbers: Array<string> = [];
@@ -520,6 +519,7 @@ export class CardDetailsControllers {
         userId: userId,
         isDefault: true,
         status: PAYMENT_STATUS.CAPTURED,
+        isDeleted: false,
       });
       if (!card) {
         return res
@@ -755,6 +755,7 @@ export class CardDetailsControllers {
           const cardDelete: CardDetailsInterface =
             (await CardDetails.findOne({
               paymentMethod: input.data?.paymentMethod?.id,
+              isDeleted: false,
             })) ?? ({} as CardDetailsInterface);
           await CardDetails.findByIdAndUpdate(cardDelete?.id, {
             isDeleted: true,
@@ -1417,6 +1418,7 @@ export class CardDetailsControllers {
     const sessionId: any = req.query.ps;
     let card = await CardDetails.findOne({
       paymentMethod: req.query?.paymentMethods,
+      isDeleted: false,
     });
 
     if (card?.cardType === CARD.STRIPE) {
@@ -1460,7 +1462,10 @@ export class CardDetailsControllers {
         const user = await User.findOne({
           stripeClientId: details.customer,
         });
-        const cards = await CardDetails.findOne({ userId: user?._id });
+        const cards = await CardDetails.findOne({
+          userId: user?._id,
+          isDeleted: false,
+        });
         const checkExists = await CardDetails.find({
           cardNumber: userDetails.card?.last4,
           userId: user?._id,
@@ -1523,6 +1528,7 @@ async function getUserDetails(cid: string, pid: string) {
   const user = await User.findOne({ stripeClientId: cid });
   const card = await CardDetails.findOne({
     paymentMethod: pid,
+    isDeleted: false,
   });
   const business = await BusinessDetails.findById(user?.businessDetailsId);
 
