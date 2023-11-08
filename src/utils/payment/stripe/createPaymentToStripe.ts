@@ -11,7 +11,7 @@ const POST = "post";
 export const createPaymentOnStrip = async (params: IntentInterface) => {
   return new Promise((resolve, reject) => {
     let data = qs.stringify({
-      amount: params.amount,
+      amount: Math.ceil(params.amount || 0),
       currency: process.env.CURRENCY,
       automatic_payment_methods: { enabled: true },
       customer: params.customer,

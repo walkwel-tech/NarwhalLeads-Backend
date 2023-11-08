@@ -1064,6 +1064,7 @@ export class CardDetailsControllers {
             cardId: card?._id,
             creditsLeft: userId?.credits || 0,
             paymentMethod: input.data?.object.payment_method,
+            notes: input.data.object.last_payment_error.code,
           };
           if (userId?.paymentMethod === paymentMethodEnum.AUTOCHARGE_METHOD) {
             dataToSaveInTransaction.paymentType = PAYMENT_TYPE_ENUM.AUTO_CHARGE;
