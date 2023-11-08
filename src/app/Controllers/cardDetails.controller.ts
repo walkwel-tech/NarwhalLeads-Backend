@@ -32,7 +32,10 @@ import { addCreditsToBuyer } from "../../utils/payment/addBuyerCredit";
 import { RolesEnum } from "../../types/RolesEnum";
 import axios from "axios";
 // import { ONBOARDING_KEYS } from "../../utils/constantFiles/OnBoarding.keys";
-import { ONBOARDING_KEYS } from "../../utils/constantFiles/OnBoarding.keys";
+import {
+  ONBOARDING_KEYS,
+  ONBOARDING_PERCENTAGE,
+} from "../../utils/constantFiles/OnBoarding.keys";
 import {
   createSessionInitial,
   createSessionUnScheduledPayment,
@@ -256,6 +259,7 @@ export class CardDetailsControllers {
             dependencies: [],
           },
         ],
+        onBoardingPercentage: ONBOARDING_PERCENTAGE.CARD_DETAILS,
       });
       if (input?.isUserSignup) {
         await User.findByIdAndUpdate(id, { isUserSignup: true });
@@ -1373,6 +1377,7 @@ export class CardDetailsControllers {
                 dependencies: [],
               },
             ],
+            onBoardingPercentage: 100,
           });
         }
 
@@ -1510,6 +1515,7 @@ export class CardDetailsControllers {
                   dependencies: [],
                 },
               ],
+              onBoardingPercentage: 100,
             },
             { new: true }
           );
