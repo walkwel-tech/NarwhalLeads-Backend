@@ -35,7 +35,10 @@ import { addCreditsToBuyer } from "../../utils/payment/addBuyerCredit";
 import { TransactionInterface } from "../../types/TransactionInterface";
 import { InvoiceInterface } from "../../types/InvoiceInterface";
 import { cmsUpdateBuyerWebhook } from "../../utils/webhookUrls/cmsUpdateBuyerWebhook";
-import { ONBOARDING_KEYS } from "../../utils/constantFiles/OnBoarding.keys";
+import {
+  ONBOARDING_KEYS,
+  ONBOARDING_PERCENTAGE,
+} from "../../utils/constantFiles/OnBoarding.keys";
 import { CARD_DETAILS } from "../../utils/constantFiles/signupFields";
 import { BuisnessIndustries } from "../Models/BuisnessIndustries";
 import { sendLeadDataToZap } from "../../utils/webhookUrls/sendDataZap";
@@ -338,6 +341,30 @@ export class UsersControllers {
         pipeline[0].$facet.results.push({ $skip: skip });
         //@ts-ignore
         pipeline[0].$facet.results.push({ $limit: perPage });
+      }
+      if (
+        _req.query.onBoardingPercentage &&
+        _req.query.onBoardingPercentage != "all" &&
+        !accountManagerBoolean === true
+      ) {
+        dataToFind.onBoardingPercentage = parseInt(
+          _req.query.onBoardingPercentage
+        );
+      }
+
+      if (
+        _req.query.onBoardingPercentage &&
+        _req.query.onBoardingPercentage === "all" &&
+        !accountManagerBoolean === true
+      ) {
+        dataToFind.onBoardingPercentage = {
+          $in: [
+            ONBOARDING_PERCENTAGE.BUSINESS_DETAILS,
+            ONBOARDING_PERCENTAGE.USER_DETAILS,
+            ONBOARDING_PERCENTAGE.LEAD_DETAILS,
+            ONBOARDING_PERCENTAGE.CARD_DETAILS,
+          ],
+        };
       }
       const [query]: any = await User.aggregate(pipeline);
       query.results.map((item: any) => {
@@ -936,8 +963,10 @@ export class UsersControllers {
         const result: { [key: string]: string } = {};
         if (columns) {
           for (const item of columns) {
-            //@ts-ignore
-            result[item.originalName] = item.displayName;
+            if (item.isVisible === true) {
+              //@ts-ignore
+              result[item.originalName] = item.displayName;
+            }
           }
         }
         const leadDetails = await UserLeadsDetails.findById(
@@ -1905,7 +1934,7 @@ function convertDataForDaysInMonth(data: any, labels: any, year: any) {
   return { labels, data: dataArr, years: years };
 }
 
-function areAllPendingFieldsEmpty(
+export function areAllPendingFieldsEmpty(
   object: { key: string; pendingFields: string[]; dependencies: string[] }[]
 ) {
   for (const item of object) {
