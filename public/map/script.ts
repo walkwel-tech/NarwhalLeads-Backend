@@ -335,6 +335,7 @@ const handleOnBoarding = async () => {
             }
           }
         }
+        resolve("updated");
       });
     });
   } catch {
