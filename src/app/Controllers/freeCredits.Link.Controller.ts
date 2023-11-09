@@ -4,16 +4,8 @@ import { freeCreditsLinkInterface } from "../../types/FreeCreditsLinkInterface";
 import { UserInterface } from "../../types/UserInterface";
 import { ObjectId } from "mongodb";
 import { LINK_FILTERS } from "../../utils/Enums/promoLink.enum";
-
-let alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
-
-function randomString(length: number) {
-  let result = "";
-  for (let i = 0; i < length; ++i) {
-    result += alphabet[Math.floor(alphabet.length * Math.random())];
-  }
-  return result;
-}
+import { RolesEnum } from "../../types/RolesEnum";
+import { randomString } from "../../utils/Functions/randomString";
 
 export class freeCreditsLinkController {
   static create = async (req: Request, res: Response): Promise<any> => {
@@ -87,6 +79,9 @@ export class freeCreditsLinkController {
     }
     if (req.query.accountManager) {
       dataToFind.accountManager = new ObjectId(req.query.accountManager);
+    }
+    if (req.user.role === RolesEnum.ACCOUNT_MANAGER) {
+      dataToFind.accountManager = req.user._id;
     }
     try {
       let query = await FreeCreditsLink.aggregate([
@@ -209,7 +204,6 @@ export class freeCreditsLinkController {
         }
         return dataToShow;
       });
-
       return res.json({
         data: transformedData,
       });

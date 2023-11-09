@@ -193,6 +193,12 @@ export class UsersControllers {
       if (accountManagerBoolean) {
         dataToFind.role = RolesEnum.ACCOUNT_MANAGER;
       }
+      if (
+        accountManagerBoolean &&
+        _req.user.role === RolesEnum.ACCOUNT_MANAGER
+      ) {
+        dataToFind._id = new ObjectId(_req.user._id);
+      }
       if (_req.query.isActive) {
         dataToFind.isActive = JSON.parse(isActive?.toLowerCase());
         dataToFind.isArchived = false;
@@ -206,7 +212,10 @@ export class UsersControllers {
       if (accountManagerId != "" && accountManagerId) {
         dataToFind.accountManager = new ObjectId(_req.query.accountManagerId);
       }
-      if (_req.user.role === RolesEnum.ACCOUNT_MANAGER) {
+      if (
+        _req.user.role === RolesEnum.ACCOUNT_MANAGER &&
+        !accountManagerBoolean
+      ) {
         dataToFind.accountManager = new ObjectId(_req.user._id);
       }
       if (_req.query.search) {
@@ -366,6 +375,7 @@ export class UsersControllers {
           ],
         };
       }
+
       const [query]: any = await User.aggregate(pipeline);
       query.results.map((item: any) => {
         let businessDetailsId = Object.assign({}, item["businessDetailsId"][0]);
@@ -546,7 +556,12 @@ export class UsersControllers {
     try {
       const business = await User.aggregate(
         [
-          { $match: { isDeleted: false, role: RolesEnum.USER } },
+          {
+            $match: {
+              isDeleted: false,
+              role: { $in: [RolesEnum.USER, RolesEnum.NON_BILLABLE] },
+            },
+          },
           {
             $lookup: {
               from: "businessdetails",
@@ -750,6 +765,7 @@ export class UsersControllers {
         }
         const businesses = await BusinessDetails.find({
           businessName: input.businessName,
+          isDeleted: false,
         });
         if (businesses.length > 0) {
           let array: mongoose.Types.ObjectId[] = [];

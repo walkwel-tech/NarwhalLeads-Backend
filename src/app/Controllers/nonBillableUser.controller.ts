@@ -3,7 +3,10 @@ import { Request, Response } from "express";
 import { RolesEnum } from "../../types/RolesEnum";
 import { sendEmailToInvitedAdmin } from "../Middlewares/mail";
 import { User } from "../Models/User";
-import { ONBOARDING_KEYS } from "../../utils/constantFiles/OnBoarding.keys";
+import {
+  ONBOARDING_KEYS,
+  ONBOARDING_PERCENTAGE,
+} from "../../utils/constantFiles/OnBoarding.keys";
 import { createCustomerOnRyft } from "../../utils/createCustomer/createOnRyft";
 import {
   BUSINESS_DETAILS,
@@ -100,6 +103,7 @@ export class nonBillableUsersController {
               dependencies: [],
             },
           ],
+          onBoardingPercentage: ONBOARDING_PERCENTAGE.USER_DETAILS,
         };
 
         const result = await User.create(dataToSave);
