@@ -29,7 +29,6 @@ freeCreditsLinkRoutes.get(
   checkPermissions([
     { module: MODULE.PROMO_LINKS, permission: PERMISSIONS.READ },
   ]),
-  OnlyAdmins,
   freeCreditsLinkController.show
 );
 freeCreditsLinkRoutes.post(

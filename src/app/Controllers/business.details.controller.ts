@@ -69,6 +69,7 @@ export class BusinessDetailsController {
     const errors = await validate(Business);
     const isBusinessNameExist = await BusinessDetails.find({
       businessName: input.businessName,
+      isDeleted: false,
     });
     if (isBusinessNameExist.length > 0) {
       return res
@@ -330,6 +331,7 @@ export class BusinessDetailsController {
         // if (userData?.registrationMailSentToAdmin) {
         const businesses = await BusinessDetails.find({
           businessName: input.businessName,
+          isDeleted: false,
         });
         if (businesses.length > 0) {
           let array: mongoose.Types.ObjectId[] = [];
@@ -641,6 +643,7 @@ export class BusinessDetailsController {
     Business.businessOpeningHours = JSON.parse(input?.businessOpeningHours);
     const isBusinessNameExist = await BusinessDetails.findOne({
       businessName: input.businessName,
+      isDeleted: false,
     });
     const user: UserInterface =
       (await User.findById(input.userId)) ?? ({} as UserInterface);
