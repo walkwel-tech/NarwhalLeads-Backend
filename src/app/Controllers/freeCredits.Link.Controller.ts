@@ -6,7 +6,12 @@ import { ObjectId } from "mongodb";
 import { LINK_FILTERS } from "../../utils/Enums/promoLink.enum";
 import { RolesEnum } from "../../types/RolesEnum";
 import { randomString } from "../../utils/Functions/randomString";
-
+import { Types } from "mongoose";
+type Filter = {
+  isDisabled: Boolean;
+  isDeleted: Boolean;
+  accountManager?: Types.ObjectId;
+};
 export class freeCreditsLinkController {
   static create = async (req: Request, res: Response): Promise<any> => {
     try {
@@ -246,14 +251,18 @@ export class freeCreditsLinkController {
 
   static stats = async (_req: any, res: Response) => {
     try {
-      const active = await FreeCreditsLink.find({
-        isDisabled: false,
-        isDeleted: false,
-      }).count();
-      const paused = await FreeCreditsLink.find({
+      let dataToFindActive: Filter = { isDisabled: false, isDeleted: false };
+
+      let dataToFindInActive: Filter = {
         isDisabled: true,
         isDeleted: false,
-      }).count();
+      };
+      if (_req.user.role === RolesEnum.ACCOUNT_MANAGER) {
+        dataToFindActive.accountManager = _req.user._id;
+        dataToFindInActive.accountManager = _req.user._id;
+      }
+      const active = await FreeCreditsLink.find(dataToFindActive).count();
+      const paused = await FreeCreditsLink.find(dataToFindInActive).count();
 
       const dataToShow = {
         liveLinks: active,
