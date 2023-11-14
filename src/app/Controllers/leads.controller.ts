@@ -399,6 +399,7 @@ export class LeadsController {
           name: leadUser.firstName + " " + leadUser.lastName,
         };
         sendEmailForLeadStatusAccept(leadUser?.email, message);
+        //send webhook for lead accepted
         addCreditsToBuyer(payment)
           .then(async () => {
             const dataToSave: any = {
@@ -1078,6 +1079,16 @@ export class LeadsController {
       if (status) {
         dataToFind.status = status;
         // dataToFind = { status: status };
+      }
+
+      if (_req.user.role === RolesEnum.ACCOUNT_MANAGER) {
+        const users = await User.find({
+          accountManager: _req.user._id,
+        });
+        users.map((user: UserInterface) => {
+          return bids.push(user.buyerId);
+        });
+        dataToFind.bid = { $in: bids };
       }
       const [query]: any = await Leads.aggregate([
         {

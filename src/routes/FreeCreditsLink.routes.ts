@@ -2,14 +2,14 @@ import { Router } from "express";
 // import multer from "multer";
 
 import { freeCreditsLinkController } from "../app/Controllers/freeCredits.Link.Controller";
-import { Auth, OnlyAdmins } from "../app/Middlewares";
+import { Auth } from "../app/Middlewares";
 import { checkPermissions } from "../app/Middlewares/roleBasedAuthentication";
 import { MODULE, PERMISSIONS } from "../utils/Enums/permissions.enum";
 
 const freeCreditsLinkRoutes: Router = Router();
 freeCreditsLinkRoutes.delete(
   "/:id",
-  OnlyAdmins,
+  Auth,
   checkPermissions([
     { module: MODULE.PROMO_LINKS, permission: PERMISSIONS.DELETE },
   ]),
@@ -33,7 +33,7 @@ freeCreditsLinkRoutes.get(
 );
 freeCreditsLinkRoutes.post(
   "/:id",
-  OnlyAdmins,
+  Auth,
   checkPermissions([
     { module: MODULE.PROMO_LINKS, permission: PERMISSIONS.UPDATE },
   ]),
@@ -46,7 +46,6 @@ freeCreditsLinkRoutes.get(
   checkPermissions([
     { module: MODULE.PROMO_LINKS, permission: PERMISSIONS.READ },
   ]),
-  OnlyAdmins,
   freeCreditsLinkController.stats
 );
 export default freeCreditsLinkRoutes;

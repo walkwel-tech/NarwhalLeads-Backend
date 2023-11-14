@@ -617,25 +617,29 @@ export class UsersControllers {
   };
 
   static update = async (req: Request, res: Response): Promise<any> => {
+    let user: Partial<UserInterface> = req.user ?? ({} as UserInterface);
     const { id } = req.params;
     const input = req.body;
     if (input.password) {
-      // @ts-ignore
       delete input.password;
     }
-    // @ts-ignore
-    if (input.credits && req?.user.role == RolesEnum.USER) {
-      // @ts-ignore
+    if (input.credits && user.role == RolesEnum.USER) {
       delete input.credits;
     }
 
-    if (
-      // @ts-ignore
-      req?.user.role === RolesEnum.USER &&
-      (input.email || input.email == "")
-    ) {
-      // @ts-ignore
-      input.email = req.user?.email;
+    if (user.role === RolesEnum.USER && (input.email || input.email == "")) {
+      input.email = user?.email;
+    }
+
+    if (user.role === RolesEnum.SUPER_ADMIN && input.email) {
+      const email = await User.find({ email: input.email, isDeleted: false });
+      if (email.length > 0) {
+        return res.status(400).json({
+          error: {
+            message: "Email already registered with another user",
+          },
+        });
+      }
     }
 
     try {
@@ -643,16 +647,13 @@ export class UsersControllers {
       const businesBeforeUpdate = await BusinessDetails.findById(
         checkUser?.businessDetailsId
       );
-      // const userLeadDetailsBeforeUpdate=await UserLeadsDetails.findById(checkUser?.userLeadsDetailsId)
       const userForActivity = await User.findById(
         id,
         " -_id -businessDetailsId -businessIndustryId -userLeadsDetailsId -onBoarding -createdAt -updatedAt"
       ).lean();
       if (
         input.paymentMethod === paymentMethodEnum.WEEKLY_PAYMENT_METHOD &&
-        // checkUser?.paymentMethod == paymentMethodEnum.WEEKLY_PAYMENT_METHOD
-        //@ts-ignore
-        req.user?.role === RolesEnum.USER
+        user?.role === RolesEnum.USER
       ) {
         return res.status(403).json({
           error: {
@@ -662,14 +663,12 @@ export class UsersControllers {
         });
       }
       if (
-        // @ts-ignore
         (input.buyerId ||
           input.leadCost ||
           input.ryftClientId ||
           input.xeroContactId ||
           input.role) &&
-        //@ts-ignore
-        req.user?.role == RolesEnum.USER
+        user?.role == RolesEnum.USER
       ) {
         return res
           .status(403)
@@ -677,10 +676,8 @@ export class UsersControllers {
       }
       if (
         input.paymentMethod &&
-        // @ts-ignore
         checkUser?.paymentMethod == paymentMethodEnum.WEEKLY_PAYMENT_METHOD &&
-        // @ts-ignore
-        req.user?.role === RolesEnum.USER
+        user?.role === RolesEnum.USER
       ) {
         return res.status(403).json({
           error: { message: "Please contact admin to change payment method" },
@@ -756,12 +753,9 @@ export class UsersControllers {
       if (
         !cardExist &&
         input.credits &&
-        //@ts-ignore
-        (req?.user.role == RolesEnum.USER ||
-          //@ts-ignore
-          req?.user.role == RolesEnum.ADMIN ||
-          //@ts-ignore
-          req?.user.role == RolesEnum.SUPER_ADMIN)
+        (user.role == RolesEnum.USER ||
+          user.role == RolesEnum.ADMIN ||
+          user.role == RolesEnum.SUPER_ADMIN)
       ) {
         return res
           .status(404)
@@ -1031,10 +1025,9 @@ export class UsersControllers {
       }
       if (
         input.credits &&
-        // @ts-ignore
-        (req?.user.role == RolesEnum.ADMIN ||
+        (user.role == RolesEnum.ADMIN ||
           // @ts-ignore
-          req?.user.role == RolesEnum.SUPER_ADMIN)
+          user.role == RolesEnum.SUPER_ADMIN)
       ) {
         const params: any = {
           fixedAmount: input.credits,
@@ -1199,8 +1192,7 @@ export class UsersControllers {
 
         if (!isEmpty && user?.isSignUpCompleteWithCredit) {
           const activity = {
-            //@ts-ignore
-            actionBy: req?.user?.role,
+            actionBy: user?.role,
             actionType: ACTION.UPDATING,
             targetModel: MODEL_ENUM.USER,
             userEntity: req.params.id,
@@ -1250,11 +1242,9 @@ export class UsersControllers {
             const isEmpty = Object.keys(fields.updatedFields).length === 0;
             if (!isEmpty && user?.isSignUpCompleteWithCredit) {
               const activity = {
-                //@ts-ignore
-                actionBy: req?.user?.role,
+                actionBy: user?.role,
                 actionType: ACTION.UPDATING,
                 targetModel: MODEL_ENUM.BUSINESS_DETAILS,
-                //@ts-ignore
                 userEntity: checkUser?.id,
                 originalValues: fields.oldFields,
                 modifiedValues: fields.updatedFields,
