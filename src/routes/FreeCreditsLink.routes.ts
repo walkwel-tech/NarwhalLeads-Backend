@@ -17,7 +17,7 @@ freeCreditsLinkRoutes.delete(
 );
 freeCreditsLinkRoutes.post(
   "/",
-  OnlyAdmins,
+  Auth,
   checkPermissions([
     { module: MODULE.PROMO_LINKS, permission: PERMISSIONS.CREATE },
   ]),

@@ -54,6 +54,12 @@ interface DataObject {
 type RoleFilter = {
   $in: (RolesEnum.USER | RolesEnum.NON_BILLABLE)[];
 };
+
+type FindOptions = {
+  isDeleted: boolean;
+  role: RoleFilter;
+  accountManager?: Types.ObjectId;
+};
 export class UsersControllers {
   static create = async (req: Request, res: Response): Promise<Response> => {
     const input = req.body;
@@ -375,7 +381,6 @@ export class UsersControllers {
           ],
         };
       }
-
       const [query]: any = await User.aggregate(pipeline);
       query.results.map((item: any) => {
         let businessDetailsId = Object.assign({}, item["businessDetailsId"][0]);
@@ -554,13 +559,18 @@ export class UsersControllers {
 
   static indexName = async (req: Request, res: Response): Promise<Response> => {
     try {
+      let user: Partial<UserInterface> = req.user ?? ({} as UserInterface);
+      let dataToFind: FindOptions = {
+        isDeleted: false,
+        role: { $in: [RolesEnum.USER, RolesEnum.NON_BILLABLE] },
+      };
+      if (user?.role === RolesEnum.ACCOUNT_MANAGER) {
+        dataToFind.accountManager = new ObjectId(user._id);
+      }
       const business = await User.aggregate(
         [
           {
-            $match: {
-              isDeleted: false,
-              role: { $in: [RolesEnum.USER, RolesEnum.NON_BILLABLE] },
-            },
+            $match: dataToFind,
           },
           {
             $lookup: {
@@ -1340,6 +1350,8 @@ export class UsersControllers {
     _req: any,
     res: Response
   ) => {
+    let user: Partial<UserInterface> = _req.user ?? ({} as UserInterface);
+
     const id = _req.query.id;
     const status = _req.query.status;
     let sortingOrder = _req.query.sortingOrder || sort.DESC;
@@ -1382,6 +1394,14 @@ export class UsersControllers {
       }
       if (id) {
         dataToFind._id = new ObjectId(id);
+      }
+      if (_req.user.role === RolesEnum.ACCOUNT_MANAGER) {
+        let ids: any = [];
+        const users = await User.find({ accountManager: user._id });
+        users.map((user) => {
+          return ids.push(new ObjectId(user._id));
+        });
+        dataToFind._id = { $in: ids };
       }
       if (industry) {
         let ids: any = [];
