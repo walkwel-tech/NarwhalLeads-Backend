@@ -6,4 +6,7 @@ export interface PermissionInterface extends Document {
     module: string;
     permission: string[];
   }>;
+  isDeleted: boolean;
+  deletedAt: Date
+
 }

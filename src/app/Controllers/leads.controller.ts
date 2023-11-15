@@ -42,6 +42,8 @@ import { UserInterface } from "../../types/UserInterface";
 // import { leadReprocessWebhookLeadCenter } from "../../utils/webhookUrls/leadsReprocessWebhook";
 import { LeadsInterface } from "../../types/LeadsInterface";
 import { columnsObjects } from "../../types/columnsInterface";
+import { leadReportWebhook } from "../../utils/webhookUrls/leadReportedWebhook";
+import { getLeadCenterToken } from "../../utils/Functions/getLeadCenterToken";
 
 const ObjectId = mongoose.Types.ObjectId;
 
@@ -399,7 +401,47 @@ export class LeadsController {
           name: leadUser.firstName + " " + leadUser.lastName,
         };
         sendEmailForLeadStatusAccept(leadUser?.email, message);
-        //send webhook for lead accepted
+        const business = await BusinessDetails.findById(
+          user?.businessDetailsId,
+          "businessName businessIndustry"
+        );
+        // hitting webhook
+        let reqBody = {
+          leadId: lead.leads?.leadId,
+          industry: business?.businessIndustry,
+          client: business?.businessName,
+          supplier: lead.leads?.sid,
+          quantity: 1,
+          date: new Date(),
+          reason: lead.invalidLeadReason,
+        };
+        leadReportWebhook(reqBody)
+          .then(() => {})
+          .catch((err) => {
+            if (err.status === 401) {
+              getLeadCenterToken()
+                .then((res) => {
+                  leadReportWebhook(reqBody)
+                    .then(() => {
+                      console.log(
+                        "lead Report accepted Webhook webhook hits successfully"
+                      );
+                    })
+                    .catch((err) =>
+                      console.error(
+                        "error in hitting webhook for report accepted",
+                        err
+                      )
+                    );
+                })
+                .catch((err) => {
+                  console.error(err, "login error");
+                });
+            } else {
+              console.error("body not passed properly", err);
+            }
+          });
+
         addCreditsToBuyer(payment)
           .then(async () => {
             const dataToSave: any = {
