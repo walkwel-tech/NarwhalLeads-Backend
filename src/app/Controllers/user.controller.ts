@@ -137,9 +137,7 @@ export class UsersControllers {
 
   static index = async (_req: any, res: Response): Promise<Response> => {
     try {
-      let sortingOrder = _req.query.sortBy
-        ? JSON.parse(_req.query.sortBy)[0]?.order || sort.DESC
-        : "";
+      let sortingOrder = _req.query.sortingOrder || sort.DESC;
 
       let filter = _req.query.clientType;
       let accountManagerBoolean = _req.query.accountManager;
@@ -381,6 +379,7 @@ export class UsersControllers {
           ],
         };
       }
+
       const [query]: any = await User.aggregate(pipeline);
       query.results.map((item: any) => {
         let businessDetailsId = Object.assign({}, item["businessDetailsId"][0]);

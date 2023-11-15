@@ -78,7 +78,17 @@ class AuthController {
       const user = await User.findOne({
         email: input.email,
         isDeleted: false,
-        role: RolesEnum.USER,
+        role: {
+          $in: [
+            RolesEnum.USER,
+            RolesEnum.ACCOUNT_MANAGER,
+            RolesEnum.ADMIN,
+            RolesEnum.SUBSCRIBER,
+            RolesEnum.NON_BILLABLE,
+            RolesEnum.INVITED,
+            RolesEnum.SUPER_ADMIN,
+          ],
+        },
       });
       if (!user) {
         const salt = genSaltSync(10);
