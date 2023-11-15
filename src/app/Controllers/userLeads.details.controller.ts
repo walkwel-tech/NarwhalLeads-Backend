@@ -282,6 +282,16 @@ export class UserLeadsController {
     const input = req.body;
     delete input._id;
     try {
+      let msg = "Updated successfully.";
+      if (input.leadAlertsFrequency) {
+        msg = "Notifications Updated Successfully";
+      }
+      if (input.sendDataToZapier) {
+        msg = "Webhook URL Updated Successfully";
+      }
+      if (input.smsPhoneNumber) {
+        msg = "SMS Notifications Updated Successfully";
+      }
       const details = await UserLeadsDetails.findById(id);
       const userForActivity = await UserLeadsDetails.findById(
         id,
@@ -413,7 +423,7 @@ export class UserLeadsController {
         cmsUpdateBuyerWebhook(userr?.id, card?.id);
         return res.json({
           data: {
-            message: "UserLeadsDetails updated successfully.",
+            message: msg,
             data: updatedDetails,
             service,
           },

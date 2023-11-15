@@ -92,7 +92,7 @@ user.get(
 
 user.get(
   "/export-csv-file",
-  OnlyAdmins,
+  Auth,
   checkPermissions([
     { module: MODULE.CLIENTS_CSV, permission: PERMISSIONS.READ },
   ]),

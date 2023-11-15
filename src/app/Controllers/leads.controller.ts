@@ -399,6 +399,7 @@ export class LeadsController {
           name: leadUser.firstName + " " + leadUser.lastName,
         };
         sendEmailForLeadStatusAccept(leadUser?.email, message);
+        //send webhook for lead accepted
         addCreditsToBuyer(payment)
           .then(async () => {
             const dataToSave: any = {
@@ -1079,6 +1080,16 @@ export class LeadsController {
         dataToFind.status = status;
         // dataToFind = { status: status };
       }
+
+      if (_req.user.role === RolesEnum.ACCOUNT_MANAGER) {
+        const users = await User.find({
+          accountManager: _req.user._id,
+        });
+        users.map((user: UserInterface) => {
+          return bids.push(user.buyerId);
+        });
+        dataToFind.bid = { $in: bids };
+      }
       const [query]: any = await Leads.aggregate([
         {
           $facet: {
@@ -1173,6 +1184,8 @@ export class LeadsController {
           item.leads.clientName = "Deleted User";
         }
         item.leads.status = item.status;
+        item.leads.businessName = "Deleted";
+        item.leads.businessIndustry = "Deleted";
         const columnMapping: Record<string, string> = {};
 
         BuisnessIndustries.findById(
@@ -2339,6 +2352,14 @@ export class LeadsController {
       if (industry) {
         let bids: any = [];
         const users = await User.find({ businessIndustryId: industry });
+        users.map((user) => {
+          return bids.push(user.buyerId);
+        });
+        dataToFind.bid = { $in: bids };
+      }
+      if (_req.user.role === RolesEnum.ACCOUNT_MANAGER) {
+        let bids: any = [];
+        const users = await User.find({ accountManager: _req.user._id });
         users.map((user) => {
           return bids.push(user.buyerId);
         });
