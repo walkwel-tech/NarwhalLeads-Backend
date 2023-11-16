@@ -196,6 +196,7 @@ export class UsersControllers {
       }
       if (accountManagerBoolean) {
         dataToFind.role = RolesEnum.ACCOUNT_MANAGER;
+        dataToFind.isActive = true;
       }
       if (
         accountManagerBoolean &&

@@ -29,6 +29,11 @@ const UserSchema = new Schema(
       type: Number,
       required: false,
     },
+    isCommissionedUser: {
+      type: Boolean,
+      default: false,
+      // required: true,
+    },
     phoneNumber: {
       type: String,
       default: null,
