@@ -48,6 +48,7 @@ import { Permissions } from "../Models/Permission";
 import { CARD } from "../../utils/Enums/cardType.enum";
 import { createCustomerOnStripe } from "../../utils/createCustomer/createOnStripe";
 import { Types } from "mongoose";
+import { getAccountManagerForRoundManager } from "../../utils/Functions/getAccountManagerForRoundManager";
 
 class AuthController {
   static register = async (req: Request, res: Response): Promise<any> => {
@@ -171,19 +172,28 @@ class AuthController {
         //   { $match: { role: RolesEnum.ACCOUNT_MANAGER } },
         //   { $sample: { size: 1 } },
         // ]);
+
         if (codeExists && checkCode && checkCode?.topUpAmount === 0) {
           dataToSave.premiumUser = PROMO_LINK.PREMIUM_USER_NO_TOP_UP;
           dataToSave.promoLinkId = checkCode?.id;
+          dataToSave.isCommissionedUser = checkCode?.isComission;
           if (checkCode.accountManager) {
             dataToSave.accountManager = checkCode.accountManager;
           }
         } else if (codeExists && checkCode && checkCode?.topUpAmount != 0) {
           dataToSave.premiumUser = PROMO_LINK.PREMIUM_USER_TOP_UP;
           dataToSave.promoLinkId = checkCode?.id;
+          dataToSave.isCommissionedUser = checkCode?.isComission;
           if (checkCode.accountManager) {
             dataToSave.accountManager = checkCode.accountManager;
           }
+        } else {
+          if (process.env.isRoundTableManager) {
+            dataToSave.accountManager =
+              await getAccountManagerForRoundManager();
+          }
         }
+
         await User.create(dataToSave);
         if (input.code) {
           const checkCode: freeCreditsLinkInterface =

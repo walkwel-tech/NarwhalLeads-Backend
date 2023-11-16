@@ -9,6 +9,7 @@ export interface UserInterface extends Document {
   businessIndustryId: Types.ObjectId;
   firstName: string;
   lastName: string;
+  isCommissionedUser: boolean;
   email: string;
   password: string;
   role: RolesEnum;

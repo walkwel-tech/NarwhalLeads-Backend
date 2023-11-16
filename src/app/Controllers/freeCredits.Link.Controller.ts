@@ -27,6 +27,7 @@ export class freeCreditsLinkController {
         useCounts: 0,
         name: input.name,
         accountManager: input.accountManager,
+        isComission: input?.isComission,
       };
       if (input.code) {
         dataToSave.code = input.code;
