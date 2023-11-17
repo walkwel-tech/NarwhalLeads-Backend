@@ -208,6 +208,10 @@ const UserSchema = new Schema(
     permissions: {
       type: Array,
     },
+    showImpersonate: {
+      type: Boolean,
+      default: false
+    },
   },
   { timestamps: true }
 );

@@ -620,6 +620,7 @@ export class UsersControllers {
     let user: Partial<UserInterface> = req.user ?? ({} as UserInterface);
     const { id } = req.params;
     const input = req.body;
+    const checkUser = (await User.findById(id)) ?? ({} as UserInterface);
     if (input.password) {
       delete input.password;
     }
@@ -632,8 +633,11 @@ export class UsersControllers {
     }
 
     if (user.role === RolesEnum.SUPER_ADMIN && input.email) {
-      const email = await User.find({ email: input.email, isDeleted: false });
-      if (email.length > 0) {
+      const email = await User.findOne({
+        email: input.email,
+        isDeleted: false,
+      });
+      if (email && checkUser.email != email.email) {
         return res.status(400).json({
           error: {
             message: "Email already registered with another user",
@@ -643,7 +647,6 @@ export class UsersControllers {
     }
 
     try {
-      const checkUser = await User.findById(id);
       const businesBeforeUpdate = await BusinessDetails.findById(
         checkUser?.businessDetailsId
       );
