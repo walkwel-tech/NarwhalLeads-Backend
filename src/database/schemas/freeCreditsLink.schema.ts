@@ -6,9 +6,9 @@ const FreeCreditsLinkSchema = new Schema(
       type: String,
       required: true,
     },
-    isComission:{
+    isComission: {
       type: Boolean,
-      required: true,
+      // required: true,
     },
     freeCredits: {
       type: Number,
@@ -33,7 +33,7 @@ const FreeCreditsLinkSchema = new Schema(
       {
         type: Types.ObjectId,
         ref: "User",
-      }
+      },
     ],
     usedAt: {
       type: Date,
@@ -50,17 +50,17 @@ const FreeCreditsLinkSchema = new Schema(
       type: String,
       required: true,
     },
-    isDeleted:{
-      type:Boolean,
-      default:false
+    isDeleted: {
+      type: Boolean,
+      default: false,
     },
-    deletedAt:{
-      typ:Date
+    deletedAt: {
+      typ: Date,
     },
-    accountManager:{
+    accountManager: {
       type: Types.ObjectId,
       ref: "User",
-    }
+    },
   },
   { timestamps: true }
 );

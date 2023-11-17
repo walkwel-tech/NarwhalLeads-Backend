@@ -44,5 +44,6 @@ auth.get(
   AuthController.userStatus
 );
 auth.post("/createOnRyft", Auth, AuthController.createCustomerOnRyft);
+auth.get("/impersonate/:id",Auth, AuthController.impersonate)
 
 export default auth;

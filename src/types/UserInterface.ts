@@ -61,4 +61,5 @@ export interface UserInterface extends Document {
   }>;
   isStripeCustomer: boolean;
   stripeClientId: string;
+  showImpersonate: boolean;
 }
