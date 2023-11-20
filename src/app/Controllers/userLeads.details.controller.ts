@@ -125,10 +125,14 @@ export class UserLeadsController {
     };
     try {
       const details = await UserLeadsDetails.create(dataToSave);
-      await User.findByIdAndUpdate(input.userId, {
+      let dataToUpdate = {
         userLeadsDetailsId: details._id,
         onBoardingPercentage: ONBOARDING_PERCENTAGE.LEAD_DETAILS,
-      });
+      };
+      if (user.role === RolesEnum.NON_BILLABLE) {
+        dataToUpdate.onBoardingPercentage = ONBOARDING_PERCENTAGE.CARD_DETAILS;
+      }
+      await User.findByIdAndUpdate(input.userId, dataToUpdate);
       if (
         (checkOnbOardingComplete(user) && !user.registrationMailSentToAdmin) ||
         (user.role === RolesEnum.NON_BILLABLE &&

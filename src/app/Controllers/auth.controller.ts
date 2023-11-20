@@ -48,6 +48,7 @@ import { Permissions } from "../Models/Permission";
 import { CARD } from "../../utils/Enums/cardType.enum";
 import { createCustomerOnStripe } from "../../utils/createCustomer/createOnStripe";
 import { Types } from "mongoose";
+import { getAccountManagerForRoundManager } from "../../utils/Functions/getAccountManagerForRoundManager";
 
 class AuthController {
   static register = async (req: Request, res: Response): Promise<any> => {
@@ -171,19 +172,28 @@ class AuthController {
         //   { $match: { role: RolesEnum.ACCOUNT_MANAGER } },
         //   { $sample: { size: 1 } },
         // ]);
+
         if (codeExists && checkCode && checkCode?.topUpAmount === 0) {
           dataToSave.premiumUser = PROMO_LINK.PREMIUM_USER_NO_TOP_UP;
           dataToSave.promoLinkId = checkCode?.id;
+          dataToSave.isCommissionedUser = checkCode?.isComission;
           if (checkCode.accountManager) {
             dataToSave.accountManager = checkCode.accountManager;
           }
         } else if (codeExists && checkCode && checkCode?.topUpAmount != 0) {
           dataToSave.premiumUser = PROMO_LINK.PREMIUM_USER_TOP_UP;
           dataToSave.promoLinkId = checkCode?.id;
+          dataToSave.isCommissionedUser = checkCode?.isComission;
           if (checkCode.accountManager) {
             dataToSave.accountManager = checkCode.accountManager;
           }
+        } else {
+          if (process.env.isRoundTableManager) {
+            dataToSave.accountManager =
+              await getAccountManagerForRoundManager();
+          }
         }
+
         await User.create(dataToSave);
         if (input.code) {
           const checkCode: freeCreditsLinkInterface =
@@ -210,18 +220,18 @@ class AuthController {
               if (err) {
                 return res.status(400).json({ error: err });
               }
-              return res.status(401).json({ error: message });
+              return res.status(550).json({ error: message });
             } else if (!user.isActive) {
               return res
-                .status(401)
+                .status(550)
                 .json({ data: "User not active.Please contact admin." });
             } else if (!user.isVerified) {
-              return res.status(401).json({
+              return res.status(550).json({
                 data: "User not verified.Please verify your account",
               });
             } else if (user.isDeleted) {
               return res
-                .status(401)
+                .status(550)
                 .json({ data: "User is deleted.Please contact admin" });
             }
             const authToken = generateAuthToken(user);
@@ -333,35 +343,35 @@ class AuthController {
           if (err) {
             return res.status(400).json({ error: err });
           }
-          return res.status(401).json({ error: message });
+          return res.status(550).json({ error: message });
         } else if (!user.isActive && user.role === RolesEnum.USER) {
-          return res.status(401).json({
+          return res.status(550).json({
             error: { message: "User not active.Please contact admin." },
           });
         } else if (!user.isActive && user.role === RolesEnum.ADMIN) {
-          return res.status(401).json({
+          return res.status(550).json({
             error: { message: "Admin not active.Please contact super admin." },
           });
         } else if (!user.isActive && user.role === RolesEnum.ACCOUNT_MANAGER) {
-          return res.status(401).json({
+          return res.status(550).json({
             error: { message: "Admin not active.Please contact super admin." },
           });
         } else if (!user.isVerified && user.role === RolesEnum.USER) {
-          return res.status(401).json({
+          return res.status(550).json({
             error: {
               message: "User not verified.Please verify your account",
             },
           });
         } else if (user.isDeleted && user.role === RolesEnum.USER) {
-          return res.status(401).json({
+          return res.status(550).json({
             error: { message: "User is deleted.Please contact admin" },
           });
         } else if (user.isDeleted && user.role === RolesEnum.ADMIN) {
-          return res.status(401).json({
+          return res.status(550).json({
             error: { message: "Admin is deleted.Please contact super admin" },
           });
         } else if (user.isDeleted && user.role === RolesEnum.ACCOUNT_MANAGER) {
-          return res.status(401).json({
+          return res.status(550).json({
             error: { message: "Admin is deleted.Please contact super admin" },
           });
         }
@@ -412,7 +422,7 @@ class AuthController {
           if (err) {
             return res.status(400).json({ error: err });
           }
-          return res.status(401).json({ error: message });
+          return res.status(550).json({ error: message });
         }
         const token = generateAuthToken(user);
         return res.json({
@@ -469,7 +479,7 @@ class AuthController {
       const checkUser = await User.findById(id);
       if (!checkUser) {
         return res
-          .status(401)
+          .status(550)
           .json({ data: { message: "User doesn't exist." } });
       }
       const activeUser: UserInterface =
@@ -509,7 +519,7 @@ class AuthController {
       const checkUser = await User.findById(id);
       if (!checkUser) {
         return res
-          .status(401)
+          .status(550)
           .json({ data: { message: "User doesn't exist." } });
       }
       const inActiveUser = await User.findByIdAndUpdate(
@@ -874,6 +884,54 @@ class AuthController {
       return res
         .status(500)
         .json({ error: { message: "Something went wrong.", error } });
+    }
+  };
+
+  static impersonate = async (
+    req: Request,
+    res: Response
+  ): Promise<Response> => {
+    try {
+      let id = req?.params?.id;
+
+      let user = await User.findById(id);
+
+      if (!user) {
+        return res.send(400).json({ message: "username doesn't exist" });
+      }
+
+      const token = generateAuthToken(user);
+
+      return res.json({
+        data: user,
+        token,
+        url: `/impersonate-login?access_token=${token}`,
+      });
+    } catch (err) {
+      return res
+        .status(500)
+        .json({ error: { message: "Something went wrong." } });
+    }
+  };
+
+  static promoLink = async (req: Request, res: Response): Promise<any> => {
+    const code = req.query.code;
+
+    try {
+      const exists = await FreeCreditsLink.findOne(
+        { code: code, isDeleted: false },
+        "code businessIndustryId"
+      ).populate("businessIndustryId", "industry");
+
+      if (exists) {
+        return res.json({ data: exists });
+      }
+
+      return res.json({ data: "Code not exists" });
+    } catch (error) {
+      return res
+        .status(500)
+        .json({ error: { message: "Something went wrong." } });
     }
   };
 }

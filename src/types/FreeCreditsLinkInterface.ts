@@ -6,15 +6,17 @@ export interface freeCreditsLinkInterface extends Document {
   useCounts: number;
   maxUseCounts: number;
   isDisabled: boolean;
+  isComission: boolean;
   // userId: [];
   // businessDetailsId:[];
-  users:[];
+  users: [];
   isUsed: boolean;
   usedAt: Date;
-  topUpAmount:number;
-  spotDiffPremiumPlan:boolean;
-  name:string;
-  isDeleted:boolean;
-  deletedAt:Date;
-  accountManager:Types.ObjectId
+  topUpAmount: number;
+  spotDiffPremiumPlan: boolean;
+  name: string;
+  isDeleted: boolean;
+  deletedAt: Date;
+  accountManager: Types.ObjectId;
+  businessIndustryId: Types.ObjectId;
 }
