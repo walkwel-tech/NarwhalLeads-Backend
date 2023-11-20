@@ -167,7 +167,6 @@ export class freeCreditsLinkController {
           },
         },
       ]);
-      // console.log("heryeygeyeyeyeu", query);
       const transformedData = query.map((item) => {
         const usersData = item.users.userData.map((user: UserInterface) => {
           const businessDetails = item.users.businessDetailsId.find(
