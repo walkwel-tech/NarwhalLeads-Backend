@@ -56,7 +56,13 @@ export class nonBillableUsersController {
           .sort({ rowIndex: -1 })
           .limit(1);
         const accManagers = await User.aggregate([
-          { $match: { role: RolesEnum.ACCOUNT_MANAGER } },
+          {
+            $match: {
+              role: RolesEnum.ACCOUNT_MANAGER,
+              isDeleted: false,
+              isActive: true,
+            },
+          },
           { $sample: { size: 1 } },
         ]);
         let accountManager = accManagers[0];

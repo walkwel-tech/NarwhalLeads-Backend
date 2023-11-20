@@ -28,6 +28,7 @@ export class freeCreditsLinkController {
         name: input.name,
         accountManager: input.accountManager,
         isComission: input?.isComission,
+        businessIndustryId: input?.businessIndustryId,
       };
       if (input.code) {
         dataToSave.code = input.code;
@@ -117,6 +118,14 @@ export class freeCreditsLinkController {
           },
         },
         {
+          $lookup: {
+            from: "buisnessindustries", // Replace with the actual name of your "BusinessDetails" collection
+            localField: "businessIndustryId",
+            foreignField: "_id",
+            as: "businessIndustryId",
+          },
+        },
+        {
           $sort: { createdAt: -1 },
         },
         {
@@ -136,6 +145,7 @@ export class freeCreditsLinkController {
             isDeleted: 1,
             accountManager: 1,
             __v: 1,
+            businessIndustryId: 1,
             users: {
               $mergeObjects: [
                 {
@@ -144,17 +154,7 @@ export class freeCreditsLinkController {
                       input: "$usersData",
                       as: "user",
                       in: {
-                        $mergeObjects: [
-                          "$$user",
-                          // {
-                          //   createdAt: {
-                          //     $dateToString: {
-                          //       format: "%d/%m/%Y", // Define your desired format here
-                          //       date: "$$user.createdAt", // Replace "createdAt" with your actual field name
-                          //     },
-                          //   },
-                          // },
-                        ],
+                        $mergeObjects: ["$$user"],
                       },
                     },
                   },
@@ -167,6 +167,7 @@ export class freeCreditsLinkController {
           },
         },
       ]);
+      // console.log("heryeygeyeyeyeu", query);
       const transformedData = query.map((item) => {
         const usersData = item.users.userData.map((user: UserInterface) => {
           const businessDetails = item.users.businessDetailsId.find(
@@ -175,7 +176,6 @@ export class freeCreditsLinkController {
           const businessName = businessDetails
             ? businessDetails.businessName
             : "";
-
           return {
             _id: user._id,
             firstName: user.firstName,
@@ -202,6 +202,7 @@ export class freeCreditsLinkController {
           __v: item.__v,
           users: usersData,
           accountManager: undefined,
+          businessIndustryId: item?.businessIndustryId[0]?.industry,
         };
         if (item.accountManager.length > 0) {
           dataToShow.accountManager =

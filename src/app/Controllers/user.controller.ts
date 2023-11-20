@@ -42,8 +42,7 @@ import {
 import { CARD_DETAILS } from "../../utils/constantFiles/signupFields";
 import { BuisnessIndustries } from "../Models/BuisnessIndustries";
 import { sendLeadDataToZap } from "../../utils/webhookUrls/sendDataZap";
-// import { sendLeadDataToZap } from "../../utils/webhookUrls/sendDataZap";
-// import { BuisnessIndustries } from "../Models/BuisnessIndustries";
+
 const ObjectId = mongoose.Types.ObjectId;
 
 const LIMIT = 10;
@@ -992,18 +991,6 @@ export class UsersControllers {
             }
           }
         }
-        const leadDetails = await UserLeadsDetails.findById(
-          checkUser.userLeadsDetailsId
-        );
-
-        if (
-          input.zapierUrl != leadDetails?.zapierUrl ||
-          leadDetails?.zapierUrl === ""
-        ) {
-          sendLeadDataToZap(input.zapierUrl, result)
-            .then((res) => {})
-            .catch((err) => {});
-        }
 
         await UserLeadsDetails.findByIdAndUpdate(
           checkUser?.userLeadsDetailsId,
@@ -1864,6 +1851,57 @@ export class UsersControllers {
         pausedClients: paused,
       };
       return res.json({ data: dataToShow });
+    } catch (err) {
+      return res.status(500).json({
+        error: {
+          message: "something went wrong",
+          err,
+        },
+      });
+    }
+  };
+
+  static sendTestLeadData = async (req: any, res: Response) => {
+    try {
+      const { id } = req.params;
+      const input = req.body;
+      const checkUser = (await User.findById(id)) ?? ({} as UserInterface);
+      if (!checkUser.userLeadsDetailsId) {
+        return res
+          .status(404)
+          .json({ error: { message: "lead details not found" } });
+      }
+      const industry = await BuisnessIndustries.findById(
+        checkUser.businessIndustryId
+      );
+      const columns = industry?.columns;
+
+      const result: { [key: string]: string } = {};
+      if (columns) {
+        for (const item of columns) {
+          if (item.isVisible === true) {
+            //@ts-ignore
+            result[item.originalName] = item.displayName;
+          }
+        }
+      }
+      let message = "";
+      let response = {};
+      let status;
+      try {
+        await sendLeadDataToZap(input.zapierUrl, result);
+        message = "Test Lead Sent!";
+        response = { message: message };
+        status = 200;
+      } catch (err) {
+        message = "Error while sending Test Lead!";
+        status = 400;
+        response = message;
+      }
+
+      return res.status(status).json(response);
+
+      // return res.json({ data: { message: message } });
     } catch (err) {
       return res.status(500).json({
         error: {

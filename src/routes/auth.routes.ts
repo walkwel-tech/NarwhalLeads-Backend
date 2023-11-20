@@ -8,6 +8,7 @@ import { MODULE, PERMISSIONS } from "../utils/Enums/permissions.enum";
 const auth: Router = Router();
 auth.get("/map", AuthController.showMapFile);
 auth.get("/map/ireland", AuthController.showMapFileForIreland);
+auth.get("/code", AuthController.promoLink);
 // auth.get('/mapForLabel',AuthController.showMapFileForLabel)
 auth.get(
   "/",
@@ -44,6 +45,6 @@ auth.get(
   AuthController.userStatus
 );
 auth.post("/createOnRyft", Auth, AuthController.createCustomerOnRyft);
-auth.get("/impersonate/:id",Auth, AuthController.impersonate)
+auth.get("/impersonate/:id", Auth, AuthController.impersonate);
 
 export default auth;
