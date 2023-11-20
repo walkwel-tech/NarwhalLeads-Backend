@@ -35,7 +35,7 @@ export class IndustryController {
         .json({ error: { message: "VALIDATIONS_ERROR", info: errorsInfo } });
     }
     let dataToSave: Partial<BuisnessIndustriesInterface> = {
-      industry: input.industry,
+      industry: input.industry.trim(),
       leadCost: input.leadCost,
       columns: order,
       json: json,
@@ -43,7 +43,7 @@ export class IndustryController {
 
     try {
       const exist = await BuisnessIndustries.find({
-        industry: input.industry,
+        industry: { $regex: input.industry, $options: "i" },
         isDeleted: false,
       });
       if (exist.length > 0) {
@@ -52,10 +52,7 @@ export class IndustryController {
           .json({ error: { message: "Business Industry should be unique." } });
       }
       const details = await BuisnessIndustries.create(dataToSave);
-      // await CustomColumnNames.create({
-      //   industryId: details.id,
-      //   columnsNames: array,
-      // });
+
       return res.json({ data: details });
     } catch (error) {
       return res
