@@ -7,13 +7,13 @@ import { checkPermissions } from "../app/Middlewares/roleBasedAuthentication";
 import { MODULE, PERMISSIONS } from "../utils/Enums/permissions.enum";
 
 const freeCreditsLinkRoutes: Router = Router();
-freeCreditsLinkRoutes.delete(
-  "/:id",
+freeCreditsLinkRoutes.get(
+  "/",
   Auth,
   checkPermissions([
-    { module: MODULE.PROMO_LINKS, permission: PERMISSIONS.DELETE },
+    { module: MODULE.PROMO_LINKS, permission: PERMISSIONS.READ },
   ]),
-  freeCreditsLinkController.delete
+  freeCreditsLinkController.show
 );
 freeCreditsLinkRoutes.post(
   "/",
@@ -23,14 +23,15 @@ freeCreditsLinkRoutes.post(
   ]),
   freeCreditsLinkController.create
 );
-freeCreditsLinkRoutes.get(
-  "/",
+freeCreditsLinkRoutes.delete(
+  "/:id",
   Auth,
   checkPermissions([
-    { module: MODULE.PROMO_LINKS, permission: PERMISSIONS.READ },
+    { module: MODULE.PROMO_LINKS, permission: PERMISSIONS.DELETE },
   ]),
-  freeCreditsLinkController.show
+  freeCreditsLinkController.delete
 );
+
 freeCreditsLinkRoutes.post(
   "/:id",
   Auth,

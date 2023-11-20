@@ -125,4 +125,6 @@ user.delete(
   UsersControllers.destroy
 );
 
+user.post("/test-lead/:id", Auth, UsersControllers.sendTestLeadData);
+
 export default user;

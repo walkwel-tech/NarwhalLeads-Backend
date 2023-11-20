@@ -913,6 +913,27 @@ class AuthController {
         .json({ error: { message: "Something went wrong." } });
     }
   };
+
+  static promoLink = async (req: Request, res: Response): Promise<any> => {
+    const code = req.query.code;
+
+    try {
+      const exists = await FreeCreditsLink.findOne(
+        { code: code, isDeleted: false },
+        "code businessIndustryId"
+      ).populate("businessIndustryId", "industry");
+
+      if (exists) {
+        return res.json({ data: exists });
+      }
+
+      return res.json({ data: "Code not exists" });
+    } catch (error) {
+      return res
+        .status(500)
+        .json({ error: { message: "Something went wrong." } });
+    }
+  };
 }
 
 export { AuthController };

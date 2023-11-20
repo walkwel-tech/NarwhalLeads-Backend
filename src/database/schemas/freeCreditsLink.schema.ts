@@ -61,6 +61,10 @@ const FreeCreditsLinkSchema = new Schema(
       type: Types.ObjectId,
       ref: "User",
     },
+    businessIndustryId: {
+      type: Types.ObjectId,
+      ref: "BuisnessIndustries",
+    },
   },
   { timestamps: true }
 );

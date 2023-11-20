@@ -12,10 +12,12 @@ export const sendLeadDataToZap = (url: string, data: any) => {
     };
     axios(config)
       .then(async (response) => {
-        console.log("lead zap webhook hits successfully")
+        console.log("lead zap webhook hits successfully");
+        resolve(response);
       })
       .catch((err) => {
         console.log(err.response?.data);
+        reject(err);
       });
   });
 };
