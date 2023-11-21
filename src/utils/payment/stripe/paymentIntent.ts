@@ -18,6 +18,8 @@ export interface IntentInterface {
   currency?: string;
   automatic_payment_methods?: object;
   paymentMethod?: string;
+  clientId?: string;
+  email?: string;
 }
 
 const OFF_SESSION = "off_session";
