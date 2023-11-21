@@ -24,8 +24,6 @@ import {
   sendEmailForRegistration,
   sendEmailForgetPassword,
 } from "../Middlewares/mail";
-import { AdminSettings } from "../Models/AdminSettings";
-// import { BusinessDetails } from "../Models/BusinessDetails";
 import { ForgetPassword } from "../Models/ForgetPassword";
 import { FreeCreditsLink } from "../Models/freeCreditsLink";
 import { PROMO_LINK } from "../../utils/Enums/promoLink.enum";
@@ -34,7 +32,6 @@ import { clientTablePreference } from "../../utils/constantFiles/clientTablePref
 import { LeadTablePreference } from "../Models/LeadTablePreference";
 import { order } from "../../utils/constantFiles/businessIndustry.orderList";
 import * as fs from "fs";
-import { AdminSettingsInterface } from "../../types/AdminSettingInterface";
 import { freeCreditsLinkInterface } from "../../types/FreeCreditsLinkInterface";
 import {
   BUSINESS_DETAILS,
@@ -49,6 +46,7 @@ import { CARD } from "../../utils/Enums/cardType.enum";
 import { createCustomerOnStripe } from "../../utils/createCustomer/createOnStripe";
 import { Types } from "mongoose";
 import { getAccountManagerForRoundManager } from "../../utils/Functions/getAccountManagerForRoundManager";
+import { DEFAULT } from "../../utils/constantFiles/user.default.values";
 
 class AuthController {
   static register = async (req: Request, res: Response): Promise<any> => {
@@ -63,8 +61,6 @@ class AuthController {
     registerInput.password = input.password;
     const errors = await validate(registerInput);
 
-    const adminSettings: AdminSettingsInterface =
-      (await AdminSettings.findOne()) ?? ({} as AdminSettingsInterface);
     if (errors.length) {
       const errorsInfo: ValidationErrorResponse[] = errors.map((error) => ({
         property: error.property,
@@ -131,11 +127,11 @@ class AuthController {
           smsPhoneNumber: input.phoneNumber,
           password: hashPassword,
           role: RolesEnum.USER,
-          autoChargeAmount: adminSettings?.amount,
+          autoChargeAmount: DEFAULT.AUTO_CHARGE_AMOUNT,
           isActive: true, //need to delete
           isVerified: true, //need to delete
           rowIndex: showUsers?.rowIndex + 1 || 0,
-          paymentMethod: paymentMethodEnum.MANUALLY_ADD_CREDITS_METHOD,
+          paymentMethod: paymentMethodEnum.AUTOCHARGE_METHOD,
           onBoardingPercentage: ONBOARDING_PERCENTAGE.USER_DETAILS,
           onBoarding: [
             {
@@ -167,12 +163,8 @@ class AuthController {
             },
           ],
           permissions: permission?.permissions,
+          triggerAmount: DEFAULT.TRIGGER_AMOUT,
         };
-        // const accManagers = await User.aggregate([
-        //   { $match: { role: RolesEnum.ACCOUNT_MANAGER } },
-        //   { $sample: { size: 1 } },
-        // ]);
-
         if (codeExists && checkCode && checkCode?.topUpAmount === 0) {
           dataToSave.premiumUser = PROMO_LINK.PREMIUM_USER_NO_TOP_UP;
           dataToSave.promoLinkId = checkCode?.id;

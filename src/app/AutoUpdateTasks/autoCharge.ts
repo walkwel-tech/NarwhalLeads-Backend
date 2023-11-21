@@ -27,6 +27,8 @@ import * as cron from "node-cron";
 import { TransactionInterface } from "../../types/TransactionInterface";
 import { InvoiceInterface } from "../../types/InvoiceInterface";
 import { PAYMENT_STATUS } from "../../utils/Enums/payment.status";
+import { createPaymentOnStrip } from "../../utils/payment/stripe/createPaymentToStripe";
+import { IntentInterface } from "../../utils/payment/stripe/paymentIntent";
 
 interface paymentParams {
   fixedAmount: number;
@@ -46,9 +48,10 @@ interface addCreditsParams {
 }
 export const autoChargePayment = async () => {
   cron.schedule("0 0 * * *", async () => {
-    // cron.schedule("*/2 * * * *", async () => {
+    // cron.schedule("* * * * *", async () => {
     try {
       const usersToCharge = await getUsersToCharge();
+      console.log(usersToCharge);
       for (const user of usersToCharge) {
         const paymentMethod = await getUserPaymentMethods(user.id);
 
@@ -247,15 +250,16 @@ const getUserPaymentMethods = async (id: string) => {
   return cards;
 };
 
-const chargeUser = async (params: paymentParams) => {
+const chargeUser = async (params: IntentInterface) => {
   return new Promise((resolve, reject) => {
-    createSessionUnScheduledPayment(params)
-      .then(async (res: any) => {
-        resolve(res);
+    createPaymentOnStrip(params)
+      .then(async (_res: any) => {
+        console.log("payment initiated!");
       })
       .catch(async (err) => {
+        console.log("error in payment Api", err.response.data);
         const user: UserInterface =
-          (await User.findOne({ ryftClientId: params.clientId })) ??
+          (await User.findOne({ stripeClientId: params.clientId })) ??
           ({} as UserInterface);
         const cards: CardDetailsInterface[] =
           (await CardDetails.find({ userId: user.id, isDeleted: false })) ??
@@ -278,8 +282,7 @@ const handleFailedCharge = async (
     currentDate.setDate(currentDate.getDate() + 1);
     const twoHoursAgoDate = new Date(
       currentDate.getTime() - 2 * 60 * 60 * 1000
-    ); // 2 hours in milliseconds
-    //fixme: if cron job is of 1 day then user yesterday instead of two hours ago
+    );
     const transactions = await Transaction.find({
       createdAt: {
         $gte: twoHoursAgoDate,
@@ -305,19 +308,21 @@ const handleFailedCharge = async (
           isDeleted: false,
         })) ?? ({} as CardDetailsInterface);
       const params = {
-        fixedAmount:
-          user.autoChargeAmount + (user.autoChargeAmount * VAT) / 100,
-        email: user.email,
+        amount:
+          (user?.autoChargeAmount + (user?.autoChargeAmount * VAT) / 100) * 100,
+        email: user?.email,
         cardNumber: card?.cardNumber,
-        buyerId: user.buyerId,
-        clientId: user.ryftClientId,
-        cardId: card?.id,
-        paymentSessionId: card.paymentSessionID,
-        paymentMethodId: card.paymentMethod,
+        expiryMonth: card?.expiryMonth,
+        expiryYear: card?.expiryYear,
+        cvc: card?.cvc,
+        buyerId: user?.buyerId,
+        freeCredits: 0,
+        customer: user?.stripeClientId,
+        cardId: card.id,
+        paymentMethod: card?.paymentMethod,
       };
       return await chargeUser(params);
     } else {
-      // sendEmailForFailedAutocharge(user.email, text);
       console.log("email should be sent now");
       return false;
     }
@@ -328,15 +333,19 @@ const autoTopUp = async (
   user: UserInterface,
   paymentMethod: CardDetailsInterface
 ) => {
-  const params: paymentParams = {
-    fixedAmount: user.autoChargeAmount + (user.autoChargeAmount * VAT) / 100,
-    email: user.email,
+  const params = {
+    amount:
+      (user?.autoChargeAmount + (user?.autoChargeAmount * VAT) / 100) * 100,
+    email: user?.email,
     cardNumber: paymentMethod?.cardNumber,
-    buyerId: user.buyerId,
-    clientId: user.ryftClientId,
-    cardId: paymentMethod?.id,
-    paymentSessionId: paymentMethod?.paymentSessionID,
-    paymentMethodId: paymentMethod?.paymentMethod,
+    expiryMonth: paymentMethod?.expiryMonth,
+    expiryYear: paymentMethod?.expiryYear,
+    cvc: paymentMethod?.cvc,
+    buyerId: user?.buyerId,
+    freeCredits: 0,
+    customer: user?.stripeClientId,
+    cardId: paymentMethod.id,
+    paymentMethod: paymentMethod?.paymentMethod,
   };
   const success: any = await chargeUser(params);
 

@@ -43,7 +43,7 @@ export class IndustryController {
 
     try {
       const exist = await BuisnessIndustries.find({
-        industry: { $regex: input.industry, $options: "i" },
+        industry: { $regex: input.industry.trim(), $options: "i" },
         isDeleted: false,
       });
       if (exist.length > 0) {
