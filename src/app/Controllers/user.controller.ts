@@ -395,6 +395,7 @@ export class UsersControllers {
         item.businessDetailsId.daily = item.userLeadsDetailsId.daily;
         item.accountManager =
           (item.accountManager[0]?.firstName || "") +
+          " " +
           (item.accountManager[0]?.lastName || "");
       });
 
