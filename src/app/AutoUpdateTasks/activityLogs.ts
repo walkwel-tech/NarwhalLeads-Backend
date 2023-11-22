@@ -37,9 +37,37 @@ export const activityLogs = async () => {
 
     const userData = await Promise.all(userDataPromises);
     if (userData.length > 0) {
-      await activityLogsWebhookUrl(userData);
+      const data = transformData(userData);
+      await activityLogsWebhookUrl(data);
     } else {
       console.log("No Data Found for 10 minutes activity logs");
     }
   });
 };
+interface User {
+  buyerId: string;
+  businessName?: string;
+  updatedValues: Array<{ [key: string]: any }>;
+}
+
+function transformData(input: User[]): any[] {
+  const groupedData: { [key: string]: any } = {};
+
+  input.forEach((user) => {
+    const buyerId = user.buyerId;
+    if (!groupedData[buyerId]) {
+      groupedData[buyerId] = {
+        buyerId: user.buyerId,
+        businessName: user.businessName,
+      };
+    }
+
+    user.updatedValues.forEach((updatedValue) => {
+      for (const key in updatedValue) {
+        groupedData[buyerId][key] = updatedValue[key];
+      }
+    });
+  });
+
+  return Object.values(groupedData);
+}
