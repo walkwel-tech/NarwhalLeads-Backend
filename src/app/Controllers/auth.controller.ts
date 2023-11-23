@@ -164,6 +164,7 @@ class AuthController {
           ],
           permissions: permission?.permissions,
           triggerAmount: DEFAULT.TRIGGER_AMOUT,
+          isNewUser: true,
         };
         if (codeExists && checkCode && checkCode?.topUpAmount === 0) {
           dataToSave.premiumUser = PROMO_LINK.PREMIUM_USER_NO_TOP_UP;

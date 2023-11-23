@@ -210,7 +210,15 @@ const UserSchema = new Schema(
     },
     showImpersonate: {
       type: Boolean,
-      default: false
+      default: false,
+    },
+    isNewUser: {
+      type: Boolean,
+      default: false,
+    },
+    isAutoChargeEnabled: {
+      type: Boolean,
+      default: false,
     },
   },
   { timestamps: true }
