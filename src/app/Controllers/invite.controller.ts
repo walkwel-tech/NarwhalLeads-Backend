@@ -384,7 +384,17 @@ export class invitedUsersController {
         const data = await User.find({
           email: input.email,
           isDeleted: false,
-          role: RolesEnum.ACCOUNT_MANAGER,
+          role: {
+            $in: [
+              RolesEnum.ADMIN,
+              RolesEnum.USER,
+              RolesEnum.SUBSCRIBER,
+              RolesEnum.SUPER_ADMIN,
+              RolesEnum.ACCOUNT_MANAGER,
+              RolesEnum.NON_BILLABLE,
+              RolesEnum.INVITED,
+            ],
+          },
         });
         if (data.length > 0) {
           return res

@@ -39,7 +39,7 @@ export class nonBillableUsersController {
       if (checkExist) {
         return res
           .status(400)
-          .json({ error: { message: "Eamil already exist" } });
+          .json({ error: { message: "Email already exist" } });
       } else {
         const salt = genSaltSync(10);
         const text = randomString(8, true);

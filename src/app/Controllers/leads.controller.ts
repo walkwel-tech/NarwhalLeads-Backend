@@ -775,16 +775,30 @@ export class LeadsController {
           },
         ]);
         if (leads) {
-          let array: {}[] = [];
+          let array: chart[] = [];
           leads[0].results.forEach((lead: any) => {
-            let obj: any = {};
+            let obj: chart = {
+              total: 0,
+            };
             obj.date = lead._id.date;
             obj.month = lead._id.month;
             obj.year = lead._id.year;
             obj.total = lead.total;
             array.push(obj);
           });
-          return res.json({ data: array });
+          interface chart {
+            date?: Date;
+            month?: String;
+            year?: String;
+            total: number;
+          }
+          const earnings = array.reduce(
+            (acc, cum) => {
+              return { total: acc.total + cum.total };
+            },
+            { total: 0 }
+          );
+          return res.json({ data: array, earnings: earnings.total });
         }
       }
       const leads = await Leads.aggregate([
