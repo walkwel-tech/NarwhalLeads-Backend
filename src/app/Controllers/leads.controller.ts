@@ -2358,7 +2358,10 @@ export class LeadsController {
       const resultArray = filteredDataArray.map((obj) => {
         const newObj: Record<string, string> = {};
         for (const key in obj) {
-          newObj[key] = obj[key] === undefined ? "" : obj[key];
+          // newObj[key] = obj[key] === undefined ? "" : obj[key];
+          if (key !== "Received") {
+            newObj[key] = obj[key] === undefined ? "" : obj[key];
+          }
         }
         return newObj;
       });
@@ -2516,7 +2519,10 @@ export class LeadsController {
       const resultArray = filteredDataArray.map((obj) => {
         const newObj: Record<string, string> = {};
         for (const key in obj) {
-          newObj[key] = obj[key] === undefined ? "" : obj[key];
+          // newObj[key] = obj[key] === undefined ? "" : obj[key];
+          if (key !== "Received") {
+            newObj[key] = obj[key] === undefined ? "" : obj[key];
+          }
         }
         return newObj;
       });
