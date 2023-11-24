@@ -2358,7 +2358,6 @@ export class LeadsController {
       const resultArray = filteredDataArray.map((obj) => {
         const newObj: Record<string, string> = {};
         for (const key in obj) {
-          // newObj[key] = obj[key] === undefined ? "" : obj[key];
           if (key !== "Received") {
             newObj[key] = obj[key] === undefined ? "" : obj[key];
           }
@@ -2478,6 +2477,7 @@ export class LeadsController {
       });
       // const pref: LeadTablePreferenceInterface | null =
       //   await LeadTablePreference.findOne({ userId: _req.user.id });
+
       const pref = await BuisnessIndustries.aggregate([
         {
           $unwind: "$columns",
@@ -2519,7 +2519,6 @@ export class LeadsController {
       const resultArray = filteredDataArray.map((obj) => {
         const newObj: Record<string, string> = {};
         for (const key in obj) {
-          // newObj[key] = obj[key] === undefined ? "" : obj[key];
           if (key !== "Received") {
             newObj[key] = obj[key] === undefined ? "" : obj[key];
           }

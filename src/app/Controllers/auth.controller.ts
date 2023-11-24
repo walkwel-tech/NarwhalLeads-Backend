@@ -165,6 +165,7 @@ class AuthController {
           permissions: permission?.permissions,
           triggerAmount: DEFAULT.TRIGGER_AMOUT,
           isNewUser: true,
+          isAutoChargeEnabled: true,
         };
         if (codeExists && checkCode && checkCode?.topUpAmount === 0) {
           dataToSave.premiumUser = PROMO_LINK.PREMIUM_USER_NO_TOP_UP;
@@ -702,11 +703,6 @@ class AuthController {
     }
   };
 
-  static returnUrlApi = async (req: Request, res: Response) => {
-    const input = req;
-    return res.json({ data: input });
-  };
-
   static me = async (req: Request, res: Response): Promise<any> => {
     const user: Partial<UserInterface> = req.user ?? ({} as UserInterface);
     try {
@@ -727,23 +723,12 @@ class AuthController {
     }
   };
 
-  static test = async (req: Request, res: Response): Promise<any> => {
-    try {
-      const input = req?.body;
-      return res.json({ data: input });
-    } catch (error) {
-      return res
-        .status(500)
-        .json({ error: { message: "Something went wrong." } });
-    }
-  };
-
   static userStatus = async (req: Request, res: Response): Promise<any> => {
     try {
       const id = req.params.id;
       const user = await User.findById(
         id,
-        "isRyftCustomer isLeadbyteCustomer isXeroCustomer -_id"
+        "isRyftCustomer isLeadbyteCustomer isXeroCustomer -_id isStripeCustomer"
       );
       return res.json({ data: user });
     } catch (error) {
