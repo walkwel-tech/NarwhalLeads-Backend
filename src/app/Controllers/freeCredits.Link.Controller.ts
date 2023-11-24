@@ -200,13 +200,11 @@ export class freeCreditsLinkController {
           updatedAt: item.updatedAt,
           __v: item.__v,
           users: usersData,
-          accountManager: undefined,
+          accountManager: "",
           businessIndustryId: item?.businessIndustryId[0]?.industry,
         };
         if (item.accountManager.length > 0) {
-          dataToShow.accountManager =
-            (item.accountManager[0]?.firstName || "") +
-            (item.accountManager[0]?.lastName || "");
+          dataToShow.accountManager = `${item.accountManager[0]?.firstName} ${item.accountManager[0]?.lastName}`;
         }
         return dataToShow;
       });

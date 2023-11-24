@@ -22,9 +22,7 @@ auth.get(
   checkPermissions([{ module: MODULE.PROFILE, permission: PERMISSIONS.READ }]),
   AuthController.me
 );
-auth.patch("/test", AuthController.test);
 auth.post("/register", AuthController.register);
-auth.post("/return-url", AuthController.returnUrlApi);
 auth.post(
   "/activeUser/:id",
   OnlyAdmins,
