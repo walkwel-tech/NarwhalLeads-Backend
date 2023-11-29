@@ -13,4 +13,7 @@ export const EVENT_TITLE = {
   LEAD_REPORTED: "Lead Reported",
   LEAD_REPROCESS: "Lead Reprocess",
   LEAD_DATA: "Lead Data",
+  ADD_CREDITS: "Add Credits",
+  POST_CODE_UPDATE: "Update post codes",
+  ZERO_CREDITS: "Zero Credits",
 };
