@@ -45,6 +45,9 @@ import { columnsObjects } from "../../types/columnsInterface";
 import { leadReportWebhook } from "../../utils/webhookUrls/leadReportedWebhook";
 import { getLeadCenterToken } from "../../utils/Functions/getLeadCenterToken";
 
+import { eventsWebhook } from "../../utils/webhookUrls/eventExpansionWebhook";
+import { EVENT_TITLE } from "../../utils/constantFiles/events";
+
 const ObjectId = mongoose.Types.ObjectId;
 
 const LIMIT = 10;
@@ -81,11 +84,38 @@ export class LeadsController {
     if (!user.isLeadReceived) {
       await User.findByIdAndUpdate(user.id, { isLeadReceived: true });
     }
+    //  event webhook to hit when lead  credit is less then leadCost
+    if (user?.credits === 0 || user?.credits < user?.leadCost) {
+      const paramsToSend = {
+        userId: user._id,
+        buyerId: user.buyerId,
+        buisnessName: user.businessDetailsId.businessName,
+        eventCode: EVENT_TITLE.ZERO_CREDITS,
+        postCodeList: user.userLeadsDetailsId?.postCodeTargettingList,
+        remainingCredits: user?.credits,
+      };
+      await eventsWebhook(paramsToSend)
+        .then(() =>
+          console.log(
+            "event webhook for zero credits hits successfully.",
+            paramsToSend
+          )
+        )
+        .catch((err) =>
+          console.log(
+            err,
+            "error while triggering zero credits webhooks failed",
+            paramsToSend
+          )
+        );
+    }
+
     if (user?.credits == 0 && user?.role == RolesEnum.USER) {
       return res
         .status(400)
         .json({ error: { message: "Insufficient Credits" } });
     }
+
     const today = new Date();
     const endOfDay = new Date(today);
     endOfDay.setDate(today.getDate() + 1);
