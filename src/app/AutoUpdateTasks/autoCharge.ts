@@ -237,6 +237,7 @@ const getUsersToCharge = async () => {
     },
     paymentMethod: paymentMethodEnum.AUTOCHARGE_METHOD,
     isDeleted: false,
+    isAutoChargeEnabled: true,
   }).populate("businessDetailsId");
   return data;
 };

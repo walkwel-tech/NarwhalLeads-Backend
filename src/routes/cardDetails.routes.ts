@@ -16,10 +16,7 @@ cardDetails.post(
   CardDetailsControllers.handlepaymentStatusWebhookStripe
 );
 
-cardDetails.post(
-  "/create-session",
-  CardDetailsControllers.createInitialSession
-);
+cardDetails.post("/create-session", CardDetailsControllers.createSession);
 
 cardDetails.post(
   "/addCredits",
@@ -38,7 +35,7 @@ cardDetails.post(
   CardDetailsControllers.addCard
 );
 cardDetails.get("/strip-return-url", CardDetailsControllers.stripeReturnURL);
-cardDetails.post("/session-new", CardDetailsControllers.ryftPaymentSession);
+cardDetails.post("/session-new", CardDetailsControllers.getPaymentSession);
 cardDetails.get("/session", CardDetailsControllers.retrievePaymentSssion);
 cardDetails.post(
   "/:id",
@@ -70,11 +67,6 @@ cardDetails.post(
   checkPermissions([
     { module: MODULE.CARD_DETAILS, permission: PERMISSIONS.UPDATE },
   ]),
-  CardDetailsControllers.toggleForCard
-);
-cardDetails.patch(
-  "/toggleForCard/:id",
-  Auth,
   CardDetailsControllers.toggleForCard
 );
 cardDetails.post(

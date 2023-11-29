@@ -43,6 +43,18 @@ import { CARD_DETAILS } from "../../utils/constantFiles/signupFields";
 import { BuisnessIndustries } from "../Models/BuisnessIndustries";
 import { sendLeadDataToZap } from "../../utils/webhookUrls/sendDataZap";
 
+import {
+  BusinessDetailsInterface,
+  isBusinessObject,
+} from "../../types/BusinessInterface";
+import {
+  UserLeadsDetailsInterface,
+  isUserLeadDetailsObject,
+} from "../../types/LeadDetailsInterface";
+import { eventsWebhook } from "../../utils/webhookUrls/eventExpansionWebhook";
+import { EVENT_TITLE } from "../../utils/constantFiles/events";
+// import { sendLeadDataToZap } from "../../utils/webhookUrls/sendDataZap";
+// import { BuisnessIndustries } from "../Models/BuisnessIndustries";
 const ObjectId = mongoose.Types.ObjectId;
 
 const LIMIT = 10;
@@ -1711,7 +1723,10 @@ export class UsersControllers {
   static userCreditsManualAdjustment = async (req: any, res: Response) => {
     try {
       const input = req.body;
-      const user = (await User.findById(input.userId)) ?? ({} as UserInterface);
+      const user =
+        (await User.findById(input.userId)
+          .populate("userLeadsDetailsId")
+          .populate("businessDetailsId")) ?? ({} as UserInterface);
       const credits = input.credits * parseInt(user?.leadCost);
       if (user?.isDeleted) {
         return res.status(400).json({
@@ -1797,14 +1812,37 @@ export class UsersControllers {
                 });
               });
             });
+          const userBusiness: BusinessDetailsInterface | null =
+            isBusinessObject(user?.businessDetailsId)
+              ? user?.businessDetailsId
+              : null;
+
+          const userLead: UserLeadsDetailsInterface | null =
+            isUserLeadDetailsObject(user?.userLeadsDetailsId)
+              ? user?.userLeadsDetailsId
+              : null;
+          const paramsToSend = {
+            userId: user._id,
+            buyerId: user.buyerId,
+            buisnessName: userBusiness?.businessName,
+            eventCode: EVENT_TITLE.ADD_CREDITS,
+            postCodeList: userLead?.postCodeTargettingList,
+            topUpAmount: credits,
+          };
+          await eventsWebhook(paramsToSend)
+            .then(() =>
+              console.log(
+                "event webhook for add credits hits successfully.",
+                paramsToSend
+              )
+            )
+            .catch((err) =>
+              console.log(
+                "error while triggering webhooks for add credits failed",
+                paramsToSend
+              )
+            );
         });
-        // } else {
-        //   return res.json({
-        //     data: {
-        //       message: "Credits remains the same",
-        //     },
-        //   });
-        // }
 
         return res.json({
           data: { message: "Credits Adjusted" },

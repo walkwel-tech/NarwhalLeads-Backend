@@ -7,14 +7,12 @@ import {
   refreshToken,
 } from "../../utils/XeroApiIntegration/createContact";
 import { generatePDF } from "../../utils/XeroApiIntegration/generatePDF";
-// import { managePaymentsByPaymentMethods } from "../../utils/payment";
 import { UpdateCardInput } from "../Inputs/UpdateCard.input";
 import {
   sendEmailForFullySignupToAdmin,
   sendEmailForNewRegistration,
   sendEmailForPaymentFailure,
   sendEmailForPaymentSuccess,
-  // sendEmailForPaymentSuccess_to_admin,
   sendEmailForRegistration,
 } from "../Middlewares/mail";
 import { AdminSettings } from "../Models/AdminSettings";
@@ -31,7 +29,6 @@ import { checkOnbOardingComplete } from "../../utils/Functions/OnboardingComplet
 import { addCreditsToBuyer } from "../../utils/payment/addBuyerCredit";
 import { RolesEnum } from "../../types/RolesEnum";
 import axios from "axios";
-// import { ONBOARDING_KEYS } from "../../utils/constantFiles/OnBoarding.keys";
 import {
   ONBOARDING_KEYS,
   ONBOARDING_PERCENTAGE,
@@ -39,7 +36,6 @@ import {
 import {
   createSessionInitial,
   createSessionUnScheduledPayment,
-  // createSessionUnScheduledPayment,
   customerPaymentMethods,
   getPaymentMethodByPaymentSessionID,
 } from "../../utils/payment/createPaymentToRYFT";
@@ -83,8 +79,9 @@ import { createCustomerOnStripe } from "../../utils/createCustomer/createOnStrip
 import { getPaymentStatus } from "../../utils/payment/stripe/retrievePaymentStatus";
 import { AMOUNT } from "../../utils/constantFiles/stripeConstants";
 import { cmsUpdateBuyerWebhook } from "../../utils/webhookUrls/cmsUpdateBuyerWebhook";
-// import { managePaymentsByPaymentMethods } from "../../utils/payment";
-// import { managePaymentsByPaymentMethods } from "../../utils/payment";
+import { eventsWebhook } from "../../utils/webhookUrls/eventExpansionWebhook";
+
+import { EVENT_TITLE } from "../../utils/constantFiles/events";
 const ObjectId = mongoose.Types.ObjectId;
 
 export class CardDetailsControllers {
@@ -664,10 +661,7 @@ export class CardDetailsControllers {
         .json({ error: { message: "Something went wrong." } });
     }
   };
-  static createInitialSession = async (
-    req: Request,
-    res: Response
-  ): Promise<any> => {
+  static createSession = async (req: Request, res: Response): Promise<any> => {
     const input = req.body;
     let sessionObject: any = {};
     if (process.env.PAYMENT_MODE === CARD.STRIPE) {
@@ -1110,7 +1104,9 @@ export class CardDetailsControllers {
           addCreditsToBuyer(params)
             .then(async (res: any) => {
               userId =
-                (await User.findById(userId?.id)) ?? ({} as UserInterface);
+                (await User.findById(userId?.id)
+                  .populate("userLeadsDetailsId")
+                  .populate("businessDetailsId")) ?? ({} as UserInterface);
 
               (commonDataSaveInTransaction.status = PAYMENT_STATUS.CAPTURED),
                 (commonDataSaveInTransaction.title =
@@ -1249,6 +1245,37 @@ export class CardDetailsControllers {
                   (commonDataSaveInTransaction.creditsLeft = userId?.credits),
                   await Transaction.create(commonDataSaveInTransaction);
               }
+              const userBusiness = await BusinessDetails.findById(
+                userId.businessDetailsId,
+                "businessName"
+              );
+              const userLead = await UserLeadsDetails.findById(
+                userId?.userLeadsDetailsId,
+                "postCodeTargettingList"
+              );
+              const paramsToSend = {
+                userId: userId._id,
+                buyerId: userId.buyerId,
+                buisnessName: userBusiness?.businessName,
+                eventCode: EVENT_TITLE.ADD_CREDITS,
+                postCodeList: userLead?.postCodeTargettingList,
+                topUpAmount: amount,
+              };
+
+              await eventsWebhook(paramsToSend)
+                .then(() =>
+                  console.log(
+                    "event webhook for add credits hits successfully.",
+                    paramsToSend
+                  )
+                )
+                .catch((err) =>
+                  console.log(
+                    err,
+                    "error while triggering add credits webhooks failed",
+                    paramsToSend
+                  )
+                );
             })
             .catch((error) => {
               console.log("error in webhook", error);
@@ -1417,7 +1444,7 @@ export class CardDetailsControllers {
       });
   };
 
-  static ryftPaymentSession = async (
+  static getPaymentSession = async (
     req: Request,
     res: Response
   ): Promise<any> => {
@@ -1532,7 +1559,9 @@ export class CardDetailsControllers {
 }
 
 async function getUserDetails(cid: string, pid: string) {
-  const user = await User.findOne({ stripeClientId: cid });
+  const user = await User.findOne({ stripeClientId: cid })
+    .populate("businessDetailsId")
+    .populate("userLeadsDetailsId");
   const card = await CardDetails.findOne({
     paymentMethod: pid,
     isDeleted: false,

@@ -31,6 +31,8 @@ import { ActivityLogs } from "../Models/ActivityLogs";
 import { fullySignupForNonBillableClients } from "../../utils/webhookUrls/fullySignupForNonBillableClients";
 import { cmsUpdateBuyerWebhook } from "../../utils/webhookUrls/cmsUpdateBuyerWebhook";
 import { CardDetails } from "../Models/CardDetails";
+import { eventsWebhook } from "../../utils/webhookUrls/eventExpansionWebhook";
+import { EVENT_TITLE } from "../../utils/constantFiles/events";
 
 export class UserLeadsController {
   static create = async (req: Request, res: Response) => {
@@ -329,12 +331,42 @@ export class UserLeadsController {
           new: true,
         }
       );
+
       const userAfterMod = await UserLeadsDetails.findById(
         id,
         " -_id -userId -createdAt -updatedAt"
       ).lean();
 
       const fields = findUpdatedFields(userForActivity, userAfterMod);
+
+      if (
+        Object.keys(fields.updatedFields).find((key) =>
+          key.startsWith("postCode")
+        )
+      ) {
+        const paramsToSend = {
+          userId: user._id,
+          buyerId: user.buyerId,
+          buisnessName: user.businessDetailsId.businessName,
+          eventCode: EVENT_TITLE.POST_CODE_UPDATE,
+          postCodeList: userAfterMod?.postCodeTargettingList,
+        };
+        await eventsWebhook(paramsToSend)
+          .then(() =>
+            console.log(
+              "event webhook for postcode updates hits successfully.",
+              paramsToSend
+            )
+          )
+          .catch((err) =>
+            console.log(
+              err,
+              "error while triggering postcode updates webhooks failed",
+              paramsToSend
+            )
+          );
+      }
+
       const userr = await User.findOne({ userLeadsDetailsId: req.params.id });
       const isEmpty = Object.keys(fields.updatedFields).length === 0;
 
