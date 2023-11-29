@@ -52,6 +52,7 @@ export const eventsWebhook = (data: any) => {
         });
     } else {
       console.log("Access denied!!");
+      resolve("Access denied!!");
     }
   });
 };
