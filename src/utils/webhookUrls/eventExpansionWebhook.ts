@@ -12,7 +12,7 @@ export const eventsWebhook = (data: any) => {
       headers: {
         "Content-Type": "application/json",
       },
-      url: ``,
+      url: `${process.env.INITIAL_WEBHOOK_URL}`,
       data: { data },
     };
 
@@ -23,8 +23,6 @@ export const eventsWebhook = (data: any) => {
         config.url = `${process.env.TOP_UP_URL_WEBHOOK}`;
       } else if (data.eventCode === EVENT_TITLE.POST_CODE_UPDATE) {
         config.url = `${process.env.POST_CODE_UPDATE_URL_WEBHOOK}`;
-      } else {
-        config.url = "";
       }
       axios(config)
         .then((response) => {

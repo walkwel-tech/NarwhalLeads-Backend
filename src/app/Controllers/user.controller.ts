@@ -82,7 +82,6 @@ export class UsersControllers {
     registerInput.password = input.password;
 
     const errors = await validate(registerInput);
-
     if (errors.length) {
       const errorsInfo: ValidationErrorResponse[] = errors.map((error) => ({
         property: error.property,

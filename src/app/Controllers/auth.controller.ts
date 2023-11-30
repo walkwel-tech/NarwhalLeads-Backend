@@ -47,6 +47,7 @@ import { createCustomerOnStripe } from "../../utils/createCustomer/createOnStrip
 import { Types } from "mongoose";
 import { getAccountManagerForRoundManager } from "../../utils/Functions/getAccountManagerForRoundManager";
 import { DEFAULT } from "../../utils/constantFiles/user.default.values";
+// import { reCaptchaValidation } from "../../utils/Functions/reCaptcha";
 
 class AuthController {
   static register = async (req: Request, res: Response): Promise<any> => {
@@ -72,6 +73,12 @@ class AuthController {
         .json({ error: { message: "VALIDATIONS_ERROR", info: errorsInfo } });
     }
     try {
+      // const reCaptcha = await reCaptchaValidation(input.recaptcha);
+      // if (!input.recaptcha || !reCaptcha) {
+      //   return res
+      //     .status(400)
+      //     .json({ data: { message: "reCaptcha validation failed" } });
+      // } else {
       const user = await User.findOne({
         email: input.email,
         isDeleted: false,
@@ -118,7 +125,9 @@ class AuthController {
           }
         }
         input.email = String(input.email).toLowerCase();
-        const permission = await Permissions.findOne({ role: RolesEnum.USER });
+        const permission = await Permissions.findOne({
+          role: RolesEnum.USER,
+        });
         let dataToSave: Partial<UserInterface> = {
           firstName: input.firstName,
           lastName: input.lastName,
@@ -280,10 +289,11 @@ class AuthController {
           }
         )(req, res);
       } else {
-        return res
-          .status(400)
-          .json({ data: { message: "User already exists with same email." } });
+        return res.status(400).json({
+          data: { message: "User already exists with same email." },
+        });
       }
+      // }
     } catch (error) {
       return res
         .status(500)
