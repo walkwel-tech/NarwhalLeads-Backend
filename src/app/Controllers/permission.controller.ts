@@ -125,12 +125,10 @@ export class PermissionController {
           .status(400)
           .json({ error: { message: "Permission doesn't exist" } });
       } else if (permission.isDeleted) {
-        return res
-          .status(400)
-          .json({
-            error: { message: "Permission already deleted" },
-            permission,
-          });
+        return res.status(400).json({
+          error: { message: "Permission already deleted" },
+          permission,
+        });
       }
 
       const updatedPermission = await Permissions.findByIdAndUpdate(
