@@ -184,14 +184,14 @@ class AuthController {
           if (codeExists && checkCode && checkCode?.topUpAmount === 0) {
             dataToSave.premiumUser = PROMO_LINK.PREMIUM_USER_NO_TOP_UP;
             dataToSave.promoLinkId = checkCode?.id;
-            dataToSave.isCommissionedUser = checkCode?.isComission;
+            dataToSave.isCommissionedUser = checkCode?.isCommission;
             if (checkCode.accountManager) {
               dataToSave.accountManager = checkCode.accountManager;
             }
           } else if (codeExists && checkCode && checkCode?.topUpAmount != 0) {
             dataToSave.premiumUser = PROMO_LINK.PREMIUM_USER_TOP_UP;
             dataToSave.promoLinkId = checkCode?.id;
-            dataToSave.isCommissionedUser = checkCode?.isComission;
+            dataToSave.isCommissionedUser = checkCode?.isCommission;
             if (checkCode.accountManager) {
               dataToSave.accountManager = checkCode.accountManager;
             }
