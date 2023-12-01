@@ -33,8 +33,6 @@ import { cmsUpdateBuyerWebhook } from "../../utils/webhookUrls/cmsUpdateBuyerWeb
 import { CardDetails } from "../Models/CardDetails";
 import { EVENT_TITLE } from "../../utils/constantFiles/events";
 import { eventsWebhook } from "../../utils/webhookUrls/eventExpansionWebhook";
-import { clientUpdateWebhookUrl } from "../../utils/webhookUrls/clientUpdateWebhook";
-import { BusinessDetailsInterface } from "../../types/BusinessInterface";
 
 export class UserLeadsController {
   static create = async (req: Request, res: Response) => {
@@ -392,24 +390,13 @@ export class UserLeadsController {
       );
       const lead = await UserLeadsDetails.findById(id);
       const userId = lead?.userId;
-      const buyerId = user?.buyerId;
-      const businessId = user?.businessDetailsId;
-      const business =
-        (await BusinessDetails.findById(businessId)) ??
-        ({} as BusinessDetailsInterface);
+
       if (input.daily && userId) {
         const user = await User.findById(userId);
         if (user && user.leadCost !== undefined) {
-          let reqBody = {
-            bid: buyerId,
-            businessName: business?.businessName,
-            dailyLeads: input.daily,
-          };
-
           await UserLeadsDetails.findByIdAndUpdate(id, {
             dailyLeadCost: user.leadCost ?? 0 * input.daily,
           });
-          clientUpdateWebhookUrl(reqBody);
         }
 
         if (data) {
@@ -490,26 +477,6 @@ export class UserLeadsController {
             data: { message: "Incorrect input fields" },
           });
         }
-      }
-
-      if (input.leadSchedule) {
-        let reqBody = {
-          bid: buyerId,
-          businessName: business?.businessName,
-          leadSchedule: input.leadSchedule,
-        };
-
-        clientUpdateWebhookUrl(reqBody);
-      }
-
-      if (input.postCodeTargettingList) {
-        let reqBody = {
-          bid: buyerId,
-          businessName: business?.businessName,
-          postCodeTargettingList: input.postCodeTargettingList,
-        };
-
-        clientUpdateWebhookUrl(reqBody);
       }
     } catch (error) {
       return res

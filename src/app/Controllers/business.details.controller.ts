@@ -46,7 +46,8 @@ import { AccessTokenInterface } from "../../types/AccessTokenInterface";
 import { CreateCustomerInput } from "../Inputs/createCustomerOnRyft&Lead.inputs";
 import { cmsUpdateBuyerWebhook } from "../../utils/webhookUrls/cmsUpdateBuyerWebhook";
 import { CardDetails } from "../Models/CardDetails";
-import { clientUpdateWebhookUrl } from "../../utils/webhookUrls/clientUpdateWebhook";
+import { eventsWebhook } from "../../utils/webhookUrls/eventExpansionWebhook";
+import { EVENT_TITLE } from "../../utils/constantFiles/events";
 
 const ObjectId = mongoose.Types.ObjectId;
 
@@ -325,11 +326,26 @@ export class BusinessDetailsController {
         );
 
         let reqBody = {
+          userId: user?._id,
           bid: user?.buyerId,
           businessName: details?.businessName,
           businessSalesNumber: input.businessSalesNumber,
+          eventCode: EVENT_TITLE.BUSINESS_PHONE_NUMBER,
         };
-        clientUpdateWebhookUrl(reqBody);
+        await eventsWebhook(reqBody)
+          .then(() =>
+            console.log(
+              "event webhook for updating business phone number hits successfully.",
+              reqBody
+            )
+          )
+          .catch((err) =>
+            console.log(
+              err,
+              "error while triggering business phone number webhooks failed",
+              reqBody
+            )
+          );
       }
       const userForActivity = await BusinessDetails.findById(
         id,

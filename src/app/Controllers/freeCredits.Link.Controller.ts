@@ -143,6 +143,7 @@ export class freeCreditsLinkController {
             createdAt: 1,
             updatedAt: 1,
             isDeleted: 1,
+            isComission: 1,
             accountManager: 1,
             __v: 1,
             businessIndustryId: 1,
