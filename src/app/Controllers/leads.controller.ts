@@ -42,7 +42,7 @@ import { UserInterface } from "../../types/UserInterface";
 // import { leadReprocessWebhookLeadCenter } from "../../utils/webhookUrls/leadsReprocessWebhook";
 import { LeadsInterface } from "../../types/LeadsInterface";
 import { columnsObjects } from "../../types/columnsInterface";
-import { leadReportWebhook } from "../../utils/webhookUrls/leadReportedWebhook";
+import { leadReportAcceptedWebhook } from "../../utils/webhookUrls/leadReportedAcceptedWebhook";
 import { getLeadCenterToken } from "../../utils/Functions/getLeadCenterToken";
 
 import { eventsWebhook } from "../../utils/webhookUrls/eventExpansionWebhook";
@@ -435,7 +435,6 @@ export class LeadsController {
           user?.businessDetailsId,
           "businessName businessIndustry"
         );
-        // hitting webhook
         let reqBody = {
           leadId: lead.leads?.leadId,
           industry: business?.businessIndustry,
@@ -445,13 +444,17 @@ export class LeadsController {
           date: new Date(),
           reason: lead.invalidLeadReason,
         };
-        leadReportWebhook(reqBody)
-          .then(() => {})
+        leadReportAcceptedWebhook(leadUser, reqBody)
+          .then(() => {
+            console.log(
+              "lead Report accepted Webhook webhook hits successfully"
+            );
+          })
           .catch((err) => {
             if (err.status === 401) {
               getLeadCenterToken()
                 .then((res) => {
-                  leadReportWebhook(reqBody)
+                  leadReportAcceptedWebhook(leadUser, reqBody)
                     .then(() => {
                       console.log(
                         "lead Report accepted Webhook webhook hits successfully"
