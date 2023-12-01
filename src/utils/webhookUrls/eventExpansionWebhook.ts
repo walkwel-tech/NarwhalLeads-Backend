@@ -23,6 +23,8 @@ export const eventsWebhook = (data: any) => {
         config.url = `${process.env.TOP_UP_URL_WEBHOOK}`;
       } else if (data.eventCode === EVENT_TITLE.POST_CODE_UPDATE) {
         config.url = `${process.env.POST_CODE_UPDATE_URL_WEBHOOK}`;
+      } else if (data.eventCode === EVENT_TITLE.BUSINESS_PHONE_NUMBER) {
+        config.url = `${process.env.BUSINESS_PHONE_NUMBER}`;
       }
       axios(config)
         .then((response) => {

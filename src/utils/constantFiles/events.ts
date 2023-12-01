@@ -16,4 +16,5 @@ export const EVENT_TITLE = {
   ADD_CREDITS: "Add Credits",
   POST_CODE_UPDATE: "Update post codes",
   ZERO_CREDITS: "Zero Credits",
+  BUSINESS_PHONE_NUMBER: "Business Phone Number",
 };
