@@ -6,7 +6,7 @@ export interface freeCreditsLinkInterface extends Document {
   useCounts: number;
   maxUseCounts: number;
   isDisabled: boolean;
-  isComission: boolean;
+  isCommission: boolean;
   // userId: [];
   // businessDetailsId:[];
   users: [];

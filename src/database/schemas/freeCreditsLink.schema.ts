@@ -6,7 +6,7 @@ const FreeCreditsLinkSchema = new Schema(
       type: String,
       required: true,
     },
-    isComission: {
+    isCommission: {
       type: Boolean,
       // required: true,
     },
