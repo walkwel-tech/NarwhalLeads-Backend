@@ -1274,6 +1274,16 @@ export class UsersControllers {
         .status(400)
         .json({ error: { message: "User has been already deleted." } });
     }
+    if (userExist?.role === RolesEnum.ACCOUNT_MANAGER) {
+      const usersAssign = await User.find({ accountManager: userExist.id });
+      if (usersAssign.length > 0) {
+        await Promise.all(
+          usersAssign.map(async (user) => {
+            await User.findByIdAndUpdate(user.id, { accountManager: null });
+          })
+        );
+      }
+    }
 
     try {
       const user = await User.findByIdAndUpdate(id, {
