@@ -542,13 +542,9 @@ export class DashboardController {
         });
       }
 
-      const { accountManagerId, timePeriod, commissionStatus, perPage, page } =
+      const { accountManagerId, timePeriod, commissionStatus } =
         queryParams;
-      //
-      // let skip = 0, defaultPerPage = perPage ?? LIMIT;
-      // if (page) {
-      //   skip = (page > 0 ? page - 1 : 0) * defaultPerPage;
-      // }
+
 
       const pipeline: PipelineStage[] = [
         { $match: { role: RolesEnum.USER } },
