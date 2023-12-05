@@ -24,7 +24,7 @@ export const checkPermissions = (
         ) {
           return res.status(403).json({
             error: {
-              message: `Access denied !! You do not have permission to ${permission} in the ${module} module.`,
+              message: `Access denied !`,
             },
           });
         }
