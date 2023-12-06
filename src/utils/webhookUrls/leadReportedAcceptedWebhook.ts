@@ -18,6 +18,7 @@ export const leadReportAcceptedWebhook = (
   user: Partial<UserInterface>,
   data: leadReportAcceptedWebhookData
 ) => {
+  const body = JSON.stringify(data);
   return new Promise(async (resolve, reject) => {
     const credential = await LeadCenterCredential.findOne();
 
@@ -28,7 +29,7 @@ export const leadReportAcceptedWebhook = (
         "Content-Type": "application/json",
         authorization: `TOKEN ${credential?.token}`,
       },
-      data: { data },
+      data: body,
     };
     if (checkAccess()) {
       axios(config)
