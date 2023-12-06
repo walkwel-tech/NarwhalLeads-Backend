@@ -27,7 +27,7 @@ export class freeCreditsLinkController {
         useCounts: 0,
         name: input.name,
         accountManager: input.accountManager,
-        isComission: input?.isComission,
+        isCommission: input?.isCommission,
         businessIndustryId: input?.businessIndustryId,
       };
       if (input.code) {
@@ -143,6 +143,7 @@ export class freeCreditsLinkController {
             createdAt: 1,
             updatedAt: 1,
             isDeleted: 1,
+            isCommission: 1,
             accountManager: 1,
             __v: 1,
             businessIndustryId: 1,
@@ -182,6 +183,7 @@ export class freeCreditsLinkController {
             email: user.email,
             businessName: businessName,
             createdAt: user.createdAt,
+
             // Add other properties you need from the user object
           };
         });
@@ -202,6 +204,7 @@ export class freeCreditsLinkController {
           users: usersData,
           accountManager: "",
           businessIndustryId: item?.businessIndustryId[0]?.industry,
+          isCommission: item?.isCommission,
         };
         if (item.accountManager.length > 0) {
           dataToShow.accountManager = `${item.accountManager[0]?.firstName} ${item.accountManager[0]?.lastName}`;

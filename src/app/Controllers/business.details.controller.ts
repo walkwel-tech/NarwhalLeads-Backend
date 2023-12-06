@@ -46,6 +46,8 @@ import { AccessTokenInterface } from "../../types/AccessTokenInterface";
 import { CreateCustomerInput } from "../Inputs/createCustomerOnRyft&Lead.inputs";
 import { cmsUpdateBuyerWebhook } from "../../utils/webhookUrls/cmsUpdateBuyerWebhook";
 import { CardDetails } from "../Models/CardDetails";
+import { eventsWebhook } from "../../utils/webhookUrls/eventExpansionWebhook";
+import { EVENT_TITLE } from "../../utils/constantFiles/events";
 
 const ObjectId = mongoose.Types.ObjectId;
 
@@ -311,7 +313,40 @@ export class BusinessDetailsController {
     const input = req.body;
 
     try {
-      const details = await BusinessDetails.findOne({ _id: new ObjectId(id) });
+      const user = await User.findOne({ businessDetailsId: id });
+
+      const details =
+        (await BusinessDetails.findOne({ _id: new ObjectId(id) })) ??
+        ({} as BusinessDetailsInterface);
+      if (input.businessSalesNumber) {
+        await BusinessDetails.findByIdAndUpdate(
+          id,
+          { businessSalesNumber: input.businessSalesNumber },
+          { new: true }
+        );
+
+        let reqBody = {
+          userId: user?._id,
+          bid: user?.buyerId,
+          businessName: details?.businessName,
+          businessSalesNumber: input.businessSalesNumber,
+          eventCode: EVENT_TITLE.BUSINESS_PHONE_NUMBER,
+        };
+        await eventsWebhook(reqBody)
+          .then(() =>
+            console.log(
+              "event webhook for updating business phone number hits successfully.",
+              reqBody
+            )
+          )
+          .catch((err) =>
+            console.log(
+              err,
+              "error while triggering business phone number webhooks failed",
+              reqBody
+            )
+          );
+      }
       const userForActivity = await BusinessDetails.findById(
         id,
         " -_id -createdAt -updatedAt"
@@ -323,6 +358,7 @@ export class BusinessDetailsController {
           .json({ error: { message: "details does not exists." } });
       }
       let userData = await User.findOne({ businessDetailsId: id });
+
       if (input.businessOpeningHours) {
         input.businessOpeningHours = JSON.parse(input.businessOpeningHours);
       }
@@ -360,6 +396,7 @@ export class BusinessDetailsController {
         );
         // }
       }
+
       if ((req.file || {}).filename) {
         input.businessLogo = `${FileEnum.PROFILEIMAGE}${req?.file?.filename}`;
       }

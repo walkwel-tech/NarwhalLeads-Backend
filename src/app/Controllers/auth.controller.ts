@@ -47,6 +47,8 @@ import { createCustomerOnStripe } from "../../utils/createCustomer/createOnStrip
 import { Types } from "mongoose";
 import { getAccountManagerForRoundManager } from "../../utils/Functions/getAccountManagerForRoundManager";
 import { DEFAULT } from "../../utils/constantFiles/user.default.values";
+import { reCaptchaValidation } from "../../utils/Functions/reCaptcha";
+// import { reCaptchaValidation } from "../../utils/Functions/reCaptcha";
 
 class AuthController {
   static register = async (req: Request, res: Response): Promise<any> => {
@@ -72,217 +74,230 @@ class AuthController {
         .json({ error: { message: "VALIDATIONS_ERROR", info: errorsInfo } });
     }
     try {
-      const user = await User.findOne({
-        email: input.email,
-        isDeleted: false,
-        role: {
-          $in: [
-            RolesEnum.USER,
-            RolesEnum.ACCOUNT_MANAGER,
-            RolesEnum.ADMIN,
-            RolesEnum.SUBSCRIBER,
-            RolesEnum.NON_BILLABLE,
-            RolesEnum.INVITED,
-            RolesEnum.SUPER_ADMIN,
-          ],
-        },
-      });
-      if (!user) {
-        const salt = genSaltSync(10);
-        const hashPassword = hashSync(input.password, salt);
-        const showUsers: UserInterface =
-          (await User.findOne().sort({ rowIndex: -1 }).limit(1)) ??
-          ({} as UserInterface);
-        let checkCode;
-        let codeExists;
-        if (input.code) {
-          checkCode = await FreeCreditsLink.findOne({
-            code: input.code,
-            isDeleted: false,
-          });
-          if (checkCode?.isDisabled) {
-            return res.status(400).json({ data: { message: "Link Expired!" } });
-          }
-          if (!checkCode) {
-            return res.status(400).json({ data: { message: "Link Invalid!" } });
-          }
-          if (
-            checkCode.maxUseCounts &&
-            checkCode.maxUseCounts <= checkCode.useCounts
-          ) {
-            return res
-              .status(400)
-              .json({ data: { message: "Link has reached maximum limit!" } });
-          } else {
-            codeExists = true;
-          }
-        }
-        input.email = String(input.email).toLowerCase();
-        const permission = await Permissions.findOne({ role: RolesEnum.USER });
-        let dataToSave: Partial<UserInterface> = {
-          firstName: input.firstName,
-          lastName: input.lastName,
-          email: input.email,
-          phoneNumber: input.phoneNumber,
-          smsPhoneNumber: input.phoneNumber,
-          password: hashPassword,
-          role: RolesEnum.USER,
-          autoChargeAmount: DEFAULT.AUTO_CHARGE_AMOUNT,
-          isActive: true, //need to delete
-          isVerified: true, //need to delete
-          rowIndex: showUsers?.rowIndex + 1 || 0,
-          paymentMethod: paymentMethodEnum.AUTOCHARGE_METHOD,
-          onBoardingPercentage: ONBOARDING_PERCENTAGE.USER_DETAILS,
-          onBoarding: [
-            {
-              key: ONBOARDING_KEYS.BUSINESS_DETAILS,
-              pendingFields: [
-                BUSINESS_DETAILS.BUSINESS_INDUSTRY,
-                BUSINESS_DETAILS.BUSINESS_NAME,
-                BUSINESS_DETAILS.BUSINESS_SALES_NUMBER,
-                BUSINESS_DETAILS.BUSINESS_POST_CODE,
-                BUSINESS_DETAILS.ADDRESS1,
-                BUSINESS_DETAILS.BUSINESS_OPENING_HOURS,
-                BUSINESS_DETAILS.BUSINESS_CITY,
-              ],
-              dependencies: [],
-            },
-            {
-              key: ONBOARDING_KEYS.LEAD_DETAILS,
-              pendingFields: [
-                LEAD_DETAILS.DAILY,
-                LEAD_DETAILS.LEAD_SCHEDULE,
-                LEAD_DETAILS.POSTCODE_TARGETTING_LIST,
-              ],
-              dependencies: [BUSINESS_DETAILS.BUSINESS_INDUSTRY],
-            },
-            {
-              key: ONBOARDING_KEYS.CARD_DETAILS,
-              pendingFields: [CARD_DETAILS.CARD_NUMBER],
-              dependencies: [],
-            },
-          ],
-          permissions: permission?.permissions,
-          triggerAmount: DEFAULT.TRIGGER_AMOUT,
-          isNewUser: true,
-          isAutoChargeEnabled: true,
-        };
-        if (codeExists && checkCode && checkCode?.topUpAmount === 0) {
-          dataToSave.premiumUser = PROMO_LINK.PREMIUM_USER_NO_TOP_UP;
-          dataToSave.promoLinkId = checkCode?.id;
-          dataToSave.isCommissionedUser = checkCode?.isComission;
-          if (checkCode.accountManager) {
-            dataToSave.accountManager = checkCode.accountManager;
-          }
-        } else if (codeExists && checkCode && checkCode?.topUpAmount != 0) {
-          dataToSave.premiumUser = PROMO_LINK.PREMIUM_USER_TOP_UP;
-          dataToSave.promoLinkId = checkCode?.id;
-          dataToSave.isCommissionedUser = checkCode?.isComission;
-          if (checkCode.accountManager) {
-            dataToSave.accountManager = checkCode.accountManager;
-          }
-        } else {
-          if (process.env.isRoundTableManager) {
-            dataToSave.accountManager =
-              await getAccountManagerForRoundManager();
-          }
-        }
-
-        await User.create(dataToSave);
-        if (input.code) {
-          const checkCode: freeCreditsLinkInterface =
-            (await FreeCreditsLink.findOne({
-              code: input.code,
-              isDeleted: false,
-            })) ?? ({} as freeCreditsLinkInterface);
-          const dataToSave: Partial<freeCreditsLinkInterface> = {
-            isUsed: true,
-            usedAt: new Date(),
-            useCounts: checkCode?.useCounts + 1,
-          };
-          await FreeCreditsLink.findByIdAndUpdate(checkCode?.id, dataToSave, {
-            new: true,
-          });
-        }
-        sendEmailForRegistration(input.email, input.firstName);
-
-        passport.authenticate(
-          "local",
-          { session: false },
-          (err: any, user: UserInterface, message: Object): any => {
-            if (!user) {
-              if (err) {
-                return res.status(400).json({ error: err });
-              }
-              return res.status(550).json({ error: message });
-            } else if (!user.isActive) {
-              return res
-                .status(550)
-                .json({ data: "User not active.Please contact admin." });
-            } else if (!user.isVerified) {
-              return res.status(550).json({
-                data: "User not verified.Please verify your account",
-              });
-            } else if (user.isDeleted) {
-              return res
-                .status(550)
-                .json({ data: "User is deleted.Please contact admin" });
-            }
-            const authToken = generateAuthToken(user);
-            const params: Record<string, string | Types.ObjectId> = {
-              email: user.email,
-              firstName: user.firstName,
-              lastName: user.lastName,
-              userId: user.id,
-            };
-            if (process.env.PAYMENT_MODE === CARD.STRIPE) {
-              //fixme:
-              //@ts-ignore
-              createCustomerOnStripe(params)
-                .then(async () => {
-                  //@ts-ignore
-                  user.password = undefined;
-                  res.send({
-                    message: "successfully registered",
-                    data: user,
-                    token: authToken,
-                  });
-                })
-                .catch(async () => {
-                  await User.findByIdAndDelete(user.id);
-                  return res.status(400).json({
-                    data: {
-                      message: "Error while creating customer on stripe",
-                    },
-                  });
-                });
-            } else {
-              createCustomerOnRyft(params)
-                .then(async () => {
-                  //@ts-ignore
-                  user.password = undefined;
-                  res.send({
-                    message: "successfully registered",
-                    data: user,
-                    token: authToken,
-                  });
-                })
-                .catch(async () => {
-                  await User.findByIdAndDelete(user.id);
-                  return res.status(400).json({
-                    data: {
-                      message:
-                        "Email already exist on RYFT. please try again with another email.",
-                    },
-                  });
-                });
-            }
-          }
-        )(req, res);
-      } else {
+      const reCaptcha = await reCaptchaValidation(input.recaptcha);
+      if (!input.recaptcha || !reCaptcha) {
         return res
           .status(400)
-          .json({ data: { message: "User already exists with same email." } });
+          .json({ data: { message: "reCaptcha validation failed" } });
+      } else {
+        const user = await User.findOne({
+          email: input.email,
+          isDeleted: false,
+          role: {
+            $in: [
+              RolesEnum.USER,
+              RolesEnum.ACCOUNT_MANAGER,
+              RolesEnum.ADMIN,
+              RolesEnum.SUBSCRIBER,
+              RolesEnum.NON_BILLABLE,
+              RolesEnum.INVITED,
+              RolesEnum.SUPER_ADMIN,
+            ],
+          },
+        });
+        if (!user) {
+          const salt = genSaltSync(10);
+          const hashPassword = hashSync(input.password, salt);
+          const showUsers: UserInterface =
+            (await User.findOne().sort({ rowIndex: -1 }).limit(1)) ??
+            ({} as UserInterface);
+          let checkCode;
+          let codeExists;
+          if (input.code) {
+            checkCode = await FreeCreditsLink.findOne({
+              code: input.code,
+              isDeleted: false,
+            });
+            if (checkCode?.isDisabled) {
+              return res
+                .status(400)
+                .json({ data: { message: "Link Expired!" } });
+            }
+            if (!checkCode) {
+              return res
+                .status(400)
+                .json({ data: { message: "Link Invalid!" } });
+            }
+            if (
+              checkCode.maxUseCounts &&
+              checkCode.maxUseCounts <= checkCode.useCounts
+            ) {
+              return res
+                .status(400)
+                .json({ data: { message: "Link has reached maximum limit!" } });
+            } else {
+              codeExists = true;
+            }
+          }
+          input.email = String(input.email).toLowerCase();
+          const permission = await Permissions.findOne({
+            role: RolesEnum.USER,
+          });
+          let dataToSave: Partial<UserInterface> = {
+            firstName: input.firstName,
+            lastName: input.lastName,
+            email: input.email,
+            phoneNumber: input.phoneNumber,
+            smsPhoneNumber: input.phoneNumber,
+            password: hashPassword,
+            role: RolesEnum.USER,
+            autoChargeAmount: DEFAULT.AUTO_CHARGE_AMOUNT,
+            isActive: true, //need to delete
+            isVerified: true, //need to delete
+            rowIndex: showUsers?.rowIndex + 1 || 0,
+            paymentMethod: paymentMethodEnum.AUTOCHARGE_METHOD,
+            onBoardingPercentage: ONBOARDING_PERCENTAGE.USER_DETAILS,
+            onBoarding: [
+              {
+                key: ONBOARDING_KEYS.BUSINESS_DETAILS,
+                pendingFields: [
+                  BUSINESS_DETAILS.BUSINESS_INDUSTRY,
+                  BUSINESS_DETAILS.BUSINESS_NAME,
+                  BUSINESS_DETAILS.BUSINESS_SALES_NUMBER,
+                  BUSINESS_DETAILS.BUSINESS_POST_CODE,
+                  BUSINESS_DETAILS.ADDRESS1,
+                  BUSINESS_DETAILS.BUSINESS_OPENING_HOURS,
+                  BUSINESS_DETAILS.BUSINESS_CITY,
+                ],
+                dependencies: [],
+              },
+              {
+                key: ONBOARDING_KEYS.LEAD_DETAILS,
+                pendingFields: [
+                  LEAD_DETAILS.DAILY,
+                  LEAD_DETAILS.LEAD_SCHEDULE,
+                  LEAD_DETAILS.POSTCODE_TARGETTING_LIST,
+                ],
+                dependencies: [BUSINESS_DETAILS.BUSINESS_INDUSTRY],
+              },
+              {
+                key: ONBOARDING_KEYS.CARD_DETAILS,
+                pendingFields: [CARD_DETAILS.CARD_NUMBER],
+                dependencies: [],
+              },
+            ],
+            permissions: permission?.permissions,
+            triggerAmount: DEFAULT.TRIGGER_AMOUT,
+            isNewUser: true,
+            isAutoChargeEnabled: true,
+          };
+          if (codeExists && checkCode && checkCode?.topUpAmount === 0) {
+            dataToSave.premiumUser = PROMO_LINK.PREMIUM_USER_NO_TOP_UP;
+            dataToSave.promoLinkId = checkCode?.id;
+            dataToSave.isCommissionedUser = checkCode?.isCommission;
+            if (checkCode.accountManager) {
+              dataToSave.accountManager = checkCode.accountManager;
+            }
+          } else if (codeExists && checkCode && checkCode?.topUpAmount != 0) {
+            dataToSave.premiumUser = PROMO_LINK.PREMIUM_USER_TOP_UP;
+            dataToSave.promoLinkId = checkCode?.id;
+            dataToSave.isCommissionedUser = checkCode?.isCommission;
+            if (checkCode.accountManager) {
+              dataToSave.accountManager = checkCode.accountManager;
+            }
+          } else {
+            if (process.env.isRoundTableManager) {
+              dataToSave.accountManager =
+                await getAccountManagerForRoundManager();
+            }
+          }
+
+          await User.create(dataToSave);
+          if (input.code) {
+            const checkCode: freeCreditsLinkInterface =
+              (await FreeCreditsLink.findOne({
+                code: input.code,
+                isDeleted: false,
+              })) ?? ({} as freeCreditsLinkInterface);
+            const dataToSave: Partial<freeCreditsLinkInterface> = {
+              isUsed: true,
+              usedAt: new Date(),
+              useCounts: checkCode?.useCounts + 1,
+            };
+            await FreeCreditsLink.findByIdAndUpdate(checkCode?.id, dataToSave, {
+              new: true,
+            });
+          }
+          sendEmailForRegistration(input.email, input.firstName);
+
+          passport.authenticate(
+            "local",
+            { session: false },
+            (err: any, user: UserInterface, message: Object): any => {
+              if (!user) {
+                if (err) {
+                  return res.status(400).json({ error: err });
+                }
+                return res.status(550).json({ error: message });
+              } else if (!user.isActive) {
+                return res
+                  .status(550)
+                  .json({ data: "User not active.Please contact admin." });
+              } else if (!user.isVerified) {
+                return res.status(550).json({
+                  data: "User not verified.Please verify your account",
+                });
+              } else if (user.isDeleted) {
+                return res
+                  .status(550)
+                  .json({ data: "User is deleted.Please contact admin" });
+              }
+              const authToken = generateAuthToken(user);
+              const params: Record<string, string | Types.ObjectId> = {
+                email: user.email,
+                firstName: user.firstName,
+                lastName: user.lastName,
+                userId: user.id,
+              };
+              if (process.env.PAYMENT_MODE === CARD.STRIPE) {
+                //fixme:
+                //@ts-ignore
+                createCustomerOnStripe(params)
+                  .then(async () => {
+                    //@ts-ignore
+                    user.password = undefined;
+                    res.send({
+                      message: "successfully registered",
+                      data: user,
+                      token: authToken,
+                    });
+                  })
+                  .catch(async () => {
+                    await User.findByIdAndDelete(user.id);
+                    return res.status(400).json({
+                      data: {
+                        message: "Error while creating customer on stripe",
+                      },
+                    });
+                  });
+              } else {
+                createCustomerOnRyft(params)
+                  .then(async () => {
+                    //@ts-ignore
+                    user.password = undefined;
+                    res.send({
+                      message: "successfully registered",
+                      data: user,
+                      token: authToken,
+                    });
+                  })
+                  .catch(async () => {
+                    await User.findByIdAndDelete(user.id);
+                    return res.status(400).json({
+                      data: {
+                        message:
+                          "Email already exist on RYFT. please try again with another email.",
+                      },
+                    });
+                  });
+              }
+            }
+          )(req, res);
+        } else {
+          return res.status(400).json({
+            data: { message: "User already exists with same email." },
+          });
+        }
       }
     } catch (error) {
       return res
@@ -590,14 +605,14 @@ class AuthController {
           fs.readFile(
             `${process.cwd()}/public/map/data_uk_latest.json`,
             "utf8",
-            (err: any, data2: any) => {
+            (err: any, ukData: any) => {
               if (err) {
                 console.error(err);
                 return;
               }
-              data2 = JSON.parse(data2);
-              // return res.json(data2);
-              const object1 = data2;
+              ukData = JSON.parse(ukData);
+              // return res.json(ukData);
+              const object1 = ukData;
 
               const object2: any = [];
 
@@ -653,20 +668,22 @@ class AuthController {
           }
           data = JSON.parse(data);
           fs.readFile(
-            `${process.cwd()}/public/map/data_uk_latest.json`,
+            // `${process.cwd()}/public/map/data_uk_latest.json`,
+            `${process.cwd()}/public/map/data_ireland_me.json`,
             "utf8",
-            (err: any, data2: any) => {
+            (err: any, irelandData: any) => {
               if (err) {
                 console.error(err);
                 return;
               }
-              data2 = JSON.parse(data2);
-              const object1 = data2;
+              irelandData = JSON.parse(irelandData);
+              const object1 = irelandData;
 
               const object2: any = [];
 
               object1.forEach((obj: any) => {
-                const districtsArray = obj.PostcodeDistrict.split(",");
+                // const districtsArray = obj.PostcodeDistrict.split(",");
+                const districtsArray = obj.PostcodeDistrict;
                 districtsArray.sort(
                   (a: any, b: any) =>
                     parseInt(a.match(/\d+/g)[0]) - parseInt(b.match(/\d+/g)[0])

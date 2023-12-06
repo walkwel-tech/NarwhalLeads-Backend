@@ -82,7 +82,6 @@ export class UsersControllers {
     registerInput.password = input.password;
 
     const errors = await validate(registerInput);
-
     if (errors.length) {
       const errorsInfo: ValidationErrorResponse[] = errors.map((error) => ({
         property: error.property,
@@ -1274,6 +1273,16 @@ export class UsersControllers {
       return res
         .status(400)
         .json({ error: { message: "User has been already deleted." } });
+    }
+    if (userExist?.role === RolesEnum.ACCOUNT_MANAGER) {
+      const usersAssign = await User.find({ accountManager: userExist.id });
+      if (usersAssign.length > 0) {
+        await Promise.all(
+          usersAssign.map(async (user) => {
+            await User.findByIdAndUpdate(user.id, { accountManager: null });
+          })
+        );
+      }
     }
 
     try {

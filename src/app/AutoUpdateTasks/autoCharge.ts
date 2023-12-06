@@ -50,7 +50,7 @@ export const autoChargePayment = async () => {
   cron.schedule("0 0 * * *", async () => {
     // cron.schedule("* * * * *", async () => {
     try {
-      const usersToCharge = await getUsersToCharge();
+      const usersToCharge = await getUsersWithAutoChargeEnabled();
       console.log(usersToCharge);
       for (const user of usersToCharge) {
         const paymentMethod = await getUserPaymentMethods(user.id);
@@ -230,8 +230,8 @@ export const weeklypayment = async () => {
   });
 };
 
-const getUsersToCharge = async () => {
-  const data = await User.find({
+const getUsersWithAutoChargeEnabled = async () => {
+  const usersWithAutoChargeEnabled = await User.find({
     $expr: {
       $lt: ["$credits", "$triggerAmount"],
     },
@@ -239,7 +239,7 @@ const getUsersToCharge = async () => {
     isDeleted: false,
     isAutoChargeEnabled: true,
   }).populate("businessDetailsId");
-  return data;
+  return usersWithAutoChargeEnabled;
 };
 
 const getUserPaymentMethods = async (id: string) => {

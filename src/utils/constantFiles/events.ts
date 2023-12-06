@@ -11,9 +11,10 @@ export const EVENT_TITLE = {
   FULLY_SIGNUP_WITH_CREDITS: "Fully Signup With Credits",
   LEAD_DETAILS_SUBMISSION: "Leads Details Submission",
   LEAD_REPORTED: "Lead Reported",
-  LEAD_REPROCESS: "Lead Reprocess",
+  LEAD_REPORT_ACCEPTED: "Lead Report Accepted",
   LEAD_DATA: "Lead Data",
   ADD_CREDITS: "Add Credits",
   POST_CODE_UPDATE: "Update post codes",
   ZERO_CREDITS: "Zero Credits",
+  BUSINESS_PHONE_NUMBER: "Business Phone Number",
 };
