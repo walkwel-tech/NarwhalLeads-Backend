@@ -542,10 +542,7 @@ export class DashboardController {
         });
       }
 
-      const { accountManagerId, timePeriod, commissionStatus } =
-        queryParams;
-
-
+      const { accountManagerId, timePeriod, commissionStatus } = queryParams;
       const pipeline: PipelineStage[] = [
         { $match: { role: RolesEnum.USER } },
         ...(timePeriod && Object.keys(timePeriod).length
@@ -560,7 +557,6 @@ export class DashboardController {
               },
             ]
           : []),
-        // ...(industry ? [{ $match: { businessIndustryId: { $in: industry.map((industry) => new Types.ObjectId(industry)) } } }] : []),
       ];
 
       if (accountManagerId?.length) {
@@ -599,15 +595,6 @@ export class DashboardController {
             nonComissionedClients: {
               $sum: {
                 $cond: { if: "$isCommissionedUser", then: 0, else: 1 },
-                // $cond: {
-                //     if: {
-                //         $or: [
-                //             { $eq: ['$isCommissionedUser', false] },
-                //             { $eq: [{ $ifNull: ['$isCommissionedUser', true] }, false] }
-                //         ]
-                //     }, then: 1, else: 0
-                // }
-                // this commented code is for only adding if isCommissioned is present.
               },
             },
             totalLeads: {
