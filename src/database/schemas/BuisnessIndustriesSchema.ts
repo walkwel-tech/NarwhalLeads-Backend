@@ -12,6 +12,12 @@ const BuisnessIndustriesSchema = new Schema(
     columns: {
       type: Array,
     },
+    associatedCurrency: {
+      type: String
+    },
+    country: {
+      type: String
+    },
     isActive: {
       type: Boolean,
       default: true,

@@ -17,4 +17,6 @@ export const EVENT_TITLE = {
   POST_CODE_UPDATE: "Update post codes",
   ZERO_CREDITS: "Zero Credits",
   BUSINESS_PHONE_NUMBER: "Business Phone Number",
+  DAILY_LEAD_CAP: "Daily Lead Cap",
+  LEAD_SCHEDULE_UPDATE: "Lead Schedule Update",
 };

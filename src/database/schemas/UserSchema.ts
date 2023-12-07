@@ -20,6 +20,9 @@ const UserSchema = new Schema(
       type: String,
       // required: true,
     },
+    currency: {
+      type: String
+    },
     role: {
       type: String,
       required: true,

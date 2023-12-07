@@ -114,10 +114,10 @@ export class BusinessDetailsController {
       object = object.map((obj: any) =>
         obj.key === ONBOARDING_KEYS.CARD_DETAILS
           ? (obj = {
-              key: ONBOARDING_KEYS.CARD_DETAILS,
-              pendingFields: obj.pendingFields,
-              dependencies: [],
-            })
+            key: ONBOARDING_KEYS.CARD_DETAILS,
+            pendingFields: obj.pendingFields,
+            dependencies: [],
+          })
           : obj
       );
     }
@@ -152,10 +152,16 @@ export class BusinessDetailsController {
         (await BuisnessIndustries.findOne({
           industry: input?.businessIndustry,
         })) ?? ({} as BuisnessIndustriesInterface);
+      if (!industry) {
+        return res
+          .status(404)
+          .json({ error: { message: "industry does not exists." } });
+      }
       await User.findByIdAndUpdate(input.userId, {
         businessDetailsId: new ObjectId(userData._id),
         leadCost: industry?.leadCost,
         businessIndustryId: industry?.id,
+        currency: industry.associatedCurrency,
         onBoardingPercentage: ONBOARDING_PERCENTAGE.BUSINESS_DETAILS,
       });
       const user: UserInterface =

@@ -15,12 +15,21 @@ import mongoose from "mongoose";
 const LIMIT = 10;
 const ObjectId = mongoose.Types.ObjectId;
 
+const countryCurrency = [
+  { value: 'USD', label: '$(USD)', country: 'USA' },
+  { value: 'EUR', label: '€(EUR)', country: 'Ireland' },
+  { value: 'GBP', label: '£(GBP)', country: 'UK' },
+];
+
+
 export class IndustryController {
   static create = async (req: Request, res: Response) => {
     const input = req.body;
     const Industry = new IndustryInput();
     Industry.industry = input.industry;
     Industry.leadCost = input.leadCost;
+    Industry.currencyCode = input.currencyCode;
+
 
     const errors = await validate(Industry);
 
@@ -34,9 +43,19 @@ export class IndustryController {
         .status(400)
         .json({ error: { message: "VALIDATIONS_ERROR", info: errorsInfo } });
     }
+    const currency = countryCurrency.find(({ value }) => value === input.currencyCode)
+    if (!currency) {
+      return res
+        .status(400)
+        .json({ error: { message: "Invalid currency" } });
+    }
+
+
     let dataToSave: Partial<BuisnessIndustriesInterface> = {
       industry: input.industry.trim(),
       leadCost: input.leadCost,
+      associatedCurrency: currency.value,
+      country: currency.country,
       columns: order,
       json: json,
     };
@@ -95,6 +114,12 @@ export class IndustryController {
   static update = async (req: Request, res: Response) => {
     const input = req.body;
     try {
+      if (input.currencyCode) {
+        return res
+          .status(400)
+          .json({ error: { message: "currency can't be updated" } });
+      }
+
       if (input.columns) {
         const users = await User.find({ businessIndustryId: req.params.id });
         const data = users.map(async (user: any) => {
@@ -115,6 +140,7 @@ export class IndustryController {
         });
         await Promise.all(data);
       }
+
 
       const updatedData = await BuisnessIndustries.findByIdAndUpdate(
         req.params.id,
@@ -156,7 +182,7 @@ export class IndustryController {
         //@ts-ignore
         req.query && req.query?.perPage > 0
           ? //@ts-ignore
-            parseInt(req.query?.perPage)
+          parseInt(req.query?.perPage)
           : LIMIT;
 
       let skip =
@@ -251,6 +277,16 @@ export class IndustryController {
         .json({ error: { message: "Something went wrong.", error } });
     }
   };
+
+  static getCurrency = async (req: Request, res: Response) => {
+    try {
+      return res.json({ data: countryCurrency })
+    } catch (error) {
+      return res
+        .status(500)
+        .json({ error: { message: "Something went wrong.", error } });
+    }
+  }
 
   static viewbyId = async (req: Request, res: Response) => {
     try {

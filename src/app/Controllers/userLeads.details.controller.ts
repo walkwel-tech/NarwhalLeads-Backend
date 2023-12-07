@@ -33,6 +33,7 @@ import { cmsUpdateBuyerWebhook } from "../../utils/webhookUrls/cmsUpdateBuyerWeb
 import { CardDetails } from "../Models/CardDetails";
 import { EVENT_TITLE } from "../../utils/constantFiles/events";
 import { eventsWebhook } from "../../utils/webhookUrls/eventExpansionWebhook";
+import { UserInterface } from "../../types/UserInterface";
 
 export class UserLeadsController {
   static create = async (req: Request, res: Response) => {
@@ -304,7 +305,9 @@ export class UserLeadsController {
         " -_id -userId -createdAt -updatedAt"
       ).lean();
 
-      const user: any = await User.findById(details?.userId);
+      const user =
+        (await User.findById(details?.userId).populate("businessDetailsId")) ??
+        ({} as UserInterface);
 
       const serviceDataForActivityLogs = await UserService.findOne(
         { userId: user?.id },
@@ -344,10 +347,11 @@ export class UserLeadsController {
           key.startsWith("postCode")
         )
       ) {
+        const business = await BusinessDetails.findById(user.businessDetailsId);
         const paramsToSend = {
           userId: user._id,
           buyerId: user.buyerId,
-          buisnessName: user.businessDetailsId.businessName,
+          buisnessName: business?.businessName,
           eventCode: EVENT_TITLE.POST_CODE_UPDATE,
           postCodeList: userAfterMod?.postCodeTargettingList,
         };
@@ -390,14 +394,63 @@ export class UserLeadsController {
       );
       const lead = await UserLeadsDetails.findById(id);
       const userId = lead?.userId;
-
+      const business = await BusinessDetails.findById(user.businessDetailsId);
+      if (input.leadSchedule) {
+        const paramsToSend = {
+          userId: user?._id,
+          buyerId: user?.buyerId,
+          buisnessName: business?.businessName,
+          eventCode: EVENT_TITLE.LEAD_SCHEDULE_UPDATE,
+          postCodeList: userAfterMod?.postCodeTargettingList,
+          leadSchedule: userAfterMod?.leadSchedule,
+        };
+        await eventsWebhook(paramsToSend)
+          .then(() =>
+            console.log(
+              "event webhook for postcode updates hits successfully.",
+              paramsToSend
+            )
+          )
+          .catch((err) =>
+            console.log(
+              err,
+              "error while triggering postcode updates webhooks failed",
+              paramsToSend
+            )
+          );
+      }
       if (input.daily && userId) {
-        const user = await User.findById(userId);
+        const user = await User.findById(userId).populate("businessDetailsId");
         if (user && user.leadCost !== undefined) {
           await UserLeadsDetails.findByIdAndUpdate(id, {
             dailyLeadCost: user.leadCost ?? 0 * input.daily,
           });
         }
+        const business = await BusinessDetails.findById(
+          user?.businessDetailsId
+        );
+        const paramsToSend = {
+          userId: user?._id,
+          buyerId: user?.buyerId,
+          buisnessName: business?.businessName,
+          eventCode: EVENT_TITLE.DAILY_LEAD_CAP,
+          postCodeList: userAfterMod?.postCodeTargettingList,
+          dailyLeadCap: userAfterMod?.daily,
+        };
+        await eventsWebhook(paramsToSend)
+          .then(() =>
+            console.log(
+              "event webhook for postcode updates hits successfully.",
+              paramsToSend
+            )
+          )
+          .catch((err) =>
+            console.log(
+              err,
+              "error while triggering postcode updates webhooks failed",
+              paramsToSend
+            )
+          );
 
         if (data) {
           const updatedDetails = await UserLeadsDetails.findById(id);

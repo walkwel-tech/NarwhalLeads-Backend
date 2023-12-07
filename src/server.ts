@@ -111,7 +111,7 @@ export class Server {
     this.app.use("/api/v1/get-postCodes", Auth, locationRoutes);
 
     this.app.use("/api/v1/dashboard", Auth, dashboardRoutes);
-
+    
     this.app.post(
       "/api/v1/notification-webhook",
       (req: Request, res: Response) => {
