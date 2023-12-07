@@ -1259,7 +1259,7 @@ export class CardDetailsControllers {
                 buisnessName: userBusiness?.businessName,
                 eventCode: EVENT_TITLE.ADD_CREDITS,
                 postCodeList: userLead?.postCodeTargettingList,
-                topUpAmount: amount,
+                topUpAmount: originalAmount,
               };
 
               await eventsWebhook(paramsToSend)

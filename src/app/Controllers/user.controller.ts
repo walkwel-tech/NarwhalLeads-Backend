@@ -631,7 +631,9 @@ export class UsersControllers {
     let user: Partial<UserInterface> = req.user ?? ({} as UserInterface);
     const { id } = req.params;
     const input = req.body;
-    const checkUser = (await User.findById(id)) ?? ({} as UserInterface);
+    const checkUser =
+      (await User.findById(id).populate("businessDetailsId")) ??
+      ({} as UserInterface);
     if (input.password) {
       delete input.password;
     }
@@ -676,6 +678,12 @@ export class UsersControllers {
           },
         });
       }
+      if (input.businessIndustryId) {
+        return res
+          .status(400)
+          .json({ error: { message: "Buisness industry can't be updated" } });
+      }
+
       if (
         (input.buyerId ||
           input.leadCost ||
@@ -832,12 +840,33 @@ export class UsersControllers {
             .json({ error: { message: "business details not found" } });
         }
 
-        await BusinessDetails.findByIdAndUpdate(
+        const details = await BusinessDetails.findByIdAndUpdate(
           checkUser?.businessDetailsId,
           { businessSalesNumber: input.businessSalesNumber },
 
           { new: true }
         );
+        let reqBody = {
+          userId: user?._id,
+          bid: user?.buyerId,
+          businessName: details?.businessName,
+          businessSalesNumber: input.businessSalesNumber,
+          eventCode: EVENT_TITLE.BUSINESS_PHONE_NUMBER,
+        };
+        await eventsWebhook(reqBody)
+          .then(() =>
+            console.log(
+              "event webhook for updating business phone number hits successfully.",
+              reqBody
+            )
+          )
+          .catch((err) =>
+            console.log(
+              err,
+              "error while triggering business phone number webhooks failed",
+              reqBody
+            )
+          );
       }
       if (input.businessCity) {
         if (!checkUser.businessDetailsId) {
@@ -949,12 +978,37 @@ export class UsersControllers {
             .status(404)
             .json({ error: { message: "lead details not found" } });
         }
-        await UserLeadsDetails.findByIdAndUpdate(
+        const userAfterMod = await UserLeadsDetails.findByIdAndUpdate(
           checkUser?.userLeadsDetailsId,
           { leadSchedule: input.leadSchedule },
 
           { new: true }
         );
+        const business = await BusinessDetails.findById(
+          checkUser.businessDetailsId
+        );
+        const paramsToSend = {
+          userId: checkUser?._id,
+          buyerId: checkUser?.buyerId,
+          buisnessName: business?.businessName,
+          eventCode: EVENT_TITLE.LEAD_SCHEDULE_UPDATE,
+          postCodeList: userAfterMod?.postCodeTargettingList,
+          leadSchedule: userAfterMod?.leadSchedule,
+        };
+        await eventsWebhook(paramsToSend)
+          .then(() =>
+            console.log(
+              "event webhook for postcode updates hits successfully.",
+              paramsToSend
+            )
+          )
+          .catch((err) =>
+            console.log(
+              err,
+              "error while triggering postcode updates webhooks failed",
+              paramsToSend
+            )
+          );
       }
       if (input.postCodeTargettingList) {
         if (!checkUser.userLeadsDetailsId) {
@@ -1018,12 +1072,37 @@ export class UsersControllers {
             .json({ error: { message: "lead details not found" } });
         }
         input.daily = parseInt(input.daily);
-        await UserLeadsDetails.findByIdAndUpdate(
+        const business = await BusinessDetails.findById(
+          checkUser.businessDetailsId
+        );
+        const userAfterMod = await UserLeadsDetails.findByIdAndUpdate(
           checkUser?.userLeadsDetailsId,
           { daily: input.daily },
 
           { new: true }
         );
+        const paramsToSend = {
+          userId: checkUser?._id,
+          buyerId: checkUser?.buyerId,
+          buisnessName: business?.businessName,
+          eventCode: EVENT_TITLE.DAILY_LEAD_CAP,
+          postCodeList: userAfterMod?.postCodeTargettingList,
+          dailyLeadCap: userAfterMod?.daily,
+        };
+        await eventsWebhook(paramsToSend)
+          .then(() =>
+            console.log(
+              "event webhook for postcode updates hits successfully.",
+              paramsToSend
+            )
+          )
+          .catch((err) =>
+            console.log(
+              err,
+              "error while triggering postcode updates webhooks failed",
+              paramsToSend
+            )
+          );
       }
       if (
         input.credits &&

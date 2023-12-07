@@ -85,30 +85,6 @@ export class LeadsController {
       await User.findByIdAndUpdate(user.id, { isLeadReceived: true });
     }
     //  event webhook to hit when lead  credit is less then leadCost
-    if (user?.credits === 0 || user?.credits < user?.leadCost) {
-      const paramsToSend = {
-        userId: user._id,
-        buyerId: user.buyerId,
-        buisnessName: user.businessDetailsId.businessName,
-        eventCode: EVENT_TITLE.ZERO_CREDITS,
-        postCodeList: user.userLeadsDetailsId?.postCodeTargettingList,
-        remainingCredits: user?.credits,
-      };
-      await eventsWebhook(paramsToSend)
-        .then(() =>
-          console.log(
-            "event webhook for zero credits hits successfully.",
-            paramsToSend
-          )
-        )
-        .catch((err) =>
-          console.log(
-            err,
-            "error while triggering zero credits webhooks failed",
-            paramsToSend
-          )
-        );
-    }
 
     if (user?.credits == 0 && user?.role == RolesEnum.USER) {
       return res
@@ -195,9 +171,39 @@ export class LeadsController {
       leftCredits = credits - industry?.leadCost;
       leadcpl = industry?.leadCost;
     }
-    const userf = await User.findByIdAndUpdate(user?.id, {
-      credits: leftCredits,
-    });
+    const userf =
+      (await User.findByIdAndUpdate(
+        user?.id,
+        {
+          credits: leftCredits,
+        },
+        { new: true }
+      )) ?? ({} as UserInterface);
+    if (userf?.credits === 0 || userf?.credits < parseInt(userf?.leadCost)) {
+      const paramsToSend = {
+        userId: user._id,
+        buyerId: user.buyerId,
+        buisnessName: user.businessDetailsId.businessName,
+        eventCode: EVENT_TITLE.ZERO_CREDITS,
+        postCodeList: user.userLeadsDetailsId?.postCodeTargettingList,
+        remainingCredits: userf?.credits,
+      };
+      await eventsWebhook(paramsToSend)
+        .then(() =>
+          console.log(
+            "event webhook for zero credits hits successfully.",
+            paramsToSend
+          )
+        )
+        .catch((err) =>
+          console.log(
+            err,
+            "error while triggering zero credits webhooks failed",
+            paramsToSend
+          )
+        );
+    }
+
     if (leftCredits < leadcpl * PREMIUM_PROMOLINK.LEADS_THRESHOLD) {
       const txn = await Transaction.find({
         title: transactionTitle.CREDITS_ADDED,
