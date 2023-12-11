@@ -82,6 +82,12 @@ import { cmsUpdateBuyerWebhook } from "../../utils/webhookUrls/cmsUpdateBuyerWeb
 import { eventsWebhook } from "../../utils/webhookUrls/eventExpansionWebhook";
 
 import { EVENT_TITLE } from "../../utils/constantFiles/events";
+import {
+  countryCurrency,
+  stripeCurrency,
+} from "../../utils/constantFiles/currencyConstants";
+import { flattenPostalCodes } from "../../utils/Functions/flattenPostcodes";
+import { UserLeadsDetailsInterface } from "../../types/LeadDetailsInterface";
 const ObjectId = mongoose.Types.ObjectId;
 
 export class CardDetailsControllers {
@@ -602,9 +608,20 @@ export class CardDetailsControllers {
             });
         }
       } else {
-        const amountToPay =
-          (parseInt(input?.amount) + (parseInt(input?.amount) * VAT) / 100) *
-          100;
+        const currencyObj = countryCurrency.find(
+          ({ country, value }) =>
+            country === user?.country && value === user?.currency
+        );
+        let amountToPay;
+        if (currencyObj?.VAT) {
+          amountToPay =
+            (parseInt(input?.amount) +
+              (parseInt(input?.amount) * currencyObj?.VAT) / 100) *
+            100;
+        } else {
+          amountToPay = parseInt(input?.amount) * 100;
+        }
+
         const validateAmount = amountToPay / 100;
         if (validateAmount > AMOUNT.MAX) {
           return res.status(400).json({
@@ -614,9 +631,9 @@ export class CardDetailsControllers {
           });
         }
         const params: any = {
-          amount:
-            (parseInt(input?.amount) + (parseInt(input?.amount) * VAT) / 100) *
-            100,
+          amount: amountToPay,
+          // (parseInt(input?.amount) + (parseInt(input?.amount) * VAT) / 100) *
+          // 100,
           email: user?.email,
           cardNumber: card?.cardNumber,
           expiryMonth: card?.expiryMonth,
@@ -627,6 +644,7 @@ export class CardDetailsControllers {
           customer: user?.stripeClientId,
           cardId: card.id,
           paymentMethod: card?.paymentMethod,
+          currency: user.currency,
         };
         createPaymentOnStrip(params)
           .then(async (_res: any) => {
@@ -1033,7 +1051,10 @@ export class CardDetailsControllers {
       let userId = user.user ?? ({} as UserInterface);
       const card = user.card;
       const amount = parseInt(input.data.object?.amount);
-      let originalAmount = getOriginalAmountForStripe(amount);
+      let originalAmount = getOriginalAmountForStripe(
+        amount,
+        input.data.object?.currency
+      );
       if (userId) {
         if (input.type == STRIPE_PAYMENT_STATUS.FAILED) {
           const business = user.business;
@@ -1249,16 +1270,19 @@ export class CardDetailsControllers {
                 userId.businessDetailsId,
                 "businessName"
               );
-              const userLead = await UserLeadsDetails.findById(
-                userId?.userLeadsDetailsId,
-                "postCodeTargettingList"
-              );
+              const userLead =
+                (await UserLeadsDetails.findById(
+                  userId?.userLeadsDetailsId,
+                  "postCodeTargettingList"
+                )) ?? ({} as UserLeadsDetailsInterface);
               const paramsToSend = {
                 userId: userId._id,
                 buyerId: userId.buyerId,
                 buisnessName: userBusiness?.businessName,
                 eventCode: EVENT_TITLE.ADD_CREDITS,
-                postCodeList: userLead?.postCodeTargettingList,
+                postCodeList: flattenPostalCodes(
+                  userLead?.postCodeTargettingList
+                ),
                 topUpAmount: originalAmount,
               };
 
@@ -1572,8 +1596,13 @@ async function getUserDetails(cid: string, pid: string) {
   return obj;
 }
 
-function getOriginalAmountForStripe(amount: number) {
-  const originalAmount = amount / 100 / (1 + VAT / 100);
+function getOriginalAmountForStripe(amount: number, currency: string) {
+  let originalAmount;
+  if (currency === stripeCurrency.GBP) {
+    originalAmount = amount / 100 / (1 + VAT / 100);
+  } else {
+    originalAmount = amount / 100;
+  }
 
   return originalAmount;
 }

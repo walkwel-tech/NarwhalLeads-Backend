@@ -1,12 +1,8 @@
-// import { deliveryEnums } from "../../utils/Enums/delivery.enum";
 import moment from "moment-timezone";
 import { paymentMethodEnum } from "../../utils/Enums/payment.method.enum";
 import { addCreditsToBuyer } from "../../utils/payment/addBuyerCredit";
 import { generatePDF } from "../../utils/XeroApiIntegration/generatePDF";
-import {
-  sendEmailForAutocharge,
-  // sendEmailForFailedAutocharge,
-} from "../Middlewares/mail";
+import { sendEmailForAutocharge } from "../Middlewares/mail";
 import { AdminSettings } from "../Models/AdminSettings";
 import { CardDetails } from "../Models/CardDetails";
 import { Invoice } from "../Models/Invoice";
@@ -21,7 +17,6 @@ import { VAT } from "../../utils/constantFiles/Invoices";
 import { createSessionUnScheduledPayment } from "../../utils/payment/createPaymentToRYFT";
 import { UserInterface } from "../../types/UserInterface";
 import { CardDetailsInterface } from "../../types/CardDetailsInterface";
-// import { PAYMENT_STATUS } from "../../utils/Enums/payment.status";
 import { PAYMENT_TYPE_ENUM } from "../../utils/Enums/paymentType.enum";
 import * as cron from "node-cron";
 import { TransactionInterface } from "../../types/TransactionInterface";
@@ -51,10 +46,8 @@ export const autoChargePayment = async () => {
     // cron.schedule("* * * * *", async () => {
     try {
       const usersToCharge = await getUsersWithAutoChargeEnabled();
-      console.log(usersToCharge);
       for (const user of usersToCharge) {
         const paymentMethod = await getUserPaymentMethods(user.id);
-
         if (paymentMethod) {
           return autoTopUp(user, paymentMethod);
         } else {
@@ -255,7 +248,7 @@ const chargeUser = async (params: IntentInterface) => {
   return new Promise((resolve, reject) => {
     createPaymentOnStrip(params)
       .then(async (_res: any) => {
-        console.log("payment initiated!");
+        console.log("payment initiated!", new Date());
       })
       .catch(async (err) => {
         console.log("error in payment Api", err.response.data);
@@ -321,6 +314,7 @@ const handleFailedCharge = async (
         customer: user?.stripeClientId,
         cardId: card.id,
         paymentMethod: card?.paymentMethod,
+        currency: user.currency,
       };
       return await chargeUser(params);
     } else {

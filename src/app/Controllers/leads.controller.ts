@@ -47,6 +47,7 @@ import { getLeadCenterToken } from "../../utils/Functions/getLeadCenterToken";
 
 import { eventsWebhook } from "../../utils/webhookUrls/eventExpansionWebhook";
 import { EVENT_TITLE } from "../../utils/constantFiles/events";
+import { flattenPostalCodes } from "../../utils/Functions/flattenPostcodes";
 
 const ObjectId = mongoose.Types.ObjectId;
 
@@ -185,7 +186,9 @@ export class LeadsController {
         buyerId: user.buyerId,
         buisnessName: user.businessDetailsId.businessName,
         eventCode: EVENT_TITLE.ZERO_CREDITS,
-        postCodeList: user.userLeadsDetailsId?.postCodeTargettingList,
+        postCodeList: flattenPostalCodes(
+          user.userLeadsDetailsId?.postCodeTargettingList
+        ),
         remainingCredits: userf?.credits,
       };
       await eventsWebhook(paramsToSend)

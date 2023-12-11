@@ -48,6 +48,7 @@ import { cmsUpdateBuyerWebhook } from "../../utils/webhookUrls/cmsUpdateBuyerWeb
 import { CardDetails } from "../Models/CardDetails";
 import { eventsWebhook } from "../../utils/webhookUrls/eventExpansionWebhook";
 import { EVENT_TITLE } from "../../utils/constantFiles/events";
+import { DEFAULT } from "../../utils/constantFiles/user.default.values";
 
 const ObjectId = mongoose.Types.ObjectId;
 
@@ -114,10 +115,10 @@ export class BusinessDetailsController {
       object = object.map((obj: any) =>
         obj.key === ONBOARDING_KEYS.CARD_DETAILS
           ? (obj = {
-            key: ONBOARDING_KEYS.CARD_DETAILS,
-            pendingFields: obj.pendingFields,
-            dependencies: [],
-          })
+              key: ONBOARDING_KEYS.CARD_DETAILS,
+              pendingFields: obj.pendingFields,
+              dependencies: [],
+            })
           : obj
       );
     }
@@ -162,7 +163,10 @@ export class BusinessDetailsController {
         leadCost: industry?.leadCost,
         businessIndustryId: industry?.id,
         currency: industry.associatedCurrency,
+        country: industry.country,
         onBoardingPercentage: ONBOARDING_PERCENTAGE.BUSINESS_DETAILS,
+        autoChargeAmount: DEFAULT.AUTO_CHARGE_AMOUNT * industry?.leadCost,
+        triggerAmount: DEFAULT.TRIGGER_AMOUT * industry?.leadCost,
       });
       const user: UserInterface =
         (await User.findById(input.userId)) ?? ({} as UserInterface);
