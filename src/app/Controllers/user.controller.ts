@@ -47,14 +47,11 @@ import {
   BusinessDetailsInterface,
   isBusinessObject,
 } from "../../types/BusinessInterface";
-import {
-  UserLeadsDetailsInterface,
-  isUserLeadDetailsObject,
-} from "../../types/LeadDetailsInterface";
+import { UserLeadsDetailsInterface } from "../../types/LeadDetailsInterface";
 import { eventsWebhook } from "../../utils/webhookUrls/eventExpansionWebhook";
 import { EVENT_TITLE } from "../../utils/constantFiles/events";
-// import { sendLeadDataToZap } from "../../utils/webhookUrls/sendDataZap";
-// import { BuisnessIndustries } from "../Models/BuisnessIndustries";
+import { flattenPostalCodes } from "../../utils/Functions/flattenPostcodes";
+
 const ObjectId = mongoose.Types.ObjectId;
 
 const LIMIT = 10;
@@ -978,12 +975,13 @@ export class UsersControllers {
             .status(404)
             .json({ error: { message: "lead details not found" } });
         }
-        const userAfterMod = await UserLeadsDetails.findByIdAndUpdate(
-          checkUser?.userLeadsDetailsId,
-          { leadSchedule: input.leadSchedule },
+        const userAfterMod =
+          (await UserLeadsDetails.findByIdAndUpdate(
+            checkUser?.userLeadsDetailsId,
+            { leadSchedule: input.leadSchedule },
 
-          { new: true }
-        );
+            { new: true }
+          )) ?? ({} as UserLeadsDetailsInterface);
         const business = await BusinessDetails.findById(
           checkUser.businessDetailsId
         );
@@ -992,7 +990,9 @@ export class UsersControllers {
           buyerId: checkUser?.buyerId,
           buisnessName: business?.businessName,
           eventCode: EVENT_TITLE.LEAD_SCHEDULE_UPDATE,
-          postCodeList: userAfterMod?.postCodeTargettingList,
+          postCodeList: flattenPostalCodes(
+            userAfterMod?.postCodeTargettingList
+          ),
           leadSchedule: userAfterMod?.leadSchedule,
         };
         await eventsWebhook(paramsToSend)
@@ -1075,18 +1075,21 @@ export class UsersControllers {
         const business = await BusinessDetails.findById(
           checkUser.businessDetailsId
         );
-        const userAfterMod = await UserLeadsDetails.findByIdAndUpdate(
-          checkUser?.userLeadsDetailsId,
-          { daily: input.daily },
+        const userAfterMod =
+          (await UserLeadsDetails.findByIdAndUpdate(
+            checkUser?.userLeadsDetailsId,
+            { daily: input.daily },
 
-          { new: true }
-        );
+            { new: true }
+          )) ?? ({} as UserLeadsDetailsInterface);
         const paramsToSend = {
           userId: checkUser?._id,
           buyerId: checkUser?.buyerId,
           buisnessName: business?.businessName,
           eventCode: EVENT_TITLE.DAILY_LEAD_CAP,
-          postCodeList: userAfterMod?.postCodeTargettingList,
+          postCodeList: flattenPostalCodes(
+            userAfterMod?.postCodeTargettingList
+          ),
           dailyLeadCap: userAfterMod?.daily,
         };
         await eventsWebhook(paramsToSend)
@@ -1905,16 +1908,17 @@ export class UsersControllers {
               ? user?.businessDetailsId
               : null;
 
-          const userLead: UserLeadsDetailsInterface | null =
-            isUserLeadDetailsObject(user?.userLeadsDetailsId)
-              ? user?.userLeadsDetailsId
-              : null;
+          const userLead =
+            (await UserLeadsDetails.findById(
+              user?.userLeadsDetailsId,
+              "postCodeTargettingList"
+            )) ?? ({} as UserLeadsDetailsInterface);
           const paramsToSend = {
             userId: user._id,
             buyerId: user.buyerId,
             buisnessName: userBusiness?.businessName,
             eventCode: EVENT_TITLE.ADD_CREDITS,
-            postCodeList: userLead?.postCodeTargettingList,
+            postCodeList: flattenPostalCodes(userLead?.postCodeTargettingList),
             topUpAmount: credits,
           };
           await eventsWebhook(paramsToSend)

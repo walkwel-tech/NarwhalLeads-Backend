@@ -48,8 +48,7 @@ import { Types } from "mongoose";
 import { getAccountManagerForRoundManager } from "../../utils/Functions/getAccountManagerForRoundManager";
 import { DEFAULT } from "../../utils/constantFiles/user.default.values";
 import { reCaptchaValidation } from "../../utils/Functions/reCaptcha";
-// import { reCaptchaValidation } from "../../utils/Functions/reCaptcha";
-
+import { UpdatePasswordInput } from "../Inputs/ClientPassword.input";
 class AuthController {
   static register = async (req: Request, res: Response): Promise<any> => {
     const input = req.body;
@@ -585,6 +584,43 @@ class AuthController {
 
       return res.json({ data: { message: "Email sent please verify!" } });
     } else {
+      return res
+        .status(400)
+        .json({ data: { message: "User does not exist." } });
+    }
+  };
+
+  static updateClientPassword = async (
+    req: Request,
+    res: Response
+  ): Promise<Response> => {
+    try {
+      const updatePassword = new UpdatePasswordInput();
+      updatePassword.id = req.body.id;
+      updatePassword.password = req.body.password;
+
+      const validationErrors = await validate(updatePassword);
+
+      if (validationErrors.length > 0) {
+        return res.status(400).json({
+          error: { message: "Invalid body", validationErrors },
+        });
+      }
+
+      const { id, password } = updatePassword;
+
+      const user = await User.findById(id);
+      if (!user) {
+        return res
+          .status(400)
+          .json({ data: { message: "User does not exist." } });
+      }
+      const salt = genSaltSync(10);
+      const hashPassword = hashSync(password, salt);
+      await User.findByIdAndUpdate(id, { password: hashPassword });
+
+      return res.json({ data: { message: "Password updated successfully." } });
+    } catch (err) {
       return res
         .status(400)
         .json({ data: { message: "User does not exist." } });

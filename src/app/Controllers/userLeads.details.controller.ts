@@ -34,6 +34,8 @@ import { CardDetails } from "../Models/CardDetails";
 import { EVENT_TITLE } from "../../utils/constantFiles/events";
 import { eventsWebhook } from "../../utils/webhookUrls/eventExpansionWebhook";
 import { UserInterface } from "../../types/UserInterface";
+import { flattenPostalCodes } from "../../utils/Functions/flattenPostcodes";
+import { UserLeadsDetailsInterface } from "../../types/LeadDetailsInterface";
 
 export class UserLeadsController {
   static create = async (req: Request, res: Response) => {
@@ -335,11 +337,11 @@ export class UserLeadsController {
         }
       );
 
-      const userAfterMod = await UserLeadsDetails.findById(
-        id,
-        " -_id -userId -createdAt -updatedAt"
-      ).lean();
-
+      const userAfterMod =
+        (await UserLeadsDetails.findById(
+          id,
+          " -_id -userId -createdAt -updatedAt"
+        ).lean()) ?? ({} as UserLeadsDetailsInterface);
       const fields = findUpdatedFields(userForActivity, userAfterMod);
 
       if (
@@ -348,13 +350,17 @@ export class UserLeadsController {
         )
       ) {
         const business = await BusinessDetails.findById(user.businessDetailsId);
+
         const paramsToSend = {
           userId: user._id,
           buyerId: user.buyerId,
           buisnessName: business?.businessName,
           eventCode: EVENT_TITLE.POST_CODE_UPDATE,
-          postCodeList: userAfterMod?.postCodeTargettingList,
+          postCodeList: flattenPostalCodes(
+            userAfterMod?.postCodeTargettingList || []
+          ),
         };
+
         await eventsWebhook(paramsToSend)
           .then(() =>
             console.log(
@@ -401,7 +407,9 @@ export class UserLeadsController {
           buyerId: user?.buyerId,
           buisnessName: business?.businessName,
           eventCode: EVENT_TITLE.LEAD_SCHEDULE_UPDATE,
-          postCodeList: userAfterMod?.postCodeTargettingList,
+          postCodeList: flattenPostalCodes(
+            userAfterMod?.postCodeTargettingList
+          ),
           leadSchedule: userAfterMod?.leadSchedule,
         };
         await eventsWebhook(paramsToSend)
@@ -434,7 +442,9 @@ export class UserLeadsController {
           buyerId: user?.buyerId,
           buisnessName: business?.businessName,
           eventCode: EVENT_TITLE.DAILY_LEAD_CAP,
-          postCodeList: userAfterMod?.postCodeTargettingList,
+          postCodeList: flattenPostalCodes(
+            userAfterMod?.postCodeTargettingList
+          ),
           dailyLeadCap: userAfterMod?.daily,
         };
         await eventsWebhook(paramsToSend)

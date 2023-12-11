@@ -8,6 +8,7 @@ import { commission } from "../../utils/Enums/commission.enum";
 import { TimePeriod } from "../Inputs/TimePeriod.input";
 import { QueryParams } from "../Inputs/QueryParams.input";
 const LIMIT = 10;
+const comissionPercentage = 0.5;
 
 interface IQueryFormulater {
   accountManagerId: string[];
@@ -17,6 +18,13 @@ interface IQueryFormulater {
 }
 
 export class DashboardController {
+  static getThirtyDayAgo(date: Date | string): Date {
+    const inputDate = new Date(date);
+    inputDate.setDate(inputDate.getDate() - 30);
+
+    return inputDate;
+  }
+
   static formulateComissionQuery({
     accountManagerId,
     industry,
@@ -52,6 +60,7 @@ export class DashboardController {
           preserveNullAndEmptyArrays: true,
         },
       },
+      { $match: { "associatedUsers.role": "user" } },
       ...(industry?.length
         ? [
             {
@@ -66,10 +75,23 @@ export class DashboardController {
       ...(timePeriod && Object.keys(timePeriod).length
         ? [
             {
+              $lookup: {
+                from: "transactions",
+                localField: "associatedUsers._id",
+                foreignField: "userId",
+                as: "transactions",
+              },
+            },
+            {
               $match: {
-                createdAt: {
-                  $gte: new Date(timePeriod.startDate),
-                  $lte: new Date(timePeriod.endDate),
+                transactions: {
+                  $elemMatch: {
+                    createdAt: {
+                      $gte: this.getThirtyDayAgo(timePeriod.startDate),
+                      $lte: new Date(timePeriod.endDate),
+                    },
+                    status: { $eq: "success" },
+                  },
                 },
               },
             },
@@ -105,13 +127,19 @@ export class DashboardController {
             $sum: "$associatedUsers.credits",
           },
           comission: {
-            $sum: { $multiply: ["$associatedUsers.credits", 0.01] },
-          }, // 1% comission
+            $sum: {
+              $multiply: [
+                "$associatedUsers.credits",
+                comissionPercentage / 100,
+              ],
+            },
+          },
         },
       },
       {
         $project: {
-          password: 0,
+          "accountManager.password": 0,
+          "accountManager.transactions": 0,
           "accountManager.associatedUsers": 0,
         },
       },

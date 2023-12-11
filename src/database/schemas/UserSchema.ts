@@ -23,6 +23,9 @@ const UserSchema = new Schema(
     currency: {
       type: String
     },
+    country: {
+      type: String
+    },
     role: {
       type: String,
       required: true,

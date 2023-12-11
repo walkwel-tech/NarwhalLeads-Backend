@@ -207,7 +207,9 @@ export class freeCreditsLinkController {
           isCommission: item?.isCommission,
         };
         if (item.accountManager.length > 0) {
-          dataToShow.accountManager = `${item.accountManager[0]?.firstName} ${item.accountManager[0]?.lastName}`;
+          dataToShow.accountManager = `${
+            item.accountManager[0]?.firstName || ""
+          } ${item.accountManager[0]?.lastName || ""}`;
         }
         return dataToShow;
       });

@@ -12,7 +12,8 @@ export const createPaymentOnStrip = async (params: IntentInterface) => {
   return new Promise((resolve, reject) => {
     let data = qs.stringify({
       amount: Math.ceil(params.amount || 0),
-      currency: process.env.CURRENCY,
+      // currency: process.env.CURRENCY,
+      currency: params.currency,
       automatic_payment_methods: { enabled: true },
       customer: params.customer,
       return_url: process.env.RETURN_URL,
