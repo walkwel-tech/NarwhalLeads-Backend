@@ -351,7 +351,7 @@ export const handleFailedCharge = async (
         customer: user?.stripeClientId,
         cardId: card.id,
         paymentMethod: card?.paymentMethod,
-        currency: user.currency,
+        // currency: user.currency,
       };
       return await chargeUser(params);
     } else {
@@ -378,7 +378,7 @@ export const autoTopUp = async (
     customer: user?.stripeClientId,
     cardId: paymentMethod.id,
     paymentMethod: paymentMethod?.paymentMethod,
-    currency: user?.currency,
+    // currency: user?.currency,
   };
   const success: any = await chargeUser(params);
   if (success) {
