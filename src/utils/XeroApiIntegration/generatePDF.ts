@@ -1,9 +1,10 @@
 import { checkAccess } from "../../app/Middlewares/serverAccess";
 import { AccessToken } from "../../app/Models/AccessToken";
 import { User } from "../../app/Models/User";
+import { CURRENCY, DISCOUNT } from "../Enums/currency.enum";
 import { transactionTitle } from "../Enums/transaction.title.enum";
-// import { transactionTitle } from "../Enums/transaction.title.enum";
 import axios from "axios";
+import { ACCOUNT_CODE } from "../constantFiles/accountCode.xero";
 
 export const generatePDF = (
   ContactID: string,
@@ -18,7 +19,14 @@ export const generatePDF = (
       xeroContactId: ContactID,
     }).populate("businessDetailsId");
     const quantity = amount / parseInt(industry.leadCost);
-
+    let accountCode;
+    if (industry.currency === CURRENCY.POUND) {
+      accountCode = ACCOUNT_CODE.GBP;
+    } else if (industry.currency === CURRENCY.EURO) {
+      accountCode = ACCOUNT_CODE.EURO;
+    } else if (industry.currency === CURRENCY.DOLLER) {
+      accountCode = ACCOUNT_CODE.USA;
+    }
     let unitAmount = industry.leadCost;
 
     let data = {
@@ -34,7 +42,7 @@ export const generatePDF = (
               //@ts-ignore
               Quantity: parseInt(quantity),
               UnitAmount: unitAmount,
-              AccountCode: "214",
+              AccountCode: accountCode,
               LineAmount: amount,
               LeadDepartment: industry?.businessDetailsId?.businessIndustry,
             },
@@ -43,6 +51,7 @@ export const generatePDF = (
           DueDate: new Date(new Date().setDate(new Date().getDate() + 7)),
           Reference: sessionId,
           Status: "AUTHORISED",
+          CurrencyCode: industry.currency,
         },
       ],
     };
@@ -53,9 +62,9 @@ export const generatePDF = (
         //@ts-ignore
         Quantity: parseInt(quantity),
         UnitAmount: unitAmount,
-        AccountCode: "214",
+        AccountCode: accountCode,
         //@ts-ignore
-        DiscountRate: "100",
+        DiscountRate: DISCOUNT,
         LeadDepartment: industry?.businessDetailsId?.businessIndustry,
       };
     } else if (freeCredits > 0 && isManualAdjustment) {
@@ -65,9 +74,9 @@ export const generatePDF = (
         //@ts-ignore
         Quantity: parseInt(quantity),
         UnitAmount: unitAmount,
-        AccountCode: "214",
+        AccountCode: accountCode,
         //@ts-ignore
-        DiscountRate: "100",
+        DiscountRate: DISCOUNT,
         LeadDepartment: industry?.businessDetailsId?.businessIndustry,
       };
     }

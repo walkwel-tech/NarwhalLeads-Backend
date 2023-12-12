@@ -72,6 +72,16 @@ export class DashboardController {
             },
           ]
         : []),
+      ...(commissionStatus
+        ? [
+            {
+              $match: {
+                "associatedUsers.isCommissionedUser":
+                  commissionStatus === commission.isComissioned ? true : false,
+              },
+            },
+          ]
+        : []),
       ...(timePeriod && Object.keys(timePeriod).length
         ? [
             {
@@ -83,20 +93,67 @@ export class DashboardController {
               },
             },
             {
-              $match: {
-                transactions: {
-                  $elemMatch: {
-                    createdAt: {
-                      $gte: this.getThirtyDayAgo(timePeriod.startDate),
-                      $lte: new Date(timePeriod.endDate),
+              $addFields: {
+                activeClient: {
+                  $sum: {
+                    $cond: {
+                      if: {
+                        $gte: [
+                          {
+                            $size: {
+                              $filter: {
+                                input: "$transactions",
+                                as: "transaction",
+                                cond: {
+                                  $and: [
+                                    {
+                                      $gte: [
+                                        "$$transaction.createdAt",
+                                        this.getThirtyDayAgo(
+                                          timePeriod.startDate
+                                        ),
+                                      ],
+                                    },
+                                    {
+                                      $lte: [
+                                        "$$transaction.createdAt",
+                                        new Date(timePeriod.endDate),
+                                      ],
+                                    },
+                                    {
+                                      $eq: ["$$transaction.status", "success"],
+                                    },
+                                  ],
+                                },
+                              },
+                            },
+                          },
+                          1,
+                        ],
+                      },
+                      then: 1,
+                      else: 0,
                     },
-                    status: { $eq: "success" },
                   },
                 },
               },
             },
+            // {
+            //   $match: {
+            //     transactions: {
+            //       $elemMatch: {
+            //         createdAt: {
+            //           $gte: this.getThirtyDayAgo(timePeriod.startDate),
+            //           $lte: new Date(timePeriod.endDate),
+            //         },
+            //         status: { $eq: "success" }
+            //       }
+            //     }
+            //   },
+            // },
           ]
         : []),
+
       {
         $addFields: {
           fullName: {
@@ -117,12 +174,37 @@ export class DashboardController {
         $group: {
           _id: "$_id",
           accountManager: { $first: "$$ROOT" },
-          clientsCount: { $sum: 1 },
-          activeClient: {
+          activeClient: { $sum: "$activeClient" },
+          // clientsCount: { $sum: 1 },
+          clientsCount: {
             $sum: {
-              $cond: { if: "$associatedUsers.isActive", then: 1, else: 0 },
+              $cond: {
+                if: {
+                  $and: [
+                    {
+                      $gte: [
+                        "$associatedUsers.createdAt",
+                        new Date(timePeriod.startDate),
+                      ],
+                    },
+                    {
+                      $lte: [
+                        "$associatedUsers.createdAt",
+                        new Date(timePeriod.endDate),
+                      ],
+                    },
+                  ],
+                },
+                then: 1,
+                else: 0,
+              },
             },
           },
+          // activeClient: {
+          //   $sum: {
+          //     $cond: { if: "$associatedUsers.isActive", then: 1, else: 0 },
+          //   },
+          // },
           topUpSum: {
             $sum: "$associatedUsers.credits",
           },
@@ -143,16 +225,6 @@ export class DashboardController {
           "accountManager.associatedUsers": 0,
         },
       },
-      ...(commissionStatus
-        ? [
-            {
-              $match: {
-                isCommissionedUser:
-                  commissionStatus === commission.isComissioned ? true : false,
-              },
-            },
-          ]
-        : []),
     ];
     return pipeline;
   }
@@ -164,7 +236,7 @@ export class DashboardController {
     commissionStatus,
   }: IQueryFormulater): PipelineStage[] {
     const pipeline: PipelineStage[] = [
-      { $match: { role: RolesEnum.USER } },
+      { $match: { role: { $in: [RolesEnum.USER, RolesEnum.NON_BILLABLE] } } },
       ...(timePeriod && Object.keys(timePeriod).length
         ? [
             {
@@ -197,6 +269,16 @@ export class DashboardController {
                     (manager) => new Types.ObjectId(manager)
                   ),
                 },
+              },
+            },
+          ]
+        : []),
+      ...(commissionStatus
+        ? [
+            {
+              $match: {
+                isCommissionedUser:
+                  commissionStatus === commission.isComissioned ? true : false,
               },
             },
           ]
@@ -255,16 +337,6 @@ export class DashboardController {
           accountManagerArray: 0,
         },
       },
-      ...(commissionStatus
-        ? [
-            {
-              $match: {
-                isCommissionedUser:
-                  commissionStatus === commission.isComissioned ? true : false,
-              },
-            },
-          ]
-        : []),
     ];
 
     return pipeline;
@@ -572,7 +644,9 @@ export class DashboardController {
 
       const { accountManagerId, timePeriod, commissionStatus } = queryParams;
       const pipeline: PipelineStage[] = [
-        { $match: { role: RolesEnum.USER } },
+        // { $match: { role: RolesEnum.USER } },
+        { $match: { role: { $in: [RolesEnum.USER, RolesEnum.NON_BILLABLE] } } },
+
         ...(timePeriod && Object.keys(timePeriod).length
           ? [
               {
@@ -595,6 +669,14 @@ export class DashboardController {
                 (manager) => new Types.ObjectId(manager)
               ),
             },
+          },
+        });
+      }
+      if (commissionStatus) {
+        pipeline.push({
+          $match: {
+            isCommissionedUser:
+              commissionStatus === commission.isComissioned ? true : false,
           },
         });
       }
@@ -634,14 +716,14 @@ export class DashboardController {
           },
         }
       );
-      if (commissionStatus) {
-        pipeline.push({
-          $match: {
-            isCommissionedUser:
-              commissionStatus === commission.isComissioned ? true : false,
-          },
-        });
-      }
+      // if (commissionStatus) {
+      //   pipeline.push({
+      //     $match: {
+      //       isCommissionedUser:
+      //         commissionStatus === commission.isComissioned ? true : false,
+      //     },
+      //   });
+      // }
       const data = await User.aggregate(pipeline);
 
       return res.json({ data: data[0] });
