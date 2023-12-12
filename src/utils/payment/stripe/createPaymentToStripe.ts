@@ -12,7 +12,6 @@ export const createPaymentOnStrip = async (params: IntentInterface) => {
   return new Promise((resolve, reject) => {
     let data = qs.stringify({
       amount: Math.ceil(params.amount || 0),
-      // currency: process.env.CURRENCY,
       currency: params.currency,
       automatic_payment_methods: { enabled: true },
       customer: params.customer,
@@ -31,7 +30,6 @@ export const createPaymentOnStrip = async (params: IntentInterface) => {
       },
       data: data,
     };
-
     axios
       .request(config)
       .then(async (response: any) => {

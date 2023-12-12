@@ -4,3 +4,5 @@ export const CURRENCY = {
   EURO: "EUR",
   RUPEE: "INR",
 };
+
+export const DISCOUNT = "100";

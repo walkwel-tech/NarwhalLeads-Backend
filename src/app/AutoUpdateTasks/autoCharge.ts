@@ -24,6 +24,9 @@ import { InvoiceInterface } from "../../types/InvoiceInterface";
 import { PAYMENT_STATUS } from "../../utils/Enums/payment.status";
 import { createPaymentOnStrip } from "../../utils/payment/stripe/createPaymentToStripe";
 import { IntentInterface } from "../../utils/payment/stripe/paymentIntent";
+import { Types } from "mongoose";
+import { AUTO_UPDATED_TASKS } from "../../utils/Enums/autoUpdatedTasks.enum";
+import { AutoUpdatedTasksLogs } from "../Models/AutoChargeLogs";
 
 interface paymentParams {
   fixedAmount: number;
@@ -41,17 +44,43 @@ interface addCreditsParams {
   fixedAmount: number;
   freeCredits: number;
 }
+
+interface FindOptions {
+  $expr?: Record<string, string[] | number[]>;
+  paymentMethod?: string;
+  isDeleted: boolean;
+  isAutoChargeEnabled?: boolean;
+  _id?: Types.ObjectId;
+}
 export const autoChargePayment = async () => {
-  cron.schedule("0 0 * * *", async () => {
+  cron.schedule("0 */4 * * *", async () => {
     // cron.schedule("* * * * *", async () => {
+    console.log("CRON Job Start", new Date());
     try {
       const usersToCharge = await getUsersWithAutoChargeEnabled();
       for (const user of usersToCharge) {
+        console.log("Auto charge will work on :", user.email);
+        const dataToSave = {
+          userId: user.id,
+          title: AUTO_UPDATED_TASKS.AUTO_CHARGE,
+        };
+        let logs = await AutoUpdatedTasksLogs.create(dataToSave);
         const paymentMethod = await getUserPaymentMethods(user.id);
         if (paymentMethod) {
+          await AutoUpdatedTasksLogs.findByIdAndUpdate(
+            logs._id,
+            {
+              statusCode: "200",
+            },
+            { new: true }
+          );
           return autoTopUp(user, paymentMethod);
         } else {
           console.log("payment method not found");
+          await AutoUpdatedTasksLogs.findByIdAndUpdate(logs._id, {
+            notes: "payment method not found",
+            statusCode: "400",
+          });
         }
       }
     } catch (error) {
@@ -223,19 +252,28 @@ export const weeklypayment = async () => {
   });
 };
 
-const getUsersWithAutoChargeEnabled = async () => {
-  const usersWithAutoChargeEnabled = await User.find({
-    $expr: {
-      $lt: ["$credits", "$triggerAmount"],
-    },
-    paymentMethod: paymentMethodEnum.AUTOCHARGE_METHOD,
-    isDeleted: false,
-    isAutoChargeEnabled: true,
-  }).populate("businessDetailsId");
+export const getUsersWithAutoChargeEnabled = async (id?: Types.ObjectId) => {
+  let dataToFind: FindOptions;
+  if (!id) {
+    dataToFind = {
+      $expr: {
+        $lt: ["$credits", "$triggerAmount"],
+      },
+      paymentMethod: paymentMethodEnum.AUTOCHARGE_METHOD,
+      isDeleted: false,
+      isAutoChargeEnabled: true,
+    };
+  } else {
+    dataToFind = { _id: id, isDeleted: false };
+  }
+
+  const usersWithAutoChargeEnabled = await User.find(dataToFind).populate(
+    "businessDetailsId"
+  );
   return usersWithAutoChargeEnabled;
 };
 
-const getUserPaymentMethods = async (id: string) => {
+export const getUserPaymentMethods = async (id: string) => {
   const cards = await CardDetails.findOne({
     userId: id,
     isDeleted: false,
@@ -244,11 +282,19 @@ const getUserPaymentMethods = async (id: string) => {
   return cards;
 };
 
-const chargeUser = async (params: IntentInterface) => {
+export const chargeUser = async (params: IntentInterface) => {
   return new Promise((resolve, reject) => {
     createPaymentOnStrip(params)
       .then(async (_res: any) => {
-        console.log("payment initiated!", new Date());
+        console.log(
+          "payment initiated!",
+          new Date(),
+          {
+            stripeUser: params.customer,
+          },
+          _res
+        );
+        resolve(_res);
       })
       .catch(async (err) => {
         console.log("error in payment Api", err.response.data);
@@ -264,7 +310,7 @@ const chargeUser = async (params: IntentInterface) => {
   });
 };
 
-const handleFailedCharge = async (
+export const handleFailedCharge = async (
   user: UserInterface,
   card: CardDetailsInterface[]
 ) => {
@@ -324,7 +370,7 @@ const handleFailedCharge = async (
   });
 };
 
-const autoTopUp = async (
+export const autoTopUp = async (
   user: UserInterface,
   paymentMethod: CardDetailsInterface
 ) => {
@@ -341,12 +387,12 @@ const autoTopUp = async (
     customer: user?.stripeClientId,
     cardId: paymentMethod.id,
     paymentMethod: paymentMethod?.paymentMethod,
+    currency: user?.currency,
   };
   const success: any = await chargeUser(params);
-
   if (success) {
     const cardExist = await CardDetails.findOne({
-      paymentSessionID: success.data.previousPayment.id,
+      paymentMethod: success.payment_method,
       isDeleted: false,
     });
     const text = {
