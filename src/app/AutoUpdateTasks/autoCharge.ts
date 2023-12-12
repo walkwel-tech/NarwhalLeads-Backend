@@ -53,7 +53,8 @@ interface FindOptions {
   _id?: Types.ObjectId;
 }
 export const autoChargePayment = async () => {
-  cron.schedule("0 0 * * *", async () => {
+  cron.schedule("0 */4 * * *", async () => {
+  // cron.schedule("0 0 * * *", async () => {
     // cron.schedule("* * * * *", async () => {
     console.log("CRON Job Start", new Date());
     try {
@@ -68,14 +69,14 @@ export const autoChargePayment = async () => {
         const paymentMethod = await getUserPaymentMethods(user.id);
         if (paymentMethod) {
           await AutoUpdatedTasksLogs.findByIdAndUpdate(logs.id, {
-            status: 200,
+            statusCode: 200,
           });
           return autoTopUp(user, paymentMethod);
         } else {
           console.log("payment method not found");
           await AutoUpdatedTasksLogs.findByIdAndUpdate(logs.id, {
             notes: "payment method not found",
-            status: 400,
+            statusCode: 400,
           });
         }
       }
