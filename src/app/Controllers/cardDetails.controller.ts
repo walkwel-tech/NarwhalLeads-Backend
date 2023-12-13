@@ -1600,7 +1600,7 @@ async function checkUserUsedPromoCode(
 ) {
   const user = (await User.findById(userId)) ?? ({} as UserInterface);
   const promoLink = await FreeCreditsLink.findById(promoLinkId);
-  const isFreeCredited = isUserFreeCredited(userId);
+  const isFreeCredited = await isUserFreeCredited(userId);
   let freeCredits;
   if (
     promoLink &&
