@@ -5,16 +5,16 @@ export const createNotesOnXero = (
   token: string
 ) => {
   const data = {
-    "HistoryRecords": [
-       {
-        "Changes": "Note",
-        "DateUTCString": new Date(),
-        "DateUTC": new Date(),
-        "User": "System Generated",
-        "Details": paramsToCreateContact.email
-      }
-    ]
-  }
+    HistoryRecords: [
+      {
+        Changes: "Note",
+        DateUTCString: new Date(),
+        DateUTC: new Date(),
+        User: "System Generated",
+        Details: paramsToCreateContact.email,
+      },
+    ],
+  };
   return new Promise(async (resolve, reject) => {
     const config = {
       method: POST,
@@ -32,11 +32,11 @@ export const createNotesOnXero = (
         resolve(data);
       })
       .catch(async (err) => {
-        console.log("Xero Error while adding notes", err.response.data.Elements);
+        console.log(
+          "Xero Error while adding notes",
+          err.response.data.Elements
+        );
         reject(err);
       });
   });
 };
-
-
-

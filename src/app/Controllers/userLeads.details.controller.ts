@@ -31,6 +31,8 @@ import { ActivityLogs } from "../Models/ActivityLogs";
 import { fullySignupForNonBillableClients } from "../../utils/webhookUrls/fullySignupForNonBillableClients";
 import { cmsUpdateBuyerWebhook } from "../../utils/webhookUrls/cmsUpdateBuyerWebhook";
 import { CardDetails } from "../Models/CardDetails";
+import { EVENT_TITLE } from "../../utils/constantFiles/events";
+import { eventsWebhook } from "../../utils/webhookUrls/eventExpansionWebhook";
 
 export class UserLeadsController {
   static create = async (req: Request, res: Response) => {
@@ -125,10 +127,14 @@ export class UserLeadsController {
     };
     try {
       const details = await UserLeadsDetails.create(dataToSave);
-      await User.findByIdAndUpdate(input.userId, {
+      let dataToUpdate = {
         userLeadsDetailsId: details._id,
         onBoardingPercentage: ONBOARDING_PERCENTAGE.LEAD_DETAILS,
-      });
+      };
+      if (user.role === RolesEnum.NON_BILLABLE) {
+        dataToUpdate.onBoardingPercentage = ONBOARDING_PERCENTAGE.CARD_DETAILS;
+      }
+      await User.findByIdAndUpdate(input.userId, dataToUpdate);
       if (
         (checkOnbOardingComplete(user) && !user.registrationMailSentToAdmin) ||
         (user.role === RolesEnum.NON_BILLABLE &&
@@ -282,6 +288,16 @@ export class UserLeadsController {
     const input = req.body;
     delete input._id;
     try {
+      let msg = "Updated successfully.";
+      if (input.leadAlertsFrequency) {
+        msg = "Notifications Updated Successfully";
+      }
+      if (input.sendDataToZapier) {
+        msg = "Webhook URL Updated Successfully";
+      }
+      if (input.smsPhoneNumber) {
+        msg = "SMS Notifications Updated Successfully";
+      }
       const details = await UserLeadsDetails.findById(id);
       const userForActivity = await UserLeadsDetails.findById(
         id,
@@ -315,12 +331,42 @@ export class UserLeadsController {
           new: true,
         }
       );
+
       const userAfterMod = await UserLeadsDetails.findById(
         id,
         " -_id -userId -createdAt -updatedAt"
       ).lean();
 
       const fields = findUpdatedFields(userForActivity, userAfterMod);
+
+      if (
+        Object.keys(fields.updatedFields).find((key) =>
+          key.startsWith("postCode")
+        )
+      ) {
+        const paramsToSend = {
+          userId: user._id,
+          buyerId: user.buyerId,
+          buisnessName: user.businessDetailsId.businessName,
+          eventCode: EVENT_TITLE.POST_CODE_UPDATE,
+          postCodeList: userAfterMod?.postCodeTargettingList,
+        };
+        await eventsWebhook(paramsToSend)
+          .then(() =>
+            console.log(
+              "event webhook for postcode updates hits successfully.",
+              paramsToSend
+            )
+          )
+          .catch((err) =>
+            console.log(
+              err,
+              "error while triggering postcode updates webhooks failed",
+              paramsToSend
+            )
+          );
+      }
+
       const userr = await User.findOne({ userLeadsDetailsId: req.params.id });
       const isEmpty = Object.keys(fields.updatedFields).length === 0;
 
@@ -342,86 +388,95 @@ export class UserLeadsController {
         input,
         { new: true }
       );
-      if (input.daily) {
-        await UserLeadsDetails.findByIdAndUpdate(id, {
-          dailyLeadCost: user?.leadCost * input.daily,
-        });
-      }
-      if (data) {
-        const updatedDetails = await UserLeadsDetails.findById(id);
-        const userData = await User.findOne({ userLeadsDetailsId: id });
-        const businessDeatilsData = await BusinessDetails.findById(
-          userData?.businessDetailsId
-        );
-        const formattedPostCodes = updatedDetails?.postCodeTargettingList
-          .map((item: any) => item.postalCode)
-          .flat();
+      const lead = await UserLeadsDetails.findById(id);
+      const userId = lead?.userId;
 
-        const message = {
-          firstName: userData?.firstName,
-          lastName: userData?.lastName,
-          businessName: businessDeatilsData?.businessName,
-          phone: businessDeatilsData?.businessSalesNumber,
-          email: userData?.email,
-          industry: businessDeatilsData?.businessIndustry,
-          address:
-            businessDeatilsData?.address1 + " " + businessDeatilsData?.address2,
-          city: businessDeatilsData?.businessCity,
-          country: businessDeatilsData?.businessCountry,
-          // openingHours:formattedOpeningHours,
-          openingHours: businessDeatilsData?.businessOpeningHours,
-          logo: businessDeatilsData?.businessLogo,
-          totalLeads: updatedDetails?.total,
-          monthlyLeads: updatedDetails?.monthly,
-          weeklyLeads: updatedDetails?.weekly,
-          dailyLeads: updatedDetails?.daily,
-          leadsHours: updatedDetails?.leadSchedule,
-          // leadsHours:formattedLeadSchedule,
-          area: `${formattedPostCodes}`,
-          leadCost: userData?.leadCost,
-        };
-        sendEmailForUpdatedDetails(message);
-        if (input.criteria) {
-          const serviceData = await UserService.findOne(
-            { userId: userData?.id },
-            "-_id -userId -createdAt -deletedAt -__v -updatedAt"
-          );
-          const fields = findModifiedFieldsForUserService(
-            serviceDataForActivityLogs,
-            serviceData
-          );
-          const isEmpty = Object.keys(fields.updatedFields).length === 0;
-          if (!isEmpty && userr?.isSignUpCompleteWithCredit) {
-            const activity = {
-              //@ts-ignore
-              actionBy: req?.user?.role,
-              actionType: ACTION.UPDATING,
-              targetModel: MODEL_ENUM.USER_SERVICE_DETAILS,
-              //@ts-ignore
-              userEntity: userr?.id,
-              originalValues: fields.oldFields,
-              modifiedValues: fields.updatedFields,
-            };
-            await ActivityLogs.create(activity);
-          }
+      if (input.daily && userId) {
+        const user = await User.findById(userId);
+        if (user && user.leadCost !== undefined) {
+          await UserLeadsDetails.findByIdAndUpdate(id, {
+            dailyLeadCost: user.leadCost ?? 0 * input.daily,
+          });
         }
-        const card = await CardDetails.findOne({
-          userId: userr?.id,
-          isDeleted: false,
-          isDefault: true,
-        });
-        cmsUpdateBuyerWebhook(userr?.id, card?.id);
-        return res.json({
-          data: {
-            message: "UserLeadsDetails updated successfully.",
-            data: updatedDetails,
-            service,
-          },
-        });
-      } else {
-        return res.json({
-          data: { message: "Incorrect input fields" },
-        });
+
+        if (data) {
+          const updatedDetails = await UserLeadsDetails.findById(id);
+          const userData = await User.findOne({ userLeadsDetailsId: id });
+          const businessDeatilsData = await BusinessDetails.findById(
+            userData?.businessDetailsId
+          );
+          const formattedPostCodes = updatedDetails?.postCodeTargettingList
+            .map((item: any) => item.postalCode)
+            .flat();
+
+          const message = {
+            firstName: userData?.firstName,
+            lastName: userData?.lastName,
+            businessName: businessDeatilsData?.businessName,
+            phone: businessDeatilsData?.businessSalesNumber,
+            email: userData?.email,
+            industry: businessDeatilsData?.businessIndustry,
+            address:
+              businessDeatilsData?.address1 +
+              " " +
+              businessDeatilsData?.address2,
+            city: businessDeatilsData?.businessCity,
+            country: businessDeatilsData?.businessCountry,
+            // openingHours:formattedOpeningHours,
+            openingHours: businessDeatilsData?.businessOpeningHours,
+            logo: businessDeatilsData?.businessLogo,
+            totalLeads: updatedDetails?.total,
+            monthlyLeads: updatedDetails?.monthly,
+            weeklyLeads: updatedDetails?.weekly,
+            dailyLeads: updatedDetails?.daily,
+            leadsHours: updatedDetails?.leadSchedule,
+            // leadsHours:formattedLeadSchedule,
+            area: `${formattedPostCodes}`,
+            leadCost: userData?.leadCost,
+          };
+          sendEmailForUpdatedDetails(message);
+          if (input.criteria) {
+            const serviceData = await UserService.findOne(
+              { userId: userData?.id },
+              "-_id -userId -createdAt -deletedAt -__v -updatedAt"
+            );
+            const fields = findModifiedFieldsForUserService(
+              serviceDataForActivityLogs,
+              serviceData
+            );
+            const isEmpty = Object.keys(fields.updatedFields).length === 0;
+            if (!isEmpty && userr?.isSignUpCompleteWithCredit) {
+              const activity = {
+                //@ts-ignore
+                actionBy: req?.user?.role,
+                actionType: ACTION.UPDATING,
+                targetModel: MODEL_ENUM.USER_SERVICE_DETAILS,
+                //@ts-ignore
+                userEntity: userr?.id,
+                originalValues: fields.oldFields,
+                modifiedValues: fields.updatedFields,
+              };
+              await ActivityLogs.create(activity);
+            }
+          }
+          const card = await CardDetails.findOne({
+            userId: userr?.id,
+            isDeleted: false,
+            isDefault: true,
+          });
+          cmsUpdateBuyerWebhook(userr?.id, card?.id);
+          return res.json({
+            data: {
+              message: msg,
+              data: updatedDetails,
+              service,
+            },
+          });
+        } else {
+          return res.json({
+            data: { message: "Incorrect input fields" },
+          });
+        }
       }
     } catch (error) {
       return res

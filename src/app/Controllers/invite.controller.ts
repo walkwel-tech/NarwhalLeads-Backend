@@ -26,6 +26,7 @@ export class invitedUsersController {
       const checkExist = await User.findOne({
         invitedById: currentUser?.id,
         email: input.email,
+        isDeleted: false,
       });
       if (checkExist) {
         return res
@@ -151,9 +152,6 @@ export class invitedUsersController {
         .skip(skip)
         .limit(perPage);
 
-      // if (invitedUsers.length == 0) {
-      // return res.json({ error: { message: "No Data Found" } });
-      // } else {
       return res.json({ data: invitedUsers });
       // }
     } catch (error) {
@@ -288,7 +286,6 @@ export class invitedUsersController {
       dataToFind = {
         ...dataToFind,
         $or: [
-          //$options : 'i' used for case insensitivity search
           { email: { $regex: _req.query.search, $options: "i" } },
           { firstName: { $regex: _req.query.search, $options: "i" } },
           { lastName: { $regex: _req.query.search, $options: "i" } },
@@ -302,11 +299,7 @@ export class invitedUsersController {
         .skip(skip)
         .limit(perPage);
 
-      // if (invitedUsers.length == 0) {
-      // return res.json({ error: { message: "No Data Found" } });
-      // } else {
       return res.json({ data: invitedUsers });
-      // }
     } catch (error) {
       return res
         .status(500)
@@ -383,7 +376,17 @@ export class invitedUsersController {
         const data = await User.find({
           email: input.email,
           isDeleted: false,
-          role: RolesEnum.ACCOUNT_MANAGER,
+          role: {
+            $in: [
+              RolesEnum.ADMIN,
+              RolesEnum.USER,
+              RolesEnum.SUBSCRIBER,
+              RolesEnum.SUPER_ADMIN,
+              RolesEnum.ACCOUNT_MANAGER,
+              RolesEnum.NON_BILLABLE,
+              RolesEnum.INVITED,
+            ],
+          },
         });
         if (data.length > 0) {
           return res
@@ -474,7 +477,6 @@ export class invitedUsersController {
       dataToFind = {
         ...dataToFind,
         $or: [
-          //$options : 'i' used for case insensitivity search
           { email: { $regex: _req.query.search, $options: "i" } },
           { firstName: { $regex: _req.query.search, $options: "i" } },
           { lastName: { $regex: _req.query.search, $options: "i" } },

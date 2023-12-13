@@ -11,7 +11,7 @@ const POST = "post";
 export const createPaymentOnStrip = async (params: IntentInterface) => {
   return new Promise((resolve, reject) => {
     let data = qs.stringify({
-      amount: params.amount,
+      amount: Math.ceil(params.amount || 0),
       currency: process.env.CURRENCY,
       automatic_payment_methods: { enabled: true },
       customer: params.customer,
@@ -39,6 +39,7 @@ export const createPaymentOnStrip = async (params: IntentInterface) => {
         });
         const card = await CardDetails.findOne({
           paymentMethod: response?.data?.payment_method,
+          isDeleted: false,
         });
         await Transaction.create({
           userId: user?.id,
@@ -58,6 +59,7 @@ export const createPaymentOnStrip = async (params: IntentInterface) => {
         });
         const card = await CardDetails.findOne({
           paymentMethod: params.paymentMethod,
+          isDeleted: false,
         });
         await Transaction.create({
           userId: user?.id,

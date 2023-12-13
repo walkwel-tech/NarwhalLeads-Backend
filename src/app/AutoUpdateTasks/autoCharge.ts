@@ -1,12 +1,8 @@
-// import { deliveryEnums } from "../../utils/Enums/delivery.enum";
 import moment from "moment-timezone";
 import { paymentMethodEnum } from "../../utils/Enums/payment.method.enum";
 import { addCreditsToBuyer } from "../../utils/payment/addBuyerCredit";
 import { generatePDF } from "../../utils/XeroApiIntegration/generatePDF";
-import {
-  sendEmailForAutocharge,
-  // sendEmailForFailedAutocharge,
-} from "../Middlewares/mail";
+import { sendEmailForAutocharge } from "../Middlewares/mail";
 import { AdminSettings } from "../Models/AdminSettings";
 import { CardDetails } from "../Models/CardDetails";
 import { Invoice } from "../Models/Invoice";
@@ -21,12 +17,16 @@ import { VAT } from "../../utils/constantFiles/Invoices";
 import { createSessionUnScheduledPayment } from "../../utils/payment/createPaymentToRYFT";
 import { UserInterface } from "../../types/UserInterface";
 import { CardDetailsInterface } from "../../types/CardDetailsInterface";
-// import { PAYMENT_STATUS } from "../../utils/Enums/payment.status";
 import { PAYMENT_TYPE_ENUM } from "../../utils/Enums/paymentType.enum";
 import * as cron from "node-cron";
 import { TransactionInterface } from "../../types/TransactionInterface";
 import { InvoiceInterface } from "../../types/InvoiceInterface";
 import { PAYMENT_STATUS } from "../../utils/Enums/payment.status";
+import { createPaymentOnStrip } from "../../utils/payment/stripe/createPaymentToStripe";
+import { IntentInterface } from "../../utils/payment/stripe/paymentIntent";
+import { Types } from "mongoose";
+import { AUTO_UPDATED_TASKS } from "../../utils/Enums/autoUpdatedTasks.enum";
+import { AutoUpdatedTasksLogs } from "../Models/AutoChargeLogs";
 
 interface paymentParams {
   fixedAmount: number;
@@ -44,18 +44,40 @@ interface addCreditsParams {
   fixedAmount: number;
   freeCredits: number;
 }
-export const autoChargePayment = async () => {
-  cron.schedule("0 0 * * *", async () => {
-    // cron.schedule("*/2 * * * *", async () => {
-    try {
-      const usersToCharge = await getUsersToCharge();
-      for (const user of usersToCharge) {
-        const paymentMethod = await getUserPaymentMethods(user.id);
 
+interface FindOptions {
+  $expr?: Record<string, string[] | number[]>;
+  paymentMethod?: string;
+  isDeleted: boolean;
+  isAutoChargeEnabled?: boolean;
+  _id?: Types.ObjectId;
+}
+export const autoChargePayment = async () => {
+  cron.schedule("0 */4 * * *", async () => {
+  // cron.schedule("0 0 * * *", async () => {
+    // cron.schedule("* * * * *", async () => {
+    console.log("CRON Job Start", new Date());
+    try {
+      const usersToCharge = await getUsersWithAutoChargeEnabled();
+      for (const user of usersToCharge) {
+        console.log("Auto charge will work on :", user.email);
+        const dataToSave = {
+          userId: user.id,
+          title: AUTO_UPDATED_TASKS.AUTO_CHARGE,
+        };
+        let logs = await AutoUpdatedTasksLogs.create(dataToSave);
+        const paymentMethod = await getUserPaymentMethods(user.id);
         if (paymentMethod) {
+          await AutoUpdatedTasksLogs.findByIdAndUpdate(logs.id, {
+            statusCode: 200,
+          });
           return autoTopUp(user, paymentMethod);
         } else {
           console.log("payment method not found");
+          await AutoUpdatedTasksLogs.findByIdAndUpdate(logs.id, {
+            notes: "payment method not found",
+            statusCode: 400,
+          });
         }
       }
     } catch (error) {
@@ -83,6 +105,7 @@ export const weeklypayment = async () => {
             const card = await CardDetails.findOne({
               userId: user?.id,
               isDefault: true,
+              isDeleted: false,
             });
 
             const leads = await Leads.find({
@@ -226,18 +249,28 @@ export const weeklypayment = async () => {
   });
 };
 
-const getUsersToCharge = async () => {
-  const data = await User.find({
-    $expr: {
-      $lt: ["$credits", "$triggerAmount"],
-    },
-    paymentMethod: paymentMethodEnum.AUTOCHARGE_METHOD,
-    isDeleted: false,
-  }).populate("businessDetailsId");
-  return data;
+export const getUsersWithAutoChargeEnabled = async (id?: Types.ObjectId) => {
+  let dataToFind: FindOptions;
+  if (!id) {
+    dataToFind = {
+      $expr: {
+        $lt: ["$credits", "$triggerAmount"],
+      },
+      paymentMethod: paymentMethodEnum.AUTOCHARGE_METHOD,
+      isDeleted: false,
+      isAutoChargeEnabled: true,
+    };
+  } else {
+    dataToFind = { _id: id, isDeleted: false };
+  }
+
+  const usersWithAutoChargeEnabled = await User.find(dataToFind).populate(
+    "businessDetailsId"
+  );
+  return usersWithAutoChargeEnabled;
 };
 
-const getUserPaymentMethods = async (id: string) => {
+export const getUserPaymentMethods = async (id: string) => {
   const cards = await CardDetails.findOne({
     userId: id,
     isDeleted: false,
@@ -246,18 +279,22 @@ const getUserPaymentMethods = async (id: string) => {
   return cards;
 };
 
-const chargeUser = async (params: paymentParams) => {
+export const chargeUser = async (params: IntentInterface) => {
   return new Promise((resolve, reject) => {
-    createSessionUnScheduledPayment(params)
-      .then(async (res: any) => {
-        resolve(res);
+    createPaymentOnStrip(params)
+      .then(async (_res: any) => {
+        console.log("payment initiated!", new Date(), {
+          stripeUser: params.customer,
+        });
+        resolve(_res);
       })
       .catch(async (err) => {
+        console.log("error in payment Api", err.response.data);
         const user: UserInterface =
-          (await User.findOne({ ryftClientId: params.clientId })) ??
+          (await User.findOne({ stripeClientId: params.clientId })) ??
           ({} as UserInterface);
         const cards: CardDetailsInterface[] =
-          (await CardDetails.find({ userId: user.id })) ??
+          (await CardDetails.find({ userId: user.id, isDeleted: false })) ??
           ([] as CardDetailsInterface[]);
         await handleFailedCharge(user, cards);
         reject(err);
@@ -265,7 +302,7 @@ const chargeUser = async (params: paymentParams) => {
   });
 };
 
-const handleFailedCharge = async (
+export const handleFailedCharge = async (
   user: UserInterface,
   card: CardDetailsInterface[]
 ) => {
@@ -277,8 +314,7 @@ const handleFailedCharge = async (
     currentDate.setDate(currentDate.getDate() + 1);
     const twoHoursAgoDate = new Date(
       currentDate.getTime() - 2 * 60 * 60 * 1000
-    ); // 2 hours in milliseconds
-    //fixme: if cron job is of 1 day then user yesterday instead of two hours ago
+    );
     const transactions = await Transaction.find({
       createdAt: {
         $gte: twoHoursAgoDate,
@@ -301,46 +337,55 @@ const handleFailedCharge = async (
         (await CardDetails.findOne({
           paymentMethod: leftCards[0],
           userId: user.id,
+          isDeleted: false,
         })) ?? ({} as CardDetailsInterface);
       const params = {
-        fixedAmount:
-          user.autoChargeAmount + (user.autoChargeAmount * VAT) / 100,
-        email: user.email,
+        amount:
+          (user?.autoChargeAmount + (user?.autoChargeAmount * VAT) / 100) * 100,
+        email: user?.email,
         cardNumber: card?.cardNumber,
-        buyerId: user.buyerId,
-        clientId: user.ryftClientId,
-        cardId: card?.id,
-        paymentSessionId: card.paymentSessionID,
-        paymentMethodId: card.paymentMethod,
+        expiryMonth: card?.expiryMonth,
+        expiryYear: card?.expiryYear,
+        cvc: card?.cvc,
+        buyerId: user?.buyerId,
+        freeCredits: 0,
+        customer: user?.stripeClientId,
+        cardId: card.id,
+        paymentMethod: card?.paymentMethod,
+        // currency: user.currency,
       };
       return await chargeUser(params);
     } else {
-      // sendEmailForFailedAutocharge(user.email, text);
       console.log("email should be sent now");
       return false;
     }
   });
 };
 
-const autoTopUp = async (
+export const autoTopUp = async (
   user: UserInterface,
   paymentMethod: CardDetailsInterface
 ) => {
-  const params: paymentParams = {
-    fixedAmount: user.autoChargeAmount + (user.autoChargeAmount * VAT) / 100,
-    email: user.email,
+  const params = {
+    amount:
+      (user?.autoChargeAmount + (user?.autoChargeAmount * VAT) / 100) * 100,
+    email: user?.email,
     cardNumber: paymentMethod?.cardNumber,
-    buyerId: user.buyerId,
-    clientId: user.ryftClientId,
-    cardId: paymentMethod?.id,
-    paymentSessionId: paymentMethod?.paymentSessionID,
-    paymentMethodId: paymentMethod?.paymentMethod,
+    expiryMonth: paymentMethod?.expiryMonth,
+    expiryYear: paymentMethod?.expiryYear,
+    cvc: paymentMethod?.cvc,
+    buyerId: user?.buyerId,
+    freeCredits: 0,
+    customer: user?.stripeClientId,
+    cardId: paymentMethod.id,
+    paymentMethod: paymentMethod?.paymentMethod,
+    // currency: user?.currency,
   };
   const success: any = await chargeUser(params);
-
   if (success) {
     const cardExist = await CardDetails.findOne({
-      paymentSessionID: success.data.previousPayment.id,
+      paymentMethod: success.payment_method,
+      isDeleted: false,
     });
     const text = {
       firstName: user.firstName,

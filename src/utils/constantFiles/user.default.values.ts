@@ -1,0 +1,4 @@
+export const DEFAULT = {
+  TRIGGER_AMOUT: 5,
+  AUTO_CHARGE_AMOUNT: 10,
+};

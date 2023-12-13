@@ -31,6 +31,10 @@ import serviceRoutes from "./routes/userService.routes";
 import nonBillablesUsers from "./routes/nonBillableUsers.routes";
 import { notificationWebhook } from "./utils/webhookUrls/notificationWebhook";
 import guestRoutes from "./routes/guest.routes";
+import permissionRoutes from "./routes/permission.routes";
+import siteconfigRoutes from "./routes/siteConfig.routes";
+import locationRoutes from "./routes/location.routes";
+import dashboardRoutes from "./routes/dashboard.routes";
 
 const swaggerDocument = require("../swagger.json"); // Replace with the path to your actual Swagger document
 const swaggerUi = require("swagger-ui-express");
@@ -102,6 +106,12 @@ export class Server {
     this.app.use("/api/v1/service", Auth, serviceRoutes);
     this.app.use("/api/v1/non-billable-users", Auth, nonBillablesUsers);
     this.app.use("/api/v1/guest", Auth, guestRoutes);
+    this.app.use("/api/v1/permission", Auth, permissionRoutes);
+    this.app.use("/api/v1/round-table-manager", Auth, siteconfigRoutes);
+    this.app.use("/api/v1/get-postCodes", Auth, locationRoutes);
+
+    this.app.use("/api/v1/dashboard", Auth, dashboardRoutes);
+
     this.app.post(
       "/api/v1/notification-webhook",
       (req: Request, res: Response) => {

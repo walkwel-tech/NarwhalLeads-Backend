@@ -53786,14 +53786,16 @@
           ],
           "type": "Polygon",
           "properties": {
-            "name": "AB"
+            "name": "AB",
+            "NAME_0": "UK"
           }
         },
         {
           "arcs": [[59, 60, 61, 62, 63, 64, 65, 66]],
           "type": "Polygon",
           "properties": {
-            "name": "AL"
+            "name": "AL",
+            "NAME_0": "UK"
           }
         },
         {
@@ -53826,7 +53828,9 @@
           ],
           "type": "Polygon",
           "properties": {
-            "name": "B"
+            "name": "B",
+            "NAME_0": "UK"
+
           }
         },
         {
@@ -53850,7 +53854,9 @@
           ],
           "type": "Polygon",
           "properties": {
-            "name": "BA"
+            "name": "BA",
+            "NAME_0": "UK"
+
           }
         },
         {
@@ -53868,7 +53874,9 @@
           ],
           "type": "Polygon",
           "properties": {
-            "name": "BB"
+            "name": "BB",
+            "NAME_0": "UK"
+
           }
         },
         {
@@ -53893,7 +53901,9 @@
           ],
           "type": "Polygon",
           "properties": {
-            "name": "BD"
+            "name": "BD",
+            "NAME_0": "UK"
+
           }
         },
         {
@@ -53910,7 +53920,9 @@
           ],
           "type": "MultiPolygon",
           "properties": {
-            "name": "BH"
+            "name": "BH",
+            "NAME_0": "UK"
+
           }
         },
         {
@@ -53925,7 +53937,9 @@
           ],
           "type": "Polygon",
           "properties": {
-            "name": "BL"
+            "name": "BL",
+            "NAME_0": "UK"
+
           }
         },
         {
@@ -53965,7 +53979,9 @@
           ],
           "type": "Polygon",
           "properties": {
-            "name": "BR"
+            "name": "BR",
+            "NAME_0": "UK"
+
           }
         },
         {
@@ -53985,7 +54001,9 @@
           ],
           "type": "Polygon",
           "properties": {
-            "name": "BS"
+            "name": "BS",
+            "NAME_0": "UK"
+
           }
         },
         {
@@ -54004,7 +54022,9 @@
           ],
           "type": "Polygon",
           "properties": {
-            "name": "CA"
+            "name": "CA",
+            "NAME_0": "UK"
+
           }
         },
         {
@@ -54026,7 +54046,9 @@
           ],
           "type": "Polygon",
           "properties": {
-            "name": "CB"
+            "name": "CB",
+            "NAME_0": "UK"
+
           }
         },
         {
@@ -54039,7 +54061,9 @@
           ],
           "type": "Polygon",
           "properties": {
-            "name": "CF"
+            "name": "CF",
+            "NAME_0": "UK"
+
           }
         },
         {
@@ -54061,7 +54085,9 @@
           ],
           "type": "Polygon",
           "properties": {
-            "name": "CH"
+            "name": "CH",
+            "NAME_0": "UK"
+
           }
         },
         {
@@ -54090,7 +54116,9 @@
           ],
           "type": "Polygon",
           "properties": {
-            "name": "CM"
+            "name": "CM",
+            "NAME_0": "UK"
+
           }
         },
         {
@@ -54107,7 +54135,9 @@
           ],
           "type": "Polygon",
           "properties": {
-            "name": "CO"
+            "name": "CO",
+            "NAME_0": "UK"
+
           }
         },
         {
@@ -54140,7 +54170,9 @@
           ],
           "type": "Polygon",
           "properties": {
-            "name": "CR"
+            "name": "CR",
+            "NAME_0": "UK"
+
           }
         },
         {
@@ -54185,7 +54217,9 @@
           ],
           "type": "Polygon",
           "properties": {
-            "name": "CV"
+            "name": "CV",
+            "NAME_0": "UK"
+
           }
         },
         {
@@ -54207,7 +54241,9 @@
           ],
           "type": "Polygon",
           "properties": {
-            "name": "CW"
+            "name": "CW",
+            "NAME_0": "UK"
+
           }
         },
         {
@@ -54231,7 +54267,9 @@
           ],
           "type": "Polygon",
           "properties": {
-            "name": "DA"
+            "name": "DA",
+            "NAME_0": "UK"
+
           }
         },
         {
@@ -54256,7 +54294,9 @@
           ],
           "type": "MultiPolygon",
           "properties": {
-            "name": "DD"
+            "name": "DD",
+            "NAME_0": "UK"
+
           }
         },
         {
@@ -54287,7 +54327,9 @@
           ],
           "type": "Polygon",
           "properties": {
-            "name": "DE"
+            "name": "DE",
+            "NAME_0": "UK"
+
           }
         },
         {
@@ -54303,14 +54345,18 @@
           ],
           "type": "Polygon",
           "properties": {
-            "name": "DG"
+            "name": "DG",
+            "NAME_0": "UK"
+
           }
         },
         {
           "arcs": [[2899, 2900, 2901, 2902, 2903]],
           "type": "Polygon",
           "properties": {
-            "name": "DH"
+            "name": "DH",
+            "NAME_0": "UK"
+
           }
         },
         {
@@ -54331,7 +54377,9 @@
           ],
           "type": "Polygon",
           "properties": {
-            "name": "DL"
+            "name": "DL",
+            "NAME_0": "UK"
+
           }
         },
         {
@@ -54360,7 +54408,9 @@
           ],
           "type": "Polygon",
           "properties": {
-            "name": "DN"
+            "name": "DN",
+            "NAME_0": "UK"
+
           }
         },
         {
@@ -54374,7 +54424,9 @@
           ],
           "type": "Polygon",
           "properties": {
-            "name": "DT"
+            "name": "DT",
+            "NAME_0": "UK"
+
           }
         },
         {
@@ -54406,7 +54458,9 @@
           ],
           "type": "Polygon",
           "properties": {
-            "name": "DY"
+            "name": "DY",
+            "NAME_0": "UK"
+
           }
         },
         {
@@ -54442,7 +54496,9 @@
           ],
           "type": "Polygon",
           "properties": {
-            "name": "E"
+            "name": "E",
+            "NAME_0": "UK"
+
           }
         },
         {
@@ -54460,7 +54516,9 @@
           ],
           "type": "Polygon",
           "properties": {
-            "name": "EC"
+            "name": "EC",
+            "NAME_0": "UK"
+
           }
         },
         {
@@ -54476,7 +54534,9 @@
           ],
           "type": "Polygon",
           "properties": {
-            "name": "EH"
+            "name": "EH",
+            "NAME_0": "UK"
+
           }
         },
         {
@@ -54502,7 +54562,9 @@
           ],
           "type": "Polygon",
           "properties": {
-            "name": "EN"
+            "name": "EN",
+            "NAME_0": "UK"
+
           }
         },
         {
@@ -54522,7 +54584,9 @@
           ],
           "type": "MultiPolygon",
           "properties": {
-            "name": "EX"
+            "name": "EX",
+            "NAME_0": "UK"
+
           }
         },
         {
@@ -54541,7 +54605,9 @@
           ],
           "type": "Polygon",
           "properties": {
-            "name": "FK"
+            "name": "FK",
+            "NAME_0": "UK"
+
           }
         },
         {
@@ -54554,7 +54620,9 @@
           ],
           "type": "Polygon",
           "properties": {
-            "name": "FY"
+            "name": "FY",
+            "NAME_0": "UK"
+
           }
         },
         {
@@ -54581,7 +54649,9 @@
           ],
           "type": "Polygon",
           "properties": {
-            "name": "G"
+            "name": "G",
+            "NAME_0": "UK"
+
           }
         },
         {
@@ -54613,7 +54683,9 @@
           ],
           "type": "Polygon",
           "properties": {
-            "name": "GL"
+            "name": "GL",
+            "NAME_0": "UK"
+
           }
         },
         {
@@ -54648,7 +54720,9 @@
           ],
           "type": "MultiPolygon",
           "properties": {
-            "name": "GU"
+            "name": "GU",
+            "NAME_0": "UK"
+
           }
         },
         {
@@ -54680,7 +54754,9 @@
           ],
           "type": "Polygon",
           "properties": {
-            "name": "HA"
+            "name": "HA",
+            "NAME_0": "UK"
+
           }
         },
         {
@@ -54700,7 +54776,9 @@
           ],
           "type": "Polygon",
           "properties": {
-            "name": "HD"
+            "name": "HD",
+            "NAME_0": "UK"
+
           }
         },
         {
@@ -54719,7 +54797,9 @@
           ],
           "type": "Polygon",
           "properties": {
-            "name": "HG"
+            "name": "HG",
+            "NAME_0": "UK"
+
           }
         },
         {
@@ -54742,7 +54822,9 @@
           ],
           "type": "Polygon",
           "properties": {
-            "name": "HP"
+            "name": "HP",
+            "NAME_0": "UK"
+
           }
         },
         {
@@ -54766,7 +54848,9 @@
           ],
           "type": "Polygon",
           "properties": {
-            "name": "HR"
+            "name": "HR",
+            "NAME_0": "UK"
+
           }
         },
         {
@@ -54798,7 +54882,9 @@
           ],
           "type": "MultiPolygon",
           "properties": {
-            "name": "HS"
+            "name": "HS",
+            "NAME_0": "UK"
+
           }
         },
         {
@@ -54813,7 +54899,9 @@
           ],
           "type": "Polygon",
           "properties": {
-            "name": "HU"
+            "name": "HU",
+            "NAME_0": "UK"
+
           }
         },
         {
@@ -54833,7 +54921,9 @@
           ],
           "type": "Polygon",
           "properties": {
-            "name": "HX"
+            "name": "HX",
+            "NAME_0": "UK"
+
           }
         },
         {
@@ -54858,7 +54948,9 @@
           ],
           "type": "Polygon",
           "properties": {
-            "name": "IG"
+            "name": "IG",
+            "NAME_0": "UK"
+
           }
         },
         {
@@ -54870,7 +54962,9 @@
           ],
           "type": "Polygon",
           "properties": {
-            "name": "IP"
+            "name": "IP",
+            "NAME_0": "UK"
+
           }
         },
         {
@@ -54902,7 +54996,9 @@
           ],
           "type": "MultiPolygon",
           "properties": {
-            "name": "IV"
+            "name": "IV",
+            "NAME_0": "UK"
+
           }
         },
         {
@@ -54924,7 +55020,9 @@
           ],
           "type": "MultiPolygon",
           "properties": {
-            "name": "KA"
+            "name": "KA",
+            "NAME_0": "UK"
+
           }
         },
         {
@@ -54960,7 +55058,9 @@
           ],
           "type": "Polygon",
           "properties": {
-            "name": "KT"
+            "name": "KT",
+            "NAME_0": "UK"
+
           }
         },
         {
@@ -54995,7 +55095,9 @@
           ],
           "type": "MultiPolygon",
           "properties": {
-            "name": "KW"
+            "name": "KW",
+            "NAME_0": "UK"
+
           }
         },
         {
@@ -55010,7 +55112,9 @@
           ],
           "type": "Polygon",
           "properties": {
-            "name": "KY"
+            "name": "KY",
+            "NAME_0": "UK"
+
           }
         },
         {
@@ -55028,7 +55132,9 @@
           ],
           "type": "Polygon",
           "properties": {
-            "name": "L"
+            "name": "L",
+            "NAME_0": "UK"
+
           }
         },
         {
@@ -55045,7 +55151,9 @@
           ],
           "type": "Polygon",
           "properties": {
-            "name": "LA"
+            "name": "LA",
+            "NAME_0": "UK"
+
           }
         },
         {
@@ -55062,7 +55170,9 @@
           ],
           "type": "Polygon",
           "properties": {
-            "name": "LD"
+            "name": "LD",
+            "NAME_0": "UK"
+
           }
         },
         {
@@ -55089,7 +55199,9 @@
           ],
           "type": "Polygon",
           "properties": {
-            "name": "LE"
+            "name": "LE",
+            "NAME_0": "UK"
+
           }
         },
         {
@@ -55114,7 +55226,9 @@
           ],
           "type": "MultiPolygon",
           "properties": {
-            "name": "LL"
+            "name": "LL",
+            "NAME_0": "UK"
+
           }
         },
         {
@@ -55141,7 +55255,9 @@
           ],
           "type": "Polygon",
           "properties": {
-            "name": "LN"
+            "name": "LN",
+            "NAME_0": "UK"
+
           }
         },
         {
@@ -55172,7 +55288,9 @@
           ],
           "type": "Polygon",
           "properties": {
-            "name": "LS"
+            "name": "LS",
+            "NAME_0": "UK"
+
           }
         },
         {
@@ -55190,7 +55308,9 @@
           ],
           "type": "Polygon",
           "properties": {
-            "name": "LU"
+            "name": "LU",
+            "NAME_0": "UK"
+
           }
         },
         {
@@ -55203,7 +55323,9 @@
           ],
           "type": "Polygon",
           "properties": {
-            "name": "M"
+            "name": "M",
+            "NAME_0": "UK"
+
           }
         },
         {
@@ -55219,7 +55341,9 @@
           ],
           "type": "Polygon",
           "properties": {
-            "name": "ME"
+            "name": "ME",
+            "NAME_0": "UK"
+
           }
         },
         {
@@ -55245,7 +55369,9 @@
           ],
           "type": "Polygon",
           "properties": {
-            "name": "MK"
+            "name": "MK",
+            "NAME_0": "UK"
+
           }
         },
         {
@@ -55267,7 +55393,9 @@
           ],
           "type": "Polygon",
           "properties": {
-            "name": "ML"
+            "name": "ML",
+            "NAME_0": "UK"
+
           }
         },
         {
@@ -55311,7 +55439,9 @@
           ],
           "type": "Polygon",
           "properties": {
-            "name": "N"
+            "name": "N",
+            "NAME_0": "UK"
+
           }
         },
         {
@@ -55331,7 +55461,9 @@
           ],
           "type": "Polygon",
           "properties": {
-            "name": "NE"
+            "name": "NE",
+            "NAME_0": "UK"
+
           }
         },
         {
@@ -55368,7 +55500,9 @@
           ],
           "type": "Polygon",
           "properties": {
-            "name": "NG"
+            "name": "NG",
+            "NAME_0": "UK"
+
           }
         },
         {
@@ -55396,14 +55530,18 @@
           ],
           "type": "Polygon",
           "properties": {
-            "name": "NN"
+            "name": "NN",
+            "NAME_0": "UK"
+
           }
         },
         {
           "arcs": [[7887, -6288, -5388, -4364, 7888, -1478]],
           "type": "Polygon",
           "properties": {
-            "name": "NP"
+            "name": "NP",
+            "NAME_0": "UK"
+
           }
         },
         {
@@ -55417,7 +55555,9 @@
           ],
           "type": "Polygon",
           "properties": {
-            "name": "NR"
+            "name": "NR",
+            "NAME_0": "UK"
+
           }
         },
         {
@@ -55468,7 +55608,9 @@
           ],
           "type": "MultiPolygon",
           "properties": {
-            "name": "NW"
+            "name": "NW",
+            "NAME_0": "UK"
+
           }
         },
         {
@@ -55487,7 +55629,9 @@
           ],
           "type": "Polygon",
           "properties": {
-            "name": "OL"
+            "name": "OL",
+            "NAME_0": "UK"
+
           }
         },
         {
@@ -55521,7 +55665,9 @@
           ],
           "type": "Polygon",
           "properties": {
-            "name": "OX"
+            "name": "OX",
+            "NAME_0": "UK"
+
           }
         },
         {
@@ -55568,7 +55714,9 @@
           ],
           "type": "MultiPolygon",
           "properties": {
-            "name": "PA"
+            "name": "PA",
+            "NAME_0": "UK"
+
           }
         },
         {
@@ -55603,7 +55751,9 @@
           ],
           "type": "Polygon",
           "properties": {
-            "name": "PE"
+            "name": "PE",
+            "NAME_0": "UK"
+
           }
         },
         {
@@ -55636,7 +55786,9 @@
           ],
           "type": "MultiPolygon",
           "properties": {
-            "name": "PH"
+            "name": "PH",
+            "NAME_0": "UK"
+
           }
         },
         {
@@ -55649,7 +55801,9 @@
           ],
           "type": "Polygon",
           "properties": {
-            "name": "PL"
+            "name": "PL",
+            "NAME_0": "UK"
+
           }
         },
         {
@@ -55668,7 +55822,9 @@
           ],
           "type": "MultiPolygon",
           "properties": {
-            "name": "PO"
+            "name": "PO",
+            "NAME_0": "UK"
+
           }
         },
         {
@@ -55691,7 +55847,9 @@
           ],
           "type": "Polygon",
           "properties": {
-            "name": "PR"
+            "name": "PR",
+            "NAME_0": "UK"
+
           }
         },
         {
@@ -55718,7 +55876,9 @@
           ],
           "type": "Polygon",
           "properties": {
-            "name": "RG"
+            "name": "RG",
+            "NAME_0": "UK"
+
           }
         },
         {
@@ -55739,7 +55899,9 @@
           ],
           "type": "Polygon",
           "properties": {
-            "name": "RH"
+            "name": "RH",
+            "NAME_0": "UK"
+
           }
         },
         {
@@ -55764,7 +55926,9 @@
           ],
           "type": "Polygon",
           "properties": {
-            "name": "RM"
+            "name": "RM",
+            "NAME_0": "UK"
+
           }
         },
         {
@@ -55791,7 +55955,9 @@
           ],
           "type": "Polygon",
           "properties": {
-            "name": "S"
+            "name": "S",
+            "NAME_0": "UK"
+
           }
         },
         {
@@ -55813,7 +55979,9 @@
           ],
           "type": "MultiPolygon",
           "properties": {
-            "name": "SA"
+            "name": "SA",
+            "NAME_0": "UK"
+
           }
         },
         {
@@ -55862,7 +56030,9 @@
           ],
           "type": "Polygon",
           "properties": {
-            "name": "SE"
+            "name": "SE",
+            "NAME_0": "UK"
+
           }
         },
         {
@@ -55886,7 +56056,9 @@
           ],
           "type": "Polygon",
           "properties": {
-            "name": "SG"
+            "name": "SG",
+            "NAME_0": "UK"
+
           }
         },
         {
@@ -55908,7 +56080,9 @@
           ],
           "type": "Polygon",
           "properties": {
-            "name": "SK"
+            "name": "SK",
+            "NAME_0": "UK"
+
           }
         },
         {
@@ -55920,7 +56094,9 @@
           ],
           "type": "Polygon",
           "properties": {
-            "name": "SL"
+            "name": "SL",
+            "NAME_0": "UK"
+
           }
         },
         {
@@ -55945,7 +56121,9 @@
           ],
           "type": "Polygon",
           "properties": {
-            "name": "SM"
+            "name": "SM",
+            "NAME_0": "UK"
+
           }
         },
         {
@@ -55973,7 +56151,9 @@
           ],
           "type": "Polygon",
           "properties": {
-            "name": "SN"
+            "name": "SN",
+            "NAME_0": "UK"
+
           }
         },
         {
@@ -55992,7 +56172,9 @@
           ],
           "type": "Polygon",
           "properties": {
-            "name": "SO"
+            "name": "SO",
+            "NAME_0": "UK"
+
           }
         },
         {
@@ -56017,7 +56199,9 @@
           ],
           "type": "Polygon",
           "properties": {
-            "name": "SP"
+            "name": "SP",
+            "NAME_0": "UK"
+            
           }
         },
         {
@@ -56033,7 +56217,9 @@
           ],
           "type": "Polygon",
           "properties": {
-            "name": "SR"
+            "name": "SR",
+            "NAME_0": "UK"
+
           }
         },
         {
@@ -56051,7 +56237,9 @@
           ],
           "type": "Polygon",
           "properties": {
-            "name": "SS"
+            "name": "SS",
+            "NAME_0": "UK"
+
           }
         },
         {
@@ -56060,7 +56248,9 @@
           ],
           "type": "Polygon",
           "properties": {
-            "name": "ST"
+            "name": "ST",
+            "NAME_0": "UK"
+
           }
         },
         {
@@ -56111,7 +56301,9 @@
           ],
           "type": "Polygon",
           "properties": {
-            "name": "SW"
+            "name": "SW",
+            "NAME_0": "UK"
+
           }
         },
         {
@@ -56149,7 +56341,9 @@
           ],
           "type": "Polygon",
           "properties": {
-            "name": "SY"
+            "name": "SY",
+            "NAME_0": "UK"
+
           }
         },
         {
@@ -56173,7 +56367,9 @@
           ],
           "type": "Polygon",
           "properties": {
-            "name": "TA"
+            "name": "TA",
+            "NAME_0": "UK"
+
           }
         },
         {
@@ -56194,7 +56390,9 @@
           ],
           "type": "MultiPolygon",
           "properties": {
-            "name": "TD"
+            "name": "TD",
+            "NAME_0": "UK"
+
           }
         },
         {
@@ -56216,7 +56414,9 @@
           ],
           "type": "Polygon",
           "properties": {
-            "name": "TF"
+            "name": "TF",
+            "NAME_0": "UK"
+
           }
         },
         {
@@ -56233,7 +56433,9 @@
           ],
           "type": "Polygon",
           "properties": {
-            "name": "TN"
+            "name": "TN",
+            "NAME_0": "UK"
+
           }
         },
         {
@@ -56247,14 +56449,18 @@
           ],
           "type": "Polygon",
           "properties": {
-            "name": "TQ"
+            "name": "TQ",
+            "NAME_0": "UK"
+
           }
         },
         {
           "arcs": [[[-8786, 10894]], [[10895]], [[10896]], [[10897]]],
           "type": "MultiPolygon",
           "properties": {
-            "name": "TR"
+            "name": "TR",
+            "NAME_0": "UK"
+
           }
         },
         {
@@ -56273,7 +56479,9 @@
           ],
           "type": "Polygon",
           "properties": {
-            "name": "TS"
+            "name": "TS",
+            "NAME_0": "UK"
+
           }
         },
         {
@@ -56306,7 +56514,9 @@
           ],
           "type": "Polygon",
           "properties": {
-            "name": "TW"
+            "name": "TW",
+            "NAME_0": "UK"
+
           }
         },
         {
@@ -56332,7 +56542,9 @@
           ],
           "type": "Polygon",
           "properties": {
-            "name": "UB"
+            "name": "UB",
+            "NAME_0": "UK"
+
           }
         },
         {
@@ -56384,7 +56596,9 @@
           ],
           "type": "MultiPolygon",
           "properties": {
-            "name": "W"
+            "name": "W",
+            "NAME_0": "UK"
+
           }
         },
         {
@@ -56411,7 +56625,9 @@
           ],
           "type": "Polygon",
           "properties": {
-            "name": "WA"
+            "name": "WA",
+            "NAME_0": "UK"
+
           }
         },
         {
@@ -56423,7 +56639,9 @@
           ],
           "type": "Polygon",
           "properties": {
-            "name": "WC"
+            "name": "WC",
+            "NAME_0": "UK"
+
           }
         },
         {
@@ -56446,7 +56664,9 @@
           ],
           "type": "Polygon",
           "properties": {
-            "name": "WD"
+            "name": "WD",
+            "NAME_0": "UK"
+
           }
         },
         {
@@ -56478,7 +56698,9 @@
           ],
           "type": "Polygon",
           "properties": {
-            "name": "WF"
+            "name": "WF",
+            "NAME_0": "UK"
+
           }
         },
         {
@@ -56491,7 +56713,9 @@
           ],
           "type": "Polygon",
           "properties": {
-            "name": "WN"
+            "name": "WN",
+            "NAME_0": "UK"
+
           }
         },
         {
@@ -56521,7 +56745,9 @@
           ],
           "type": "Polygon",
           "properties": {
-            "name": "WR"
+            "name": "WR",
+            "NAME_0": "UK"
+
           }
         },
         {
@@ -56548,7 +56774,9 @@
           ],
           "type": "Polygon",
           "properties": {
-            "name": "WS"
+            "name": "WS",
+            "NAME_0": "UK"
+
           }
         },
         {
@@ -56579,7 +56807,9 @@
           ],
           "type": "Polygon",
           "properties": {
-            "name": "WV"
+            "name": "WV",
+            "NAME_0": "UK"
+
           }
         },
         {
@@ -56611,7 +56841,9 @@
           ],
           "type": "Polygon",
           "properties": {
-            "name": "YO"
+            "name": "YO",
+            "NAME_0": "UK"
+
           }
         },
         {
@@ -56632,35 +56864,45 @@
           ],
           "type": "MultiPolygon",
           "properties": {
-            "name": "ZE"
+            "name": "ZE",
+            "NAME_0": "UK"
+
           }
         },
         {
           "arcs": [[[12148]], [[12149]]],
           "type": "MultiPolygon",
           "properties": {
-            "name": "BT"
+            "name": "BT",
+            "NAME_0": "UK"
+
           }
         },
         {
           "arcs": [[[12150]], [[12151]], [[12152]]],
           "type": "MultiPolygon",
           "properties": {
-            "name": "GY"
+            "name": "GY",
+            "NAME_0": "UK"
+
           }
         },
         {
           "arcs": [[[12153]], [[12154]]],
           "type": "MultiPolygon",
           "properties": {
-            "name": "IM"
+            "name": "IM",
+            "NAME_0": "UK"
+
           }
         },
         {
           "arcs": [[12155]],
           "type": "Polygon",
           "properties": {
-            "name": "JE"
+            "name": "JE",
+            "NAME_0": "UK"
+
           }
         }
       ]

@@ -35,6 +35,26 @@ import { addCreditsToBuyer } from "../../utils/payment/addBuyerCredit";
 import { TransactionInterface } from "../../types/TransactionInterface";
 import { InvoiceInterface } from "../../types/InvoiceInterface";
 import { cmsUpdateBuyerWebhook } from "../../utils/webhookUrls/cmsUpdateBuyerWebhook";
+import {
+  ONBOARDING_KEYS,
+  ONBOARDING_PERCENTAGE,
+} from "../../utils/constantFiles/OnBoarding.keys";
+import { CARD_DETAILS } from "../../utils/constantFiles/signupFields";
+import { BuisnessIndustries } from "../Models/BuisnessIndustries";
+import { sendLeadDataToZap } from "../../utils/webhookUrls/sendDataZap";
+
+import {
+  BusinessDetailsInterface,
+  isBusinessObject,
+} from "../../types/BusinessInterface";
+import {
+  UserLeadsDetailsInterface,
+  isUserLeadDetailsObject,
+} from "../../types/LeadDetailsInterface";
+import { eventsWebhook } from "../../utils/webhookUrls/eventExpansionWebhook";
+import { EVENT_TITLE } from "../../utils/constantFiles/events";
+// import { sendLeadDataToZap } from "../../utils/webhookUrls/sendDataZap";
+// import { BuisnessIndustries } from "../Models/BuisnessIndustries";
 const ObjectId = mongoose.Types.ObjectId;
 
 const LIMIT = 10;
@@ -44,6 +64,12 @@ interface DataObject {
 }
 type RoleFilter = {
   $in: (RolesEnum.USER | RolesEnum.NON_BILLABLE)[];
+};
+
+type FindOptions = {
+  isDeleted: boolean;
+  role: RoleFilter;
+  accountManager?: Types.ObjectId;
 };
 export class UsersControllers {
   static create = async (req: Request, res: Response): Promise<Response> => {
@@ -56,7 +82,6 @@ export class UsersControllers {
     registerInput.password = input.password;
 
     const errors = await validate(registerInput);
-
     if (errors.length) {
       const errorsInfo: ValidationErrorResponse[] = errors.map((error) => ({
         property: error.property,
@@ -122,9 +147,7 @@ export class UsersControllers {
 
   static index = async (_req: any, res: Response): Promise<Response> => {
     try {
-      let sortingOrder = _req.query.sortBy
-        ? JSON.parse(_req.query.sortBy)[0]?.order || sort.DESC
-        : "";
+      let sortingOrder = _req.query.sortingOrder || sort.DESC;
 
       let filter = _req.query.clientType;
       let accountManagerBoolean = _req.query.accountManager;
@@ -174,13 +197,22 @@ export class UsersControllers {
         dataToFind.role = { $in: [RolesEnum.NON_BILLABLE, RolesEnum.USER] };
       }
       if (filter === FILTER_FOR_CLIENT.BILLABLE && !accountManagerBoolean) {
-        dataToFind.role = { $in: [RolesEnum.USER] };
+        // dataToFind.role = { $in: [RolesEnum.USER] };
+        dataToFind.isCreditsAndBillingEnabled = true;
       }
       if (filter === FILTER_FOR_CLIENT.NON_BILLABLE && !accountManagerBoolean) {
-        dataToFind.role = { $in: [RolesEnum.NON_BILLABLE] };
+        // dataToFind.role = { $in: [RolesEnum.NON_BILLABLE] };
+        dataToFind.isCreditsAndBillingEnabled = false;
       }
       if (accountManagerBoolean) {
         dataToFind.role = RolesEnum.ACCOUNT_MANAGER;
+        dataToFind.isActive = true;
+      }
+      if (
+        accountManagerBoolean &&
+        _req.user.role === RolesEnum.ACCOUNT_MANAGER
+      ) {
+        dataToFind._id = new ObjectId(_req.user._id);
       }
       if (_req.query.isActive) {
         dataToFind.isActive = JSON.parse(isActive?.toLowerCase());
@@ -195,7 +227,10 @@ export class UsersControllers {
       if (accountManagerId != "" && accountManagerId) {
         dataToFind.accountManager = new ObjectId(_req.query.accountManagerId);
       }
-      if (_req.user.role === RolesEnum.ACCOUNT_MANAGER) {
+      if (
+        _req.user.role === RolesEnum.ACCOUNT_MANAGER &&
+        !accountManagerBoolean
+      ) {
         dataToFind.accountManager = new ObjectId(_req.user._id);
       }
       if (_req.query.search) {
@@ -331,6 +366,31 @@ export class UsersControllers {
         //@ts-ignore
         pipeline[0].$facet.results.push({ $limit: perPage });
       }
+      if (
+        _req.query.onBoardingPercentage &&
+        _req.query.onBoardingPercentage != "all" &&
+        !accountManagerBoolean === true
+      ) {
+        dataToFind.onBoardingPercentage = parseInt(
+          _req.query.onBoardingPercentage
+        );
+      }
+
+      if (
+        _req.query.onBoardingPercentage &&
+        _req.query.onBoardingPercentage === "all" &&
+        !accountManagerBoolean === true
+      ) {
+        dataToFind.onBoardingPercentage = {
+          $in: [
+            ONBOARDING_PERCENTAGE.BUSINESS_DETAILS,
+            ONBOARDING_PERCENTAGE.USER_DETAILS,
+            ONBOARDING_PERCENTAGE.LEAD_DETAILS,
+            ONBOARDING_PERCENTAGE.CARD_DETAILS,
+          ],
+        };
+      }
+
       const [query]: any = await User.aggregate(pipeline);
       query.results.map((item: any) => {
         let businessDetailsId = Object.assign({}, item["businessDetailsId"][0]);
@@ -346,6 +406,7 @@ export class UsersControllers {
         item.businessDetailsId.daily = item.userLeadsDetailsId.daily;
         item.accountManager =
           (item.accountManager[0]?.firstName || "") +
+          " " +
           (item.accountManager[0]?.lastName || "");
       });
 
@@ -509,9 +570,19 @@ export class UsersControllers {
 
   static indexName = async (req: Request, res: Response): Promise<Response> => {
     try {
+      let user: Partial<UserInterface> = req.user ?? ({} as UserInterface);
+      let dataToFind: FindOptions = {
+        isDeleted: false,
+        role: { $in: [RolesEnum.USER, RolesEnum.NON_BILLABLE] },
+      };
+      if (user?.role === RolesEnum.ACCOUNT_MANAGER) {
+        dataToFind.accountManager = new ObjectId(user._id);
+      }
       const business = await User.aggregate(
         [
-          { $match: { isDeleted: false, role: RolesEnum.USER } },
+          {
+            $match: dataToFind,
+          },
           {
             $lookup: {
               from: "businessdetails",
@@ -557,42 +628,46 @@ export class UsersControllers {
   };
 
   static update = async (req: Request, res: Response): Promise<any> => {
+    let user: Partial<UserInterface> = req.user ?? ({} as UserInterface);
     const { id } = req.params;
     const input = req.body;
+    const checkUser = (await User.findById(id)) ?? ({} as UserInterface);
     if (input.password) {
-      // @ts-ignore
       delete input.password;
     }
-    // @ts-ignore
-    if (input.credits && req?.user.role == RolesEnum.USER) {
-      // @ts-ignore
+    if (input.credits && user.role == RolesEnum.USER) {
       delete input.credits;
     }
 
-    if (
-      // @ts-ignore
-      req?.user.role === RolesEnum.USER &&
-      (input.email || input.email == "")
-    ) {
-      // @ts-ignore
-      input.email = req.user?.email;
+    if (user.role === RolesEnum.USER && (input.email || input.email == "")) {
+      input.email = user?.email;
+    }
+
+    if (user.role === RolesEnum.SUPER_ADMIN && input.email) {
+      const email = await User.findOne({
+        email: input.email,
+        isDeleted: false,
+      });
+      if (email && checkUser.email != email.email) {
+        return res.status(400).json({
+          error: {
+            message: "Email already registered with another user",
+          },
+        });
+      }
     }
 
     try {
-      const checkUser = await User.findById(id);
       const businesBeforeUpdate = await BusinessDetails.findById(
         checkUser?.businessDetailsId
       );
-      // const userLeadDetailsBeforeUpdate=await UserLeadsDetails.findById(checkUser?.userLeadsDetailsId)
       const userForActivity = await User.findById(
         id,
         " -_id -businessDetailsId -businessIndustryId -userLeadsDetailsId -onBoarding -createdAt -updatedAt"
       ).lean();
       if (
         input.paymentMethod === paymentMethodEnum.WEEKLY_PAYMENT_METHOD &&
-        // checkUser?.paymentMethod == paymentMethodEnum.WEEKLY_PAYMENT_METHOD
-        //@ts-ignore
-        req.user?.role === RolesEnum.USER
+        user?.role === RolesEnum.USER
       ) {
         return res.status(403).json({
           error: {
@@ -602,14 +677,12 @@ export class UsersControllers {
         });
       }
       if (
-        // @ts-ignore
         (input.buyerId ||
           input.leadCost ||
           input.ryftClientId ||
           input.xeroContactId ||
           input.role) &&
-        //@ts-ignore
-        req.user?.role == RolesEnum.USER
+        user?.role == RolesEnum.USER
       ) {
         return res
           .status(403)
@@ -617,15 +690,49 @@ export class UsersControllers {
       }
       if (
         input.paymentMethod &&
-        // @ts-ignore
         checkUser?.paymentMethod == paymentMethodEnum.WEEKLY_PAYMENT_METHOD &&
-        // @ts-ignore
-        req.user?.role === RolesEnum.USER
+        user?.role === RolesEnum.USER
       ) {
         return res.status(403).json({
           error: { message: "Please contact admin to change payment method" },
         });
       }
+
+      if (
+        input.isCreditsAndBillingEnabled === false &&
+        checkUser?.role === RolesEnum.USER
+      ) {
+        let object = checkUser.onBoarding;
+        object.map((fields) => {
+          if (fields.key === ONBOARDING_KEYS.CARD_DETAILS) {
+            fields.pendingFields = [];
+          }
+        });
+        await User.findByIdAndUpdate(checkUser?.id, {
+          isCreditsAndBillingEnabled: false,
+          onBoarding: object,
+        });
+      }
+
+      if (
+        input.isCreditsAndBillingEnabled === true &&
+        checkUser?.role === RolesEnum.NON_BILLABLE
+      ) {
+        let object = checkUser.onBoarding;
+
+        if (!areAllPendingFieldsEmpty(object)) {
+          object.map((fields) => {
+            if (fields.key === ONBOARDING_KEYS.CARD_DETAILS) {
+              fields.pendingFields = [CARD_DETAILS.CARD_NUMBER];
+            }
+          });
+          await User.findByIdAndUpdate(checkUser?.id, {
+            isCreditsAndBillingEnabled: false,
+            onBoarding: object,
+          });
+        }
+      }
+
       if (input.smsPhoneNumber) {
         const userExist = await User.findOne({
           smsPhoneNumber: input.smsPhoneNumber,
@@ -654,17 +761,15 @@ export class UsersControllers {
       const cardExist = await CardDetails.findOne({
         userId: checkUser?._id,
         isDefault: true,
+        isDeleted: false,
       });
 
       if (
         !cardExist &&
         input.credits &&
-        //@ts-ignore
-        (req?.user.role == RolesEnum.USER ||
-          //@ts-ignore
-          req?.user.role == RolesEnum.ADMIN ||
-          //@ts-ignore
-          req?.user.role == RolesEnum.SUPER_ADMIN)
+        (user.role == RolesEnum.USER ||
+          user.role == RolesEnum.ADMIN ||
+          user.role == RolesEnum.SUPER_ADMIN)
       ) {
         return res
           .status(404)
@@ -678,6 +783,7 @@ export class UsersControllers {
         }
         const businesses = await BusinessDetails.find({
           businessName: input.businessName,
+          isDeleted: false,
         });
         if (businesses.length > 0) {
           let array: mongoose.Types.ObjectId[] = [];
@@ -882,6 +988,22 @@ export class UsersControllers {
             .status(404)
             .json({ error: { message: "lead details not found" } });
         }
+
+        const industry = await BuisnessIndustries.findById(
+          checkUser.businessIndustryId
+        );
+        const columns = industry?.columns;
+
+        const result: { [key: string]: string } = {};
+        if (columns) {
+          for (const item of columns) {
+            if (item.isVisible === true) {
+              //@ts-ignore
+              result[item.originalName] = item.displayName;
+            }
+          }
+        }
+
         await UserLeadsDetails.findByIdAndUpdate(
           checkUser?.userLeadsDetailsId,
           { zapierUrl: input.zapierUrl, sendDataToZapier: true },
@@ -905,10 +1027,9 @@ export class UsersControllers {
       }
       if (
         input.credits &&
-        // @ts-ignore
-        (req?.user.role == RolesEnum.ADMIN ||
+        (user.role == RolesEnum.ADMIN ||
           // @ts-ignore
-          req?.user.role == RolesEnum.SUPER_ADMIN)
+          user.role == RolesEnum.SUPER_ADMIN)
       ) {
         const params: any = {
           fixedAmount: input.credits,
@@ -1073,8 +1194,7 @@ export class UsersControllers {
 
         if (!isEmpty && user?.isSignUpCompleteWithCredit) {
           const activity = {
-            //@ts-ignore
-            actionBy: req?.user?.role,
+            actionBy: user?.role,
             actionType: ACTION.UPDATING,
             targetModel: MODEL_ENUM.USER,
             userEntity: req.params.id,
@@ -1124,11 +1244,9 @@ export class UsersControllers {
             const isEmpty = Object.keys(fields.updatedFields).length === 0;
             if (!isEmpty && user?.isSignUpCompleteWithCredit) {
               const activity = {
-                //@ts-ignore
-                actionBy: req?.user?.role,
+                actionBy: user?.role,
                 actionType: ACTION.UPDATING,
                 targetModel: MODEL_ENUM.BUSINESS_DETAILS,
-                //@ts-ignore
                 userEntity: checkUser?.id,
                 originalValues: fields.oldFields,
                 modifiedValues: fields.updatedFields,
@@ -1155,6 +1273,16 @@ export class UsersControllers {
       return res
         .status(400)
         .json({ error: { message: "User has been already deleted." } });
+    }
+    if (userExist?.role === RolesEnum.ACCOUNT_MANAGER) {
+      const usersAssign = await User.find({ accountManager: userExist.id });
+      if (usersAssign.length > 0) {
+        await Promise.all(
+          usersAssign.map(async (user) => {
+            await User.findByIdAndUpdate(user.id, { accountManager: null });
+          })
+        );
+      }
     }
 
     try {
@@ -1224,6 +1352,8 @@ export class UsersControllers {
     _req: any,
     res: Response
   ) => {
+    let user: Partial<UserInterface> = _req.user ?? ({} as UserInterface);
+
     const id = _req.query.id;
     const status = _req.query.status;
     let sortingOrder = _req.query.sortingOrder || sort.DESC;
@@ -1266,6 +1396,14 @@ export class UsersControllers {
       }
       if (id) {
         dataToFind._id = new ObjectId(id);
+      }
+      if (_req.user.role === RolesEnum.ACCOUNT_MANAGER) {
+        let ids: any = [];
+        const users = await User.find({ accountManager: user._id });
+        users.map((user) => {
+          return ids.push(new ObjectId(user._id));
+        });
+        dataToFind._id = { $in: ids };
       }
       if (industry) {
         let ids: any = [];
@@ -1594,7 +1732,10 @@ export class UsersControllers {
   static userCreditsManualAdjustment = async (req: any, res: Response) => {
     try {
       const input = req.body;
-      const user = (await User.findById(input.userId)) ?? ({} as UserInterface);
+      const user =
+        (await User.findById(input.userId)
+          .populate("userLeadsDetailsId")
+          .populate("businessDetailsId")) ?? ({} as UserInterface);
       const credits = input.credits * parseInt(user?.leadCost);
       if (user?.isDeleted) {
         return res.status(400).json({
@@ -1680,14 +1821,37 @@ export class UsersControllers {
                 });
               });
             });
+          const userBusiness: BusinessDetailsInterface | null =
+            isBusinessObject(user?.businessDetailsId)
+              ? user?.businessDetailsId
+              : null;
+
+          const userLead: UserLeadsDetailsInterface | null =
+            isUserLeadDetailsObject(user?.userLeadsDetailsId)
+              ? user?.userLeadsDetailsId
+              : null;
+          const paramsToSend = {
+            userId: user._id,
+            buyerId: user.buyerId,
+            buisnessName: userBusiness?.businessName,
+            eventCode: EVENT_TITLE.ADD_CREDITS,
+            postCodeList: userLead?.postCodeTargettingList,
+            topUpAmount: credits,
+          };
+          await eventsWebhook(paramsToSend)
+            .then(() =>
+              console.log(
+                "event webhook for add credits hits successfully.",
+                paramsToSend
+              )
+            )
+            .catch((err) =>
+              console.log(
+                "error while triggering webhooks for add credits failed",
+                paramsToSend
+              )
+            );
         });
-        // } else {
-        //   return res.json({
-        //     data: {
-        //       message: "Credits remains the same",
-        //     },
-        //   });
-        // }
 
         return res.json({
           data: { message: "Credits Adjusted" },
@@ -1735,6 +1899,57 @@ export class UsersControllers {
         pausedClients: paused,
       };
       return res.json({ data: dataToShow });
+    } catch (err) {
+      return res.status(500).json({
+        error: {
+          message: "something went wrong",
+          err,
+        },
+      });
+    }
+  };
+
+  static sendTestLeadData = async (req: any, res: Response) => {
+    try {
+      const { id } = req.params;
+      const input = req.body;
+      const checkUser = (await User.findById(id)) ?? ({} as UserInterface);
+      if (!checkUser.userLeadsDetailsId) {
+        return res
+          .status(404)
+          .json({ error: { message: "lead details not found" } });
+      }
+      const industry = await BuisnessIndustries.findById(
+        checkUser.businessIndustryId
+      );
+      const columns = industry?.columns;
+
+      const result: { [key: string]: string } = {};
+      if (columns) {
+        for (const item of columns) {
+          if (item.isVisible === true) {
+            //@ts-ignore
+            result[item.originalName] = item.displayName;
+          }
+        }
+      }
+      let message = "";
+      let response = {};
+      let status;
+      try {
+        await sendLeadDataToZap(input.zapierUrl, result);
+        message = "Test Lead Sent!";
+        response = { message: message };
+        status = 200;
+      } catch (err) {
+        message = "Error while sending Test Lead!";
+        status = 400;
+        response = message;
+      }
+
+      return res.status(status).json(response);
+
+      // return res.json({ data: { message: message } });
     } catch (err) {
       return res.status(500).json({
         error: {
@@ -1832,4 +2047,15 @@ function convertDataForDaysInMonth(data: any, labels: any, year: any) {
 
   // Create an object with labels and data properties
   return { labels, data: dataArr, years: years };
+}
+
+export function areAllPendingFieldsEmpty(
+  object: { key: string; pendingFields: string[]; dependencies: string[] }[]
+) {
+  for (const item of object) {
+    if (item.pendingFields && item.pendingFields.length > 0) {
+      return false;
+    }
+  }
+  return true;
 }

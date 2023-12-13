@@ -29,6 +29,11 @@ const UserSchema = new Schema(
       type: Number,
       required: false,
     },
+    isCommissionedUser: {
+      type: Boolean,
+      default: false,
+      // required: true,
+    },
     phoneNumber: {
       type: String,
       default: null,
@@ -202,6 +207,18 @@ const UserSchema = new Schema(
     },
     permissions: {
       type: Array,
+    },
+    showImpersonate: {
+      type: Boolean,
+      default: false,
+    },
+    isNewUser: {
+      type: Boolean,
+      default: false,
+    },
+    isAutoChargeEnabled: {
+      type: Boolean,
+      default: false,
     },
   },
   { timestamps: true }

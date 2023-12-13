@@ -8,9 +8,13 @@ import { validate } from "class-validator";
 import { ValidationErrorResponse } from "../../types/ValidationErrorResponse";
 import { LeadTablePreference } from "../Models/LeadTablePreference";
 import { BuisnessIndustriesInterface } from "../../types/BuisnessIndustriesInterface";
-import { columnsObjects } from "../../types/columnsInterface";
+// import { columnsObjects } from "../../types/columnsInterface";
 import { json } from "../../utils/constantFiles/businessIndustryJson";
+import { UserInterface } from "../../types/UserInterface";
+import mongoose from "mongoose";
 const LIMIT = 10;
+const ObjectId = mongoose.Types.ObjectId;
+
 export class IndustryController {
   static create = async (req: Request, res: Response) => {
     const input = req.body;
@@ -31,7 +35,7 @@ export class IndustryController {
         .json({ error: { message: "VALIDATIONS_ERROR", info: errorsInfo } });
     }
     let dataToSave: Partial<BuisnessIndustriesInterface> = {
-      industry: input.industry,
+      industry: input.industry.trim(),
       leadCost: input.leadCost,
       columns: order,
       json: json,
@@ -39,7 +43,7 @@ export class IndustryController {
 
     try {
       const exist = await BuisnessIndustries.find({
-        industry: input.industry,
+        industry: { $regex: input.industry.trim(), $options: "i" },
         isDeleted: false,
       });
       if (exist.length > 0) {
@@ -48,10 +52,7 @@ export class IndustryController {
           .json({ error: { message: "Business Industry should be unique." } });
       }
       const details = await BuisnessIndustries.create(dataToSave);
-      // await CustomColumnNames.create({
-      //   industryId: details.id,
-      //   columnsNames: array,
-      // });
+
       return res.json({ data: details });
     } catch (error) {
       return res
@@ -75,9 +76,6 @@ export class IndustryController {
           .status(404)
           .json({ error: { message: "Business Industry not found." } });
       }
-      updatedData?.columns.sort(
-        (a: columnsObjects, b: columnsObjects) => a.index - b.index
-      );
 
       if (input.leadCost) {
         await User.updateMany(
@@ -149,6 +147,7 @@ export class IndustryController {
 
   static view = async (req: Request, res: Response) => {
     try {
+      let user: Partial<UserInterface> = req.user ?? ({} as UserInterface);
       const sortField: any = req.query.sort || "industry"; // Change this field name as needed
 
       let sortOrder: any = req.query.order || 1; // Change this as needed
@@ -169,7 +168,7 @@ export class IndustryController {
       } else {
         sortOrder = -1;
       }
-      let dataToFind: any = {};
+      let dataToFind: any = { isDeleted: false };
       if (req.query.search) {
         dataToFind = {
           ...dataToFind,
@@ -178,6 +177,45 @@ export class IndustryController {
       }
       const sortObject: Record<string, 1 | -1> = {};
       sortObject[sortField] = sortOrder;
+      if (user.role === RolesEnum.ACCOUNT_MANAGER) {
+        const industries = await User.aggregate([
+          {
+            $match: {
+              accountManager: new ObjectId(user._id), // Replace with the actual Account Manager's ID
+            },
+          },
+          {
+            $lookup: {
+              from: "buisnessindustries",
+              localField: "businessIndustryId",
+              foreignField: "_id",
+              as: "industry",
+            },
+          },
+          {
+            $unwind: "$industry",
+          },
+          {
+            $group: {
+              _id: "$industry._id",
+              name: { $first: "$industry.industry" },
+            },
+          },
+          {
+            $project: {
+              _id: 0,
+              id: "$_id",
+              // name: 1,
+            },
+          },
+        ]);
+        let ids: any[] = [];
+        industries.map((id) => {
+          ids.push(id.id);
+        });
+        dataToFind._id = { $in: ids };
+      }
+
       let data = await BuisnessIndustries.find(dataToFind)
         .collation({ locale: "en" })
         .sort(sortObject)
@@ -186,9 +224,6 @@ export class IndustryController {
       const dataWithoutPagination = await BuisnessIndustries.find(dataToFind)
         .collation({ locale: "en" })
         .sort({ industry: 1 });
-      data.map((data) => {
-        data?.columns.sort((a: any, b: any) => a.index - b.index);
-      });
       const totalPages = Math.ceil(dataWithoutPagination.length / perPage);
 
       if (data && req.query.perPage) {
@@ -225,7 +260,6 @@ export class IndustryController {
           .status(404)
           .json({ error: { message: "Business Industry is deleted" } });
       }
-      data?.columns.sort((a: any, b: any) => a.index - b.index);
 
       return res.json({ data: data });
     } catch (error) {

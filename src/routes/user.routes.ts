@@ -92,7 +92,7 @@ user.get(
 
 user.get(
   "/export-csv-file",
-  OnlyAdmins,
+  Auth,
   checkPermissions([
     { module: MODULE.CLIENTS_CSV, permission: PERMISSIONS.READ },
   ]),
@@ -124,5 +124,7 @@ user.delete(
   ]),
   UsersControllers.destroy
 );
+
+user.post("/test-lead/:id", Auth, UsersControllers.sendTestLeadData);
 
 export default user;

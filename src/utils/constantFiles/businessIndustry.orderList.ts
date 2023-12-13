@@ -1,20 +1,27 @@
 export const order = [
   {
-    originalName: "firstname",
+    originalName: "received",
     isVisible: true,
     index: 0,
+    displayName: "Date",
+  },
+
+  {
+    originalName: "firstname",
+    isVisible: true,
+    index: 1,
     displayName: "First Name",
   },
   {
     originalName: "lastname",
     isVisible: true,
-    index: 1,
+    index: 2,
     displayName: "Last Name",
   },
   {
     originalName: "phone1",
     isVisible: true,
-    index: 2,
+    index: 4,
     displayName: "Phone Number",
   },
   {
@@ -22,12 +29,6 @@ export const order = [
     isVisible: true,
     index: 3,
     displayName: "Email",
-  },
-  {
-    originalName: "street1",
-    isVisible: true,
-    index: 4,
-    displayName: "Street Address",
   },
   {
     originalName: "postcode",
@@ -46,11 +47,5 @@ export const order = [
     isVisible: true,
     index: 7,
     displayName: "SID",
-  },
-  {
-    originalName: "recieved",
-    isVisible: true,
-    index: 8,
-    displayName: "Date",
   },
 ];

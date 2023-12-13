@@ -10,7 +10,7 @@ import { RolesEnum } from "../../types/RolesEnum";
 import { AdminSettingsInterface } from "../../types/AdminSettingInterface";
 import { ClientTablePreferenceInterface } from "../../types/clientTablePrefrenceInterface";
 import { UserInterface } from "../../types/UserInterface";
-import { columnsObjects } from "../../types/columnsInterface";
+// import { columnsObjects } from "../../types/columnsInterface";
 import mongoose from "mongoose";
 import { Permissions } from "../Models/Permission";
 import { PlanPackages } from "../Models/PlanPackages";
@@ -136,9 +136,7 @@ export class AdminSettingsController {
         userId: user.id,
       });
       if (!checkExist) {
-        const columns = input?.columns.sort(
-          (a: columnsObjects, b: columnsObjects) => a.index - b.index
-        );
+        const columns = input?.columns;
         let dataToSave: Partial<ClientTablePreferenceInterface> =
           {
             columns,
@@ -152,9 +150,7 @@ export class AdminSettingsController {
           { columns: input.columns, userId: user?._id },
           { new: true }
         ).lean();
-        const col = data?.columns.sort(
-          (a: columnsObjects, b: columnsObjects) => a.index - b.index
-        );
+        const col = data?.columns;
         return res.json({ data: { ...data, columns: col } });
       }
     } catch (error) {
@@ -176,13 +172,9 @@ export class AdminSettingsController {
         userId: user?.id,
       });
       if (Preference) {
-        Preference?.columns.sort(
-          (a: columnsObjects, b: columnsObjects) => a.index - b.index
-        );
         return res.json({ data: Preference });
       } else {
         const data = clientTablePreference;
-        data?.sort((a: columnsObjects, b: columnsObjects) => a.index - b.index);
         return res.json({ data: { columns: data } });
       }
     } catch (error) {
@@ -209,7 +201,6 @@ export class AdminSettingsController {
         dataToFind.notificationType = req.query.notificationType;
       }
       if (req.query.userId) {
-        // dataToFind.userId = new ObjectID(req.query.userId);
         dataToFind.userId = req.query.userId;
       }
 

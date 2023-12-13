@@ -9,6 +9,7 @@ export interface UserInterface extends Document {
   businessIndustryId: Types.ObjectId;
   firstName: string;
   lastName: string;
+  isCommissionedUser: boolean;
   email: string;
   password: string;
   role: RolesEnum;
@@ -60,4 +61,7 @@ export interface UserInterface extends Document {
   }>;
   isStripeCustomer: boolean;
   stripeClientId: string;
+  showImpersonate: boolean;
+  isNewUser: boolean;
+  isAutoChargeEnabled: boolean;
 }
