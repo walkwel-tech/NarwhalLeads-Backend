@@ -11,7 +11,6 @@
     "start": "node ./dist",
     "test": "ts-node-dev --respawn --rs --transpile-only ./public/map/script.ts"
   },
-
   "author": "",
   "license": "ISC",
   "dependencies": {
