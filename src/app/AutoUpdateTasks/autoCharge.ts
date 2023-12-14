@@ -2,7 +2,6 @@ import moment from "moment-timezone";
 import { paymentMethodEnum } from "../../utils/Enums/payment.method.enum";
 import { addCreditsToBuyer } from "../../utils/payment/addBuyerCredit";
 import { generatePDF } from "../../utils/XeroApiIntegration/generatePDF";
-import { sendEmailForAutocharge } from "../Middlewares/mail";
 import { AdminSettings } from "../Models/AdminSettings";
 import { CardDetails } from "../Models/CardDetails";
 import { Invoice } from "../Models/Invoice";
@@ -54,7 +53,7 @@ interface FindOptions {
 }
 export const autoChargePayment = async () => {
   cron.schedule("0 */4 * * *", async () => {
-  // cron.schedule("0 0 * * *", async () => {
+    // cron.schedule("0 0 * * *", async () => {
     // cron.schedule("* * * * *", async () => {
     console.log("CRON Job Start", new Date());
     try {
@@ -71,7 +70,7 @@ export const autoChargePayment = async () => {
           await AutoUpdatedTasksLogs.findByIdAndUpdate(logs.id, {
             statusCode: 200,
           });
-          return autoTopUp(user, paymentMethod);
+          return await autoTopUp(user, paymentMethod);
         } else {
           console.log("payment method not found");
           await AutoUpdatedTasksLogs.findByIdAndUpdate(logs.id, {
@@ -382,27 +381,7 @@ export const autoTopUp = async (
     // currency: user?.currency,
   };
   const success: any = await chargeUser(params);
-  if (success) {
-    const cardExist = await CardDetails.findOne({
-      paymentMethod: success.payment_method,
-      isDeleted: false,
-    });
-    const text = {
-      firstName: user.firstName,
-      lastName: user.lastName,
-      //@ts-ignore
-      businessName: user.businessDetailsId?.businessName,
-      //@ts-ignore
-      phone: user.businessDetailsId?.businessSalesNumber,
-      email: user.email,
-      credits: user.credits,
-      amount: user?.autoChargeAmount,
-      cardNumberEnd: cardExist?.cardNumber?.substr(-4),
-      cardHolderName: cardExist?.cardHolderName,
-    };
-    sendEmailForAutocharge(user.email, text);
-  } else {
-  }
+
   return success;
 };
 
