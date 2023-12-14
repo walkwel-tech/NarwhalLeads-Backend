@@ -45,9 +45,14 @@ import { columnsObjects } from "../../types/columnsInterface";
 import { leadReportAcceptedWebhook } from "../../utils/webhookUrls/leadReportedAcceptedWebhook";
 import { getLeadCenterToken } from "../../utils/Functions/getLeadCenterToken";
 
-import { eventsWebhook } from "../../utils/webhookUrls/eventExpansionWebhook";
+import {
+  PostcodeWebhookParams,
+  eventsWebhook,
+} from "../../utils/webhookUrls/eventExpansionWebhook";
 import { EVENT_TITLE } from "../../utils/constantFiles/events";
 import { flattenPostalCodes } from "../../utils/Functions/flattenPostcodes";
+import { POSTCODE_TYPE } from "../../utils/Enums/postcode.enum";
+import { ONBOARDING_PERCENTAGE } from "../../utils/constantFiles/OnBoarding.keys";
 
 const ObjectId = mongoose.Types.ObjectId;
 
@@ -180,17 +185,27 @@ export class LeadsController {
         },
         { new: true }
       )) ?? ({} as UserInterface);
-    if (userf?.credits === 0 || userf?.credits < parseInt(userf?.leadCost)) {
-      const paramsToSend = {
+    if (
+      (userf?.credits === 0 || userf?.credits < parseInt(userf?.leadCost)) &&
+      user?.onBoardingPercentage === ONBOARDING_PERCENTAGE.CARD_DETAILS
+    ) {
+      let paramsToSend: PostcodeWebhookParams = {
         userId: user._id,
         buyerId: user.buyerId,
-        buisnessName: user.businessDetailsId.businessName,
+        businessName: user.businessDetailsId.businessName,
         eventCode: EVENT_TITLE.ZERO_CREDITS,
-        postCodeList: flattenPostalCodes(
-          user.userLeadsDetailsId?.postCodeTargettingList
-        ),
         remainingCredits: userf?.credits,
       };
+      if (user.userLeadsDetailsId.type === POSTCODE_TYPE.RADIUS) {
+        (paramsToSend.type = POSTCODE_TYPE.RADIUS),
+          (paramsToSend.postcode = user.userLeadsDetailsId.postcode),
+          (paramsToSend.miles = user.userLeadsDetailsId?.miles);
+      } else {
+        paramsToSend.postCodeList = flattenPostalCodes(
+          user.userLeadsDetailsId?.postCodeTargettingList
+        );
+      }
+
       await eventsWebhook(paramsToSend)
         .then(() =>
           console.log(

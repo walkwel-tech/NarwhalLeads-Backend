@@ -2,9 +2,27 @@ import axios from "axios";
 import { checkAccess } from "../../app/Middlewares/serverAccess";
 import { EVENT_TITLE, EVENT_TYPE } from "../constantFiles/events";
 import { saveEventLogs } from "../Functions/saveLogs";
+import { Types } from "mongoose";
+import { County } from "../Functions/flattenPostcodes";
 
 const POST = "post";
 
+export interface PostcodeWebhookParams {
+  userId: Types.ObjectId;
+  buyerId?: string;
+  bid?: string;
+  businessName: string | undefined;
+  eventCode: string;
+  topUpAmount?: string | number;
+  type?: string;
+  postCodeList?: County[];
+  miles?: string;
+  postcode?: string;
+  remainingCredits?: string | number;
+  businessSalesNumber?: string;
+  leadSchedule?: string[];
+  dailyLeadCap?: string | number;
+}
 export const eventsWebhook = (data: any) => {
   return new Promise((resolve, reject) => {
     let config = {

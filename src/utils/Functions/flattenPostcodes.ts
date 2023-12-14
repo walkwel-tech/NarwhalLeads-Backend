@@ -1,4 +1,4 @@
-interface County {
+export interface County {
   county: string;
   postalCode: string[];
   key: string;

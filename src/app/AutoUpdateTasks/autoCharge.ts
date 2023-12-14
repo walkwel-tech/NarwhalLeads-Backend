@@ -27,6 +27,7 @@ import { IntentInterface } from "../../utils/payment/stripe/paymentIntent";
 import { Types } from "mongoose";
 import { AUTO_UPDATED_TASKS } from "../../utils/Enums/autoUpdatedTasks.enum";
 import { AutoUpdatedTasksLogs } from "../Models/AutoChargeLogs";
+import { CARD } from "../../utils/Enums/cardType.enum";
 
 interface paymentParams {
   fixedAmount: number;
@@ -54,6 +55,7 @@ interface FindOptions {
 }
 export const autoChargePayment = async () => {
   cron.schedule("0 */4 * * *", async () => {
+    // cron.schedule("0 0 * * *", async () => {
     // cron.schedule("* * * * *", async () => {
     console.log("CRON Job Start", new Date());
     try {
@@ -67,19 +69,15 @@ export const autoChargePayment = async () => {
         let logs = await AutoUpdatedTasksLogs.create(dataToSave);
         const paymentMethod = await getUserPaymentMethods(user.id);
         if (paymentMethod) {
-          await AutoUpdatedTasksLogs.findByIdAndUpdate(
-            logs._id,
-            {
-              statusCode: "200",
-            },
-            { new: true }
-          );
+          await AutoUpdatedTasksLogs.findByIdAndUpdate(logs.id, {
+            statusCode: 200,
+          });
           return autoTopUp(user, paymentMethod);
         } else {
           console.log("payment method not found");
-          await AutoUpdatedTasksLogs.findByIdAndUpdate(logs._id, {
+          await AutoUpdatedTasksLogs.findByIdAndUpdate(logs.id, {
             notes: "payment method not found",
-            statusCode: "400",
+            statusCode: 400,
           });
         }
       }
@@ -262,6 +260,7 @@ export const getUsersWithAutoChargeEnabled = async (id?: Types.ObjectId) => {
       paymentMethod: paymentMethodEnum.AUTOCHARGE_METHOD,
       isDeleted: false,
       isAutoChargeEnabled: true,
+      // email: "helin@ex.com",
     };
   } else {
     dataToFind = { _id: id, isDeleted: false };
@@ -284,16 +283,34 @@ export const getUserPaymentMethods = async (id: string) => {
 
 export const chargeUser = async (params: IntentInterface) => {
   return new Promise((resolve, reject) => {
-    createPaymentOnStrip(params)
+    createPaymentOnStrip(params, true)
       .then(async (_res: any) => {
-        console.log(
-          "payment initiated!",
-          new Date(),
-          {
-            stripeUser: params.customer,
-          },
-          _res
-        );
+        console.log("payment initiated!", new Date(), {
+          stripeUser: params.customer,
+        });
+        if (_res.status === PAYMENT_STATUS.REQUIRES_ACTION) {
+          const user: UserInterface =
+            (await User.findOne({ email: params.email })) ??
+            ({} as UserInterface);
+          const cards: CardDetailsInterface =
+            (await CardDetails.findOne({
+              userId: user.id,
+              isDeleted: false,
+              isDefault: true,
+            })) ?? ({} as CardDetailsInterface);
+          const dataToSave = {
+            userId: user.id,
+            cardId: cards.id,
+            amount: params.amount,
+            status: PAYMENT_STATUS.REQUIRES_ACTION,
+            title: transactionTitle.CREDITS_ADDED,
+            paymentSessionId: _res.id,
+            paymentType: PAYMENT_TYPE_ENUM.AUTO_CHARGE,
+            notes: _res.client_secret,
+            transactionType: CARD.STRIPE,
+          };
+          await Transaction.create(dataToSave);
+        }
         resolve(_res);
       })
       .catch(async (err) => {

@@ -49,6 +49,8 @@ import { getAccountManagerForRoundManager } from "../../utils/Functions/getAccou
 import { DEFAULT } from "../../utils/constantFiles/user.default.values";
 import { reCaptchaValidation } from "../../utils/Functions/reCaptcha";
 import { UpdatePasswordInput } from "../Inputs/ClientPassword.input";
+import { Transaction } from "../Models/Transaction";
+import { PAYMENT_STATUS } from "../../utils/Enums/payment.status";
 class AuthController {
   static register = async (req: Request, res: Response): Promise<any> => {
     const input = req.body;
@@ -165,7 +167,7 @@ class AuthController {
                 pendingFields: [
                   LEAD_DETAILS.DAILY,
                   LEAD_DETAILS.LEAD_SCHEDULE,
-                  LEAD_DETAILS.POSTCODE_TARGETTING_LIST,
+                  // LEAD_DETAILS.POSTCODE_TARGETTING_LIST,
                 ],
                 dependencies: [BUSINESS_DETAILS.BUSINESS_INDUSTRY],
               },
@@ -759,13 +761,33 @@ class AuthController {
   static me = async (req: Request, res: Response): Promise<any> => {
     const user: Partial<UserInterface> = req.user ?? ({} as UserInterface);
     try {
-      const exists = await User.findById(user?.id, "-password")
-        .populate("businessDetailsId")
-        .populate("userLeadsDetailsId")
-        // .populate("invitedById")
-        .populate("userServiceId");
+      let exists: Partial<UserInterface> & {
+        pendingTransaction?: string | undefined;
+      } =
+        (await User.findById(user?.id, "-password")
+          .populate("businessDetailsId")
+          .populate("userLeadsDetailsId")
+          // .populate("invitedById")
+          .populate("userServiceId")) ?? ({} as UserInterface);
+      const currentDateTime = new Date();
+      currentDateTime.setHours(currentDateTime.getHours() - 4);
+      const pendingTransactions = await Transaction.findOne({
+        userId: user.id,
+        status: PAYMENT_STATUS.REQUIRES_ACTION,
+        createdAt: { $gte: currentDateTime, $lte: new Date() },
+      }).sort({ createdAt: -1 });
+      const isPendingTransactionCapture = await Transaction.findOne({
+        paymentSessionId: pendingTransactions?.paymentSessionId,
+        status: PAYMENT_STATUS.CAPTURED,
+      });
+      if (!isPendingTransactionCapture) {
+        exists.pendingTransaction = pendingTransactions?.notes;
+      }
+
       if (exists) {
-        return res.json({ data: exists });
+        return res.json({
+          data: exists,
+        });
       }
 
       return res.json({ data: "User not exists" });

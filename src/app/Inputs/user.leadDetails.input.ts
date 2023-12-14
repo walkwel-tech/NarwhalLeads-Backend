@@ -12,7 +12,7 @@ export class UserLeadDetailsInput {
   @IsArray({ message: "leadSchedule is required." })
   leadSchedule: [];
 
-  @IsNotEmpty()
-  @IsArray({ message: "postCodeTargettingList is required." })
-  postCodeTargettingList: [];
+  // @IsNotEmpty()
+  // @IsArray({ message: "postCodeTargettingList is required." })
+  // postCodeTargettingList: [];
 }

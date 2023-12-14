@@ -16,6 +16,9 @@ export interface UserLeadsDetailsInterface extends Document {
   isDeleted: boolean;
   deletedAt: Date;
   dailyLeadCost: number;
+  miles: string;
+  postcode: string;
+  type: string;
 }
 
 export function isUserLeadDetailsObject(

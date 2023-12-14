@@ -38,9 +38,9 @@ const UserLeadsDetailsSchema = new Schema(
       type: String,
       default: "",
     },
-    sendDataToZapier: { 
-      type: Boolean ,
-      default:false,
+    sendDataToZapier: {
+      type: Boolean,
+      default: false,
     },
     postCodeTargettingList: {
       type: Array,
@@ -52,7 +52,19 @@ const UserLeadsDetailsSchema = new Schema(
     deletedAt: {
       type: Date,
       default: null,
-    }
+    },
+    miles: {
+      type: String,
+      default: "",
+    },
+    postcode: {
+      type: String,
+      default: "",
+    },
+    type: {
+      type: String,
+      default: "",
+    },
   },
 
   { timestamps: true }
