@@ -48,7 +48,10 @@ import {
   isBusinessObject,
 } from "../../types/BusinessInterface";
 import { UserLeadsDetailsInterface } from "../../types/LeadDetailsInterface";
-import { eventsWebhook } from "../../utils/webhookUrls/eventExpansionWebhook";
+import {
+  PostcodeWebhookParams,
+  eventsWebhook,
+} from "../../utils/webhookUrls/eventExpansionWebhook";
 import { EVENT_TITLE } from "../../utils/constantFiles/events";
 import { flattenPostalCodes } from "../../utils/Functions/flattenPostcodes";
 import {
@@ -58,6 +61,8 @@ import {
 } from "../AutoUpdateTasks/autoCharge";
 import { AUTO_UPDATED_TASKS } from "../../utils/Enums/autoUpdatedTasks.enum";
 import { AutoUpdatedTasksLogs } from "../Models/AutoChargeLogs";
+import { POSTCODE_TYPE } from "../../utils/Enums/postcode.enum";
+import { arraysAreEqual } from "../../utils/Functions/postCodeMatch";
 
 const ObjectId = mongoose.Types.ObjectId;
 
@@ -636,8 +641,9 @@ export class UsersControllers {
     const { id } = req.params;
     const input = req.body;
     const checkUser =
-      (await User.findById(id).populate("businessDetailsId")) ??
-      ({} as UserInterface);
+      (await User.findById(id)
+        .populate("businessDetailsId")
+        .populate("userLeadsDetailsId")) ?? ({} as UserInterface);
     if (input.password) {
       delete input.password;
     }
@@ -837,7 +843,10 @@ export class UsersControllers {
           { new: true }
         );
       }
-      if (input.businessSalesNumber) {
+      if (
+        input.businessSalesNumber &&
+        checkUser?.onBoardingPercentage === ONBOARDING_PERCENTAGE.CARD_DETAILS
+      ) {
         if (!checkUser.businessDetailsId) {
           return res
             .status(404)
@@ -850,9 +859,9 @@ export class UsersControllers {
 
           { new: true }
         );
-        let reqBody = {
-          userId: user?._id,
-          bid: user?.buyerId,
+        let reqBody: PostcodeWebhookParams = {
+          userId: checkUser?._id,
+          bid: checkUser?.buyerId,
           businessName: details?.businessName,
           businessSalesNumber: input.businessSalesNumber,
           eventCode: EVENT_TITLE.BUSINESS_PHONE_NUMBER,
@@ -982,6 +991,10 @@ export class UsersControllers {
             .status(404)
             .json({ error: { message: "lead details not found" } });
         }
+        const userBeforeMod =
+          (await UserLeadsDetails.findById(checkUser?.userLeadsDetailsId)) ??
+          ({} as UserLeadsDetailsInterface);
+
         const userAfterMod =
           (await UserLeadsDetails.findByIdAndUpdate(
             checkUser?.userLeadsDetailsId,
@@ -992,30 +1005,42 @@ export class UsersControllers {
         const business = await BusinessDetails.findById(
           checkUser.businessDetailsId
         );
-        const paramsToSend = {
-          userId: checkUser?._id,
-          buyerId: checkUser?.buyerId,
-          buisnessName: business?.businessName,
-          eventCode: EVENT_TITLE.LEAD_SCHEDULE_UPDATE,
-          postCodeList: flattenPostalCodes(
-            userAfterMod?.postCodeTargettingList
-          ),
-          leadSchedule: userAfterMod?.leadSchedule,
-        };
-        await eventsWebhook(paramsToSend)
-          .then(() =>
-            console.log(
-              "event webhook for postcode updates hits successfully.",
-              paramsToSend
+
+        if (
+          !arraysAreEqual(input.leadSchedule, userBeforeMod?.leadSchedule) &&
+          user?.onBoardingPercentage === ONBOARDING_PERCENTAGE.CARD_DETAILS
+        ) {
+          let paramsToSend: PostcodeWebhookParams = {
+            userId: checkUser?._id,
+            buyerId: checkUser?.buyerId,
+            businessName: business?.businessName,
+            eventCode: EVENT_TITLE.LEAD_SCHEDULE_UPDATE,
+            leadSchedule: userAfterMod?.leadSchedule,
+          };
+          if (userAfterMod.type === POSTCODE_TYPE.RADIUS) {
+            (paramsToSend.type = POSTCODE_TYPE.RADIUS),
+              (paramsToSend.postcode = userAfterMod.postcode),
+              (paramsToSend.miles = userAfterMod?.miles);
+          } else {
+            paramsToSend.postCodeList = flattenPostalCodes(
+              userAfterMod?.postCodeTargettingList
+            );
+          }
+          await eventsWebhook(paramsToSend)
+            .then(() =>
+              console.log(
+                "event webhook for postcode updates hits successfully.",
+                paramsToSend
+              )
             )
-          )
-          .catch((err) =>
-            console.log(
-              err,
-              "error while triggering postcode updates webhooks failed",
-              paramsToSend
-            )
-          );
+            .catch((err) =>
+              console.log(
+                err,
+                "error while triggering postcode updates webhooks failed",
+                paramsToSend
+              )
+            );
+        }
       }
       if (input.postCodeTargettingList) {
         if (!checkUser.userLeadsDetailsId) {
@@ -1082,6 +1107,9 @@ export class UsersControllers {
         const business = await BusinessDetails.findById(
           checkUser.businessDetailsId
         );
+        const userBeforeMod =
+          (await UserLeadsDetails.findById(checkUser?.userLeadsDetailsId)) ??
+          ({} as UserLeadsDetailsInterface);
         const userAfterMod =
           (await UserLeadsDetails.findByIdAndUpdate(
             checkUser?.userLeadsDetailsId,
@@ -1089,30 +1117,43 @@ export class UsersControllers {
 
             { new: true }
           )) ?? ({} as UserLeadsDetailsInterface);
-        const paramsToSend = {
-          userId: checkUser?._id,
-          buyerId: checkUser?.buyerId,
-          buisnessName: business?.businessName,
-          eventCode: EVENT_TITLE.DAILY_LEAD_CAP,
-          postCodeList: flattenPostalCodes(
-            userAfterMod?.postCodeTargettingList
-          ),
-          dailyLeadCap: userAfterMod?.daily,
-        };
-        await eventsWebhook(paramsToSend)
-          .then(() =>
-            console.log(
-              "event webhook for postcode updates hits successfully.",
-              paramsToSend
+        if (
+          input.daily != userBeforeMod?.daily &&
+          user?.onBoardingPercentage === ONBOARDING_PERCENTAGE.CARD_DETAILS
+        ) {
+          let paramsToSend: PostcodeWebhookParams = {
+            userId: checkUser?._id,
+            buyerId: checkUser?.buyerId,
+            businessName: business?.businessName,
+            eventCode: EVENT_TITLE.DAILY_LEAD_CAP,
+
+            dailyLeadCap: userAfterMod?.daily,
+          };
+          if (userAfterMod.type === POSTCODE_TYPE.RADIUS) {
+            (paramsToSend.type = POSTCODE_TYPE.RADIUS),
+              (paramsToSend.postcode = userAfterMod.postcode),
+              (paramsToSend.miles = userAfterMod?.miles);
+          } else {
+            paramsToSend.postCodeList = flattenPostalCodes(
+              userAfterMod?.postCodeTargettingList
+            );
+          }
+
+          await eventsWebhook(paramsToSend)
+            .then(() =>
+              console.log(
+                "event webhook for postcode updates hits successfully.",
+                paramsToSend
+              )
             )
-          )
-          .catch((err) =>
-            console.log(
-              err,
-              "error while triggering postcode updates webhooks failed",
-              paramsToSend
-            )
-          );
+            .catch((err) =>
+              console.log(
+                err,
+                "error while triggering postcode updates webhooks failed",
+                paramsToSend
+              )
+            );
+        }
       }
       if (
         input.credits &&
@@ -1920,14 +1961,22 @@ export class UsersControllers {
               user?.userLeadsDetailsId,
               "postCodeTargettingList"
             )) ?? ({} as UserLeadsDetailsInterface);
-          const paramsToSend = {
+          let paramsToSend: PostcodeWebhookParams = {
             userId: user._id,
             buyerId: user.buyerId,
-            buisnessName: userBusiness?.businessName,
+            businessName: userBusiness?.businessName,
             eventCode: EVENT_TITLE.ADD_CREDITS,
-            postCodeList: flattenPostalCodes(userLead?.postCodeTargettingList),
             topUpAmount: credits,
           };
+          if (userLead.type === POSTCODE_TYPE.RADIUS) {
+            (paramsToSend.type = POSTCODE_TYPE.RADIUS),
+              (paramsToSend.postcode = userLead.postcode),
+              (paramsToSend.miles = userLead?.miles);
+          } else {
+            paramsToSend.postCodeList = flattenPostalCodes(
+              userLead?.postCodeTargettingList
+            );
+          }
           await eventsWebhook(paramsToSend)
             .then(() =>
               console.log(

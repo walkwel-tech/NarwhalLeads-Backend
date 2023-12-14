@@ -328,7 +328,10 @@ export class BusinessDetailsController {
       const details =
         (await BusinessDetails.findOne({ _id: new ObjectId(id) })) ??
         ({} as BusinessDetailsInterface);
-      if (input.businessSalesNumber) {
+      if (
+        input.businessSalesNumber &&
+        user?.onBoardingPercentage === ONBOARDING_PERCENTAGE.CARD_DETAILS
+      ) {
         await BusinessDetails.findByIdAndUpdate(
           id,
           { businessSalesNumber: input.businessSalesNumber },

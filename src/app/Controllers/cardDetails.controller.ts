@@ -79,7 +79,10 @@ import { createCustomerOnStripe } from "../../utils/createCustomer/createOnStrip
 import { getPaymentStatus } from "../../utils/payment/stripe/retrievePaymentStatus";
 import { AMOUNT } from "../../utils/constantFiles/stripeConstants";
 import { cmsUpdateBuyerWebhook } from "../../utils/webhookUrls/cmsUpdateBuyerWebhook";
-import { eventsWebhook } from "../../utils/webhookUrls/eventExpansionWebhook";
+import {
+  PostcodeWebhookParams,
+  eventsWebhook,
+} from "../../utils/webhookUrls/eventExpansionWebhook";
 
 import { EVENT_TITLE } from "../../utils/constantFiles/events";
 import {
@@ -88,6 +91,7 @@ import {
 } from "../../utils/constantFiles/currencyConstants";
 import { flattenPostalCodes } from "../../utils/Functions/flattenPostcodes";
 import { UserLeadsDetailsInterface } from "../../types/LeadDetailsInterface";
+import { POSTCODE_TYPE } from "../../utils/Enums/postcode.enum";
 const ObjectId = mongoose.Types.ObjectId;
 
 export class CardDetailsControllers {
@@ -646,7 +650,7 @@ export class CardDetailsControllers {
           paymentMethod: card?.paymentMethod,
           currency: user.currency,
         };
-        createPaymentOnStrip(params)
+        createPaymentOnStrip(params, false)
           .then(async (_res: any) => {
             console.log("payment initiated!");
             if (!user?.xeroContactId) {
@@ -1275,16 +1279,23 @@ export class CardDetailsControllers {
                   userId?.userLeadsDetailsId,
                   "postCodeTargettingList"
                 )) ?? ({} as UserLeadsDetailsInterface);
-              const paramsToSend = {
+              let paramsToSend: PostcodeWebhookParams = {
                 userId: userId._id,
                 buyerId: userId.buyerId,
-                buisnessName: userBusiness?.businessName,
+                businessName: userBusiness?.businessName,
                 eventCode: EVENT_TITLE.ADD_CREDITS,
-                postCodeList: flattenPostalCodes(
-                  userLead?.postCodeTargettingList
-                ),
                 topUpAmount: originalAmount,
+                type: POSTCODE_TYPE.MAP,
               };
+              if (userLead.type === POSTCODE_TYPE.RADIUS) {
+                (paramsToSend.type = POSTCODE_TYPE.RADIUS),
+                  (paramsToSend.postcode = userLead.postcode),
+                  (paramsToSend.miles = userLead?.miles);
+              } else {
+                paramsToSend.postCodeList = flattenPostalCodes(
+                  userLead?.postCodeTargettingList
+                );
+              }
 
               await eventsWebhook(paramsToSend)
                 .then(() =>
@@ -1629,7 +1640,7 @@ async function checkUserUsedPromoCode(
 ) {
   const user = (await User.findById(userId)) ?? ({} as UserInterface);
   const promoLink = await FreeCreditsLink.findById(promoLinkId);
-  const isFreeCredited = isUserFreeCredited(userId);
+  const isFreeCredited = await isUserFreeCredited(userId);
   let freeCredits;
   if (
     promoLink &&
