@@ -24,7 +24,7 @@ export class DashboardController {
 
     return inputDate;
   }
-
+// due to complex aggregation and bugs i want this commented code.
   static formulateComissionQuery({
     accountManagerId,
     industry,
@@ -32,7 +32,7 @@ export class DashboardController {
     commissionStatus,
   }: IQueryFormulater): PipelineStage[] {
     const pipeline: PipelineStage[] = [
-      { $match: { role: RolesEnum.ACCOUNT_MANAGER } },
+      { $match: { role: RolesEnum.ACCOUNT_MANAGER, isDeleted: false, isActive: true } },
       ...(accountManagerId?.length
         ? [
             {
@@ -84,74 +84,83 @@ export class DashboardController {
         : []),
       ...(timePeriod && Object.keys(timePeriod).length
         ? [
-            {
-              $lookup: {
-                from: "transactions",
-                localField: "associatedUsers._id",
-                foreignField: "userId",
-                as: "transactions",
+          {
+            $lookup: {
+              from: "transactions",
+              localField: "associatedUsers._id",
+              foreignField: "userId",
+              as: "transactions"
+            }
+          },
+          {
+            $addFields: {
+              activeClient: {
+                $sum: {
+                  $cond: {
+                    if: {
+                      $gte: [{
+                        $size: {
+                          $filter: {
+                            input: "$transactions",
+                            as: "transaction",
+                            cond: {
+                              $and: [
+                                { $gte: ["$$transaction.createdAt", this.getThirtyDayAgo(timePeriod.startDate)] },
+                                { $lte: ["$$transaction.createdAt", new Date(timePeriod.endDate)] },
+                                { $eq: ["$$transaction.status", "success"] },
+                                { $ne: ["$$transaction.amount", 0] }
+                              ]
+                            }
+                          }
+                        }
+                      }, 1]
+                    }, then: 1, else: 0
+                  }
+                }
               },
-            },
-            {
-              $addFields: {
-                activeClient: {
-                  $sum: {
-                    $cond: {
-                      if: {
-                        $gte: [
-                          {
-                            $size: {
-                              $filter: {
-                                input: "$transactions",
-                                as: "transaction",
-                                cond: {
-                                  $and: [
-                                    {
-                                      $gte: [
-                                        "$$transaction.createdAt",
-                                        this.getThirtyDayAgo(
-                                          timePeriod.startDate
-                                        ),
-                                      ],
-                                    },
-                                    {
-                                      $lte: [
-                                        "$$transaction.createdAt",
-                                        new Date(timePeriod.endDate),
-                                      ],
-                                    },
-                                    {
-                                      $eq: ["$$transaction.status", "success"],
-                                    },
-                                  ],
-                                },
-                              },
-                            },
-                          },
-                          1,
-                        ],
-                      },
-                      then: 1,
-                      else: 0,
-                    },
-                  },
-                },
+              transactionSum: {
+                $reduce: {
+                  input: "$transactions",
+                  initialValue: 0,
+                  in: {
+                    $sum: {
+                      $cond: {
+                        if: {
+                          $and: [
+                            { $gte: ["$$this.createdAt", this.getThirtyDayAgo(timePeriod.startDate)] },
+                            { $lte: ["$$this.createdAt", new Date(timePeriod.endDate)] },
+                            { $eq: ["$$this.status", "success"] }
+                          ]
+                        }, then: "$$this.amount", else: 0
+                      }
+                    }
+                  }
+                }
               },
-            },
-            // {
-            //   $match: {
-            //     transactions: {
-            //       $elemMatch: {
-            //         createdAt: {
-            //           $gte: this.getThirtyDayAgo(timePeriod.startDate),
-            //           $lte: new Date(timePeriod.endDate),
-            //         },
-            //         status: { $eq: "success" }
-            //       }
-            //     }
-            //   },
-            // },
-          ]
+              commissionTransactionSum: {
+                $reduce: {
+                  input: "$transactions",
+                  initialValue: 0,
+                  in: {
+                    $sum: {
+                      $cond: {
+                        if: {
+                          $and: [
+                            { $gte: ["$$this.createdAt", this.getThirtyDayAgo(timePeriod.startDate)] },
+                            { $lte: ["$$this.createdAt", new Date(timePeriod.endDate)] },
+                            { $eq: ["$$this.status", "success"] },
+                            { $eq: ["$associatedUsers.isCommissionedUser", true] }
+                          ]
+                        }, then: "$$this.amount", else: 0
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+
+        ]
         : []),
 
       {
@@ -200,21 +209,16 @@ export class DashboardController {
               },
             },
           },
-          // activeClient: {
-          //   $sum: {
-          //     $cond: { if: "$associatedUsers.isActive", then: 1, else: 0 },
-          //   },
-          // },
+
           topUpSum: {
-            $sum: "$associatedUsers.credits",
+            // $sum: "$associatedUsers.credits",
+            $sum: "$transactionSum"
           },
           comission: {
-            $sum: {
-              $multiply: [
-                "$associatedUsers.credits",
-                comissionPercentage / 100,
-              ],
-            },
+            // $sum: { $multiply: ["$associatedUsers.credits", comissionPercentage / 100] },
+            // $sum: { $multiply: ["$transactionSum", comissionPercentage / 100] },
+            $sum: { $multiply: ["$commissionTransactionSum", comissionPercentage / 100] },
+
           },
         },
       },
@@ -236,7 +240,7 @@ export class DashboardController {
     commissionStatus,
   }: IQueryFormulater): PipelineStage[] {
     const pipeline: PipelineStage[] = [
-      { $match: { role: { $in: [RolesEnum.USER, RolesEnum.NON_BILLABLE] } } },
+      { $match: { role: { $in: [RolesEnum.USER, RolesEnum.NON_BILLABLE] }, isDeleted: false } },
       ...(timePeriod && Object.keys(timePeriod).length
         ? [
             {
@@ -414,6 +418,7 @@ export class DashboardController {
         return res.json({ data });
       }
     } catch (err) {
+      console.log(err, ">>>>>>>>")
       return res
         .status(500)
         .json({ error: { message: "Something went wrong.", err } });
@@ -645,7 +650,7 @@ export class DashboardController {
       const { accountManagerId, timePeriod, commissionStatus } = queryParams;
       const pipeline: PipelineStage[] = [
         // { $match: { role: RolesEnum.USER } },
-        { $match: { role: { $in: [RolesEnum.USER, RolesEnum.NON_BILLABLE] } } },
+        { $match: { role: { $in: [RolesEnum.USER, RolesEnum.NON_BILLABLE] }, isDeleted: false } },
 
         ...(timePeriod && Object.keys(timePeriod).length
           ? [
