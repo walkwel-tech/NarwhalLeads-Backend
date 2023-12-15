@@ -1,4 +1,4 @@
-import { IsArray, IsBoolean, IsMongoId, IsNumber, IsOptional, IsString } from "class-validator";
+import { IsArray, IsBoolean, IsMongoId, IsOptional, IsString } from "class-validator";
 import { TimePeriod } from "./TimePeriod.input";
 
 export class QueryParams {
