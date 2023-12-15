@@ -240,7 +240,7 @@ export class DashboardController {
     commissionStatus,
   }: IQueryFormulater): PipelineStage[] {
     const pipeline: PipelineStage[] = [
-      { $match: { role: { $in: [RolesEnum.USER, RolesEnum.NON_BILLABLE] }, isDeleted: false } },
+      { $match: { role: { $in: [RolesEnum.USER, RolesEnum.NON_BILLABLE] }, isDeleted: false, isActive: true } },
       ...(timePeriod && Object.keys(timePeriod).length
         ? [
             {

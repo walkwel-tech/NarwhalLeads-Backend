@@ -67,6 +67,7 @@ export class nonBillableUsersController {
         ]);
         let accountManager = accManagers[0];
         const dataToSave = {
+          isNewUser: true,
           firstName: input.firstName,
           lastName: input.lastName,
           email: input.email,
