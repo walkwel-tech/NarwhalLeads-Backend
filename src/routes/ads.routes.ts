@@ -1,4 +1,5 @@
 import { Router } from "express";
+import { OnlyAdmins } from "../app/Middlewares";
 import { AdsController } from "../app/Controllers/ads.controller";
 import multer from "multer";
 import { FileEnum } from "../types/FileEnum";

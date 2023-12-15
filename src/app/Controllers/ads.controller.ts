@@ -208,7 +208,7 @@ export class AdsController {
     ): Promise<Response> => {
         try {
             const id = req.params.id
-            await Ad.findByIdAndUpdate(id, { isDeleted: true })
+            const ad = await Ad.findByIdAndUpdate(id, { isDeleted: true })
 
             return res.json({ message: "Ad deleted successfully" })
 
@@ -329,7 +329,7 @@ export class AdsController {
                 return res.status(400).json({ error: 'buisness industry not found' });
             }
             const ads = await Ad.aggregate([
-                { $match: { isDeleted: false } },
+                { $match: { isDeleted: false, isActive: true } },
                 {
                     $match: {
                         // businessIndustries: new Types.ObjectId(buisnessIndustryId)
