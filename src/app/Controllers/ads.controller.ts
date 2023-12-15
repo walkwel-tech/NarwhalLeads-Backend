@@ -208,7 +208,7 @@ export class AdsController {
     ): Promise<Response> => {
         try {
             const id = req.params.id
-            const ad = await Ad.findByIdAndUpdate(id, { isDeleted: true })
+            await Ad.findByIdAndUpdate(id, { isDeleted: true })
 
             return res.json({ message: "Ad deleted successfully" })
 
