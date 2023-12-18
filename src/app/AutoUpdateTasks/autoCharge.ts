@@ -2,7 +2,6 @@ import moment from "moment-timezone";
 import { paymentMethodEnum } from "../../utils/Enums/payment.method.enum";
 import { addCreditsToBuyer } from "../../utils/payment/addBuyerCredit";
 import { generatePDF } from "../../utils/XeroApiIntegration/generatePDF";
-import { sendEmailForAutocharge } from "../Middlewares/mail";
 import { AdminSettings } from "../Models/AdminSettings";
 import { CardDetails } from "../Models/CardDetails";
 import { Invoice } from "../Models/Invoice";
@@ -28,6 +27,11 @@ import { Types } from "mongoose";
 import { AUTO_UPDATED_TASKS } from "../../utils/Enums/autoUpdatedTasks.enum";
 import { AutoUpdatedTasksLogs } from "../Models/AutoChargeLogs";
 import { CARD } from "../../utils/Enums/cardType.enum";
+import { sendEmailForRequireActionAutocharge } from "../Middlewares/mail";
+import { BusinessDetails } from "../Models/BusinessDetails";
+import { CURRENCY } from "../../utils/Enums/currency.enum";
+import { CURRENCY_SIGN } from "../../utils/constantFiles/email.templateIDs";
+import { getOriginalAmountForStripe } from "../Controllers/cardDetails.controller";
 
 interface paymentParams {
   fixedAmount: number;
@@ -72,7 +76,7 @@ export const autoChargePayment = async () => {
           await AutoUpdatedTasksLogs.findByIdAndUpdate(logs.id, {
             statusCode: 200,
           });
-          return autoTopUp(user, paymentMethod);
+          return await autoTopUp(user, paymentMethod);
         } else {
           console.log("payment method not found");
           await AutoUpdatedTasksLogs.findByIdAndUpdate(logs.id, {
@@ -260,7 +264,6 @@ export const getUsersWithAutoChargeEnabled = async (id?: Types.ObjectId) => {
       paymentMethod: paymentMethodEnum.AUTOCHARGE_METHOD,
       isDeleted: false,
       isAutoChargeEnabled: true,
-      // email: "helin@ex.com",
     };
   } else {
     dataToFind = { _id: id, isDeleted: false };
@@ -310,6 +313,36 @@ export const chargeUser = async (params: IntentInterface) => {
             transactionType: CARD.STRIPE,
           };
           await Transaction.create(dataToSave);
+          const business = await BusinessDetails.findById(
+            user.businessDetailsId
+          );
+          let originalAmount = Math.ceil(
+            getOriginalAmountForStripe(params?.amount || 0, user.currency)
+          );
+
+          let message = {
+            firstName: user?.firstName,
+            lastName: user?.lastName,
+            //@ts-ignore
+            businessName: business?.businessName,
+            //@ts-ignore
+            phone: user?.phoneNumber,
+            email: user?.email,
+            credit: `${user?.credits}`,
+            paymentAmount: `${originalAmount}`,
+            cardNumberEnd: cards?.cardNumber,
+            cardHolderName: cards?.cardHolderName,
+            currency: CURRENCY_SIGN.GBP,
+            isIncVat: true,
+          };
+          if (user.currency === CURRENCY.DOLLER) {
+            message.currency = CURRENCY_SIGN.USD;
+          } else if (user.currency === CURRENCY.EURO) {
+            message.currency = CURRENCY_SIGN.EUR;
+            message.isIncVat = false;
+          }
+
+          sendEmailForRequireActionAutocharge(user.email, message);
         }
         resolve(_res);
       })
@@ -391,9 +424,8 @@ export const autoTopUp = async (
   user: UserInterface,
   paymentMethod: CardDetailsInterface
 ) => {
-  const params = {
-    amount:
-      (user?.autoChargeAmount + (user?.autoChargeAmount * VAT) / 100) * 100,
+  let params = {
+    amount: user.autoChargeAmount,
     email: user?.email,
     cardNumber: paymentMethod?.cardNumber,
     expiryMonth: paymentMethod?.expiryMonth,
@@ -406,28 +438,11 @@ export const autoTopUp = async (
     paymentMethod: paymentMethod?.paymentMethod,
     currency: user?.currency,
   };
-  const success: any = await chargeUser(params);
-  if (success) {
-    const cardExist = await CardDetails.findOne({
-      paymentMethod: success.payment_method,
-      isDeleted: false,
-    });
-    const text = {
-      firstName: user.firstName,
-      lastName: user.lastName,
-      //@ts-ignore
-      businessName: user.businessDetailsId?.businessName,
-      //@ts-ignore
-      phone: user.businessDetailsId?.businessSalesNumber,
-      email: user.email,
-      credits: user.credits,
-      amount: user?.autoChargeAmount,
-      cardNumberEnd: cardExist?.cardNumber?.substr(-4),
-      cardHolderName: cardExist?.cardHolderName,
-    };
-    sendEmailForAutocharge(user.email, text);
-  } else {
+  if (user.currency === CURRENCY.POUND || user.currency === CURRENCY.DOLLER) {
+    params.amount = user.autoChargeAmount + (user.autoChargeAmount * VAT) / 100;
   }
+  const success: any = await chargeUser(params);
+
   return success;
 };
 

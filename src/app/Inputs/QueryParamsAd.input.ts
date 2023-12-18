@@ -2,28 +2,27 @@ import { IsArray, IsBoolean, IsMongoId, IsOptional, IsString } from "class-valid
 import { TimePeriod } from "./TimePeriod.input";
 
 export class QueryParams {
-    @IsOptional()
-    liveBtw?: TimePeriod;
+  @IsOptional()
+  liveBtw?: TimePeriod;
 
-    @IsOptional()
-    @IsArray()
-    @IsMongoId({ each: true })
-    industry?: string[];
+  @IsOptional()
+  @IsArray()
+  @IsMongoId({ each: true })
+  industry?: string[];
 
-    @IsOptional()
-    @IsString()
-    search?: string;
+  @IsOptional()
+  @IsString()
+  search?: string;
 
-    @IsOptional()
-    @IsBoolean()
-    active?: string;
+  @IsOptional()
+  @IsBoolean()
+  active?: string;
 
-    @IsOptional()
-    // @IsNumber()
-    page?: number;
+  @IsOptional()
+  // @IsNumber()
+  page?: number;
 
-    @IsOptional()
-    // @IsNumber()
-    perPage?: number;
-
+  @IsOptional()
+  // @IsNumber()
+  perPage?: number;
 }

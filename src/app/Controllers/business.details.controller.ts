@@ -419,6 +419,8 @@ export class BusinessDetailsController {
         });
         await User.findByIdAndUpdate(userData?.id, {
           leadCost: industry?.leadCost,
+          currency: industry?.associatedCurrency,
+          country: industry?.country,
         });
         await LeadTablePreference.findOneAndUpdate(
           { userId: userData?.id },

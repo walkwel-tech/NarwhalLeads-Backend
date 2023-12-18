@@ -750,6 +750,31 @@ export class UsersControllers {
           });
         }
       }
+      let updatedUser;
+      if (input.secondaryCredits) {
+        updatedUser = await User.findByIdAndUpdate(
+          checkUser?.id,
+          {
+            secondaryCredits: input.secondaryCredits + user.secondaryCredits,
+            ...(user.leadCost &&
+            input.secondaryCredits + user.secondaryCredits > user.leadCost
+              ? { isSecondaryUsage: true }
+              : {}),
+          },
+          { new: true }
+        );
+      }
+      if (input.secondaryLeadCost) {
+        await User.findByIdAndUpdate(checkUser?.id, {
+          secondaryLeadCost: input.secondaryLeadCost,
+          ...(updatedUser &&
+          updatedUser.secondaryCredits > input.secondaryLeadCost
+            ? { isSecondaryUsage: true }
+            : checkUser.secondaryCredits > input.secondaryLeadCost
+            ? { isSecondaryUsage: true }
+            : {}),
+        });
+      }
 
       if (input.smsPhoneNumber) {
         const userExist = await User.findOne({

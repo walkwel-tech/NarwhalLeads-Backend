@@ -51,6 +51,7 @@ import { reCaptchaValidation } from "../../utils/Functions/reCaptcha";
 import { UpdatePasswordInput } from "../Inputs/ClientPassword.input";
 import { Transaction } from "../Models/Transaction";
 import { PAYMENT_STATUS } from "../../utils/Enums/payment.status";
+import { transactionTitle } from "../../utils/Enums/transaction.title.enum";
 class AuthController {
   static register = async (req: Request, res: Response): Promise<any> => {
     const input = req.body;
@@ -778,7 +779,8 @@ class AuthController {
       }).sort({ createdAt: -1 });
       const isPendingTransactionCapture = await Transaction.findOne({
         paymentSessionId: pendingTransactions?.paymentSessionId,
-        status: PAYMENT_STATUS.CAPTURED,
+        status: { $in: [PAYMENT_STATUS.CAPTURED, PAYMENT_STATUS.DECLINE] },
+        title: transactionTitle.CREDITS_ADDED,
       });
       if (!isPendingTransactionCapture) {
         exists.pendingTransaction = pendingTransactions?.notes;
