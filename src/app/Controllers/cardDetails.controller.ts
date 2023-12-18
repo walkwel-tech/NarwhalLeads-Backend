@@ -92,6 +92,8 @@ import {
 import { flattenPostalCodes } from "../../utils/Functions/flattenPostcodes";
 import { UserLeadsDetailsInterface } from "../../types/LeadDetailsInterface";
 import { POSTCODE_TYPE } from "../../utils/Enums/postcode.enum";
+import { CURRENCY_SIGN } from "../../utils/constantFiles/email.templateIDs";
+import { CURRENCY } from "../../utils/Enums/currency.enum";
 const ObjectId = mongoose.Types.ObjectId;
 
 export class CardDetailsControllers {
@@ -683,6 +685,7 @@ export class CardDetailsControllers {
         .json({ error: { message: "Something went wrong." } });
     }
   };
+
   static createSession = async (req: Request, res: Response): Promise<any> => {
     const input = req.body;
     let sessionObject: any = {};
@@ -783,14 +786,22 @@ export class CardDetailsControllers {
           const business = await BusinessDetails.findById(
             userId?.businessDetailsId
           );
-          const message = {
+          let message = {
             firstName: userId?.firstName,
             amount: parseInt(input.data.amount) / 100,
             cardHolderName: `${userId?.firstName} ${userId?.lastName}`,
             cardNumberEnd: cardDetailsExist?.cardNumber,
             credits: userId?.credits,
             businessName: business?.businessName,
+            currency: CURRENCY_SIGN.GBP,
+            isIncVat: true,
           };
+          if (userId.currency === CURRENCY.DOLLER) {
+            message.currency = CURRENCY_SIGN.USD;
+          } else if (userId.currency === CURRENCY.EURO) {
+            message.currency = CURRENCY_SIGN.EUR;
+            message.isIncVat = false;
+          }
           sendEmailForPaymentFailure(userId?.email, message);
           let dataToSaveInTransaction: Partial<TransactionInterface> = {
             userId: userId?.id,
@@ -929,7 +940,15 @@ export class CardDetailsControllers {
                 cardNumberEnd: cardDetails?.cardNumber,
                 credits: userId?.credits,
                 businessName: business?.businessName,
+                currency: CURRENCY_SIGN.GBP,
+                isIncVat: true,
               };
+              if (userId.currency === CURRENCY.DOLLER) {
+                message.currency = CURRENCY_SIGN.USD;
+              } else if (userId.currency === CURRENCY.EURO) {
+                message.currency = CURRENCY_SIGN.EUR;
+                message.isIncVat = false;
+              }
               sendEmailForPaymentSuccess(userId?.email, message);
               let invoice: InvoiceInterface | null;
               if (userId?.xeroContactId) {
@@ -1062,14 +1081,31 @@ export class CardDetailsControllers {
       if (userId) {
         if (input.type == STRIPE_PAYMENT_STATUS.FAILED) {
           const business = user.business;
-          const message = {
+          const cards = await CardDetails.findOne({
+            userId: userId?._id,
+            isDefault: true,
+            isDeleted: false,
+          });
+
+          let message = {
             firstName: userId?.firstName,
-            amount: parseInt(input.data.object.amount) / 100,
+            amount: amount,
             cardHolderName: `${userId?.firstName} ${userId?.lastName}`,
-            cardNumberEnd: card?.cardNumber,
+            cardNumberEnd: cards?.cardNumber,
             credits: userId?.credits,
             businessName: business?.businessName,
+            currency: CURRENCY_SIGN.GBP,
+            isIncVat: true,
           };
+
+          if (userId.currency === CURRENCY.DOLLER) {
+            message.currency = CURRENCY_SIGN.USD;
+            message.isIncVat = false;
+          } else if (userId.currency === CURRENCY.EURO) {
+            message.currency = CURRENCY_SIGN.EUR;
+            message.isIncVat = false;
+          }
+
           sendEmailForPaymentFailure(userId?.email, message);
           let dataToSaveInTransaction: Partial<TransactionInterface> = {
             userId: userId?.id,
@@ -1107,7 +1143,6 @@ export class CardDetailsControllers {
             buyerId: userId?.buyerId,
             fixedAmount: originalAmount,
           };
-
           params.freeCredits = await checkUserUsedPromoCode(
             userId.id,
             promoLink?.id,
@@ -1187,14 +1222,22 @@ export class CardDetailsControllers {
               const business = await BusinessDetails.findById(
                 userId?.businessDetailsId
               );
-              const message = {
+              let message = {
                 firstName: userId?.firstName,
-                amount: originalAmount,
+                amount: amount,
                 cardHolderName: `${userId?.firstName} ${userId?.lastName}`,
                 cardNumberEnd: cardDetails?.cardNumber,
                 credits: userId?.credits,
                 businessName: business?.businessName,
+                currency: CURRENCY_SIGN.GBP,
+                isIncVat: true,
               };
+              if (userId.currency === CURRENCY.DOLLER) {
+                message.currency = CURRENCY_SIGN.USD;
+              } else if (userId.currency === CURRENCY.EURO) {
+                message.currency = CURRENCY_SIGN.EUR;
+                message.isIncVat = false;
+              }
               sendEmailForPaymentSuccess(userId?.email, message);
               let invoice: InvoiceInterface | null;
               if (userId?.xeroContactId) {
@@ -1321,12 +1364,10 @@ export class CardDetailsControllers {
         message: "success",
         sessionId: input?.data?.object?.id,
       };
-      if (input.type === "PaymentSession.captured") {
-        dataToShow.status = PAYMENT_STATUS.CAPTURED;
-      } else if (input.type === "PaymentSession.approved") {
-        dataToShow.status = PAYMENT_STATUS.APPROVED;
-      } else if (input.type === "PaymentSession.declined") {
-        dataToShow.status = PAYMENT_STATUS.DECLINE;
+      if (input.type === STRIPE_PAYMENT_STATUS.SUCCESS) {
+        dataToShow.status = STRIPE_PAYMENT_STATUS.SUCCESS;
+      } else if (input.type === STRIPE_PAYMENT_STATUS.FAILED) {
+        dataToShow.status = STRIPE_PAYMENT_STATUS.FAILED;
       }
       res.status(200).json({ data: dataToShow });
     } catch (err) {
@@ -1335,6 +1376,7 @@ export class CardDetailsControllers {
         .json({ error: { message: "Something went wrong." } });
     }
   };
+
   static retrievePaymentSssion = async (
     req: Request,
     res: Response
@@ -1607,12 +1649,12 @@ async function getUserDetails(cid: string, pid: string) {
   return obj;
 }
 
-function getOriginalAmountForStripe(amount: number, currency: string) {
+export function getOriginalAmountForStripe(amount: number, currency: string) {
   let originalAmount;
-  if (currency === stripeCurrency.GBP) {
-    originalAmount = amount / 100 / (1 + VAT / 100);
+  if (currency === stripeCurrency.GBP || currency === stripeCurrency.USD) {
+    originalAmount = amount / (1 + VAT / 100);
   } else {
-    originalAmount = amount / 100;
+    originalAmount = amount;
   }
 
   return originalAmount;

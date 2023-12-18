@@ -15,6 +15,12 @@ interface IQueryFormulater {
   industry: string[];
   timePeriod: TimePeriod;
   commissionStatus: string;
+  sortBy: string,
+  sortingOrder: string
+}
+
+interface SortStage {
+  $sort: Record<string, 1 | -1>;
 }
 
 export class DashboardController {
@@ -24,7 +30,7 @@ export class DashboardController {
 
     return inputDate;
   }
-// due to complex aggregation and bugs i want this commented code.
+  // due to complex aggregation and bugs i want this commented code.
   static formulateComissionQuery({
     accountManagerId,
     industry,
@@ -35,16 +41,16 @@ export class DashboardController {
       { $match: { role: RolesEnum.ACCOUNT_MANAGER, isDeleted: false, isActive: true } },
       ...(accountManagerId?.length
         ? [
-            {
-              $match: {
-                _id: {
-                  $in: accountManagerId?.map(
-                    (manager) => new Types.ObjectId(manager)
-                  ),
-                },
+          {
+            $match: {
+              _id: {
+                $in: accountManagerId?.map(
+                  (manager) => new Types.ObjectId(manager)
+                ),
               },
             },
-          ]
+          },
+        ]
         : []),
       {
         $lookup: {
@@ -60,27 +66,35 @@ export class DashboardController {
           preserveNullAndEmptyArrays: true,
         },
       },
-      { $match: { "associatedUsers.role": "user" } },
+      // { $match: { "associatedUsers.role": RolesEnum.USER, } },
+      {
+        $match: {
+          $or: [
+            { "associatedUsers.role": RolesEnum.USER },
+            { "associatedUsers.role": RolesEnum.NON_BILLABLE }
+          ]
+        }
+      },
       ...(industry?.length
         ? [
-            {
-              $match: {
-                "associatedUsers.businessIndustryId": {
-                  $in: industry.map((industry) => new Types.ObjectId(industry)),
-                },
+          {
+            $match: {
+              "associatedUsers.businessIndustryId": {
+                $in: industry.map((industry) => new Types.ObjectId(industry)),
               },
             },
-          ]
+          },
+        ]
         : []),
       ...(commissionStatus
         ? [
-            {
-              $match: {
-                "associatedUsers.isCommissionedUser":
-                  commissionStatus === commission.isComissioned ? true : false,
-              },
+          {
+            $match: {
+              "associatedUsers.isCommissionedUser":
+                commissionStatus === commission.isComissioned ? true : false,
             },
-          ]
+          },
+        ]
         : []),
       ...(timePeriod && Object.keys(timePeriod).length
         ? [
@@ -238,55 +252,66 @@ export class DashboardController {
     industry,
     timePeriod,
     commissionStatus,
+    sortBy,
+    sortingOrder
   }: IQueryFormulater): PipelineStage[] {
+    
+    const sortStage: SortStage = {
+      $sort: {
+        [sortBy || 'createdAt']: sortingOrder === 'asc' ? 1 : -1,
+      },
+    };
+    
     const pipeline: PipelineStage[] = [
       { $match: { role: { $in: [RolesEnum.USER, RolesEnum.NON_BILLABLE] }, isDeleted: false, isActive: true } },
-      ...(timePeriod && Object.keys(timePeriod).length
-        ? [
-            {
-              $match: {
-                createdAt: {
-                  $gte: new Date(timePeriod.startDate),
-                  $lte: new Date(timePeriod.endDate),
-                },
-              },
-            },
-          ]
-        : []),
       ...(industry?.length
         ? [
-            {
-              $match: {
-                businessIndustryId: {
-                  $in: industry.map((industry) => new Types.ObjectId(industry)),
-                },
+          {
+            $match: {
+              businessIndustryId: {
+                $in: industry.map((industry) => new Types.ObjectId(industry)),
               },
             },
-          ]
+          },
+        ]
         : []),
       ...(accountManagerId?.length
         ? [
-            {
-              $match: {
-                accountManager: {
-                  $in: accountManagerId?.map(
-                    (manager) => new Types.ObjectId(manager)
-                  ),
-                },
+          {
+            $match: {
+              accountManager: {
+                $in: accountManagerId?.map(
+                  (manager) => new Types.ObjectId(manager)
+                ),
               },
             },
-          ]
+          },
+        ]
         : []),
       ...(commissionStatus
         ? [
-            {
-              $match: {
-                isCommissionedUser:
-                  commissionStatus === commission.isComissioned ? true : false,
+          {
+            $match: {
+              isCommissionedUser:
+                commissionStatus === commission.isComissioned ? true : false,
+            },
+          },
+        ]
+        : []),
+      ...(sortBy && sortingOrder ? [sortStage ] : []),
+      ...(timePeriod && Object.keys(timePeriod).length
+        ? [
+          {
+            $match: {
+              createdAt: {
+                $gte: new Date(timePeriod.startDate),
+                $lte: new Date(timePeriod.endDate),
               },
             },
-          ]
+          },
+        ]
         : []),
+
       {
         $lookup: {
           from: "users",
@@ -491,6 +516,8 @@ export class DashboardController {
         | string[]
         | undefined;
       queryParams.industry = req.body.industry as string[] | undefined;
+      queryParams.sortBy = req.body.sortBy as string | undefined;
+      queryParams.sortingOrder = req.body.sortingOrder as string | undefined;
       queryParams.timePeriod = req.body.timePeriod as TimePeriod | undefined;
       queryParams.commissionStatus = req.body.commissionStatus as
         | string
@@ -654,15 +681,15 @@ export class DashboardController {
 
         ...(timePeriod && Object.keys(timePeriod).length
           ? [
-              {
-                $match: {
-                  createdAt: {
-                    $gte: new Date(timePeriod.startDate),
-                    $lte: new Date(timePeriod.endDate),
-                  },
+            {
+              $match: {
+                createdAt: {
+                  $gte: new Date(timePeriod.startDate),
+                  $lte: new Date(timePeriod.endDate),
                 },
               },
-            ]
+            },
+          ]
           : []),
       ];
 

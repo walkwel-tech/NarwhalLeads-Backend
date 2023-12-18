@@ -66,4 +66,8 @@ export interface UserInterface extends Document {
   showImpersonate: boolean;
   isNewUser: boolean;
   isAutoChargeEnabled: boolean;
+  pendingTransaction: string;
+  secondaryCredits: number;
+  secondaryLeadCost: number;
+  isSecondaryUsage: boolean;
 }

@@ -18,7 +18,7 @@ export const createPaymentOnStrip = async (
     if (isAutoCharge) {
       data = qs.stringify({
         amount: Math.ceil(params.amount || 0),
-        currency: process.env.CURRENCY,
+        currency: params.currency,
         customer: params.customer,
         confirm: true,
         payment_method: params.paymentMethod,
@@ -27,7 +27,7 @@ export const createPaymentOnStrip = async (
     } else {
       data = qs.stringify({
         amount: Math.ceil(params.amount || 0),
-        currency: process.env.CURRENCY,
+        currency: params.currency,
         automatic_payment_methods: { enabled: true },
         customer: params.customer,
         return_url: process.env.RETURN_URL,
