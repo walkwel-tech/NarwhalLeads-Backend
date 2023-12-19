@@ -654,7 +654,6 @@ export class UsersControllers {
     if (user.role === RolesEnum.USER && (input.email || input.email == "")) {
       input.email = user?.email;
     }
-
     if (user.role === RolesEnum.SUPER_ADMIN && input.email) {
       const email = await User.findOne({
         email: input.email,
@@ -675,7 +674,7 @@ export class UsersControllers {
       );
       const userForActivity = await User.findById(
         id,
-        " -_id -businessDetailsId -businessIndustryId -userLeadsDetailsId -onBoarding -createdAt -updatedAt"
+        " -__v -_id -businessDetailsId -businessIndustryId -userLeadsDetailsId -userServiceId -accountManager -onBoarding -createdAt -updatedAt -password"
       ).lean();
       if (
         input.paymentMethod === paymentMethodEnum.WEEKLY_PAYMENT_METHOD &&
@@ -725,7 +724,6 @@ export class UsersControllers {
           onBoarding: object,
         });
       }
-
       if (
         input.isCreditsAndBillingEnabled === true &&
         checkUser?.role === RolesEnum.NON_BILLABLE
@@ -744,6 +742,7 @@ export class UsersControllers {
           });
         }
       }
+
       let updatedUser;
       if (input.secondaryCredits) {
         updatedUser = await User.findByIdAndUpdate(
@@ -758,6 +757,7 @@ export class UsersControllers {
           { new: true }
         );
       }
+
       if (input.secondaryLeadCost) {
         await User.findByIdAndUpdate(checkUser?.id, {
           secondaryLeadCost: input.secondaryLeadCost,
@@ -789,6 +789,7 @@ export class UsersControllers {
           });
         }
       }
+
       if (!checkUser) {
         return res
           .status(404)
@@ -900,6 +901,7 @@ export class UsersControllers {
             )
           );
       }
+
       if (input.businessCity) {
         if (!checkUser.businessDetailsId) {
           return res
@@ -1316,12 +1318,13 @@ export class UsersControllers {
         const leadData = await UserLeadsDetails.findById(
           result?.userLeadsDetailsId
         );
+
         const formattedPostCodes = leadData?.postCodeTargettingList
           .map((item: any) => item.postalCode)
           .flat();
         const userAfterMod = await User.findById(
           id,
-          " -_id -businessDetailsId -businessIndustryId -userLeadsDetailsId -onBoarding -createdAt -updatedAt"
+          "-__v -_id -businessDetailsId -businessIndustryId -userServiceId -accountManager -userLeadsDetailsId -onBoarding -createdAt -updatedAt -password"
         ).lean();
         const message = {
           firstName: result?.firstName,
@@ -1345,6 +1348,7 @@ export class UsersControllers {
           area: `${formattedPostCodes}`,
           leadCost: user?.leadCost,
         };
+
         sendEmailForUpdatedDetails(message);
 
         const fields = findUpdatedFields(userForActivity, userAfterMod);
@@ -1399,6 +1403,7 @@ export class UsersControllers {
               businesBeforeUpdate,
               businesAfterUpdate
             );
+
             const isEmpty = Object.keys(fields.updatedFields).length === 0;
             if (!isEmpty && user?.isSignUpCompleteWithCredit) {
               const activity = {
@@ -2121,12 +2126,12 @@ export class UsersControllers {
       try {
         await sendLeadDataToZap(input.zapierUrl, result, checkUser);
         message = "Test Lead Sent!";
-        response = { message: message };
+        response = { data: message };
         status = 200;
       } catch (err) {
         message = "Error while sending Test Lead!";
         status = 400;
-        response = message;
+        response = { data: message };
       }
 
       return res.status(status).json(response);
