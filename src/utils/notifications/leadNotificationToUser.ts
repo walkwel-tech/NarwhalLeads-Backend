@@ -28,12 +28,16 @@ export const notify = (send_to: String, lead: Record<string, string>) => {
         to: to,
       })
       .then(async (message: any) => {
-        console.log("sms sent successfully");
+        console.log("sms sent successfully", new Date(), "Today's Date");
       })
       .catch(async (err: any) => {
-        console.log("error while sending SMS", err);
+        console.log("error while sending SMS", err, new Date(), "Today's Date");
       });
   } else {
-    console.log("No Access for SMS sending to this " + process.env.APP_ENV);
+    console.log(
+      "No Access for SMS sending to this " + process.env.APP_ENV,
+      new Date(),
+      "Today's Date"
+    );
   }
 };

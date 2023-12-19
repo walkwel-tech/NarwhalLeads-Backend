@@ -576,7 +576,7 @@ class AuthController {
         name: user.firstName,
         password: text,
       };
-      console.log("forget password", text);
+      console.log("forget password", text, new Date(), "Today's Date");
       sendEmailForgetPassword(input.email, message);
       await ForgetPassword.create({
         userId: user.id,
@@ -923,10 +923,14 @@ class AuthController {
         };
         createCustomersOnRyftAndLeadByte(params)
           .then(() => {
-            console.log("Customer created!!!!");
+            console.log("Customer created!!!!", new Date(), "Today's Date");
           })
           .catch((ERR) => {
-            console.log("error while creating customer");
+            console.log(
+              "error while creating customer",
+              new Date(),
+              "Today's Date"
+            );
           })
           .finally(async () => {
             const data = await User.findById(user.id);

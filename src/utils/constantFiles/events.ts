@@ -20,3 +20,4 @@ export const EVENT_TITLE = {
   DAILY_LEAD_CAP: "Daily Lead Cap",
   LEAD_SCHEDULE_UPDATE: "Lead Schedule Update",
 };
+

@@ -91,6 +91,34 @@ export class LeadsController {
       await User.findByIdAndUpdate(user.id, { isLeadReceived: true });
     }
     //  event webhook to hit when lead  credit is less then leadCost
+    if (user?.credits === 0 || user?.credits < user?.leadCost) {
+      const paramsToSend = {
+        userId: user._id,
+        buyerId: user.buyerId,
+        buisnessName: user.businessDetailsId.businessName,
+        eventCode: EVENT_TITLE.ZERO_CREDITS,
+        postCodeList: user.userLeadsDetailsId?.postCodeTargettingList,
+        remainingCredits: user?.credits,
+      };
+      await eventsWebhook(paramsToSend)
+        .then(() =>
+          console.log(
+            "event webhook for zero credits hits successfully.",
+            paramsToSend,
+            new Date(),
+            "Today's Date"
+          )
+        )
+        .catch((err) =>
+          console.log(
+            err,
+            "error while triggering zero credits webhooks failed",
+            paramsToSend,
+            new Date(),
+            "Today's Date"
+          )
+        );
+    }
 
     if (user?.credits == 0 && user?.role == RolesEnum.USER) {
       return res
@@ -145,7 +173,7 @@ export class LeadsController {
       notify(user.smsPhoneNumber, dataToSent);
     }
     if (user?.userLeadsDetailsId?.sendDataToZapier) {
-      sendLeadDataToZap(user.userLeadsDetailsId.zapierUrl, input)
+      sendLeadDataToZap(user.userLeadsDetailsId.zapierUrl, input, user)
         .then((res) => {})
         .catch((err) => {});
     }
@@ -235,7 +263,7 @@ export class LeadsController {
           name: user?.firstName + " " + user?.lastName,
         });
       } else {
-        console.log("Email already send.");
+        console.log("Email already send.", new Date(), "Today's Date");
       }
     }
     if (leftCredits <= 0) {
@@ -471,7 +499,9 @@ export class LeadsController {
         leadReportAcceptedWebhook(leadUser, reqBody)
           .then(() => {
             console.log(
-              "lead Report accepted Webhook webhook hits successfully"
+              "lead Report accepted Webhook webhook hits successfully",
+              new Date(),
+              "Today's Date"
             );
           })
           .catch((err) => {
@@ -481,7 +511,9 @@ export class LeadsController {
                   leadReportAcceptedWebhook(leadUser, reqBody)
                     .then(() => {
                       console.log(
-                        "lead Report accepted Webhook webhook hits successfully"
+                        "lead Report accepted Webhook webhook hits successfully",
+                        new Date(),
+                        "Today's Date"
                       );
                     })
                     .catch((err) =>
@@ -523,7 +555,12 @@ export class LeadsController {
             return res.json({ data: leadsUpdate });
           })
           .catch(async (err) => {
-            console.log("error while adding credits", err);
+            console.log(
+              "error while adding credits",
+              err,
+              new Date(),
+              "Today's Date"
+            );
             const dataToSave: any = {
               userId: user?.id,
               cardId: card?.id,
@@ -1065,7 +1102,7 @@ export class LeadsController {
             // item.columns = industry?.columns ? industry.columns: [];
           })
           .catch((error: any) => {
-            console.log("ERRORR: ", error);
+            console.log("ERRORR: ", error, new Date(), "Today's Date");
           });
         // Use explicit Promise construction
         return new Promise((resolve, reject) => {
@@ -1834,7 +1871,7 @@ export class LeadsController {
               resolve(item); // Resolve the promise with the modified item
             })
             .catch((error) => {
-              console.log("err", error);
+              console.log("err", error, new Date(), "Today's Date");
               // item.leads.businessName = "Deleted";
               // item.leads.businessIndustry = "Deleted";
               reject(error); // Reject the promise if there's an error
@@ -2309,6 +2346,9 @@ export class LeadsController {
     let sortingOrder = _req.query.sortingOrder || sort.DESC;
     const userId = _req.user?.id;
     const status = _req.query.status;
+    let accountManager=_req.query.accountManagerId
+    let industry = _req.query.industry;
+
     if (sortingOrder == sort.ASC) {
       sortingOrder = 1;
     } else {
@@ -2330,6 +2370,23 @@ export class LeadsController {
         //   },
         // ],
       };
+      if (industry) {
+        let bids: any = [];
+        const users = await User.find({ businessIndustryId: industry });
+        users.map((user) => {
+          return bids.push(user.buyerId);
+        });
+        dataToFind.bid = { $in: bids };
+      }
+
+      if(accountManager){
+        let bids: any = [];
+        const users = await User.find({ accountManager: new ObjectId(accountManager) });
+        users.map((user) => {
+          return bids.push(user.buyerId);
+        });
+        dataToFind.bid = { $in: bids };
+      }
       const user = await User.findById(userId);
       if (user?.role == RolesEnum.INVITED) {
         const invitedBy = await User.findOne({ _id: user?.invitedById });
@@ -2439,6 +2496,8 @@ export class LeadsController {
     let id = _req.query.id;
     let industry = _req.query.industry;
     let sortingOrder = _req.query.sortingOrder || sort.DESC;
+    let accountManager=_req.query.accountManagerId
+
     if (sortingOrder == sort.ASC) {
       sortingOrder = 1;
     } else {
@@ -2498,6 +2557,14 @@ export class LeadsController {
       }
       if (status) {
         dataToFind.status = status;
+      }
+      if(accountManager){
+        let bids: any = [];
+        const users = await User.find({ accountManager: new ObjectId(accountManager) });
+        users.map((user) => {
+          return bids.push(user.buyerId);
+        });
+        dataToFind.bid = { $in: bids };
       }
       const [query]: any = await Leads.aggregate([
         {

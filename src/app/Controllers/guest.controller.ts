@@ -44,7 +44,12 @@ export class GuestController {
           return data;
         })
       );
-      console.log("Updated and saved documents:", updatedDocuments);
+      console.log(
+        "Updated and saved documents:",
+        updatedDocuments,
+        new Date(),
+        "Today's Date"
+      );
       updatedDocuments.map(async (i) => {
         await BuisnessIndustries.findByIdAndUpdate(i.id, {
           columns: i.columns,
@@ -81,7 +86,12 @@ export class GuestController {
           return data;
         })
       );
-      console.log("Updated and saved documents:", updatedDocuments);
+      console.log(
+        "Updated and saved documents:",
+        updatedDocuments,
+        new Date(),
+        "Today's Date"
+      );
       await Promise.all(
         updatedDocuments.map(async (i) => {
           await LeadTablePreference.findByIdAndUpdate(i.id, {
@@ -118,7 +128,12 @@ export class GuestController {
           return data;
         })
       );
-      console.log("Updated and saved documents:", updatedDocuments);
+      console.log(
+        "Updated and saved documents:",
+        updatedDocuments,
+        new Date(),
+        "Today's Date"
+      );
       updatedDocuments.map(async (i) => {
         await ClientTablePreference.findByIdAndUpdate(i.id, {
           columns: i.columns,
@@ -204,7 +219,7 @@ export class GuestController {
           }
         );
       } else {
-        console.log("already exist");
+        console.log("already exist", new Date(), "Today's Date");
       }
     });
     res.send({ data: "successfully inserted" });
@@ -247,7 +262,7 @@ export class GuestController {
           }
         );
       } else {
-        console.log("already exist");
+        console.log("already exist", new Date(), "Today's Date");
       }
     });
     res.send({ data: "successfully inserted" });

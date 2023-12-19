@@ -29,7 +29,11 @@ export async function sendBatchedUpdates(): Promise<any> {
     return updatesToBeSent.map((data) => {
       return leadDetailsSubmission(data)
         .then((response) => {
-          console.log("Batched updates sent successfully.");
+          console.log(
+            "Batched updates sent successfully.",
+            new Date(),
+            "Today's Date"
+          );
         })
         .catch((error) => {
           console.error("Error sending batched updates:", error);

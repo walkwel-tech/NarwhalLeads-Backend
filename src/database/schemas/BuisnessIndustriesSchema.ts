@@ -12,12 +12,6 @@ const BuisnessIndustriesSchema = new Schema(
     columns: {
       type: Array,
     },
-    associatedCurrency: {
-      type: String
-    },
-    country: {
-      type: String
-    },
     isActive: {
       type: Boolean,
       default: true,
@@ -33,6 +27,13 @@ const BuisnessIndustriesSchema = new Schema(
     deletedAt: {
       type: Date,
     },
+    associatedCurrency: {
+      type: String
+    },
+    country: {
+      type: String
+    },
+
   },
   { timestamps: true }
 );

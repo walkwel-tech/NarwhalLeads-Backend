@@ -7,19 +7,21 @@ export interface County {
 export function flattenPostalCodes(postCodeList: County[]): County[] {
   const flattenedPostalCodes: string[] = [];
 
-  postCodeList.forEach((county: County) => {
+  postCodeList?.forEach((county: County) => {
     const postalCodes: string[] = county.postalCode.map(
       (code: string) => `${code}`
     );
     flattenedPostalCodes.push(...postalCodes);
   });
-  const result: County[] = [
+  let result: County[] =[];
+  flattenedPostalCodes.length > 0 ? 
+  result = [
     {
       county: `${postCodeList[0].county}`,
       postalCode: flattenedPostalCodes,
       key: `${postCodeList[0].key}`,
     },
-  ];
+  ] : {};
 
   return result;
 }

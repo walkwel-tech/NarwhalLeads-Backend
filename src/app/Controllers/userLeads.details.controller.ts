@@ -204,10 +204,18 @@ export class UserLeadsController {
         };
         addCreditsToBuyer(params)
           .then((_res) => {
-            console.log("free credits added with signup code");
+            console.log(
+              "free credits added with signup code",
+              new Date(),
+              "Today's Date"
+            );
           })
           .catch((error) => {
-            console.log("error during adding free credits with signup code");
+            console.log(
+              "error during adding free credits with signup code",
+              new Date(),
+              "Today's Date"
+            );
           });
       }
       return res.json({ data: details, service });
@@ -316,9 +324,7 @@ export class UserLeadsController {
         " -_id -userId -createdAt -updatedAt"
       ).lean();
 
-      const user =
-        (await User.findById(details?.userId).populate("businessDetailsId")) ??
-        ({} as UserInterface);
+      const user: any = await User.findById(details?.userId);
 
       const serviceDataForActivityLogs = await UserService.findOne(
         { userId: user?.id },
@@ -380,14 +386,18 @@ export class UserLeadsController {
           .then(() =>
             console.log(
               "event webhook for postcode updates hits successfully.",
-              paramsToSend
+              paramsToSend,
+              new Date(),
+              "Today's Date"
             )
           )
           .catch((err) =>
             console.log(
               err,
               "error while triggering postcode updates webhooks failed",
-              paramsToSend
+              paramsToSend,
+              new Date(),
+              "Today's Date"
             )
           );
       }

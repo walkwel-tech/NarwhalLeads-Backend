@@ -442,7 +442,6 @@ export const autoTopUp = async (
     params.amount = user.autoChargeAmount + (user.autoChargeAmount * VAT) / 100;
   }
   const success: any = await chargeUser(params);
-
   return success;
 };
 

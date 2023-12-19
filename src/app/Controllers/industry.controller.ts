@@ -46,8 +46,6 @@ export class IndustryController {
     let dataToSave: Partial<BuisnessIndustriesInterface> = {
       industry: input.industry.trim(),
       leadCost: input.leadCost,
-      associatedCurrency: currency.value,
-      country: currency.country,
       columns: order,
       json: json,
     };
@@ -106,12 +104,6 @@ export class IndustryController {
   static update = async (req: Request, res: Response) => {
     const input = req.body;
     try {
-      if (input.currencyCode) {
-        return res
-          .status(400)
-          .json({ error: { message: "currency can't be updated" } });
-      }
-
       if (input.columns) {
         const users = await User.find({ businessIndustryId: req.params.id });
         const data = users.map(async (user: any) => {
