@@ -872,7 +872,7 @@ export class UsersControllers {
             .json({ error: { message: "business details not found" } });
         }
 
-        const details=await BusinessDetails.findByIdAndUpdate(
+        const details = await BusinessDetails.findByIdAndUpdate(
           checkUser?.businessDetailsId,
           { businessSalesNumber: input.businessSalesNumber },
 
@@ -1374,7 +1374,7 @@ export class UsersControllers {
           });
         } else if (input.paymentMethod) {
           return res.json({
-            message: "Payment Mode Changed Successfully",
+            message: "Updated Successfully",
             data: result,
           });
         } else {
