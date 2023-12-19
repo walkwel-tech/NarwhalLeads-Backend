@@ -428,6 +428,7 @@ export class UserLeadsController {
       const business = await BusinessDetails.findById(user.businessDetailsId);
 
       if (
+        input.leadSchedule &&
         !arraysAreEqual(input.leadSchedule, details.leadSchedule) &&
         user?.onBoardingPercentage === ONBOARDING_PERCENTAGE.CARD_DETAILS
       ) {

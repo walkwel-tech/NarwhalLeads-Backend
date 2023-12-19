@@ -1026,6 +1026,7 @@ export class UsersControllers {
         );
 
         if (
+          input.leadSchedule &&
           !arraysAreEqual(input.leadSchedule, userBeforeMod?.leadSchedule) &&
           user?.onBoardingPercentage === ONBOARDING_PERCENTAGE.CARD_DETAILS
         ) {
