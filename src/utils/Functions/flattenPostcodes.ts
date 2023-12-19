@@ -1,7 +1,7 @@
 export interface County {
-  county: string;
+  county?: string;
   postalCode: string[];
-  key: string;
+  key?: string;
 }
 
 export function flattenPostalCodes(postCodeList: County[]): County[] {
@@ -17,9 +17,7 @@ export function flattenPostalCodes(postCodeList: County[]): County[] {
   flattenedPostalCodes.length > 0 ? 
   result = [
     {
-      county: `${postCodeList[0].county}`,
       postalCode: flattenedPostalCodes,
-      key: `${postCodeList[0].key}`,
     },
   ] : {};
 
