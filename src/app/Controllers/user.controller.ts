@@ -688,12 +688,6 @@ export class UsersControllers {
           },
         });
       }
-      if (input.businessIndustryId) {
-        return res
-          .status(400)
-          .json({ error: { message: "Buisness industry can't be updated" } });
-      }
-
       if (
         (input.buyerId ||
           input.leadCost ||
@@ -878,7 +872,7 @@ export class UsersControllers {
             .json({ error: { message: "business details not found" } });
         }
 
-        const details = await BusinessDetails.findByIdAndUpdate(
+        const details=await BusinessDetails.findByIdAndUpdate(
           checkUser?.businessDetailsId,
           { businessSalesNumber: input.businessSalesNumber },
 
@@ -1198,7 +1192,11 @@ export class UsersControllers {
         createSessionUnScheduledPayment(params)
           .then(async (_res: any) => {
             if (!checkUser.xeroContactId) {
-              console.log("xeroContact ID not found. Failed to generate pdf.");
+              console.log(
+                "xeroContact ID not found. Failed to generate pdf.",
+                new Date(),
+                "Today's Date"
+              );
             }
             const dataToSave: any = {
               userId: checkUser?.id,
@@ -1233,7 +1231,7 @@ export class UsersControllers {
                     invoiceId: res.data.Invoices[0].InvoiceID,
                   });
 
-                  console.log("pdf generated");
+                  console.log("pdf generated", new Date(), "Today's Date");
                 })
                 .catch(async (err) => {
                   refreshToken().then(async (res) => {
@@ -1257,13 +1255,17 @@ export class UsersControllers {
                         invoiceId: res.data.Invoices[0].InvoiceID,
                       });
 
-                      console.log("pdf generated");
+                      console.log("pdf generated", new Date(), "Today's Date");
                     });
                   });
                 });
             }
 
-            console.log("payment success!!!!!!!!!!!!!");
+            console.log(
+              "payment success!!!!!!!!!!!!!",
+              new Date(),
+              "Today's Date"
+            );
 
             await User.findByIdAndUpdate(
               id,
@@ -1545,6 +1547,15 @@ export class UsersControllers {
         dataToFind = {
           ...dataToFind,
         };
+      }
+      if(_req.query.accountManagerId){
+        dataToFind.accountManager=new ObjectId(_req.query.accountManagerId)
+      }
+      if(_req.query.clientType===FILTER_FOR_CLIENT.NON_BILLABLE){
+        dataToFind.isCreditsAndBillingEnabled=false
+      }
+      if(_req.query.clientType===FILTER_FOR_CLIENT.BILLABLE){
+        dataToFind.isCreditsAndBillingEnabled=true
       }
       if (status) {
         dataToFind.status = status;
@@ -1949,7 +1960,7 @@ export class UsersControllers {
                 invoiceId: res.data.Invoices[0].InvoiceID,
               });
 
-              console.log("pdf generated");
+              console.log("pdf generated", new Date(), "Today's Date");
             })
             .catch(async (err) => {
               refreshToken().then(async (res) => {
@@ -1972,7 +1983,7 @@ export class UsersControllers {
                     invoiceId: res.data.Invoices[0].InvoiceID,
                   });
 
-                  console.log("pdf generated");
+                  console.log("pdf generated", new Date(), "Today's Date");
                 });
               });
             });
@@ -2006,13 +2017,19 @@ export class UsersControllers {
             .then(() =>
               console.log(
                 "event webhook for add credits hits successfully.",
-                paramsToSend
+                paramsToSend,
+                new Date(),
+                "Today's Date",
+                user._id,
+                "user's id"
               )
             )
             .catch((err) =>
               console.log(
                 "error while triggering webhooks for add credits failed",
-                paramsToSend
+                paramsToSend,
+                new Date(),
+                "Today's Date"
               )
             );
         });
@@ -2101,7 +2118,7 @@ export class UsersControllers {
       let response = {};
       let status;
       try {
-        await sendLeadDataToZap(input.zapierUrl, result);
+        await sendLeadDataToZap(input.zapierUrl, result, checkUser);
         message = "Test Lead Sent!";
         response = { message: message };
         status = 200;

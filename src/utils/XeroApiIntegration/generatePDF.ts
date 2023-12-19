@@ -97,18 +97,25 @@ export const generatePDF = (
     if (checkAccess()) {
       axios(config)
         .then(function (response: any) {
-          console.log("data while getting response of invoices", response.data);
+          console.log(
+            "data while getting response of invoices",
+            response.data,
+            new Date(),
+            "Today's Date"
+          );
 
           resolve(response);
         })
         .catch(function (error: any) {
-          console.log(error.response?.data);
+          console.log(error.response?.data, new Date(), "Today's Date");
 
           reject(error);
         });
     } else {
       console.log(
-        "No Access for generating PDF to this " + process.env.APP_ENV
+        "No Access for generating PDF to this " + process.env.APP_ENV,
+        new Date(),
+        "Today's Date"
       );
     }
   });

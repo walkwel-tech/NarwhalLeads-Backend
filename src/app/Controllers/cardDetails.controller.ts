@@ -606,7 +606,12 @@ export class CardDetailsControllers {
               });
             })
             .catch(async (err) => {
-              console.log("error in payment Api", err.response.data);
+              console.log(
+                "error in payment Api",
+                err.response.data,
+                new Date(),
+                "Today's Date"
+              );
               //fixme: store error transacation in db also
               return res.status(400).json({
                 data: err.response.data,
@@ -654,9 +659,13 @@ export class CardDetailsControllers {
         };
         createPaymentOnStrip(params, false)
           .then(async (_res: any) => {
-            console.log("payment initiated!");
+            console.log("payment initiated!", new Date(), "Today's Date");
             if (!user?.xeroContactId) {
-              console.log("xeroContact ID not found. Failed to generate pdf.");
+              console.log(
+                "xeroContact ID not found. Failed to generate pdf.",
+                new Date(),
+                "Today's Date"
+              );
             }
             let response: PaymentResponse = {
               message: "In progress",
@@ -672,7 +681,12 @@ export class CardDetailsControllers {
             });
           })
           .catch(async (err) => {
-            console.log("error in payment Api", err.response.data);
+            console.log(
+              "error in payment Api",
+              err.response.data,
+              new Date(),
+              "Today's Date"
+            );
             //fixme: store error transacation in db also
             return res.status(400).json({
               data: err.response.data,
@@ -981,7 +995,7 @@ export class CardDetailsControllers {
                       invoiceId: res.data.Invoices[0].InvoiceID,
                     });
 
-                    console.log("pdf generated");
+                    console.log("pdf generated", new Date(), "Today's Date");
                   })
                   .catch(async (err) => {
                     refreshToken().then(async (res) => {
@@ -1004,7 +1018,11 @@ export class CardDetailsControllers {
                           invoiceId: res.data.Invoices[0].InvoiceID,
                         });
 
-                        console.log("pdf generated");
+                        console.log(
+                          "pdf generated",
+                          new Date(),
+                          "Today's Date"
+                        );
                       });
                     });
                   });
@@ -1028,7 +1046,12 @@ export class CardDetailsControllers {
               }
             })
             .catch((error) => {
-              console.log("error in webhook", error);
+              console.log(
+                "error in webhook",
+                error,
+                new Date(),
+                "Today's Date"
+              );
             });
         } else if (input.eventType == "PaymentSession.approved") {
           const card = await RyftPaymentMethods.findOne({
@@ -1270,7 +1293,7 @@ export class CardDetailsControllers {
                       invoiceId: res.data.Invoices[0].InvoiceID,
                     });
 
-                    console.log("pdf generated");
+                    console.log("pdf generated", new Date(), "Today's Date");
                   })
                   .catch(async (err) => {
                     refreshToken().then(async (res) => {
@@ -1293,7 +1316,11 @@ export class CardDetailsControllers {
                           invoiceId: res.data.Invoices[0].InvoiceID,
                         });
 
-                        console.log("pdf generated");
+                        console.log(
+                          "pdf generated",
+                          new Date(),
+                          "Today's Date"
+                        );
                       });
                     });
                   });
@@ -1344,19 +1371,28 @@ export class CardDetailsControllers {
                 .then(() =>
                   console.log(
                     "event webhook for add credits hits successfully.",
-                    paramsToSend
+                    paramsToSend,
+                    new Date(),
+                    "Today's Date"
                   )
                 )
                 .catch((err) =>
                   console.log(
                     err,
                     "error while triggering add credits webhooks failed",
-                    paramsToSend
+                    paramsToSend,
+                    new Date(),
+                    "Today's Date"
                   )
                 );
             })
             .catch((error) => {
-              console.log("error in webhook", error);
+              console.log(
+                "error in webhook",
+                error,
+                new Date(),
+                "Today's Date"
+              );
             });
         }
       }

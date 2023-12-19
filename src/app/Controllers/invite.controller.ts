@@ -55,7 +55,7 @@ export class invitedUsersController {
       } else {
         const salt = genSaltSync(10);
         const text = randomString(8, true);
-        console.log("🚀 PASSWORD --->", text);
+        console.log("🚀 PASSWORD --->", text, new Date(), "Today's Date");
         const credentials = {
           email: input.email,
           password: text,
@@ -343,7 +343,7 @@ export class invitedUsersController {
             password: text,
           };
           const hashPassword = hashSync(text, salt);
-          console.log("password", text);
+          console.log("password", text, new Date(), "Today's Date");
           input.password = hashPassword;
           sendEmailToInvitedAdmin(input.email, dataToSend);
           const permission = await Permissions.findOne({
@@ -400,7 +400,7 @@ export class invitedUsersController {
             password: text,
           };
           const hashPassword = hashSync(text, salt);
-          console.log("password", text);
+          console.log("password", text, new Date(), "Today's Date");
           input.password = hashPassword;
           sendEmailToInvitedAccountManager(input.email, dataToSend);
           const permission = await Permissions.findOne({

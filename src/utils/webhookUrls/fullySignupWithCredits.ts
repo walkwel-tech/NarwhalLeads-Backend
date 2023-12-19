@@ -23,19 +23,25 @@ export const fullySignupWithCredits = async (
         .then(async (response) => {
           console.log(
             "fullySignupWithCredits webhook hits successfully",
-            response.data
+            response.data,
+            new Date(),
+            "Today's Date"
           );
         })
         .catch((err) => {
           console.log(
             "fullySignupWithCredits webhook hits error",
-            err.response?.data
+            err.response?.data,
+            new Date(),
+            "Today's Date"
           );
         });
     } else {
       console.log(
         "No Access for hitting fullySignupWithCredits webhook to this " +
-          process.env.APP_ENV
+          process.env.APP_ENV,
+        new Date(),
+        "Today's Date"
       );
     }
   });

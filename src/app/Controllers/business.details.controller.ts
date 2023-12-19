@@ -153,11 +153,6 @@ export class BusinessDetailsController {
         (await BuisnessIndustries.findOne({
           industry: input?.businessIndustry,
         })) ?? ({} as BuisnessIndustriesInterface);
-      if (!industry) {
-        return res
-          .status(404)
-          .json({ error: { message: "industry does not exists." } });
-      }
       await User.findByIdAndUpdate(input.userId, {
         businessDetailsId: new ObjectId(userData._id),
         leadCost: industry?.leadCost,
@@ -212,12 +207,20 @@ export class BusinessDetailsController {
             },
             { new: true }
           );
-          console.log("success in creating contact");
+          console.log(
+            "success in creating contact",
+            new Date(),
+            "Today's Date"
+          );
         })
         .catch((err) => {
           refreshToken()
             .then(async (res: any) => {
-              console.log("Token updated while creating customer!!!");
+              console.log(
+                "Token updated while creating customer!!!",
+                new Date(),
+                "Today's Date"
+              );
               createContactOnXero(paramsToCreateContact, res.data.access_token)
                 .then(async (res: any) => {
                   await User.findOneAndUpdate(
@@ -230,18 +233,26 @@ export class BusinessDetailsController {
                     },
                     { new: true }
                   );
-                  console.log("success in creating contact");
+                  console.log(
+                    "success in creating contact",
+                    new Date(),
+                    "Today's Date"
+                  );
                 })
                 .catch((error) => {
                   console.log(
-                    "error in creating customer after token updation."
+                    "error in creating customer after token updation.",
+                    new Date(),
+                    "Today's Date"
                   );
                 });
             })
             .catch((err) => {
               console.log(
                 "error in creating contact on xero",
-                err.response.data
+                err.response.data,
+                new Date(),
+                "Today's Date"
               );
             });
         });
@@ -302,10 +313,14 @@ export class BusinessDetailsController {
       if (!paramsObj) {
         createCustomersOnRyftAndLeadByte(params)
           .then(() => {
-            console.log("Customer created!!!!");
+            console.log("Customer created!!!!", new Date(), "Today's Date");
           })
           .catch((err) => {
-            console.log("error while creating customer");
+            console.log(
+              "error while creating customer",
+              new Date(),
+              "Today's Date"
+            );
           });
       }
     } catch (error) {
@@ -349,14 +364,18 @@ export class BusinessDetailsController {
           .then(() =>
             console.log(
               "event webhook for updating business phone number hits successfully.",
-              reqBody
+              reqBody,
+              new Date(),
+              "Today's Date"
             )
           )
           .catch((err) =>
             console.log(
               err,
               "error while triggering business phone number webhooks failed",
-              reqBody
+              reqBody,
+              new Date(),
+              "Today's Date"
             )
           );
       }
@@ -803,10 +822,14 @@ export class BusinessDetailsController {
       if (!paramsObj) {
         createCustomerOnLeadByte(params)
           .then(() => {
-            console.log("Customer created!!!!");
+            console.log("Customer created!!!!", new Date(), "Today's Date");
           })
           .catch((ERR) => {
-            console.log("error while creating customer");
+            console.log(
+              "error while creating customer",
+              new Date(),
+              "Today's Date"
+            );
           });
       }
     } catch (error) {

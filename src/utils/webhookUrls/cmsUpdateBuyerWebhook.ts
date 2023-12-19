@@ -20,11 +20,18 @@ export const cmsUpdateBuyerWebhook = async (userId: String, cardId: String) => {
       .then(async (response) => {
         console.log(
           "cms update buyer webhook hits successfully",
-          response.data
+          response.data,
+          new Date(),
+          "Today's Date"
         );
       })
       .catch((err) => {
-        console.log("cms update buyer webhook hits error", err.response?.data);
+        console.log(
+          "cms update buyer webhook hits error",
+          err.response?.data,
+          new Date(),
+          "Today's Date"
+        );
       });
   });
 };

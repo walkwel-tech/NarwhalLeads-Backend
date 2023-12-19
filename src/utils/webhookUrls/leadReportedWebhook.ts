@@ -19,11 +19,20 @@ export const leadReportWebhook = (data: any) => {
     if (checkAccess()) {
       axios(config)
         .then(async (response) => {
-          console.log("lead Report accepted Webhook webhook hits successfully");
+          console.log(
+            "lead Report accepted Webhook webhook hits successfully",
+            new Date(),
+            "Today's Date"
+          );
           resolve(response.data);
         })
         .catch((err) => {
-          console.log("lead Report accepted Webhook webhook hits error", err);
+          console.log(
+            "lead Report accepted Webhook webhook hits error",
+            err,
+            new Date(),
+            "Today's Date"
+          );
 
           reject(err.response);
         });
