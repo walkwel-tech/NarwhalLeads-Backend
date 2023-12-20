@@ -8,7 +8,6 @@ export interface BuisnessIndustriesInterface extends Document {
   isActive: boolean;
   json: Object;
   isDeleted: boolean;
-  associatedCurrency: string,
-  country: string,
-
+  associatedCurrency: string;
+  country: string;
 }

@@ -48,6 +48,8 @@ export class IndustryController {
       leadCost: input.leadCost,
       columns: order,
       json: json,
+      country: currency.country,
+      associatedCurrency: Industry.currencyCode,
     };
 
     try {
