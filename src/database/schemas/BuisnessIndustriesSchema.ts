@@ -28,12 +28,11 @@ const BuisnessIndustriesSchema = new Schema(
       type: Date,
     },
     associatedCurrency: {
-      type: String
+      type: String,
     },
     country: {
-      type: String
+      type: String,
     },
-
   },
   { timestamps: true }
 );
