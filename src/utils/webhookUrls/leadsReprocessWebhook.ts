@@ -17,15 +17,27 @@ export const leadReprocessWebhook = async (leadData: Object) => {
     if (checkAccess()) {
       axios(config)
         .then(async (response) => {
-          console.log("Lead Process webhook hits successfully", response.data);
+          console.log(
+            "Lead Process webhook hits successfully",
+            response.data,
+            new Date(),
+            "Today's Date"
+          );
         })
         .catch((err) => {
-          console.log("Lead Process webhook hits error", err.response?.data);
+          console.log(
+            "Lead Process webhook hits error",
+            err.response?.data,
+            new Date(),
+            "Today's Date"
+          );
         });
     } else {
       console.log(
         "No Access for hitting Lead Process webhook to this " +
-          process.env.APP_ENV
+          process.env.APP_ENV,
+        new Date(),
+        "Today's Date"
       );
     }
   });

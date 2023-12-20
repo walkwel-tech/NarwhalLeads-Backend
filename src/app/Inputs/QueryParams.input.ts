@@ -23,7 +23,17 @@ export class QueryParams {
   @IsOptional()
   @IsString()
   commissionStatus?: string;
+  
+  @IsOptional()
+  @IsString()
+  sortBy?: string;
 
+  @IsOptional()
+  @IsString()
+  sortingOrder?: string;
+
+ 
+  
   @IsOptional()
   @IsNumber()
   page?: number;
@@ -31,4 +41,6 @@ export class QueryParams {
   @IsOptional()
   @IsNumber()
   perPage?: number;
+
+
 }

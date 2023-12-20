@@ -20,6 +20,12 @@ const UserSchema = new Schema(
       type: String,
       // required: true,
     },
+    currency: {
+      type: String,
+    },
+    country: {
+      type: String,
+    },
     role: {
       type: String,
       required: true,
@@ -217,6 +223,21 @@ const UserSchema = new Schema(
       default: false,
     },
     isAutoChargeEnabled: {
+      type: Boolean,
+      default: false,
+    },
+    pendingTransaction: {
+      type: String,
+    },
+    secondaryCredits: {
+      type: Number,
+      default: 0,
+    },
+    secondaryLeadCost: {
+      type: Number,
+      default: 0,
+    },
+    isSecondaryUsage: {
       type: Boolean,
       default: false,
     },

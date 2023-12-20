@@ -2,9 +2,27 @@ import axios from "axios";
 import { checkAccess } from "../../app/Middlewares/serverAccess";
 import { EVENT_TITLE, EVENT_TYPE } from "../constantFiles/events";
 import { saveEventLogs } from "../Functions/saveLogs";
+import { Types } from "mongoose";
+import { County } from "../Functions/flattenPostcodes";
 
 const POST = "post";
 
+export interface PostcodeWebhookParams {
+  userId: Types.ObjectId;
+  buyerId?: string;
+  bid?: string;
+  businessName: string | undefined;
+  eventCode: string;
+  topUpAmount?: string | number;
+  type?: string;
+  postCodeList?: County[];
+  miles?: string;
+  postcode?: string;
+  remainingCredits?: string | number;
+  businessSalesNumber?: string;
+  leadSchedule?: string[];
+  dailyLeadCap?: string | number;
+}
 export const eventsWebhook = (data: any) => {
   return new Promise((resolve, reject) => {
     let config = {
@@ -25,7 +43,12 @@ export const eventsWebhook = (data: any) => {
         config.url = `${process.env.POST_CODE_UPDATE_URL_WEBHOOK}`;
       } else if (data.eventCode === EVENT_TITLE.BUSINESS_PHONE_NUMBER) {
         config.url = `${process.env.BUSINESS_PHONE_NUMBER}`;
+      } else if (data.eventCode === EVENT_TITLE.DAILY_LEAD_CAP) {
+        config.url = `${process.env.DAILY_LEAD_CAP_WEBHOOK_URL}`;
+      } else if (data.eventCode === EVENT_TITLE.LEAD_SCHEDULE_UPDATE) {
+        config.url = `${process.env.LEAD_SCHEDULE_UPDATE_WEBHOOK_URL}`;
       }
+
       axios(config)
         .then((response) => {
           let params = {
@@ -51,7 +74,7 @@ export const eventsWebhook = (data: any) => {
           reject(err);
         });
     } else {
-      console.log("Access denied!!");
+      console.log("Access denied!!", new Date(), "Today's Date");
       resolve("Access denied!!");
     }
   });

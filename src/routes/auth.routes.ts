@@ -36,6 +36,8 @@ auth.post("/login", AuthController.login);
 auth.post("/adminLogin", AuthController.adminLogin);
 auth.post("/checkUser", AuthController.checkUser);
 auth.post("/forgetPassword", AuthController.forgetPassword);
+auth.post("/changeClientPassword",OnlyAdmins, AuthController.updateClientPassword);
+
 auth.get(
   "/user-status/:id",
   OnlyAdmins,

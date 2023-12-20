@@ -4,6 +4,7 @@ import { Auth, OnlyAdmins } from "../app/Middlewares";
 import { checkPermissions } from "../app/Middlewares/roleBasedAuthentication";
 import { MODULE, PERMISSIONS } from "../utils/Enums/permissions.enum";
 const industry: Router = Router();
+industry.get("/currency", OnlyAdmins, IndustryController.getCurrency);
 industry.post(
   "/:id",
   OnlyAdmins,

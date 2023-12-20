@@ -57,7 +57,7 @@ export class freeCreditsLinkController {
           .json({ error: { message: "Top-up amount is required" } });
       }
     } catch (error) {
-      console.log(error);
+      console.log(error, new Date(), "Today's Date");
       res
         .status(500)
         .json({ error: { message: "something Went wrong.", error } });
@@ -207,7 +207,9 @@ export class freeCreditsLinkController {
           isCommission: item?.isCommission,
         };
         if (item.accountManager.length > 0) {
-          dataToShow.accountManager = `${item.accountManager[0]?.firstName} ${item.accountManager[0]?.lastName}`;
+          dataToShow.accountManager = `${
+            item.accountManager[0]?.firstName || ""
+          } ${item.accountManager[0]?.lastName || ""}`;
         }
         return dataToShow;
       });

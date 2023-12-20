@@ -26,6 +26,12 @@ import { IntentInterface } from "../../utils/payment/stripe/paymentIntent";
 import { Types } from "mongoose";
 import { AUTO_UPDATED_TASKS } from "../../utils/Enums/autoUpdatedTasks.enum";
 import { AutoUpdatedTasksLogs } from "../Models/AutoChargeLogs";
+import { CARD } from "../../utils/Enums/cardType.enum";
+import { sendEmailForRequireActionAutocharge } from "../Middlewares/mail";
+import { BusinessDetails } from "../Models/BusinessDetails";
+import { CURRENCY } from "../../utils/Enums/currency.enum";
+import { CURRENCY_SIGN } from "../../utils/constantFiles/email.templateIDs";
+import { getOriginalAmountForStripe } from "../Controllers/cardDetails.controller";
 
 interface paymentParams {
   fixedAmount: number;
@@ -280,11 +286,64 @@ export const getUserPaymentMethods = async (id: string) => {
 
 export const chargeUser = async (params: IntentInterface) => {
   return new Promise((resolve, reject) => {
-    createPaymentOnStrip(params)
+    createPaymentOnStrip(params, true)
       .then(async (_res: any) => {
         console.log("payment initiated!", new Date(), {
           stripeUser: params.customer,
         });
+        if (_res.status === PAYMENT_STATUS.REQUIRES_ACTION) {
+          const user: UserInterface =
+            (await User.findOne({ email: params.email })) ??
+            ({} as UserInterface);
+          const cards: CardDetailsInterface =
+            (await CardDetails.findOne({
+              userId: user.id,
+              isDeleted: false,
+              isDefault: true,
+            })) ?? ({} as CardDetailsInterface);
+          const dataToSave = {
+            userId: user.id,
+            cardId: cards.id,
+            amount: params.amount,
+            status: PAYMENT_STATUS.REQUIRES_ACTION,
+            title: transactionTitle.CREDITS_ADDED,
+            paymentSessionId: _res.id,
+            paymentType: PAYMENT_TYPE_ENUM.AUTO_CHARGE,
+            notes: _res.client_secret,
+            transactionType: CARD.STRIPE,
+          };
+          await Transaction.create(dataToSave);
+          const business = await BusinessDetails.findById(
+            user.businessDetailsId
+          );
+          let originalAmount = Math.ceil(
+            getOriginalAmountForStripe(params?.amount || 0, user.currency)
+          );
+
+          let message = {
+            firstName: user?.firstName,
+            lastName: user?.lastName,
+            //@ts-ignore
+            businessName: business?.businessName,
+            //@ts-ignore
+            phone: user?.phoneNumber,
+            email: user?.email,
+            credit: `${user?.credits}`,
+            paymentAmount: `${originalAmount}`,
+            cardNumberEnd: cards?.cardNumber,
+            cardHolderName: cards?.cardHolderName,
+            currency: CURRENCY_SIGN.GBP,
+            isIncVat: true,
+          };
+          if (user.currency === CURRENCY.DOLLER) {
+            message.currency = CURRENCY_SIGN.USD;
+          } else if (user.currency === CURRENCY.EURO) {
+            message.currency = CURRENCY_SIGN.EUR;
+            message.isIncVat = false;
+          }
+
+          sendEmailForRequireActionAutocharge(user.email, message);
+        }
         resolve(_res);
       })
       .catch(async (err) => {
@@ -351,7 +410,7 @@ export const handleFailedCharge = async (
         customer: user?.stripeClientId,
         cardId: card.id,
         paymentMethod: card?.paymentMethod,
-        // currency: user.currency,
+        currency: user.currency,
       };
       return await chargeUser(params);
     } else {
@@ -365,9 +424,8 @@ export const autoTopUp = async (
   user: UserInterface,
   paymentMethod: CardDetailsInterface
 ) => {
-  const params = {
-    amount:
-      (user?.autoChargeAmount + (user?.autoChargeAmount * VAT) / 100) * 100,
+  let params = {
+    amount: user.autoChargeAmount,
     email: user?.email,
     cardNumber: paymentMethod?.cardNumber,
     expiryMonth: paymentMethod?.expiryMonth,
@@ -378,10 +436,12 @@ export const autoTopUp = async (
     customer: user?.stripeClientId,
     cardId: paymentMethod.id,
     paymentMethod: paymentMethod?.paymentMethod,
-    // currency: user?.currency,
+    currency: user?.currency,
   };
+  if (user.currency === CURRENCY.POUND || user.currency === CURRENCY.DOLLER) {
+    params.amount = user.autoChargeAmount + (user.autoChargeAmount * VAT) / 100;
+  }
   const success: any = await chargeUser(params);
-
   return success;
 };
 

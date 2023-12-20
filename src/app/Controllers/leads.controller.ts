@@ -45,8 +45,14 @@ import { columnsObjects } from "../../types/columnsInterface";
 import { leadReportAcceptedWebhook } from "../../utils/webhookUrls/leadReportedAcceptedWebhook";
 import { getLeadCenterToken } from "../../utils/Functions/getLeadCenterToken";
 
-import { eventsWebhook } from "../../utils/webhookUrls/eventExpansionWebhook";
+import {
+  PostcodeWebhookParams,
+  eventsWebhook,
+} from "../../utils/webhookUrls/eventExpansionWebhook";
 import { EVENT_TITLE } from "../../utils/constantFiles/events";
+import { flattenPostalCodes } from "../../utils/Functions/flattenPostcodes";
+import { POSTCODE_TYPE } from "../../utils/Enums/postcode.enum";
+import { ONBOARDING_PERCENTAGE } from "../../utils/constantFiles/OnBoarding.keys";
 
 const ObjectId = mongoose.Types.ObjectId;
 
@@ -98,14 +104,18 @@ export class LeadsController {
         .then(() =>
           console.log(
             "event webhook for zero credits hits successfully.",
-            paramsToSend
+            paramsToSend,
+            new Date(),
+            "Today's Date"
           )
         )
         .catch((err) =>
           console.log(
             err,
             "error while triggering zero credits webhooks failed",
-            paramsToSend
+            paramsToSend,
+            new Date(),
+            "Today's Date"
           )
         );
     }
@@ -163,7 +173,7 @@ export class LeadsController {
       notify(user.smsPhoneNumber, dataToSent);
     }
     if (user?.userLeadsDetailsId?.sendDataToZapier) {
-      sendLeadDataToZap(user.userLeadsDetailsId.zapierUrl, input)
+      sendLeadDataToZap(user.userLeadsDetailsId.zapierUrl, input, user)
         .then((res) => {})
         .catch((err) => {});
     }
@@ -195,9 +205,51 @@ export class LeadsController {
       leftCredits = credits - industry?.leadCost;
       leadcpl = industry?.leadCost;
     }
-    const userf = await User.findByIdAndUpdate(user?.id, {
-      credits: leftCredits,
-    });
+    const userf =
+      (await User.findByIdAndUpdate(
+        user?.id,
+        {
+          credits: leftCredits,
+        },
+        { new: true }
+      )) ?? ({} as UserInterface);
+    if (
+      (userf?.credits === 0 || userf?.credits < parseInt(userf?.leadCost)) &&
+      user?.onBoardingPercentage === ONBOARDING_PERCENTAGE.CARD_DETAILS
+    ) {
+      let paramsToSend: PostcodeWebhookParams = {
+        userId: user._id,
+        buyerId: user.buyerId,
+        businessName: user.businessDetailsId.businessName,
+        eventCode: EVENT_TITLE.ZERO_CREDITS,
+        remainingCredits: userf?.credits,
+      };
+      if (user.userLeadsDetailsId.type === POSTCODE_TYPE.RADIUS) {
+        (paramsToSend.type = POSTCODE_TYPE.RADIUS),
+          (paramsToSend.postcode = user.userLeadsDetailsId.postcode),
+          (paramsToSend.miles = user.userLeadsDetailsId?.miles);
+      } else {
+        paramsToSend.postCodeList = flattenPostalCodes(
+          user.userLeadsDetailsId?.postCodeTargettingList
+        );
+      }
+
+      await eventsWebhook(paramsToSend)
+        .then(() =>
+          console.log(
+            "event webhook for zero credits hits successfully.",
+            paramsToSend
+          )
+        )
+        .catch((err) =>
+          console.log(
+            err,
+            "error while triggering zero credits webhooks failed",
+            paramsToSend
+          )
+        );
+    }
+
     if (leftCredits < leadcpl * PREMIUM_PROMOLINK.LEADS_THRESHOLD) {
       const txn = await Transaction.find({
         title: transactionTitle.CREDITS_ADDED,
@@ -211,7 +263,7 @@ export class LeadsController {
           name: user?.firstName + " " + user?.lastName,
         });
       } else {
-        console.log("Email already send.");
+        console.log("Email already send.", new Date(), "Today's Date");
       }
     }
     if (leftCredits <= 0) {
@@ -447,7 +499,9 @@ export class LeadsController {
         leadReportAcceptedWebhook(leadUser, reqBody)
           .then(() => {
             console.log(
-              "lead Report accepted Webhook webhook hits successfully"
+              "lead Report accepted Webhook webhook hits successfully",
+              new Date(),
+              "Today's Date"
             );
           })
           .catch((err) => {
@@ -457,7 +511,9 @@ export class LeadsController {
                   leadReportAcceptedWebhook(leadUser, reqBody)
                     .then(() => {
                       console.log(
-                        "lead Report accepted Webhook webhook hits successfully"
+                        "lead Report accepted Webhook webhook hits successfully",
+                        new Date(),
+                        "Today's Date"
                       );
                     })
                     .catch((err) =>
@@ -499,7 +555,12 @@ export class LeadsController {
             return res.json({ data: leadsUpdate });
           })
           .catch(async (err) => {
-            console.log("error while adding credits", err);
+            console.log(
+              "error while adding credits",
+              err,
+              new Date(),
+              "Today's Date"
+            );
             const dataToSave: any = {
               userId: user?.id,
               cardId: card?.id,
@@ -1041,7 +1102,7 @@ export class LeadsController {
             // item.columns = industry?.columns ? industry.columns: [];
           })
           .catch((error: any) => {
-            console.log("ERRORR: ", error);
+            console.log("ERRORR: ", error, new Date(), "Today's Date");
           });
         // Use explicit Promise construction
         return new Promise((resolve, reject) => {
@@ -1810,7 +1871,7 @@ export class LeadsController {
               resolve(item); // Resolve the promise with the modified item
             })
             .catch((error) => {
-              console.log("err", error);
+              console.log("err", error, new Date(), "Today's Date");
               // item.leads.businessName = "Deleted";
               // item.leads.businessIndustry = "Deleted";
               reject(error); // Reject the promise if there's an error
@@ -2285,6 +2346,9 @@ export class LeadsController {
     let sortingOrder = _req.query.sortingOrder || sort.DESC;
     const userId = _req.user?.id;
     const status = _req.query.status;
+    let accountManager=_req.query.accountManagerId
+    let industry = _req.query.industry;
+
     if (sortingOrder == sort.ASC) {
       sortingOrder = 1;
     } else {
@@ -2306,6 +2370,23 @@ export class LeadsController {
         //   },
         // ],
       };
+      if (industry) {
+        let bids: any = [];
+        const users = await User.find({ businessIndustryId: industry });
+        users.map((user) => {
+          return bids.push(user.buyerId);
+        });
+        dataToFind.bid = { $in: bids };
+      }
+
+      if(accountManager){
+        let bids: any = [];
+        const users = await User.find({ accountManager: new ObjectId(accountManager) });
+        users.map((user) => {
+          return bids.push(user.buyerId);
+        });
+        dataToFind.bid = { $in: bids };
+      }
       const user = await User.findById(userId);
       if (user?.role == RolesEnum.INVITED) {
         const invitedBy = await User.findOne({ _id: user?.invitedById });
@@ -2415,6 +2496,8 @@ export class LeadsController {
     let id = _req.query.id;
     let industry = _req.query.industry;
     let sortingOrder = _req.query.sortingOrder || sort.DESC;
+    let accountManager=_req.query.accountManagerId
+
     if (sortingOrder == sort.ASC) {
       sortingOrder = 1;
     } else {
@@ -2474,6 +2557,14 @@ export class LeadsController {
       }
       if (status) {
         dataToFind.status = status;
+      }
+      if(accountManager){
+        let bids: any = [];
+        const users = await User.find({ accountManager: new ObjectId(accountManager) });
+        users.map((user) => {
+          return bids.push(user.buyerId);
+        });
+        dataToFind.bid = { $in: bids };
       }
       const [query]: any = await Leads.aggregate([
         {

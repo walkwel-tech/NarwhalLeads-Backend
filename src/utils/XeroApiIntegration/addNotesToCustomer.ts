@@ -34,7 +34,9 @@ export const createNotesOnXero = (
       .catch(async (err) => {
         console.log(
           "Xero Error while adding notes",
-          err.response.data.Elements
+          err.response.data.Elements,
+          new Date(),
+          "Today's Date"
         );
         reject(err);
       });

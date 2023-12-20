@@ -14,6 +14,7 @@ import { UserInterface } from "../../types/UserInterface";
 import mongoose from "mongoose";
 const LIMIT = 10;
 const ObjectId = mongoose.Types.ObjectId;
+import { countryCurrency } from "../../utils/constantFiles/currencyConstants";
 
 export class IndustryController {
   static create = async (req: Request, res: Response) => {
@@ -21,6 +22,7 @@ export class IndustryController {
     const Industry = new IndustryInput();
     Industry.industry = input.industry;
     Industry.leadCost = input.leadCost;
+    Industry.currencyCode = input.currencyCode;
 
     const errors = await validate(Industry);
 
@@ -34,11 +36,20 @@ export class IndustryController {
         .status(400)
         .json({ error: { message: "VALIDATIONS_ERROR", info: errorsInfo } });
     }
+    const currency = countryCurrency.find(
+      ({ value }) => value === input.currencyCode
+    );
+    if (!currency) {
+      return res.status(400).json({ error: { message: "Invalid currency" } });
+    }
+
     let dataToSave: Partial<BuisnessIndustriesInterface> = {
       industry: input.industry.trim(),
       leadCost: input.leadCost,
       columns: order,
       json: json,
+      country: currency.country,
+      associatedCurrency: Industry.currencyCode,
     };
 
     try {
@@ -252,6 +263,16 @@ export class IndustryController {
     }
   };
 
+  static getCurrency = async (req: Request, res: Response) => {
+    try {
+      return res.json({ data: countryCurrency });
+    } catch (error) {
+      return res
+        .status(500)
+        .json({ error: { message: "Something went wrong.", error } });
+    }
+  };
+
   static viewbyId = async (req: Request, res: Response) => {
     try {
       const data = await BuisnessIndustries.findById(req.params.id);
@@ -302,7 +323,7 @@ export class IndustryController {
   static showIndustries = async (req: Request, res: Response) => {
     try {
       const data = await BuisnessIndustries.find(
-        { isActive: true },
+        { isActive: true, isDeleted: false },
         { industry: 1 }
       );
       if (data) {

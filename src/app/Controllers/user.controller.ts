@@ -47,14 +47,23 @@ import {
   BusinessDetailsInterface,
   isBusinessObject,
 } from "../../types/BusinessInterface";
+import { UserLeadsDetailsInterface } from "../../types/LeadDetailsInterface";
 import {
-  UserLeadsDetailsInterface,
-  isUserLeadDetailsObject,
-} from "../../types/LeadDetailsInterface";
-import { eventsWebhook } from "../../utils/webhookUrls/eventExpansionWebhook";
+  PostcodeWebhookParams,
+  eventsWebhook,
+} from "../../utils/webhookUrls/eventExpansionWebhook";
 import { EVENT_TITLE } from "../../utils/constantFiles/events";
-// import { sendLeadDataToZap } from "../../utils/webhookUrls/sendDataZap";
-// import { BuisnessIndustries } from "../Models/BuisnessIndustries";
+import { flattenPostalCodes } from "../../utils/Functions/flattenPostcodes";
+import {
+  autoTopUp,
+  getUserPaymentMethods,
+  getUsersWithAutoChargeEnabled,
+} from "../AutoUpdateTasks/autoCharge";
+import { AUTO_UPDATED_TASKS } from "../../utils/Enums/autoUpdatedTasks.enum";
+import { AutoUpdatedTasksLogs } from "../Models/AutoChargeLogs";
+import { POSTCODE_TYPE } from "../../utils/Enums/postcode.enum";
+import { arraysAreEqual } from "../../utils/Functions/postCodeMatch";
+
 const ObjectId = mongoose.Types.ObjectId;
 
 const LIMIT = 10;
@@ -631,7 +640,10 @@ export class UsersControllers {
     let user: Partial<UserInterface> = req.user ?? ({} as UserInterface);
     const { id } = req.params;
     const input = req.body;
-    const checkUser = (await User.findById(id)) ?? ({} as UserInterface);
+    const checkUser =
+      (await User.findById(id)
+        .populate("businessDetailsId")
+        .populate("userLeadsDetailsId")) ?? ({} as UserInterface);
     if (input.password) {
       delete input.password;
     }
@@ -642,7 +654,6 @@ export class UsersControllers {
     if (user.role === RolesEnum.USER && (input.email || input.email == "")) {
       input.email = user?.email;
     }
-
     if (user.role === RolesEnum.SUPER_ADMIN && input.email) {
       const email = await User.findOne({
         email: input.email,
@@ -663,7 +674,7 @@ export class UsersControllers {
       );
       const userForActivity = await User.findById(
         id,
-        " -_id -businessDetailsId -businessIndustryId -userLeadsDetailsId -onBoarding -createdAt -updatedAt"
+        " -__v -_id -businessDetailsId -businessIndustryId -userLeadsDetailsId -userServiceId -accountManager -onBoarding -createdAt -updatedAt -password"
       ).lean();
       if (
         input.paymentMethod === paymentMethodEnum.WEEKLY_PAYMENT_METHOD &&
@@ -713,7 +724,6 @@ export class UsersControllers {
           onBoarding: object,
         });
       }
-
       if (
         input.isCreditsAndBillingEnabled === true &&
         checkUser?.role === RolesEnum.NON_BILLABLE
@@ -731,6 +741,33 @@ export class UsersControllers {
             onBoarding: object,
           });
         }
+      }
+
+      let updatedUser;
+      if (input.secondaryCredits) {
+        updatedUser = await User.findByIdAndUpdate(
+          checkUser?.id,
+          {
+            secondaryCredits: input.secondaryCredits + user.secondaryCredits,
+            ...(user.leadCost &&
+            input.secondaryCredits + user.secondaryCredits > user.leadCost
+              ? { isSecondaryUsage: true }
+              : {}),
+          },
+          { new: true }
+        );
+      }
+
+      if (input.secondaryLeadCost) {
+        await User.findByIdAndUpdate(checkUser?.id, {
+          secondaryLeadCost: input.secondaryLeadCost,
+          ...(updatedUser &&
+          updatedUser.secondaryCredits > input.secondaryLeadCost
+            ? { isSecondaryUsage: true }
+            : checkUser.secondaryCredits > input.secondaryLeadCost
+            ? { isSecondaryUsage: true }
+            : {}),
+        });
       }
 
       if (input.smsPhoneNumber) {
@@ -752,6 +789,7 @@ export class UsersControllers {
           });
         }
       }
+
       if (!checkUser) {
         return res
           .status(404)
@@ -825,20 +863,45 @@ export class UsersControllers {
           { new: true }
         );
       }
-      if (input.businessSalesNumber) {
+      if (
+        input.businessSalesNumber &&
+        checkUser?.onBoardingPercentage === ONBOARDING_PERCENTAGE.CARD_DETAILS
+      ) {
         if (!checkUser.businessDetailsId) {
           return res
             .status(404)
             .json({ error: { message: "business details not found" } });
         }
 
-        await BusinessDetails.findByIdAndUpdate(
+        const details = await BusinessDetails.findByIdAndUpdate(
           checkUser?.businessDetailsId,
           { businessSalesNumber: input.businessSalesNumber },
 
           { new: true }
         );
+        let reqBody: PostcodeWebhookParams = {
+          userId: checkUser?._id,
+          bid: checkUser?.buyerId,
+          businessName: details?.businessName,
+          businessSalesNumber: input.businessSalesNumber,
+          eventCode: EVENT_TITLE.BUSINESS_PHONE_NUMBER,
+        };
+        await eventsWebhook(reqBody)
+          .then(() =>
+            console.log(
+              "event webhook for updating business phone number hits successfully.",
+              reqBody
+            )
+          )
+          .catch((err) =>
+            console.log(
+              err,
+              "error while triggering business phone number webhooks failed",
+              reqBody
+            )
+          );
       }
+
       if (input.businessCity) {
         if (!checkUser.businessDetailsId) {
           return res
@@ -949,12 +1012,57 @@ export class UsersControllers {
             .status(404)
             .json({ error: { message: "lead details not found" } });
         }
-        await UserLeadsDetails.findByIdAndUpdate(
-          checkUser?.userLeadsDetailsId,
-          { leadSchedule: input.leadSchedule },
+        const userBeforeMod =
+          (await UserLeadsDetails.findById(checkUser?.userLeadsDetailsId)) ??
+          ({} as UserLeadsDetailsInterface);
 
-          { new: true }
+        const userAfterMod =
+          (await UserLeadsDetails.findByIdAndUpdate(
+            checkUser?.userLeadsDetailsId,
+            { leadSchedule: input.leadSchedule },
+
+            { new: true }
+          )) ?? ({} as UserLeadsDetailsInterface);
+        const business = await BusinessDetails.findById(
+          checkUser.businessDetailsId
         );
+
+        if (
+          input.leadSchedule &&
+          !arraysAreEqual(input.leadSchedule, userBeforeMod?.leadSchedule) &&
+          user?.onBoardingPercentage === ONBOARDING_PERCENTAGE.CARD_DETAILS
+        ) {
+          let paramsToSend: PostcodeWebhookParams = {
+            userId: checkUser?._id,
+            buyerId: checkUser?.buyerId,
+            businessName: business?.businessName,
+            eventCode: EVENT_TITLE.LEAD_SCHEDULE_UPDATE,
+            leadSchedule: userAfterMod?.leadSchedule,
+          };
+          if (userAfterMod.type === POSTCODE_TYPE.RADIUS) {
+            (paramsToSend.type = POSTCODE_TYPE.RADIUS),
+              (paramsToSend.postcode = userAfterMod.postcode),
+              (paramsToSend.miles = userAfterMod?.miles);
+          } else {
+            paramsToSend.postCodeList = flattenPostalCodes(
+              userAfterMod?.postCodeTargettingList
+            );
+          }
+          await eventsWebhook(paramsToSend)
+            .then(() =>
+              console.log(
+                "event webhook for postcode updates hits successfully.",
+                paramsToSend
+              )
+            )
+            .catch((err) =>
+              console.log(
+                err,
+                "error while triggering postcode updates webhooks failed",
+                paramsToSend
+              )
+            );
+        }
       }
       if (input.postCodeTargettingList) {
         if (!checkUser.userLeadsDetailsId) {
@@ -1018,12 +1126,56 @@ export class UsersControllers {
             .json({ error: { message: "lead details not found" } });
         }
         input.daily = parseInt(input.daily);
-        await UserLeadsDetails.findByIdAndUpdate(
-          checkUser?.userLeadsDetailsId,
-          { daily: input.daily },
-
-          { new: true }
+        const business = await BusinessDetails.findById(
+          checkUser.businessDetailsId
         );
+        const userBeforeMod =
+          (await UserLeadsDetails.findById(checkUser?.userLeadsDetailsId)) ??
+          ({} as UserLeadsDetailsInterface);
+        const userAfterMod =
+          (await UserLeadsDetails.findByIdAndUpdate(
+            checkUser?.userLeadsDetailsId,
+            { daily: input.daily },
+
+            { new: true }
+          )) ?? ({} as UserLeadsDetailsInterface);
+        if (
+          input.daily != userBeforeMod?.daily &&
+          user?.onBoardingPercentage === ONBOARDING_PERCENTAGE.CARD_DETAILS
+        ) {
+          let paramsToSend: PostcodeWebhookParams = {
+            userId: checkUser?._id,
+            buyerId: checkUser?.buyerId,
+            businessName: business?.businessName,
+            eventCode: EVENT_TITLE.DAILY_LEAD_CAP,
+
+            dailyLeadCap: userAfterMod?.daily,
+          };
+          if (userAfterMod.type === POSTCODE_TYPE.RADIUS) {
+            (paramsToSend.type = POSTCODE_TYPE.RADIUS),
+              (paramsToSend.postcode = userAfterMod.postcode),
+              (paramsToSend.miles = userAfterMod?.miles);
+          } else {
+            paramsToSend.postCodeList = flattenPostalCodes(
+              userAfterMod?.postCodeTargettingList
+            );
+          }
+
+          await eventsWebhook(paramsToSend)
+            .then(() =>
+              console.log(
+                "event webhook for postcode updates hits successfully.",
+                paramsToSend
+              )
+            )
+            .catch((err) =>
+              console.log(
+                err,
+                "error while triggering postcode updates webhooks failed",
+                paramsToSend
+              )
+            );
+        }
       }
       if (
         input.credits &&
@@ -1043,7 +1195,11 @@ export class UsersControllers {
         createSessionUnScheduledPayment(params)
           .then(async (_res: any) => {
             if (!checkUser.xeroContactId) {
-              console.log("xeroContact ID not found. Failed to generate pdf.");
+              console.log(
+                "xeroContact ID not found. Failed to generate pdf.",
+                new Date(),
+                "Today's Date"
+              );
             }
             const dataToSave: any = {
               userId: checkUser?.id,
@@ -1078,7 +1234,7 @@ export class UsersControllers {
                     invoiceId: res.data.Invoices[0].InvoiceID,
                   });
 
-                  console.log("pdf generated");
+                  console.log("pdf generated", new Date(), "Today's Date");
                 })
                 .catch(async (err) => {
                   refreshToken().then(async (res) => {
@@ -1102,13 +1258,17 @@ export class UsersControllers {
                         invoiceId: res.data.Invoices[0].InvoiceID,
                       });
 
-                      console.log("pdf generated");
+                      console.log("pdf generated", new Date(), "Today's Date");
                     });
                   });
                 });
             }
 
-            console.log("payment success!!!!!!!!!!!!!");
+            console.log(
+              "payment success!!!!!!!!!!!!!",
+              new Date(),
+              "Today's Date"
+            );
 
             await User.findByIdAndUpdate(
               id,
@@ -1158,12 +1318,13 @@ export class UsersControllers {
         const leadData = await UserLeadsDetails.findById(
           result?.userLeadsDetailsId
         );
+
         const formattedPostCodes = leadData?.postCodeTargettingList
           .map((item: any) => item.postalCode)
           .flat();
         const userAfterMod = await User.findById(
           id,
-          " -_id -businessDetailsId -businessIndustryId -userLeadsDetailsId -onBoarding -createdAt -updatedAt"
+          "-__v -_id -businessDetailsId -businessIndustryId -userServiceId -accountManager -userLeadsDetailsId -onBoarding -createdAt -updatedAt -password"
         ).lean();
         const message = {
           firstName: result?.firstName,
@@ -1187,6 +1348,7 @@ export class UsersControllers {
           area: `${formattedPostCodes}`,
           leadCost: user?.leadCost,
         };
+
         sendEmailForUpdatedDetails(message);
 
         const fields = findUpdatedFields(userForActivity, userAfterMod);
@@ -1217,7 +1379,7 @@ export class UsersControllers {
           });
         } else if (input.paymentMethod) {
           return res.json({
-            message: "Payment Mode Changed Successfully",
+            message: "Updated Successfully",
             data: result,
           });
         } else {
@@ -1241,6 +1403,7 @@ export class UsersControllers {
               businesBeforeUpdate,
               businesAfterUpdate
             );
+
             const isEmpty = Object.keys(fields.updatedFields).length === 0;
             if (!isEmpty && user?.isSignUpCompleteWithCredit) {
               const activity = {
@@ -1390,6 +1553,15 @@ export class UsersControllers {
         dataToFind = {
           ...dataToFind,
         };
+      }
+      if(_req.query.accountManagerId){
+        dataToFind.accountManager=new ObjectId(_req.query.accountManagerId)
+      }
+      if(_req.query.clientType===FILTER_FOR_CLIENT.NON_BILLABLE){
+        dataToFind.isCreditsAndBillingEnabled=false
+      }
+      if(_req.query.clientType===FILTER_FOR_CLIENT.BILLABLE){
+        dataToFind.isCreditsAndBillingEnabled=true
       }
       if (status) {
         dataToFind.status = status;
@@ -1794,7 +1966,7 @@ export class UsersControllers {
                 invoiceId: res.data.Invoices[0].InvoiceID,
               });
 
-              console.log("pdf generated");
+              console.log("pdf generated", new Date(), "Today's Date");
             })
             .catch(async (err) => {
               refreshToken().then(async (res) => {
@@ -1817,7 +1989,7 @@ export class UsersControllers {
                     invoiceId: res.data.Invoices[0].InvoiceID,
                   });
 
-                  console.log("pdf generated");
+                  console.log("pdf generated", new Date(), "Today's Date");
                 });
               });
             });
@@ -1826,29 +1998,44 @@ export class UsersControllers {
               ? user?.businessDetailsId
               : null;
 
-          const userLead: UserLeadsDetailsInterface | null =
-            isUserLeadDetailsObject(user?.userLeadsDetailsId)
-              ? user?.userLeadsDetailsId
-              : null;
-          const paramsToSend = {
+          const userLead =
+            (await UserLeadsDetails.findById(
+              user?.userLeadsDetailsId,
+              "postCodeTargettingList"
+            )) ?? ({} as UserLeadsDetailsInterface);
+          let paramsToSend: PostcodeWebhookParams = {
             userId: user._id,
             buyerId: user.buyerId,
-            buisnessName: userBusiness?.businessName,
+            businessName: userBusiness?.businessName,
             eventCode: EVENT_TITLE.ADD_CREDITS,
-            postCodeList: userLead?.postCodeTargettingList,
             topUpAmount: credits,
           };
+          if (userLead.type === POSTCODE_TYPE.RADIUS) {
+            (paramsToSend.type = POSTCODE_TYPE.RADIUS),
+              (paramsToSend.postcode = userLead.postcode),
+              (paramsToSend.miles = userLead?.miles);
+          } else {
+            paramsToSend.postCodeList = flattenPostalCodes(
+              userLead?.postCodeTargettingList
+            );
+          }
           await eventsWebhook(paramsToSend)
             .then(() =>
               console.log(
                 "event webhook for add credits hits successfully.",
-                paramsToSend
+                paramsToSend,
+                new Date(),
+                "Today's Date",
+                user._id,
+                "user's id"
               )
             )
             .catch((err) =>
               console.log(
                 "error while triggering webhooks for add credits failed",
-                paramsToSend
+                paramsToSend,
+                new Date(),
+                "Today's Date"
               )
             );
         });
@@ -1937,14 +2124,14 @@ export class UsersControllers {
       let response = {};
       let status;
       try {
-        await sendLeadDataToZap(input.zapierUrl, result);
+        await sendLeadDataToZap(input.zapierUrl, result, checkUser);
         message = "Test Lead Sent!";
-        response = { message: message };
+        response = { data: message };
         status = 200;
       } catch (err) {
         message = "Error while sending Test Lead!";
         status = 400;
-        response = message;
+        response = { data: message };
       }
 
       return res.status(status).json(response);
@@ -1957,6 +2144,50 @@ export class UsersControllers {
           err,
         },
       });
+    }
+  };
+
+  static autoChargeNow = async (req: any, res: Response): Promise<any> => {
+    const id = req.params.id;
+    try {
+      const usersToCharge = await getUsersWithAutoChargeEnabled(id);
+      for (const user of usersToCharge) {
+        const dataToSave = {
+          userId: user.id,
+          title: AUTO_UPDATED_TASKS.INSTANT_AUTO_CHARGE,
+        };
+        let logs = await AutoUpdatedTasksLogs.create(dataToSave);
+        if (usersToCharge.length === 0) {
+          return res.status(400).json({ data: "No users to charge." });
+        }
+        for (const user of usersToCharge) {
+          const paymentMethod = await getUserPaymentMethods(user.id);
+
+          if (paymentMethod) {
+            await AutoUpdatedTasksLogs.findByIdAndUpdate(logs.id, {
+              status: 200,
+            });
+            try {
+              await autoTopUp(user, paymentMethod);
+              return res.json({
+                data: "Payment initiated, your credits will be added soon!",
+              });
+            } catch (err) {
+              return res
+                .status(500)
+                .json({ message: "Something went wrong", err });
+            }
+          } else {
+            await AutoUpdatedTasksLogs.findByIdAndUpdate(logs.id, {
+              notes: "payment method not found",
+              status: 400,
+            });
+            return res.status(400).json({ data: "please add payment method." });
+          }
+        }
+      }
+    } catch (error) {
+      console.error("Error in Auto charge:", error.response);
     }
   };
 }

@@ -27,6 +27,9 @@ const upload = multer({
   ),
   limits: { fileSize: maxSize },
 });
+
+user.post("/autoCharge/:id", Auth, UsersControllers.autoChargeNow);
+
 user.post(
   "/account-manager/stats",
   OnlyAdmins,

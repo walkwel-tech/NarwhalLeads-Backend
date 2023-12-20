@@ -43,7 +43,7 @@ export class nonBillableUsersController {
       } else {
         const salt = genSaltSync(10);
         const text = randomString(8, true);
-        console.log("🚀 PASSWORD --->", text);
+        console.log("🚀 PASSWORD --->", text, new Date(), "Today's Date");
         const credentials = {
           email: input.email,
           password: text,
@@ -55,18 +55,9 @@ export class nonBillableUsersController {
         const allInvites = await User.findOne({ role: RolesEnum.NON_BILLABLE })
           .sort({ rowIndex: -1 })
           .limit(1);
-        const accManagers = await User.aggregate([
-          {
-            $match: {
-              role: RolesEnum.ACCOUNT_MANAGER,
-              isDeleted: false,
-              isActive: true,
-            },
-          },
-          { $sample: { size: 1 } },
-        ]);
-        let accountManager = accManagers[0];
+
         const dataToSave = {
+          isNewUser: true,
           firstName: input.firstName,
           lastName: input.lastName,
           email: input.email,
@@ -78,7 +69,6 @@ export class nonBillableUsersController {
           //@ts-ignore
           rowIndex: allInvites?.rowIndex + 1 || 0,
           credits: 0,
-          accountManager: accountManager._id,
           isCreditsAndBillingEnabled: false,
           onBoarding: [
             {

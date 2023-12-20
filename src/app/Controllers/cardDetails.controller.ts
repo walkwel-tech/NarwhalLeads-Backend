@@ -79,9 +79,21 @@ import { createCustomerOnStripe } from "../../utils/createCustomer/createOnStrip
 import { getPaymentStatus } from "../../utils/payment/stripe/retrievePaymentStatus";
 import { AMOUNT } from "../../utils/constantFiles/stripeConstants";
 import { cmsUpdateBuyerWebhook } from "../../utils/webhookUrls/cmsUpdateBuyerWebhook";
-import { eventsWebhook } from "../../utils/webhookUrls/eventExpansionWebhook";
+import {
+  PostcodeWebhookParams,
+  eventsWebhook,
+} from "../../utils/webhookUrls/eventExpansionWebhook";
 
 import { EVENT_TITLE } from "../../utils/constantFiles/events";
+import {
+  countryCurrency,
+  stripeCurrency,
+} from "../../utils/constantFiles/currencyConstants";
+import { flattenPostalCodes } from "../../utils/Functions/flattenPostcodes";
+import { UserLeadsDetailsInterface } from "../../types/LeadDetailsInterface";
+import { POSTCODE_TYPE } from "../../utils/Enums/postcode.enum";
+import { CURRENCY_SIGN } from "../../utils/constantFiles/email.templateIDs";
+import { CURRENCY } from "../../utils/Enums/currency.enum";
 const ObjectId = mongoose.Types.ObjectId;
 
 export class CardDetailsControllers {
@@ -594,7 +606,12 @@ export class CardDetailsControllers {
               });
             })
             .catch(async (err) => {
-              console.log("error in payment Api", err.response.data);
+              console.log(
+                "error in payment Api",
+                err.response.data,
+                new Date(),
+                "Today's Date"
+              );
               //fixme: store error transacation in db also
               return res.status(400).json({
                 data: err.response.data,
@@ -602,9 +619,20 @@ export class CardDetailsControllers {
             });
         }
       } else {
-        const amountToPay =
-          (parseInt(input?.amount) + (parseInt(input?.amount) * VAT) / 100) *
-          100;
+        const currencyObj = countryCurrency.find(
+          ({ country, value }) =>
+            country === user?.country && value === user?.currency
+        );
+        let amountToPay;
+        if (currencyObj?.VAT) {
+          amountToPay =
+            (parseInt(input?.amount) +
+              (parseInt(input?.amount) * currencyObj?.VAT) / 100) *
+            100;
+        } else {
+          amountToPay = parseInt(input?.amount) * 100;
+        }
+
         const validateAmount = amountToPay / 100;
         if (validateAmount > AMOUNT.MAX) {
           return res.status(400).json({
@@ -614,9 +642,9 @@ export class CardDetailsControllers {
           });
         }
         const params: any = {
-          amount:
-            (parseInt(input?.amount) + (parseInt(input?.amount) * VAT) / 100) *
-            100,
+          amount: amountToPay,
+          // (parseInt(input?.amount) + (parseInt(input?.amount) * VAT) / 100) *
+          // 100,
           email: user?.email,
           cardNumber: card?.cardNumber,
           expiryMonth: card?.expiryMonth,
@@ -627,12 +655,17 @@ export class CardDetailsControllers {
           customer: user?.stripeClientId,
           cardId: card.id,
           paymentMethod: card?.paymentMethod,
+          currency: user.currency,
         };
-        createPaymentOnStrip(params)
+        createPaymentOnStrip(params, false)
           .then(async (_res: any) => {
-            console.log("payment initiated!");
+            console.log("payment initiated!", new Date(), "Today's Date");
             if (!user?.xeroContactId) {
-              console.log("xeroContact ID not found. Failed to generate pdf.");
+              console.log(
+                "xeroContact ID not found. Failed to generate pdf.",
+                new Date(),
+                "Today's Date"
+              );
             }
             let response: PaymentResponse = {
               message: "In progress",
@@ -648,7 +681,12 @@ export class CardDetailsControllers {
             });
           })
           .catch(async (err) => {
-            console.log("error in payment Api", err.response.data);
+            console.log(
+              "error in payment Api",
+              err.response.data,
+              new Date(),
+              "Today's Date"
+            );
             //fixme: store error transacation in db also
             return res.status(400).json({
               data: err.response.data,
@@ -661,6 +699,7 @@ export class CardDetailsControllers {
         .json({ error: { message: "Something went wrong." } });
     }
   };
+
   static createSession = async (req: Request, res: Response): Promise<any> => {
     const input = req.body;
     let sessionObject: any = {};
@@ -761,14 +800,22 @@ export class CardDetailsControllers {
           const business = await BusinessDetails.findById(
             userId?.businessDetailsId
           );
-          const message = {
+          let message = {
             firstName: userId?.firstName,
             amount: parseInt(input.data.amount) / 100,
             cardHolderName: `${userId?.firstName} ${userId?.lastName}`,
             cardNumberEnd: cardDetailsExist?.cardNumber,
             credits: userId?.credits,
             businessName: business?.businessName,
+            currency: CURRENCY_SIGN.GBP,
+            isIncVat: true,
           };
+          if (userId.currency === CURRENCY.DOLLER) {
+            message.currency = CURRENCY_SIGN.USD;
+          } else if (userId.currency === CURRENCY.EURO) {
+            message.currency = CURRENCY_SIGN.EUR;
+            message.isIncVat = false;
+          }
           sendEmailForPaymentFailure(userId?.email, message);
           let dataToSaveInTransaction: Partial<TransactionInterface> = {
             userId: userId?.id,
@@ -907,7 +954,15 @@ export class CardDetailsControllers {
                 cardNumberEnd: cardDetails?.cardNumber,
                 credits: userId?.credits,
                 businessName: business?.businessName,
+                currency: CURRENCY_SIGN.GBP,
+                isIncVat: true,
               };
+              if (userId.currency === CURRENCY.DOLLER) {
+                message.currency = CURRENCY_SIGN.USD;
+              } else if (userId.currency === CURRENCY.EURO) {
+                message.currency = CURRENCY_SIGN.EUR;
+                message.isIncVat = false;
+              }
               sendEmailForPaymentSuccess(userId?.email, message);
               let invoice: InvoiceInterface | null;
               if (userId?.xeroContactId) {
@@ -940,7 +995,7 @@ export class CardDetailsControllers {
                       invoiceId: res.data.Invoices[0].InvoiceID,
                     });
 
-                    console.log("pdf generated");
+                    console.log("pdf generated", new Date(), "Today's Date");
                   })
                   .catch(async (err) => {
                     refreshToken().then(async (res) => {
@@ -963,7 +1018,11 @@ export class CardDetailsControllers {
                           invoiceId: res.data.Invoices[0].InvoiceID,
                         });
 
-                        console.log("pdf generated");
+                        console.log(
+                          "pdf generated",
+                          new Date(),
+                          "Today's Date"
+                        );
                       });
                     });
                   });
@@ -987,7 +1046,12 @@ export class CardDetailsControllers {
               }
             })
             .catch((error) => {
-              console.log("error in webhook", error);
+              console.log(
+                "error in webhook",
+                error,
+                new Date(),
+                "Today's Date"
+              );
             });
         } else if (input.eventType == "PaymentSession.approved") {
           const card = await RyftPaymentMethods.findOne({
@@ -1033,18 +1097,38 @@ export class CardDetailsControllers {
       let userId = user.user ?? ({} as UserInterface);
       const card = user.card;
       const amount = parseInt(input.data.object?.amount);
-      let originalAmount = getOriginalAmountForStripe(amount);
+      let originalAmount = getOriginalAmountForStripe(
+        amount,
+        input.data.object?.currency
+      );
       if (userId) {
         if (input.type == STRIPE_PAYMENT_STATUS.FAILED) {
           const business = user.business;
-          const message = {
+          const cards = await CardDetails.findOne({
+            userId: userId?._id,
+            isDefault: true,
+            isDeleted: false,
+          });
+
+          let message = {
             firstName: userId?.firstName,
-            amount: parseInt(input.data.object.amount) / 100,
+            amount: amount,
             cardHolderName: `${userId?.firstName} ${userId?.lastName}`,
-            cardNumberEnd: card?.cardNumber,
+            cardNumberEnd: cards?.cardNumber,
             credits: userId?.credits,
             businessName: business?.businessName,
+            currency: CURRENCY_SIGN.GBP,
+            isIncVat: true,
           };
+
+          if (userId.currency === CURRENCY.DOLLER) {
+            message.currency = CURRENCY_SIGN.USD;
+            message.isIncVat = false;
+          } else if (userId.currency === CURRENCY.EURO) {
+            message.currency = CURRENCY_SIGN.EUR;
+            message.isIncVat = false;
+          }
+
           sendEmailForPaymentFailure(userId?.email, message);
           let dataToSaveInTransaction: Partial<TransactionInterface> = {
             userId: userId?.id,
@@ -1082,7 +1166,6 @@ export class CardDetailsControllers {
             buyerId: userId?.buyerId,
             fixedAmount: originalAmount,
           };
-
           params.freeCredits = await checkUserUsedPromoCode(
             userId.id,
             promoLink?.id,
@@ -1162,14 +1245,22 @@ export class CardDetailsControllers {
               const business = await BusinessDetails.findById(
                 userId?.businessDetailsId
               );
-              const message = {
+              let message = {
                 firstName: userId?.firstName,
-                amount: originalAmount,
+                amount: amount,
                 cardHolderName: `${userId?.firstName} ${userId?.lastName}`,
                 cardNumberEnd: cardDetails?.cardNumber,
                 credits: userId?.credits,
                 businessName: business?.businessName,
+                currency: CURRENCY_SIGN.GBP,
+                isIncVat: true,
               };
+              if (userId.currency === CURRENCY.DOLLER) {
+                message.currency = CURRENCY_SIGN.USD;
+              } else if (userId.currency === CURRENCY.EURO) {
+                message.currency = CURRENCY_SIGN.EUR;
+                message.isIncVat = false;
+              }
               sendEmailForPaymentSuccess(userId?.email, message);
               let invoice: InvoiceInterface | null;
               if (userId?.xeroContactId) {
@@ -1202,7 +1293,7 @@ export class CardDetailsControllers {
                       invoiceId: res.data.Invoices[0].InvoiceID,
                     });
 
-                    console.log("pdf generated");
+                    console.log("pdf generated", new Date(), "Today's Date");
                   })
                   .catch(async (err) => {
                     refreshToken().then(async (res) => {
@@ -1225,7 +1316,11 @@ export class CardDetailsControllers {
                           invoiceId: res.data.Invoices[0].InvoiceID,
                         });
 
-                        console.log("pdf generated");
+                        console.log(
+                          "pdf generated",
+                          new Date(),
+                          "Today's Date"
+                        );
                       });
                     });
                   });
@@ -1249,36 +1344,55 @@ export class CardDetailsControllers {
                 userId.businessDetailsId,
                 "businessName"
               );
-              const userLead = await UserLeadsDetails.findById(
-                userId?.userLeadsDetailsId,
-                "postCodeTargettingList"
-              );
-              const paramsToSend = {
+              const userLead =
+                (await UserLeadsDetails.findById(
+                  userId?.userLeadsDetailsId,
+                  "postCodeTargettingList"
+                )) ?? ({} as UserLeadsDetailsInterface);
+              let paramsToSend: PostcodeWebhookParams = {
                 userId: userId._id,
                 buyerId: userId.buyerId,
-                buisnessName: userBusiness?.businessName,
+                businessName: userBusiness?.businessName,
                 eventCode: EVENT_TITLE.ADD_CREDITS,
-                postCodeList: userLead?.postCodeTargettingList,
-                topUpAmount: amount,
+                topUpAmount: originalAmount,
+                type: POSTCODE_TYPE.MAP,
               };
+              if (userLead.type === POSTCODE_TYPE.RADIUS) {
+                (paramsToSend.type = POSTCODE_TYPE.RADIUS),
+                  (paramsToSend.postcode = userLead.postcode),
+                  (paramsToSend.miles = userLead?.miles);
+              } else {
+                paramsToSend.postCodeList = flattenPostalCodes(
+                  userLead?.postCodeTargettingList
+                );
+              }
 
               await eventsWebhook(paramsToSend)
                 .then(() =>
                   console.log(
                     "event webhook for add credits hits successfully.",
-                    paramsToSend
+                    paramsToSend,
+                    new Date(),
+                    "Today's Date"
                   )
                 )
                 .catch((err) =>
                   console.log(
                     err,
                     "error while triggering add credits webhooks failed",
-                    paramsToSend
+                    paramsToSend,
+                    new Date(),
+                    "Today's Date"
                   )
                 );
             })
             .catch((error) => {
-              console.log("error in webhook", error);
+              console.log(
+                "error in webhook",
+                error,
+                new Date(),
+                "Today's Date"
+              );
             });
         }
       }
@@ -1286,12 +1400,10 @@ export class CardDetailsControllers {
         message: "success",
         sessionId: input?.data?.object?.id,
       };
-      if (input.type === "PaymentSession.captured") {
-        dataToShow.status = PAYMENT_STATUS.CAPTURED;
-      } else if (input.type === "PaymentSession.approved") {
-        dataToShow.status = PAYMENT_STATUS.APPROVED;
-      } else if (input.type === "PaymentSession.declined") {
-        dataToShow.status = PAYMENT_STATUS.DECLINE;
+      if (input.type === STRIPE_PAYMENT_STATUS.SUCCESS) {
+        dataToShow.status = STRIPE_PAYMENT_STATUS.SUCCESS;
+      } else if (input.type === STRIPE_PAYMENT_STATUS.FAILED) {
+        dataToShow.status = STRIPE_PAYMENT_STATUS.FAILED;
       }
       res.status(200).json({ data: dataToShow });
     } catch (err) {
@@ -1300,6 +1412,7 @@ export class CardDetailsControllers {
         .json({ error: { message: "Something went wrong." } });
     }
   };
+
   static retrievePaymentSssion = async (
     req: Request,
     res: Response
@@ -1572,8 +1685,13 @@ async function getUserDetails(cid: string, pid: string) {
   return obj;
 }
 
-function getOriginalAmountForStripe(amount: number) {
-  const originalAmount = amount / 100 / (1 + VAT / 100);
+export function getOriginalAmountForStripe(amount: number, currency: string) {
+  let originalAmount;
+  if (currency === stripeCurrency.GBP || currency === stripeCurrency.USD) {
+    originalAmount = amount / (1 + VAT / 100);
+  } else {
+    originalAmount = amount;
+  }
 
   return originalAmount;
 }

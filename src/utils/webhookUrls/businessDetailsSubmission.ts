@@ -19,7 +19,12 @@ export const businessDetailsSubmission = (data: any) => {
     if (checkAccess()) {
       axios(config)
         .then(async (response) => {
-          console.log("business data webhook hits successfully", response.data);
+          console.log(
+            "business data webhook hits successfully",
+            response.data,
+            new Date(),
+            "Today's Date"
+          );
           const user = await User.findOne({ email: data.email });
           //fixme:
           const params = {
@@ -32,12 +37,19 @@ export const businessDetailsSubmission = (data: any) => {
           saveEventLogs(params);
         })
         .catch((err) => {
-          console.log("business data webhook hits error", err.response?.data);
+          console.log(
+            "business data webhook hits error",
+            err.response?.data,
+            new Date(),
+            "Today's Date"
+          );
         });
     } else {
       console.log(
         "No Access for hitting business submission webhook to this " +
-          process.env.APP_ENV
+          process.env.APP_ENV,
+        new Date(),
+        "Today's Date"
       );
     }
   });

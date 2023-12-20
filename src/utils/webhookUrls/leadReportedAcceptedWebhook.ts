@@ -34,7 +34,11 @@ export const leadReportAcceptedWebhook = (
     if (checkAccess()) {
       axios(config)
         .then(async (response) => {
-          console.log("lead Report accepted Webhook webhook hits successfully");
+          console.log(
+            "lead Report accepted Webhook webhook hits successfully",
+            new Date(),
+            "Today's Date"
+          );
           const params = {
             userId: user?._id,
             eventType: EVENT_TYPE.WEBHOOK,
@@ -48,7 +52,9 @@ export const leadReportAcceptedWebhook = (
         .catch((err) => {
           console.log(
             "lead Report accepted Webhook webhook hits error",
-            err.response
+            err.response,
+            new Date(),
+            "Today's Date"
           );
           let params = {
             userId: user?._id,

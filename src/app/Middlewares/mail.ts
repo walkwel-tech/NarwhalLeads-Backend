@@ -834,11 +834,12 @@ export function sendEmailForPaymentSuccess(send_to: any, message: any) {
     templateId: TEMPLATES_ID.PAYMENT_SUCCESS,
     dynamic_template_data: {
       firstName: message?.firstName,
-      credit: `£${message?.credits}`,
-      paymentAmount: `£${message?.amount}`,
+      credit: `${message.currency}${message?.credits}`,
+      paymentAmount: `${message.currency}${message?.amount}`,
       cardNumberEnd: message?.cardNumberEnd,
       cardHolderName: message?.cardHolderName,
       businessName: message?.businessName,
+      isIncVat: message.isIncVat,
     },
   };
   // if (checkAccess()) {
@@ -896,11 +897,12 @@ export function sendEmailForPaymentFailure(send_to: any, message: any) {
     templateId: TEMPLATES_ID.PAYMENT_FAIL,
     dynamic_template_data: {
       firstName: message?.firstName,
-      credit: `£${message?.credits}`,
-      paymentAmount: `£${message?.amount}`,
+      credit: `${message.currency}${message?.credits}`,
+      paymentAmount: `${message.currency}${message?.amount}`,
       cardNumberEnd: message?.cardNumberEnd,
       cardHolderName: message?.cardHolderName,
       businessName: message?.businessName,
+      isIncVat: message.isIncVat,
     },
   };
   // if (checkAccess()) {
@@ -1366,6 +1368,77 @@ export function sendEmailToRemindUser25PercentSignup(
   } else {
     console.log("Emails access only on production");
   }
+}
+
+export function sendEmailForRequireActionAutocharge(
+  send_to: any,
+  message: any
+) {
+  const msg = {
+    to: send_to, /// Change to your recipient
+    // to: "radhika.walkweltech@gmail.com",
+    from: {
+      name: process.env.VERIFIED_SENDER_ON_SENDGRID_FROM_NAME,
+      email: process.env.VERIFIED_SENDER_ON_SENDGRID,
+    },
+    // Change to your verified sender
+    trackingSettings: {
+      clickTracking: {
+        enable: false,
+        enableText: false,
+      },
+      openTracking: {
+        enable: false,
+      },
+    },
+
+    // html: "<strong>and easy to do anywhere, even with Node.js</strong>",
+    // templateId: "d-69dcead271404a1d8a90aab2416bdc42",
+    templateId: TEMPLATES_ID.AUTO_CHARGE_STATUS_REQUIRE_ACTION,
+    dynamic_template_data: {
+      firstName: message?.firstName,
+      lastName: message?.lastName,
+      //@ts-ignore
+      businessName: message?.businessName,
+      //@ts-ignore
+      phone: message?.phone,
+      email: message?.email,
+      credit: `${message.currency}${message?.credits}`,
+      paymentAmount: `${message.currency}${message?.paymentAmount}`,
+      cardNumberEnd: message?.cardNumberEnd,
+      cardHolderName: message?.cardHolderName,
+      isIncVat: message.isIncVat,
+    },
+  };
+  // if (checkAccess()) {
+  if (process.env.APP_ENV !== APP_ENV.PRODUCTION) {
+    msg.to = process.env.SENDGRID_TO_EMAIL || "";
+  }
+  sgMail
+    .send(msg)
+    .then(() => {
+      console.log("Email sent");
+      const params = {
+        email: send_to,
+        title: TEMPLATES_TITLE.AUTO_CHARGE_STATUS_REQUIRE_ACTION,
+        templateId: TEMPLATES_ID.AUTO_CHARGE_STATUS_REQUIRE_ACTION,
+        status: NOTIFICATION_STATUS.SUCCESS,
+      };
+      saveNotifications(params);
+    })
+    .catch((error: any) => {
+      console.error(error);
+      const params = {
+        email: send_to,
+        title: TEMPLATES_TITLE.AUTO_CHARGE_STATUS_REQUIRE_ACTION,
+        templateId: TEMPLATES_ID.AUTO_CHARGE_STATUS_REQUIRE_ACTION,
+        status: NOTIFICATION_STATUS.FAIL,
+      };
+      saveNotifications(params);
+    });
+  //   } else {
+  //     console.log("Emails access only on production");
+  //   }
 }
 
 async function saveNotifications(params: any) {

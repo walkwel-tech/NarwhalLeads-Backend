@@ -48,8 +48,10 @@ import { Types } from "mongoose";
 import { getAccountManagerForRoundManager } from "../../utils/Functions/getAccountManagerForRoundManager";
 import { DEFAULT } from "../../utils/constantFiles/user.default.values";
 import { reCaptchaValidation } from "../../utils/Functions/reCaptcha";
-// import { reCaptchaValidation } from "../../utils/Functions/reCaptcha";
-
+import { UpdatePasswordInput } from "../Inputs/ClientPassword.input";
+import { Transaction } from "../Models/Transaction";
+import { PAYMENT_STATUS } from "../../utils/Enums/payment.status";
+import { transactionTitle } from "../../utils/Enums/transaction.title.enum";
 class AuthController {
   static register = async (req: Request, res: Response): Promise<any> => {
     const input = req.body;
@@ -166,7 +168,7 @@ class AuthController {
                 pendingFields: [
                   LEAD_DETAILS.DAILY,
                   LEAD_DETAILS.LEAD_SCHEDULE,
-                  LEAD_DETAILS.POSTCODE_TARGETTING_LIST,
+                  // LEAD_DETAILS.POSTCODE_TARGETTING_LIST,
                 ],
                 dependencies: [BUSINESS_DETAILS.BUSINESS_INDUSTRY],
               },
@@ -574,7 +576,7 @@ class AuthController {
         name: user.firstName,
         password: text,
       };
-      console.log("forget password", text);
+      console.log("forget password", text, new Date(), "Today's Date");
       sendEmailForgetPassword(input.email, message);
       await ForgetPassword.create({
         userId: user.id,
@@ -585,6 +587,43 @@ class AuthController {
 
       return res.json({ data: { message: "Email sent please verify!" } });
     } else {
+      return res
+        .status(400)
+        .json({ data: { message: "User does not exist." } });
+    }
+  };
+
+  static updateClientPassword = async (
+    req: Request,
+    res: Response
+  ): Promise<Response> => {
+    try {
+      const updatePassword = new UpdatePasswordInput();
+      updatePassword.id = req.body.id;
+      updatePassword.password = req.body.password;
+
+      const validationErrors = await validate(updatePassword);
+
+      if (validationErrors.length > 0) {
+        return res.status(400).json({
+          error: { message: "Invalid body", validationErrors },
+        });
+      }
+
+      const { id, password } = updatePassword;
+
+      const user = await User.findById(id);
+      if (!user) {
+        return res
+          .status(400)
+          .json({ data: { message: "User does not exist." } });
+      }
+      const salt = genSaltSync(10);
+      const hashPassword = hashSync(password, salt);
+      await User.findByIdAndUpdate(id, { password: hashPassword });
+
+      return res.json({ data: { message: "Password updated successfully." } });
+    } catch (err) {
       return res
         .status(400)
         .json({ data: { message: "User does not exist." } });
@@ -723,13 +762,34 @@ class AuthController {
   static me = async (req: Request, res: Response): Promise<any> => {
     const user: Partial<UserInterface> = req.user ?? ({} as UserInterface);
     try {
-      const exists = await User.findById(user?.id, "-password")
-        .populate("businessDetailsId")
-        .populate("userLeadsDetailsId")
-        // .populate("invitedById")
-        .populate("userServiceId");
+      let exists: Partial<UserInterface> & {
+        pendingTransaction?: string | undefined;
+      } =
+        (await User.findById(user?.id, "-password")
+          .populate("businessDetailsId")
+          .populate("userLeadsDetailsId")
+          // .populate("invitedById")
+          .populate("userServiceId")) ?? ({} as UserInterface);
+      const currentDateTime = new Date();
+      currentDateTime.setHours(currentDateTime.getHours() - 4);
+      const pendingTransactions = await Transaction.findOne({
+        userId: user.id,
+        status: PAYMENT_STATUS.REQUIRES_ACTION,
+        createdAt: { $gte: currentDateTime, $lte: new Date() },
+      }).sort({ createdAt: -1 });
+      const isPendingTransactionCapture = await Transaction.findOne({
+        paymentSessionId: pendingTransactions?.paymentSessionId,
+        status: { $in: [PAYMENT_STATUS.CAPTURED, PAYMENT_STATUS.DECLINE] },
+        title: transactionTitle.CREDITS_ADDED,
+      });
+      if (!isPendingTransactionCapture) {
+        exists.pendingTransaction = pendingTransactions?.notes;
+      }
+
       if (exists) {
-        return res.json({ data: exists });
+        return res.json({
+          data: exists,
+        });
       }
 
       return res.json({ data: "User not exists" });
@@ -863,10 +923,14 @@ class AuthController {
         };
         createCustomersOnRyftAndLeadByte(params)
           .then(() => {
-            console.log("Customer created!!!!");
+            console.log("Customer created!!!!", new Date(), "Today's Date");
           })
           .catch((ERR) => {
-            console.log("error while creating customer");
+            console.log(
+              "error while creating customer",
+              new Date(),
+              "Today's Date"
+            );
           })
           .finally(async () => {
             const data = await User.findById(user.id);
