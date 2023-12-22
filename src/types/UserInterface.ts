@@ -70,4 +70,5 @@ export interface UserInterface extends Document {
   secondaryCredits: number;
   secondaryLeadCost: number;
   isSecondaryUsage: boolean;
+  secondaryLeads: number;
 }

@@ -241,6 +241,9 @@ const UserSchema = new Schema(
       type: Boolean,
       default: false,
     },
+    secondaryLeads: {
+      type: Number,
+    },
   },
   { timestamps: true }
 );

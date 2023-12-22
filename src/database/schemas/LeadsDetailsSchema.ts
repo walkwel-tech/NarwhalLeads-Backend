@@ -1,5 +1,18 @@
 import { Schema, Types } from "mongoose";
 
+const PostCodeSchema = new Schema(
+  {
+    postcode: {
+      type: String,
+      default: "",
+    },
+    miles: {
+      type: String,
+      default: "",
+    },
+  },
+  { _id: false }
+);
 const UserLeadsDetailsSchema = new Schema(
   {
     userId: {
@@ -53,14 +66,7 @@ const UserLeadsDetailsSchema = new Schema(
       type: Date,
       default: null,
     },
-    miles: {
-      type: String,
-      default: "",
-    },
-    postcode: {
-      type: String,
-      default: "",
-    },
+    postCodeList: [PostCodeSchema],
     type: {
       type: String,
       default: "",

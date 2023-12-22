@@ -230,18 +230,18 @@ class AuthController {
                 if (err) {
                   return res.status(400).json({ error: err });
                 }
-                return res.status(550).json({ error: message });
+                return res.status(401).json({ error: message });
               } else if (!user.isActive) {
                 return res
-                  .status(550)
+                  .status(409)
                   .json({ data: "User not active.Please contact admin." });
               } else if (!user.isVerified) {
-                return res.status(550).json({
+                return res.status(401).json({
                   data: "User not verified.Please verify your account",
                 });
               } else if (user.isDeleted) {
                 return res
-                  .status(550)
+                  .status(401)
                   .json({ data: "User is deleted.Please contact admin" });
               }
               const authToken = generateAuthToken(user);
@@ -354,35 +354,37 @@ class AuthController {
           if (err) {
             return res.status(400).json({ error: err });
           }
-          return res.status(550).json({ error: message });
+          return res.status(401).json({ error: message });
         } else if (!user.isActive && user.role === RolesEnum.USER) {
-          return res.status(550).json({
+          return res.status(409).json({
             error: { message: "User not active.Please contact admin." },
           });
         } else if (!user.isActive && user.role === RolesEnum.ADMIN) {
-          return res.status(550).json({
+          return res.status(409).json({
             error: { message: "Admin not active.Please contact super admin." },
           });
         } else if (!user.isActive && user.role === RolesEnum.ACCOUNT_MANAGER) {
-          return res.status(550).json({
-            error: { message: "Admin not active.Please contact super admin." },
+          return res.status(409).json({
+            error: {
+              message: "Account manager not active.Please contact super admin.",
+            },
           });
         } else if (!user.isVerified && user.role === RolesEnum.USER) {
-          return res.status(550).json({
+          return res.status(401).json({
             error: {
               message: "User not verified.Please verify your account",
             },
           });
         } else if (user.isDeleted && user.role === RolesEnum.USER) {
-          return res.status(550).json({
+          return res.status(401).json({
             error: { message: "User is deleted.Please contact admin" },
           });
         } else if (user.isDeleted && user.role === RolesEnum.ADMIN) {
-          return res.status(550).json({
+          return res.status(401).json({
             error: { message: "Admin is deleted.Please contact super admin" },
           });
         } else if (user.isDeleted && user.role === RolesEnum.ACCOUNT_MANAGER) {
-          return res.status(550).json({
+          return res.status(401).json({
             error: { message: "Admin is deleted.Please contact super admin" },
           });
         }
@@ -433,7 +435,7 @@ class AuthController {
           if (err) {
             return res.status(400).json({ error: err });
           }
-          return res.status(550).json({ error: message });
+          return res.status(401).json({ error: message });
         }
         const token = generateAuthToken(user);
         return res.json({
@@ -490,7 +492,7 @@ class AuthController {
       const checkUser = await User.findById(id);
       if (!checkUser) {
         return res
-          .status(550)
+          .status(401)
           .json({ data: { message: "User doesn't exist." } });
       }
       const activeUser: UserInterface =
@@ -530,7 +532,7 @@ class AuthController {
       const checkUser = await User.findById(id);
       if (!checkUser) {
         return res
-          .status(550)
+          .status(401)
           .json({ data: { message: "User doesn't exist." } });
       }
       const inActiveUser = await User.findByIdAndUpdate(
