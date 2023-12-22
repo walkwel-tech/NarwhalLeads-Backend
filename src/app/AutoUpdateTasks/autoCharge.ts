@@ -1,7 +1,10 @@
 import moment from "moment-timezone";
 import { paymentMethodEnum } from "../../utils/Enums/payment.method.enum";
 import { addCreditsToBuyer } from "../../utils/payment/addBuyerCredit";
-import { generatePDF } from "../../utils/XeroApiIntegration/generatePDF";
+import {
+  generatePDF,
+  generatePDFParams,
+} from "../../utils/XeroApiIntegration/generatePDF";
 import { AdminSettings } from "../Models/AdminSettings";
 import { CardDetails } from "../Models/CardDetails";
 import { Invoice } from "../Models/Invoice";
@@ -184,14 +187,15 @@ export const weeklypayment = async () => {
                       await User.findByIdAndUpdate(user.id, {
                         credits: leftCredits,
                       });
-                      generatePDF(
-                        user.xeroContactId,
-                        transactionTitle.CREDITS_ADDED,
-                        addCredits,
-                        0,
-                        _res_.data?.id,
-                        false
-                      )
+                      const paramPdf: generatePDFParams = {
+                        ContactID: user.xeroContactId,
+                        desc: transactionTitle.CREDITS_ADDED,
+                        amount: addCredits,
+                        freeCredits: 0,
+                        sessionId: _res_.data?.id,
+                        isManualAdjustment: false,
+                      };
+                      generatePDF(paramPdf)
                         .then(async (res: any) => {
                           const dataToSaveInInvoice: Partial<InvoiceInterface> =
                             {
@@ -205,14 +209,15 @@ export const weeklypayment = async () => {
                         })
                         .catch((error) => {
                           refreshToken().then((res) => {
-                            generatePDF(
-                              user.xeroContactId,
-                              transactionTitle.CREDITS_ADDED,
-                              addCredits,
-                              0,
-                              _res_.data?.id,
-                              false
-                            ).then(async (res: any) => {
+                            const paramPdf: generatePDFParams = {
+                              ContactID: user.xeroContactId,
+                              desc: transactionTitle.CREDITS_ADDED,
+                              amount: addCredits,
+                              freeCredits: 0,
+                              sessionId: _res_.data?.id,
+                              isManualAdjustment: false,
+                            };
+                            generatePDF(paramPdf).then(async (res: any) => {
                               const dataToSaveInInvoice: Partial<InvoiceInterface> =
                                 {
                                   userId: user.id,

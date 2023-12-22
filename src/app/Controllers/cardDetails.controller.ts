@@ -6,7 +6,10 @@ import {
   addUserXeroId,
   refreshToken,
 } from "../../utils/XeroApiIntegration/createContact";
-import { generatePDF } from "../../utils/XeroApiIntegration/generatePDF";
+import {
+  generatePDF,
+  generatePDFParams,
+} from "../../utils/XeroApiIntegration/generatePDF";
 import { UpdateCardInput } from "../Inputs/UpdateCard.input";
 import {
   sendEmailForFullySignupToAdmin,
@@ -972,14 +975,16 @@ export class CardDetailsControllers {
                 } else {
                   freeCredits = params.freeCredits || 0;
                 }
-                generatePDF(
-                  userId?.xeroContactId,
-                  transactionTitle.CREDITS_ADDED,
-                  originalAmount,
-                  freeCredits,
-                  input.data.id,
-                  false
-                )
+
+                const paramPdf: generatePDFParams = {
+                  ContactID: userId?.xeroContactId,
+                  desc: transactionTitle.CREDITS_ADDED,
+                  amount: originalAmount,
+                  freeCredits: freeCredits,
+                  sessionId: input.data.id,
+                  isManualAdjustment: false,
+                };
+                generatePDF(paramPdf)
                   .then(async (res: any) => {
                     const dataToSaveInInvoice: Partial<InvoiceInterface> = {
                       userId: userId?.id,
@@ -999,14 +1004,15 @@ export class CardDetailsControllers {
                   })
                   .catch(async (err) => {
                     refreshToken().then(async (res) => {
-                      generatePDF(
-                        userId?.xeroContactId,
-                        transactionTitle.CREDITS_ADDED,
-                        originalAmount,
-                        freeCredits,
-                        input.data.id,
-                        false
-                      ).then(async (res: any) => {
+                      const paramPdf: generatePDFParams = {
+                        ContactID: userId?.xeroContactId,
+                        desc: transactionTitle.CREDITS_ADDED,
+                        amount: originalAmount,
+                        freeCredits: freeCredits,
+                        sessionId: input.data.id,
+                        isManualAdjustment: false,
+                      };
+                      generatePDF(paramPdf).then(async (res: any) => {
                         const dataToSaveInInvoice: Partial<InvoiceInterface> = {
                           userId: userId?.id,
                           transactionId: transaction.id,
@@ -1270,14 +1276,16 @@ export class CardDetailsControllers {
                 } else {
                   freeCredits = params.freeCredits || 0;
                 }
-                generatePDF(
-                  userId?.xeroContactId,
-                  transactionTitle.CREDITS_ADDED,
-                  originalAmount,
-                  freeCredits,
-                  input.data.object.id,
-                  false
-                )
+
+                const paramPdf: generatePDFParams = {
+                  ContactID: userId?.xeroContactId,
+                  desc: transactionTitle.CREDITS_ADDED,
+                  amount: originalAmount,
+                  freeCredits: freeCredits,
+                  sessionId: input.data.object.id,
+                  isManualAdjustment: false,
+                };
+                generatePDF(paramPdf)
                   .then(async (res: any) => {
                     const dataToSaveInInvoice: Partial<InvoiceInterface> = {
                       userId: userId?.id,
@@ -1297,14 +1305,15 @@ export class CardDetailsControllers {
                   })
                   .catch(async (err) => {
                     refreshToken().then(async (res) => {
-                      generatePDF(
-                        userId?.xeroContactId,
-                        transactionTitle.CREDITS_ADDED,
-                        originalAmount,
-                        freeCredits,
-                        input.data.object?.id,
-                        false
-                      ).then(async (res: any) => {
+                      const paramPdf: generatePDFParams = {
+                        ContactID: userId?.xeroContactId,
+                        desc: transactionTitle.CREDITS_ADDED,
+                        amount: originalAmount,
+                        freeCredits: freeCredits,
+                        sessionId: input.data.object?.id,
+                        isManualAdjustment: false,
+                      };
+                      generatePDF(paramPdf).then(async (res: any) => {
                         const dataToSaveInInvoice: Partial<InvoiceInterface> = {
                           userId: userId?.id,
                           transactionId: transaction.id,
@@ -1359,8 +1368,7 @@ export class CardDetailsControllers {
               };
               if (userLead.type === POSTCODE_TYPE.RADIUS) {
                 (paramsToSend.type = POSTCODE_TYPE.RADIUS),
-                  (paramsToSend.postcode = userLead.postcode),
-                  (paramsToSend.miles = userLead?.miles);
+                  (paramsToSend.postcode = userLead.postCodeList);
               } else {
                 paramsToSend.postCodeList = flattenPostalCodes(
                   userLead?.postCodeTargettingList

@@ -1,5 +1,8 @@
 import { Document, Types } from "mongoose";
-
+export interface PostCode {
+  postcode: string;
+  miles: string;
+}
 export interface UserLeadsDetailsInterface extends Document {
   _id: Types.ObjectId;
   userId: Types.ObjectId;
@@ -16,8 +19,7 @@ export interface UserLeadsDetailsInterface extends Document {
   isDeleted: boolean;
   deletedAt: Date;
   dailyLeadCost: number;
-  miles: string;
-  postcode: string;
+  postCodeList: PostCode[];
   type: string;
 }
 

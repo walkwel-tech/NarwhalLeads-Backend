@@ -137,17 +137,34 @@ export class DashboardController {
                   input: "$transactions",
                   initialValue: 0,
                   in: {
-                    $sum: {
-                      $cond: {
-                        if: {
-                          $and: [
-                            { $gte: ["$$this.createdAt", this.getThirtyDayAgo(timePeriod.startDate)] },
-                            { $lte: ["$$this.createdAt", new Date(timePeriod.endDate)] },
-                            { $eq: ["$$this.status", "success"] }
-                          ]
-                        }, then: "$$this.amount", else: 0
+                    $sum: [
+                      "$$value",
+                      {
+                        $cond: {
+                          if: {
+                            $and: [
+                              { $gte: ["$$this.createdAt", new Date(timePeriod.startDate)] },
+                              { $lte: ["$$this.createdAt", new Date(timePeriod.endDate)] },
+                              { $eq: ["$$this.status", "success"] }
+                            ]
+                          },
+                          then: "$$this.amount",
+                          else: 0 // TODO: Here can be bug
+                        }
                       }
-                    }
+                    ]
+                    //   $sum: {
+                    //     $cond: {
+                    //       if: {
+                    //         $and: [
+                    //           { $gte: ["$$this.createdAt", this.getThirtyDayAgo(timePeriod.startDate)] },
+                    //           { $lte: ["$$this.createdAt", new Date(timePeriod.endDate)] },
+                    //           { $eq: ["$$this.status", "success"] }
+                    //         ]
+                    //       }, then: "$$this.amount", else: 0
+                    //     }
+                    //   }
+                    // 
                   }
                 }
               },
@@ -156,18 +173,21 @@ export class DashboardController {
                   input: "$transactions",
                   initialValue: 0,
                   in: {
-                    $sum: {
-                      $cond: {
-                        if: {
-                          $and: [
-                            { $gte: ["$$this.createdAt", this.getThirtyDayAgo(timePeriod.startDate)] },
-                            { $lte: ["$$this.createdAt", new Date(timePeriod.endDate)] },
-                            { $eq: ["$$this.status", "success"] },
-                            { $eq: ["$associatedUsers.isCommissionedUser", true] }
-                          ]
-                        }, then: "$$this.amount", else: 0
+                    $sum: [
+                      "$$value",
+                      {
+                        $cond: {
+                          if: {
+                            $and: [
+                              { $gte: ["$$this.createdAt", this.getThirtyDayAgo(timePeriod.startDate)] },
+                              { $lte: ["$$this.createdAt", new Date(timePeriod.endDate)] },
+                              { $eq: ["$$this.status", "success"] },
+                              { $eq: ["$associatedUsers.isCommissionedUser", true] }
+                            ]
+                          }, then: "$$this.amount", else: 0
+                        }
                       }
-                    }
+                    ]
                   }
                 }
               }
@@ -247,21 +267,21 @@ export class DashboardController {
     return pipeline;
   }
 
-  static formulateClientFinancialsQuery({
-    accountManagerId,
+  static formulateClientFinancialsQuery({     
+    accountManagerId,    
     industry,
     timePeriod,
     commissionStatus,
     sortBy,
     sortingOrder
   }: IQueryFormulater): PipelineStage[] {
-    
+
     const sortStage: SortStage = {
       $sort: {
         [sortBy || 'createdAt']: sortingOrder === 'asc' ? 1 : -1,
       },
     };
-    
+
     const pipeline: PipelineStage[] = [
       { $match: { role: { $in: [RolesEnum.USER, RolesEnum.NON_BILLABLE] }, isDeleted: false, isActive: true } },
       ...(industry?.length
@@ -298,7 +318,7 @@ export class DashboardController {
           },
         ]
         : []),
-      ...(sortBy && sortingOrder ? [sortStage ] : []),
+      ...(sortBy && sortingOrder ? [sortStage] : []),
       ...(timePeriod && Object.keys(timePeriod).length
         ? [
           {
@@ -320,6 +340,20 @@ export class DashboardController {
           as: "accountManagerArray",
         },
       },
+      {
+        $lookup: {
+            from: "businessdetails",
+            localField: "businessDetailsId",
+            foreignField: "_id",
+            as: "businessDetails",
+        },
+    },  
+    {
+      $unwind: {
+        path: "$businessDetails",
+        preserveNullAndEmptyArrays: true,
+      },
+    },
       {
         $addFields: {
           "accountManagerArray.fullName": {

@@ -56,7 +56,7 @@ export class UserLeadsController {
     // (leadDetailsInput.postCodeTargettingList = input.postCodeTargettingList);
 
     const errors = await validate(leadDetailsInput);
-    const { onBoarding }: any = await User.findById(input.userId);
+    const { onBoarding }: any = (await User.findById(input.userId)) || {};
     let object = onBoarding || [];
     let array: any = [];
     if (errors.length) {
@@ -133,8 +133,7 @@ export class UserLeadsController {
       leadAlertsFrequency: leadsAlertsEnums.INSTANT,
       //@ts-ignore
       dailyLeadCost: input.daily * user?.leadCost,
-      miles: input.miles,
-      postcode: input.postcode,
+      postCodeList: input?.postCodeList,
       type: input.type,
     };
     try {
@@ -358,6 +357,24 @@ export class UserLeadsController {
           " -_id -userId -createdAt -updatedAt"
         ).lean()) ?? ({} as UserLeadsDetailsInterface);
       const fields = findUpdatedFields(userForActivity, userAfterMod);
+      if (
+        input.type === POSTCODE_TYPE.RADIUS &&
+        userAfterMod.postCodeTargettingList.length != 0
+      ) {
+        await UserLeadsDetails.findByIdAndUpdate(id, {
+          postCodeTargettingList: [],
+        });
+      }
+
+      if (
+        input.type === POSTCODE_TYPE.MAP &&
+        userAfterMod.postCodeList.length != 0
+      ) {
+        await UserLeadsDetails.findByIdAndUpdate(id, {
+          postCodeList: [],
+          type: POSTCODE_TYPE.MAP,
+        });
+      }
 
       if (
         Object.keys(fields.updatedFields).find(
@@ -375,8 +392,7 @@ export class UserLeadsController {
         };
         if (userAfterMod.type === POSTCODE_TYPE.RADIUS) {
           (paramsToSend.type = POSTCODE_TYPE.RADIUS),
-            (paramsToSend.postcode = userAfterMod.postcode),
-            (paramsToSend.miles = userAfterMod?.miles);
+            (paramsToSend.postcode = userAfterMod.postCodeList);
         } else {
           paramsToSend.postCodeList = flattenPostalCodes(
             userAfterMod?.postCodeTargettingList
@@ -442,8 +458,7 @@ export class UserLeadsController {
         };
         if (userAfterMod.type === POSTCODE_TYPE.RADIUS) {
           (paramsToSend.type = POSTCODE_TYPE.RADIUS),
-            (paramsToSend.postcode = userAfterMod.postcode),
-            (paramsToSend.miles = userAfterMod?.miles);
+            (paramsToSend.postcode = userAfterMod.postCodeList);
         } else {
           paramsToSend.postCodeList = flattenPostalCodes(
             userAfterMod?.postCodeTargettingList
@@ -491,8 +506,7 @@ export class UserLeadsController {
         };
         if (userAfterMod.type === POSTCODE_TYPE.RADIUS) {
           (paramsToSend.type = POSTCODE_TYPE.RADIUS),
-            (paramsToSend.postcode = userAfterMod.postcode),
-            (paramsToSend.miles = userAfterMod?.miles);
+            (paramsToSend.postcode = userAfterMod.postCodeList);
         } else {
           paramsToSend.postCodeList = flattenPostalCodes(
             userAfterMod?.postCodeTargettingList
