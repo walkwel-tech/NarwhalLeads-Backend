@@ -120,7 +120,11 @@ export class LeadsController {
         );
     }
 
-    if (user?.credits == 0 && user?.role == RolesEnum.USER) {
+    if (
+      user?.credits == 0 &&
+      user?.secondaryCredits == 0 &&
+      user?.role == RolesEnum.USER
+    ) {
       return res
         .status(400)
         .json({ error: { message: "Insufficient Credits" } });
@@ -208,7 +212,11 @@ export class LeadsController {
       let leftSecondaryCredits =
         user.secondaryCredits - user?.secondaryLeadCost;
       if (leftSecondaryCredits === 0) {
-        await User.findByIdAndUpdate(user.id, { isSecondaryUsage: false });
+        await User.findByIdAndUpdate(user.id, {
+          isSecondaryUsage: false,
+          secondaryLeads: 0,
+          secondaryLeadCost: 0,
+        });
       }
       userf =
         (await User.findByIdAndUpdate(
