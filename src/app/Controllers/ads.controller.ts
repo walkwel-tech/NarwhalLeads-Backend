@@ -308,12 +308,9 @@ export class AdsController {
 
         return res.json({ message: "Click updated successfully" });
       } else {
-        return res
-          .status(400)
-          .json({
-            error:
-              "Cannot increment count. Target reach reached or ad is paused.",
-          });
+        return res.status(400).json({
+          error: "Ad is not availble at the moment",
+        });
       }
     } catch (err) {
       return res
