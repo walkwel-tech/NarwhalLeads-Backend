@@ -2126,80 +2126,40 @@ export class UsersControllers {
 
   static clientsStat = async (_req: any, res: Response) => {
     try {
-      if (_req.user && _req.user.role) {
-        const sixtyDaysAgo = new Date();
-        sixtyDaysAgo.setDate(sixtyDaysAgo.getDate() - 60);
-
-        const activeQuery = {
-          role: { $in: [RolesEnum.USER, RolesEnum.NON_BILLABLE] },
-          isDeleted: false,
-          isArchived: false,
-          createdAt: { $gte: sixtyDaysAgo },
-          _id: {
-            $in: await Transaction.distinct("userId", {
-              title: transactionTitle.CREDITS_ADDED,
-              status: "success",
-              createdAt: { $gte: sixtyDaysAgo },
-            }),
-          },
-        };
-
-        const pausedQuery = {
-          role: { $in: [RolesEnum.USER, RolesEnum.NON_BILLABLE] },
-          isDeleted: false,
-          isArchived: false,
-          createdAt: { $lt: sixtyDaysAgo },
-          _id: {
-            $nin: await Transaction.distinct("userId", {
-              title: transactionTitle.CREDITS_ADDED,
-              status: "success",
-              createdAt: { $lt: sixtyDaysAgo },
-            }),
-          },
-        };
-
-        const pendingQuery = {
-          role: { $in: [RolesEnum.USER, RolesEnum.NON_BILLABLE] },
-          isDeleted: false,
-          isArchived: false,
-          onBoardingPercentage: 100,
-          _id: {
-            $nin: await Transaction.distinct("userId", {
-              title: transactionTitle.CREDITS_ADDED,
-              status: "success",
-            }),
-          },
-        };
-
-        const lostQuery = {
-          role: { $in: [RolesEnum.USER, RolesEnum.NON_BILLABLE] },
-          isDeleted: true,
-        };
-
-        const active = await User.find(activeQuery).count();
-        const paused = await User.find(pausedQuery).count();
-        const pending = await User.find(pendingQuery).count();
-        const lost = await User.find(lostQuery).count();
-
-        const dataToShow = {
-          activeClients: active,
-          pausedClients: paused,
-          pendingClients: pending,
-          lostClients: lost,
-        };
-
-        return res.json({ data: dataToShow });
-      } else {
-        return res.status(400).json({
-          error: {
-            message: "Invalid user data",
-          },
-        });
+      let dataToFindActive: Record<
+          string,
+          string | Types.ObjectId | string[] | boolean | RoleFilter
+          > = {
+        role: { $in: [RolesEnum.USER, RolesEnum.NON_BILLABLE] },
+        isActive: true,
+        isDeleted: false,
+        isArchived: false,
+      };
+      let dataToFindPaused: Record<
+          string,
+          string | Types.ObjectId | string[] | boolean | RoleFilter
+          > = {
+        role: { $in: [RolesEnum.USER, RolesEnum.NON_BILLABLE] },
+        isActive: false,
+        isDeleted: false,
+        isArchived: false,
+      };
+      if (_req.user.role === RolesEnum.ACCOUNT_MANAGER) {
+        dataToFindActive.accountManager = _req.user._id;
+        dataToFindPaused.accountManager = _req.user._id;
       }
+      const active = await User.find(dataToFindActive).count();
+      const paused = await User.find(dataToFindPaused).count();
+
+      const dataToShow = {
+        activeClients: active,
+        pausedClients: paused,
+      };
+      return res.json({ data: dataToShow });
     } catch (err) {
       return res.status(500).json({
         error: {
-          message: "Something went wrong",
+          message: "something went wrong",
           err,
         },
       });
