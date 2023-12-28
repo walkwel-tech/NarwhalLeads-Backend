@@ -63,6 +63,7 @@ class AuthController {
     // registerInput.phoneNumber=input.phoneNumber;
     registerInput.email = input.email;
     registerInput.password = input.password;
+    registerInput.mobilePrefixCode = input.mobilePrefixCode;
     const errors = await validate(registerInput);
 
     if (errors.length) {
@@ -141,6 +142,7 @@ class AuthController {
             email: input.email,
             phoneNumber: input.phoneNumber,
             smsPhoneNumber: input.phoneNumber,
+            mobilePrefixCode: input.mobilePrefixCode,
             password: hashPassword,
             role: RolesEnum.USER,
             autoChargeAmount: DEFAULT.AUTO_CHARGE_AMOUNT,

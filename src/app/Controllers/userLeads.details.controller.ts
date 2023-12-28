@@ -51,6 +51,7 @@ export class UserLeadsController {
         .json({ error: { message: "User Id is required" } });
     }
     const leadDetailsInput = new UserLeadDetailsInput();
+
     (leadDetailsInput.daily = input.daily),
       (leadDetailsInput.leadSchedule = input.leadSchedule);
     // (leadDetailsInput.postCodeTargettingList = input.postCodeTargettingList);
@@ -121,12 +122,11 @@ export class UserLeadsController {
     }
     // }
     const user: any = await User.findById(input.userId);
-
     let dataToSave: any = {
       userId: input.userId,
       total: input?.total,
       daily: input?.daily,
-      weekly: input?.weekly,
+      weekly: input?.daily * input.leadSchedule.length,
       monthly: input?.monthly,
       leadSchedule: input?.leadSchedule,
       postCodeTargettingList: input?.postCodeTargettingList,

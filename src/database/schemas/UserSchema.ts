@@ -16,6 +16,10 @@ const UserSchema = new Schema(
       // required: true,
       // unique: true,
     },
+    mobilePrefixCode: {
+      type: String,
+      required: false,
+    },
     password: {
       type: String,
       // required: true,
@@ -30,6 +34,11 @@ const UserSchema = new Schema(
       type: String,
       required: true,
       default: RolesEnum.USER,
+    },
+    isAccountAdmin: {
+      type: Boolean,
+      required: true,
+      default:false,
     },
     leadCost: {
       type: Number,

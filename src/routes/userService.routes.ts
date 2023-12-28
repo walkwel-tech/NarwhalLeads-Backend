@@ -14,4 +14,9 @@ userService.post(
   UserServiceController.create
 );
 
+userService.get(
+  "/get-country-codes",
+  UserServiceController.europeanDialCodes
+);
+
 export default userService;

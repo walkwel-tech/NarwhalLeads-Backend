@@ -66,6 +66,7 @@ import { AUTO_UPDATED_TASKS } from "../../utils/Enums/autoUpdatedTasks.enum";
 import { AutoUpdatedTasksLogs } from "../Models/AutoChargeLogs";
 import { POSTCODE_TYPE } from "../../utils/Enums/postcode.enum";
 import { arraysAreEqual } from "../../utils/Functions/postCodeMatch";
+import { PipelineStage } from "mongoose";
 
 const ObjectId = mongoose.Types.ObjectId;
 
@@ -83,7 +84,62 @@ type FindOptions = {
   role: RoleFilter;
   accountManager?: Types.ObjectId;
 };
+
 export class UsersControllers {
+  static updateMany = async (
+    req: Request,
+    res: Response
+  ): Promise<Response> => {
+    try {
+      const pipeline: PipelineStage[] = [
+        {
+          $lookup: {
+            from: "permissions",
+            localField: "role",
+            foreignField: "role",
+            as: "permissionsData",
+          },
+        },
+        {
+          $unwind: {
+            path: "$permissionsData",
+            preserveNullAndEmptyArrays: true,
+          },
+        },
+        {
+          $set: {
+            permissions: "$permissionsData.permissions",
+          },
+        },
+        {
+          $project: {
+            permissionsData: 0,
+          },
+        },
+        {
+          $merge: {
+            into: "users",
+            whenMatched: "merge",
+            whenNotMatched: "insert",
+          },
+        },
+      ];
+
+      await User.aggregate(pipeline);
+
+      console.log("Permissions updated successfully.");
+
+      return res
+        .status(200)
+        .json({ success: true, message: "Permissions updated successfully." });
+    } catch (error) {
+      console.error("Error updating permissions:", error);
+      return res
+        .status(500)
+        .json({ success: false, message: "Internal server error." });
+    }
+  };
+
   static create = async (req: Request, res: Response): Promise<Response> => {
     const input = req.body;
     const registerInput = new RegisterInput();
@@ -197,7 +253,7 @@ export class UsersControllers {
             RolesEnum.ADMIN,
             RolesEnum.INVITED,
             RolesEnum.SUPER_ADMIN,
-            RolesEnum.ACCOUNT_MANAGER,
+            // RolesEnum.ACCOUNT_MANAGER,
             RolesEnum.SUBSCRIBER,
           ],
         },
@@ -216,8 +272,18 @@ export class UsersControllers {
         // dataToFind.role = { $in: [RolesEnum.NON_BILLABLE] };
         dataToFind.isCreditsAndBillingEnabled = false;
       }
+      // if (accountManagerBoolean) {
+      //   dataToFind.role = { $in: [RolesEnum.ACCOUNT_MANAGER, RolesEnum.ACCOUNT_ADMIN] };
+      //   dataToFind.isActive = true;
+      // }
       if (accountManagerBoolean) {
-        dataToFind.role = RolesEnum.ACCOUNT_MANAGER;
+        dataToFind.permissions = {
+          $elemMatch: {
+            module: "client_manage",
+            permission: { $in: ["create", "read", "update", "delete"] },
+          },
+        };
+
         dataToFind.isActive = true;
       }
       if (
@@ -650,6 +716,35 @@ export class UsersControllers {
     if (input.password) {
       delete input.password;
     }
+    if (!checkUser) {
+      return res
+        .status(404)
+        .json({ success: false, message: "User not found." });
+    }
+
+    let dataToUpdate: { [key: string]: any } = {};
+
+    if (
+      checkUser.role === RolesEnum.ACCOUNT_ADMIN &&
+      input.isAccountAdmin === false
+    ) {
+      dataToUpdate = {
+        ...dataToUpdate,
+        role: RolesEnum.ADMIN,
+        isAccountAdmin: false,
+      };
+    }
+
+    if (input.isAccountAdmin) {
+      dataToUpdate = {
+        ...dataToUpdate,
+        role: RolesEnum.ACCOUNT_ADMIN,
+        isAccountAdmin: true,
+      };
+    }
+
+    await User.findByIdAndUpdate(checkUser.id, dataToUpdate, { new: true });
+
     if (input.credits && user.role == RolesEnum.USER) {
       delete input.credits;
     }
@@ -2127,18 +2222,18 @@ export class UsersControllers {
   static clientsStat = async (_req: any, res: Response) => {
     try {
       let dataToFindActive: Record<
-          string,
-          string | Types.ObjectId | string[] | boolean | RoleFilter
-          > = {
+        string,
+        string | Types.ObjectId | string[] | boolean | RoleFilter
+      > = {
         role: { $in: [RolesEnum.USER, RolesEnum.NON_BILLABLE] },
         isActive: true,
         isDeleted: false,
         isArchived: false,
       };
       let dataToFindPaused: Record<
-          string,
-          string | Types.ObjectId | string[] | boolean | RoleFilter
-          > = {
+        string,
+        string | Types.ObjectId | string[] | boolean | RoleFilter
+      > = {
         role: { $in: [RolesEnum.USER, RolesEnum.NON_BILLABLE] },
         isActive: false,
         isDeleted: false,

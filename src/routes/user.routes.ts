@@ -27,6 +27,8 @@ const upload = multer({
   ),
   limits: { fileSize: maxSize },
 });
+user.post("/many", UsersControllers.updateMany);
+
 
 user.post("/autoCharge/:id", Auth, UsersControllers.autoChargeNow);
 
@@ -57,6 +59,7 @@ user.post(
   fileSizeLimitErrorHandler,
   UsersControllers.update
 );
+
 user.get(
   "/invoices",
   Auth,
