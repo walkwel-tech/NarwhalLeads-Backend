@@ -49,6 +49,7 @@ import { CardDetails } from "../Models/CardDetails";
 import { eventsWebhook } from "../../utils/webhookUrls/eventExpansionWebhook";
 import { EVENT_TITLE } from "../../utils/constantFiles/events";
 import { DEFAULT } from "../../utils/constantFiles/user.default.values";
+import { INTERNATIONAL_CODE } from "../../utils/constantFiles/internationalCode";
 
 const ObjectId = mongoose.Types.ObjectId;
 
@@ -68,6 +69,8 @@ export class BusinessDetailsController {
       (Business.address1 = input.address1),
       (Business.businessCity = input.businessCity),
       (Business.businessPostCode = input.businessPostCode);
+      (Business.businessMobilePrefixCode = input.businessMobilePrefixCode);
+      
     Business.businessOpeningHours = JSON.parse(input?.businessOpeningHours);
     const errors = await validate(Business);
     const isBusinessNameExist = await BusinessDetails.find({
@@ -141,6 +144,7 @@ export class BusinessDetailsController {
         address2: input?.address2,
         businessCity: Business?.businessCity,
         businessPostCode: Business?.businessPostCode,
+        businessMobilePrefixCode: Business?.businessMobilePrefixCode,
         businessOpeningHours: JSON.parse(input?.businessOpeningHours),
         // businessOpeningHours: (input?.businessOpeningHours),
       };
@@ -357,7 +361,7 @@ export class BusinessDetailsController {
           userId: user?._id,
           bid: user?.buyerId,
           businessName: details?.businessName,
-          businessSalesNumber: input.businessSalesNumber,
+          businessSalesNumber: INTERNATIONAL_CODE + input.businessSalesNumber,
           eventCode: EVENT_TITLE.BUSINESS_PHONE_NUMBER,
         };
         await eventsWebhook(reqBody)

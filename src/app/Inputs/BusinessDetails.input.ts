@@ -29,6 +29,11 @@ export class BusinessDetailsInput {
 
   businessSalesNumber: string;
 
+  @IsNotEmpty()
+  @IsString({ message: "businessMobilePrefixCode is required." })
+
+  businessMobilePrefixCode: string;
+
    
   // @IsNotEmpty()
   @IsArray({ message: "business Opening Hours is required." })

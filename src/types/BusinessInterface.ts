@@ -9,6 +9,7 @@ export interface BusinessDetailsInterface extends Document {
   address1: string,
   address2: string,
   businessSalesNumber: string,
+  businessMobilePrefixCode: string,
   businessAddress: string,
   businessCity: string,
   businessCountry: string,

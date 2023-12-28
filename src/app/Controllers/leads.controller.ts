@@ -142,8 +142,22 @@ export class LeadsController {
         $lt: endOfDay,
       },
     });
+    const startOfWeek = new Date(today);
+startOfWeek.setUTCDate(today.getUTCDate() - today.getUTCDay());
 
-    if (previous.length >= user.userLeadsDetailsId?.daily) {
+const endOfWeek = new Date(startOfWeek);
+endOfWeek.setUTCDate(startOfWeek.getUTCDate() + 7)
+
+const leadsForThisWeek = await Leads.find({
+  bid: user?.buyerId,
+  createdAt: {
+    $gte: startOfWeek,
+    $lt: endOfWeek,
+  },
+});
+    const originalDailyLimit = user.userLeadsDetailsId?.daily;
+    const fiftyPercentVariance = Math.round(originalDailyLimit + 0.5 * originalDailyLimit);
+    if (previous.length >= fiftyPercentVariance || leadsForThisWeek.length >=  user.userLeadsDetailsId.weekly ) {    // 50 % variance implemented here
       const ukOffset = 0;
       const utcDatePlus1Hour = new Date(new Date().getTime() + 60 * 60 * 1000);
       const ukDate = new Date(
