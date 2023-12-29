@@ -87,7 +87,6 @@ type FindOptions = {
 };
 
 export class UsersControllers {
-
   static create = async (req: Request, res: Response): Promise<Response> => {
     const input = req.body;
     const registerInput = new RegisterInput();
@@ -461,19 +460,22 @@ export class UsersControllers {
     try {
       const { id } = req.params;
       const business = req.query.business;
-      
+
       const userMatch: Record<string, any> = {};
-  
+
       if (req.user.role === RolesEnum.ACCOUNT_MANAGER) {
         userMatch.accountManager = new ObjectId(req.user._id);
       }
-      const businessDetails = business ? await BusinessDetails.findById(id) : null;
+      const businessDetails = business
+        ? await BusinessDetails.findById(id)
+        : null;
 
-      const users = business ? await User.findOne({businessDetailsId: businessDetails?.id}) : null;
+      const users = business
+        ? await User.findOne({ businessDetailsId: businessDetails?.id })
+        : null;
 
       const matchId = business ? new ObjectId(users?.id) : new ObjectId(id);
 
-  
       const query = await User.aggregate([
         {
           $match: {
@@ -483,58 +485,68 @@ export class UsersControllers {
         },
         {
           $lookup: {
-            from: 'businessdetails',
-            localField: 'businessDetailsId',
-            foreignField: '_id',
-            as: 'businessDetailsId',
+            from: "businessdetails",
+            localField: "businessDetailsId",
+            foreignField: "_id",
+            as: "businessDetailsId",
           },
         },
         {
           $lookup: {
-            from: 'users',
-            localField: 'accountManager',
-            foreignField: '_id',
-            as: 'accountManager',
+            from: "users",
+            localField: "accountManager",
+            foreignField: "_id",
+            as: "accountManager",
           },
         },
         {
-          $unwind: '$accountManager',
+          $unwind: "$accountManager",
         },
         {
           $lookup: {
-            from: 'userleadsdetails',
-            localField: 'userLeadsDetailsId',
-            foreignField: '_id',
-            as: 'userLeadsDetailsId',
+            from: "userleadsdetails",
+            localField: "userLeadsDetailsId",
+            foreignField: "_id",
+            as: "userLeadsDetailsId",
           },
         },
         {
           $lookup: {
-            from: 'carddetails',
-            localField: '_id',
-            foreignField: 'userId',
-            as: 'cardDetailsId',
+            from: "carddetails",
+            localField: "_id",
+            foreignField: "userId",
+            as: "cardDetailsId",
           },
         },
       ]);
-  
+
       if (query.length > 0) {
         const result = query[0];
         delete result.password;
-        result.businessDetailsId = Object.assign({}, result.businessDetailsId[0]);
+        result.businessDetailsId = Object.assign(
+          {},
+          result.businessDetailsId[0]
+        );
         result.cardDetailsId = Object.assign({}, result.cardDetailsId[0]);
-        result.userLeadsDetailsId = Object.assign({}, result.userLeadsDetailsId[0]);
-        result.accountManager = result.accountManager._id.toString();
-  
+        result.userLeadsDetailsId = Object.assign(
+          {},
+          result.userLeadsDetailsId[0]
+        );
+        result.accountManager = `${result?.accountManager?.firstName} ${
+          result?.accountManager?.lastName || ""
+        }`;
+
         return res.json({ data: result });
       } else {
         return res.json({ data: [] });
       }
     } catch (err) {
-      return res.status(500).json({ error: { message: 'Something went wrong.', err } });
+      return res
+        .status(500)
+        .json({ error: { message: "Something went wrong.", err } });
     }
   };
-  
+
   static indexName = async (req: Request, res: Response): Promise<Response> => {
     try {
       let user: Partial<UserInterface> = req.user ?? ({} as UserInterface);
@@ -631,13 +643,14 @@ export class UsersControllers {
         isAccountAdmin: true,
       };
     }
-    const newRolePermissions: PermissionInterface | null = await Permissions.findOne({
-      role: dataToUpdate.role,
-  });
+    const newRolePermissions: PermissionInterface | null =
+      await Permissions.findOne({
+        role: dataToUpdate.role,
+      });
 
-  if (newRolePermissions) {
+    if (newRolePermissions) {
       dataToUpdate.permissions = newRolePermissions.permissions;
-  }
+    }
     await User.findByIdAndUpdate(checkUser.id, dataToUpdate, { new: true });
 
     if (input.credits && user.role == RolesEnum.USER) {
