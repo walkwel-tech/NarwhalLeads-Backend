@@ -27,14 +27,12 @@ const upload = multer({
   ),
   limits: { fileSize: maxSize },
 });
-user.post("/many", UsersControllers.updateMany);
 
 
 user.post("/autoCharge/:id", Auth, UsersControllers.autoChargeNow);
 
 user.post(
   "/account-manager/stats",
-  OnlyAdmins,
   checkPermissions([
     { module: MODULE.DASHBOARD, permission: PERMISSIONS.READ },
   ]),

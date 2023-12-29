@@ -66,7 +66,8 @@ import { AUTO_UPDATED_TASKS } from "../../utils/Enums/autoUpdatedTasks.enum";
 import { AutoUpdatedTasksLogs } from "../Models/AutoChargeLogs";
 import { POSTCODE_TYPE } from "../../utils/Enums/postcode.enum";
 import { arraysAreEqual } from "../../utils/Functions/postCodeMatch";
-import { PipelineStage } from "mongoose";
+import { PermissionInterface } from "../../types/PermissionsInterface";
+import { Permissions } from "../Models/Permission";
 
 const ObjectId = mongoose.Types.ObjectId;
 
@@ -86,59 +87,6 @@ type FindOptions = {
 };
 
 export class UsersControllers {
-  static updateMany = async (
-    req: Request,
-    res: Response
-  ): Promise<Response> => {
-    try {
-      const pipeline: PipelineStage[] = [
-        {
-          $lookup: {
-            from: "permissions",
-            localField: "role",
-            foreignField: "role",
-            as: "permissionsData",
-          },
-        },
-        {
-          $unwind: {
-            path: "$permissionsData",
-            preserveNullAndEmptyArrays: true,
-          },
-        },
-        {
-          $set: {
-            permissions: "$permissionsData.permissions",
-          },
-        },
-        {
-          $project: {
-            permissionsData: 0,
-          },
-        },
-        {
-          $merge: {
-            into: "users",
-            whenMatched: "merge",
-            whenNotMatched: "insert",
-          },
-        },
-      ];
-
-      await User.aggregate(pipeline);
-
-      console.log("Permissions updated successfully.");
-
-      return res
-        .status(200)
-        .json({ success: true, message: "Permissions updated successfully." });
-    } catch (error) {
-      console.error("Error updating permissions:", error);
-      return res
-        .status(500)
-        .json({ success: false, message: "Internal server error." });
-    }
-  };
 
   static create = async (req: Request, res: Response): Promise<Response> => {
     const input = req.body;
@@ -510,142 +458,83 @@ export class UsersControllers {
   };
 
   static show = async (req: any, res: Response): Promise<Response> => {
-    const { id } = req.params;
-    const business = req.query.business;
-    let query;
     try {
-      if (business) {
-        const business = await BusinessDetails.findById(id);
-        let dataTpFind: Record<string, string | Types.ObjectId> = {
-          businessDetailsId: business?.id,
-        };
-        if (req.user.role === RolesEnum.ACCOUNT_MANAGER) {
-          dataTpFind.accountManager = new ObjectId(req.user._id);
-        }
-        const users = await User.findOne({ businessDetailsId: business?.id });
-        [query] = await User.aggregate([
-          {
-            $facet: {
-              results: [
-                {
-                  $lookup: {
-                    from: "businessdetails",
-                    localField: "businessDetailsId",
-                    foreignField: "_id",
-                    as: "businessDetailsId",
-                  },
-                },
-                {
-                  $lookup: {
-                    from: "users",
-                    localField: "accountManager",
-                    foreignField: "_id",
-                    as: "accountManager",
-                  },
-                },
-                {
-                  $unwind: "$accountManager",
-                },
-                {
-                  $lookup: {
-                    from: "userleadsdetails",
-                    localField: "userLeadsDetailsId",
-                    foreignField: "_id",
-                    as: "userLeadsDetailsId",
-                  },
-                },
-                {
-                  $lookup: {
-                    from: "carddetails",
-                    localField: "_id",
-                    foreignField: "userId",
-                    as: "cardDetailsId",
-                  },
-                },
-                { $match: { _id: new ObjectId(users?.id) } },
-              ],
-            },
-          },
-        ]);
-        query.results.map((item: any) => {
-          delete item.password;
-          let businessDetailsId = Object.assign(
-            {},
-            item["businessDetailsId"][0]
-          );
-          let cardDetailsId = Object.assign({}, item["cardDetailsId"][0]);
-          let userLeadsDetailsId = Object.assign(
-            {},
-            item["userLeadsDetailsId"][0]
-          );
-          item.userLeadsDetailsId = userLeadsDetailsId;
-          item.businessDetailsId = businessDetailsId;
-          item.cardDetailsId = cardDetailsId;
-          item.accountManager =
-            item.accountManager.firstName +
-            (item.accountManager.lastName || "");
-        });
+      const { id } = req.params;
+      const business = req.query.business;
+      
+      const userMatch: Record<string, any> = {};
+  
+      if (req.user.role === RolesEnum.ACCOUNT_MANAGER) {
+        userMatch.accountManager = new ObjectId(req.user._id);
+      }
+      const businessDetails = business ? await BusinessDetails.findById(id) : null;
 
-        return res.json({ data: query.results[0] });
+      const users = business ? await User.findOne({businessDetailsId: businessDetails?.id}) : null;
+
+      const matchId = business ? new ObjectId(users?.id) : new ObjectId(id);
+
+  
+      const query = await User.aggregate([
+        {
+          $match: {
+            _id: matchId,
+            ...userMatch,
+          },
+        },
+        {
+          $lookup: {
+            from: 'businessdetails',
+            localField: 'businessDetailsId',
+            foreignField: '_id',
+            as: 'businessDetailsId',
+          },
+        },
+        {
+          $lookup: {
+            from: 'users',
+            localField: 'accountManager',
+            foreignField: '_id',
+            as: 'accountManager',
+          },
+        },
+        {
+          $unwind: '$accountManager',
+        },
+        {
+          $lookup: {
+            from: 'userleadsdetails',
+            localField: 'userLeadsDetailsId',
+            foreignField: '_id',
+            as: 'userLeadsDetailsId',
+          },
+        },
+        {
+          $lookup: {
+            from: 'carddetails',
+            localField: '_id',
+            foreignField: 'userId',
+            as: 'cardDetailsId',
+          },
+        },
+      ]);
+  
+      if (query.length > 0) {
+        const result = query[0];
+        delete result.password;
+        result.businessDetailsId = Object.assign({}, result.businessDetailsId[0]);
+        result.cardDetailsId = Object.assign({}, result.cardDetailsId[0]);
+        result.userLeadsDetailsId = Object.assign({}, result.userLeadsDetailsId[0]);
+        result.accountManager = result.accountManager._id.toString();
+  
+        return res.json({ data: result });
       } else {
-        [query] = await User.aggregate([
-          {
-            $facet: {
-              results: [
-                {
-                  $lookup: {
-                    from: "businessdetails",
-                    localField: "businessDetailsId",
-                    foreignField: "_id",
-                    as: "businessDetailsId",
-                  },
-                },
-                {
-                  $lookup: {
-                    from: "userleadsdetails",
-                    localField: "userLeadsDetailsId",
-                    foreignField: "_id",
-                    as: "userLeadsDetailsId",
-                  },
-                },
-                {
-                  $lookup: {
-                    from: "carddetails",
-                    localField: "_id",
-                    foreignField: "userId",
-                    as: "cardDetailsId",
-                  },
-                },
-                { $match: { _id: new ObjectId(id) } },
-              ],
-            },
-          },
-        ]);
-        query.results.map((item: any) => {
-          delete item.password;
-          let businessDetailsId = Object.assign(
-            {},
-            item["businessDetailsId"][0]
-          );
-          let cardDetailsId = Object.assign({}, item["cardDetailsId"][0]);
-          let userLeadsDetailsId = Object.assign(
-            {},
-            item["userLeadsDetailsId"][0]
-          );
-          item.userLeadsDetailsId = userLeadsDetailsId;
-          item.businessDetailsId = businessDetailsId;
-          item.cardDetailsId = cardDetailsId;
-        });
-
-        return res.json({ data: query.results[0] });
+        return res.json({ data: [] });
       }
     } catch (err) {
-      return res
-        .status(500)
-        .json({ error: { message: "Something went wrong.", err } });
+      return res.status(500).json({ error: { message: 'Something went wrong.', err } });
     }
   };
-
+  
   static indexName = async (req: Request, res: Response): Promise<Response> => {
     try {
       let user: Partial<UserInterface> = req.user ?? ({} as UserInterface);
@@ -742,7 +631,13 @@ export class UsersControllers {
         isAccountAdmin: true,
       };
     }
+    const newRolePermissions: PermissionInterface | null = await Permissions.findOne({
+      role: dataToUpdate.role,
+  });
 
+  if (newRolePermissions) {
+      dataToUpdate.permissions = newRolePermissions.permissions;
+  }
     await User.findByIdAndUpdate(checkUser.id, dataToUpdate, { new: true });
 
     if (input.credits && user.role == RolesEnum.USER) {
