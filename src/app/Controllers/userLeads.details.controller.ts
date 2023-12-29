@@ -491,6 +491,7 @@ export class UserLeadsController {
         if (user && user.leadCost !== undefined) {
           await UserLeadsDetails.findByIdAndUpdate(id, {
             dailyLeadCost: user.leadCost ?? 0 * input.daily,
+            weekly: input?.daily * input.leadSchedule.length,
           });
         }
         const business = await BusinessDetails.findById(

@@ -62,6 +62,7 @@ export class BusinessDetailsController {
         .status(400)
         .json({ error: { message: "User Id is required" } });
     }
+
     const Business = new BusinessDetailsInput();
     (Business.businessIndustry = input.businessIndustry),
       (Business.businessName = input.businessName),
@@ -77,12 +78,19 @@ export class BusinessDetailsController {
       businessName: input.businessName,
       isDeleted: false,
     });
+
     if (isBusinessNameExist.length > 0) {
       return res
         .status(400)
         .json({ error: { message: "Business Name Already Exists." } });
     }
-    const { onBoarding }: any = await User.findById(input.userId);
+    const user = await User.findById(input.userId);
+
+if (!user) {
+  return res.status(404).json({ error: { message: "User not found." } });
+}
+
+const { onBoarding }: any = user || {};
     let object = onBoarding || [];
     let array: any = [];
     if (errors.length) {
