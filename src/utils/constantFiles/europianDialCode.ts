@@ -40,7 +40,6 @@ interface Country {
     { "mobilePrefixCode": 995, "label": "GEO" },
     { "mobilePrefixCode": 350, "label": "GIB" },
     { "mobilePrefixCode": 354, "label": "ISL" },
-    { "mobilePrefixCode": 44, "label": "IMN" },
     { "mobilePrefixCode": 381, "label": "XKX" },
     { "mobilePrefixCode": 423, "label": "LIE" },
     { "mobilePrefixCode": 389, "label": "MKD" },
