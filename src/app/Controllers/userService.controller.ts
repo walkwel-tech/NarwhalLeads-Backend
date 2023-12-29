@@ -1,7 +1,7 @@
 import { Request, Response } from "express";
 import { UserService } from "../Models/UserService";
 import { User } from "../Models/User";
-import { EUROPIAN_DIAL_CODES } from "../../utils/constantFiles/europianDialCode";
+import { countries } from "../../utils/constantFiles/europianDialCode";
 
 export class UserServiceController {
   static create = async (req: Request, res: Response) => {
@@ -24,18 +24,7 @@ export class UserServiceController {
   };
   static europeanDialCodes = (req: Request, res: Response) => {
     try {
-      const countryData = EUROPIAN_DIAL_CODES;
-
-      const  countries = countryData
-        .trim()
-        .split("\n")
-        .map((line) => {
-          const [, , countryCode, mobilePrefixCode] = line.split(" - ");
-          return {
-            mobilePrefixCode,
-            label: countryCode,
-          };
-        });
+     
       res.json(countries);
     } catch (error) {
       console.error("Error processing country codes:", error.message);
