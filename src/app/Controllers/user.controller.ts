@@ -470,9 +470,15 @@ export class UsersControllers {
         userMatch.accountManager = new ObjectId(req.user._id);
       }
       const user = await User.findOne ({ _id : req.params.id})
-      if(user?.role === RolesEnum.ACCOUNT_ADMIN){
+      const allowedRoles = [
+        RolesEnum.ACCOUNT_ADMIN,
+        RolesEnum.ACCOUNT_MANAGER,
+        RolesEnum.ADMIN,
+      ];
+      
+      if (user?.role && allowedRoles.includes(user.role)) {
         return res.json({ data: user });
-      } else{
+      }else{
       const businessDetails = business ? await BusinessDetails.findById(id) : null;
 
       const users = business
