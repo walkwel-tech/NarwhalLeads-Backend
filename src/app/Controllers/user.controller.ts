@@ -459,16 +459,21 @@ export class UsersControllers {
   static show = async (req: any, res: Response): Promise<Response> => {
     try {
       const { id } = req.params;
+    
+    
       const business = req.query.business;
 
       const userMatch: Record<string, any> = {};
-
+     
+  
       if (req.user.role === RolesEnum.ACCOUNT_MANAGER) {
         userMatch.accountManager = new ObjectId(req.user._id);
       }
-      const businessDetails = business
-        ? await BusinessDetails.findById(id)
-        : null;
+      const user = await User.findOne ({ _id : req.params.id})
+      if(user?.role === RolesEnum.ACCOUNT_ADMIN){
+        return res.json({ data: user });
+      } else{
+      const businessDetails = business ? await BusinessDetails.findById(id) : null;
 
       const users = business
         ? await User.findOne({ businessDetailsId: businessDetails?.id })
@@ -540,12 +545,14 @@ export class UsersControllers {
       } else {
         return res.json({ data: [] });
       }
+    }
     } catch (err) {
       return res
         .status(500)
         .json({ error: { message: "Something went wrong.", err } });
     }
   };
+
 
   static indexName = async (req: Request, res: Response): Promise<Response> => {
     try {
