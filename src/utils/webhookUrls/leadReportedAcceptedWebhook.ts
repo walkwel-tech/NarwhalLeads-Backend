@@ -62,7 +62,7 @@ export const leadReportAcceptedWebhook = (
             eventTitle: EVENT_TITLE.LEAD_REPORT_ACCEPTED,
             statusCode: err.response.status,
             data: data,
-            notes: err,
+            notes: err?.response?.data,
           };
           saveEventLogs(params);
           reject(err.response);

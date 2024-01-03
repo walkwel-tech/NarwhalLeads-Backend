@@ -442,7 +442,6 @@ export class UserLeadsController {
       const lead = await UserLeadsDetails.findById(id);
       const userId = lead?.userId;
       const business = await BusinessDetails.findById(user.businessDetailsId);
-
       if (
         input.leadSchedule &&
         !arraysAreEqual(input.leadSchedule, details.leadSchedule) &&
@@ -481,7 +480,7 @@ export class UserLeadsController {
       }
 
       if (
-        input.daily != details?.daily &&
+       input.daily && input.daily != details?.daily &&
         userId &&
         user?.onBoardingPercentage === ONBOARDING_PERCENTAGE.CARD_DETAILS
       ) {

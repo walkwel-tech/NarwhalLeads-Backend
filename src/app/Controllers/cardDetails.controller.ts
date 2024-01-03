@@ -1696,9 +1696,9 @@ async function getUserDetails(cid: string, pid: string) {
 export function getOriginalAmountForStripe(amount: number, currency: string) {
   let originalAmount;
   if (currency === stripeCurrency.GBP || currency === stripeCurrency.USD) {
-    originalAmount = amount / (1 + VAT / 100);
+    originalAmount = amount / (1 + VAT / 100) / 100;
   } else {
-    originalAmount = amount;
+    originalAmount = amount / 100;
   }
 
   return originalAmount;
