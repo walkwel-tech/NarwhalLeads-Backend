@@ -158,17 +158,20 @@ const leadsForThisWeek = await Leads.find({
     const originalDailyLimit = user.userLeadsDetailsId?.daily;
     const fiftyPercentVariance = Math.round(originalDailyLimit + 0.5 * originalDailyLimit);
     if (previous.length >= fiftyPercentVariance || leadsForThisWeek.length >=  user.userLeadsDetailsId.weekly ) {    // 50 % variance implemented here
-      const ukOffset = 0;
       const utcDatePlus1Hour = new Date(new Date().getTime() + 60 * 60 * 1000);
       const ukDate = new Date(
-        utcDatePlus1Hour.getTime() + ukOffset * 60 * 60 * 1000
+        utcDatePlus1Hour.getTime() 
       );
       const ukDateString = ukDate.toUTCString();
 
+   
       const debuggingLogs = {
         yesterday: today.toUTCString(),
         today: endOfDay.toUTCString(),
         currentServerTime: ukDateString,
+        dailyLimit: user.userLeadsDetailsId?.daily,
+        dailyComputedLimit:fiftyPercentVariance,
+        weeklyLimit:user.userleadsdetails?.weekly
       };
       return res.status(400).json({
         error: {
