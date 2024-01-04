@@ -2026,7 +2026,7 @@ export class UsersControllers {
         // if (user?.credits < credits) {
         amount = credits;
         (params.fixedAmount = amount), (dataToSave.isCredited = true);
-        dataToSave.creditsLeft = credits;
+        dataToSave.creditsLeft = user.credits + credits; // @hotfix can have many test cases
         addCreditsToBuyer(params).then(async (res) => {
           const transaction = await Transaction.create(dataToSave);
           const paramPdf: generatePDFParams = {

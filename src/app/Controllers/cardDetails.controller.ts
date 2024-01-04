@@ -1185,11 +1185,13 @@ export class CardDetailsControllers {
             invoiceId: "",
             paymentSessionId: input.data.object.id,
             cardId: card?._id,
-            creditsLeft: userId?.credits || 0 - (params.freeCredits || 0),
+            // creditsLeft: userId?.credits || 0 - (params.freeCredits || 0),
+            creditsLeft: (userId?.credits || 0) + (params.freeCredits || 0) + originalAmount ,
             paymentMethod: input.data?.object?.payment_method,
             paymentType: "",
             isCredited: true,
           };
+          console.log(commonDataSaveInTransaction ,">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>")
           addCreditsToBuyer(params)
             .then(async (res: any) => {
               userId =
@@ -1200,6 +1202,7 @@ export class CardDetailsControllers {
               (commonDataSaveInTransaction.status = PAYMENT_STATUS.CAPTURED),
                 (commonDataSaveInTransaction.title =
                   transactionTitle.CREDITS_ADDED);
+
               if (
                 userId?.paymentMethod === paymentMethodEnum.AUTOCHARGE_METHOD
               ) {
