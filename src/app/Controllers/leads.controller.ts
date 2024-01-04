@@ -171,7 +171,7 @@ const leadsForThisWeek = await Leads.find({
         currentServerTime: ukDateString,
         dailyLimit: user.userLeadsDetailsId?.daily,
         dailyComputedLimit:fiftyPercentVariance,
-        weeklyLimit:user.userleadsdetails?.weekly
+        weeklyLimit:user.userLeadsDetailsId?.weekly
       };
       return res.status(400).json({
         error: {
