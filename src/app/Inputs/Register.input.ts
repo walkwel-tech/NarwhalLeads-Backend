@@ -10,6 +10,10 @@ export class RegisterInput {
   lastName: string;
 
   @IsNotEmpty()
+  @IsString({message: "mobilePrefixCode is required"})
+  mobilePrefixCode:string;
+
+  @IsNotEmpty()
   @IsEmail({}, { message: "Email should be valid." })
   email: string;
 

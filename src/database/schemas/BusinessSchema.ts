@@ -29,6 +29,11 @@ const BusinessDetailsSchema = new Schema(
     businessSalesNumber: {
       type: String,
     },
+    businessMobilePrefixCode : {
+      type: String,
+      required: true,
+
+    },
     businessAddress: {
       type: String,
       required: false,

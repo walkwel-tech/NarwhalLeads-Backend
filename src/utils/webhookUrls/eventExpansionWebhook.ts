@@ -4,6 +4,7 @@ import { EVENT_TITLE, EVENT_TYPE } from "../constantFiles/events";
 import { saveEventLogs } from "../Functions/saveLogs";
 import { Types } from "mongoose";
 import { County } from "../Functions/flattenPostcodes";
+import { PostCode } from "../../types/LeadDetailsInterface";
 
 const POST = "post";
 
@@ -15,14 +16,15 @@ export interface PostcodeWebhookParams {
   eventCode: string;
   topUpAmount?: string | number;
   type?: string;
-  postCodeList?: County[];
+  postCodeList?: County[] | PostCode[];
   miles?: string;
-  postcode?: string;
+  postcode?: PostCode[];
   remainingCredits?: string | number;
   businessSalesNumber?: string;
   leadSchedule?: string[];
   dailyLeadCap?: string | number;
 }
+
 export const eventsWebhook = (data: any) => {
   return new Promise((resolve, reject) => {
     let config = {
@@ -42,7 +44,7 @@ export const eventsWebhook = (data: any) => {
       } else if (data.eventCode === EVENT_TITLE.POST_CODE_UPDATE) {
         config.url = `${process.env.POST_CODE_UPDATE_URL_WEBHOOK}`;
       } else if (data.eventCode === EVENT_TITLE.BUSINESS_PHONE_NUMBER) {
-        config.url = `${process.env.BUSINESS_PHONE_NUMBER}`;
+        config.url = `${process.env.BUSINESS_SALES_NUMBER_UPDATE_WEHOOK_URL}`;
       } else if (data.eventCode === EVENT_TITLE.DAILY_LEAD_CAP) {
         config.url = `${process.env.DAILY_LEAD_CAP_WEBHOOK_URL}`;
       } else if (data.eventCode === EVENT_TITLE.LEAD_SCHEDULE_UPDATE) {

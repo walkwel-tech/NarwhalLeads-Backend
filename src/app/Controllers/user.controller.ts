@@ -8,7 +8,10 @@ import { paymentMethodEnum } from "../../utils/Enums/payment.method.enum";
 import { sort } from "../../utils/Enums/sorting.enum";
 import { transactionTitle } from "../../utils/Enums/transaction.title.enum";
 import { refreshToken } from "../../utils/XeroApiIntegration/createContact";
-import { generatePDF } from "../../utils/XeroApiIntegration/generatePDF";
+import {
+  generatePDF,
+  generatePDFParams,
+} from "../../utils/XeroApiIntegration/generatePDF";
 import { RegisterInput } from "../Inputs/Register.input";
 import { sendEmailForUpdatedDetails } from "../Middlewares/mail";
 import { BusinessDetails } from "../Models/BusinessDetails";
@@ -63,6 +66,8 @@ import { AUTO_UPDATED_TASKS } from "../../utils/Enums/autoUpdatedTasks.enum";
 import { AutoUpdatedTasksLogs } from "../Models/AutoChargeLogs";
 import { POSTCODE_TYPE } from "../../utils/Enums/postcode.enum";
 import { arraysAreEqual } from "../../utils/Functions/postCodeMatch";
+import { PermissionInterface } from "../../types/PermissionsInterface";
+import { Permissions } from "../Models/Permission";
 
 const ObjectId = mongoose.Types.ObjectId;
 
@@ -80,6 +85,7 @@ type FindOptions = {
   role: RoleFilter;
   accountManager?: Types.ObjectId;
 };
+
 export class UsersControllers {
   static create = async (req: Request, res: Response): Promise<Response> => {
     const input = req.body;
@@ -194,7 +200,7 @@ export class UsersControllers {
             RolesEnum.ADMIN,
             RolesEnum.INVITED,
             RolesEnum.SUPER_ADMIN,
-            RolesEnum.ACCOUNT_MANAGER,
+            // RolesEnum.ACCOUNT_MANAGER,
             RolesEnum.SUBSCRIBER,
           ],
         },
@@ -213,8 +219,18 @@ export class UsersControllers {
         // dataToFind.role = { $in: [RolesEnum.NON_BILLABLE] };
         dataToFind.isCreditsAndBillingEnabled = false;
       }
+      // if (accountManagerBoolean) {
+      //   dataToFind.role = { $in: [RolesEnum.ACCOUNT_MANAGER, RolesEnum.ACCOUNT_ADMIN] };
+      //   dataToFind.isActive = true;
+      // }
       if (accountManagerBoolean) {
-        dataToFind.role = RolesEnum.ACCOUNT_MANAGER;
+        dataToFind.permissions = {
+          $elemMatch: {
+            module: "client_manage",
+            permission: { $in: ["create", "read", "update", "delete"] },
+          },
+        };
+
         dataToFind.isActive = true;
       }
       if (
@@ -441,141 +457,108 @@ export class UsersControllers {
   };
 
   static show = async (req: any, res: Response): Promise<Response> => {
-    const { id } = req.params;
-    const business = req.query.business;
-    let query;
     try {
-      if (business) {
-        const business = await BusinessDetails.findById(id);
-        let dataTpFind: Record<string, string | Types.ObjectId> = {
-          businessDetailsId: business?.id,
-        };
-        if (req.user.role === RolesEnum.ACCOUNT_MANAGER) {
-          dataTpFind.accountManager = new ObjectId(req.user._id);
-        }
-        const users = await User.findOne({ businessDetailsId: business?.id });
-        [query] = await User.aggregate([
-          {
-            $facet: {
-              results: [
-                {
-                  $lookup: {
-                    from: "businessdetails",
-                    localField: "businessDetailsId",
-                    foreignField: "_id",
-                    as: "businessDetailsId",
-                  },
-                },
-                {
-                  $lookup: {
-                    from: "users",
-                    localField: "accountManager",
-                    foreignField: "_id",
-                    as: "accountManager",
-                  },
-                },
-                {
-                  $unwind: "$accountManager",
-                },
-                {
-                  $lookup: {
-                    from: "userleadsdetails",
-                    localField: "userLeadsDetailsId",
-                    foreignField: "_id",
-                    as: "userLeadsDetailsId",
-                  },
-                },
-                {
-                  $lookup: {
-                    from: "carddetails",
-                    localField: "_id",
-                    foreignField: "userId",
-                    as: "cardDetailsId",
-                  },
-                },
-                { $match: { _id: new ObjectId(users?.id) } },
-              ],
-            },
-          },
-        ]);
-        query.results.map((item: any) => {
-          delete item.password;
-          let businessDetailsId = Object.assign(
-            {},
-            item["businessDetailsId"][0]
-          );
-          let cardDetailsId = Object.assign({}, item["cardDetailsId"][0]);
-          let userLeadsDetailsId = Object.assign(
-            {},
-            item["userLeadsDetailsId"][0]
-          );
-          item.userLeadsDetailsId = userLeadsDetailsId;
-          item.businessDetailsId = businessDetailsId;
-          item.cardDetailsId = cardDetailsId;
-          item.accountManager =
-            item.accountManager.firstName +
-            (item.accountManager.lastName || "");
-        });
+      const { id } = req.params;
+    
+    
+      const business = req.query.business;
 
-        return res.json({ data: query.results[0] });
-      } else {
-        [query] = await User.aggregate([
-          {
-            $facet: {
-              results: [
-                {
-                  $lookup: {
-                    from: "businessdetails",
-                    localField: "businessDetailsId",
-                    foreignField: "_id",
-                    as: "businessDetailsId",
-                  },
-                },
-                {
-                  $lookup: {
-                    from: "userleadsdetails",
-                    localField: "userLeadsDetailsId",
-                    foreignField: "_id",
-                    as: "userLeadsDetailsId",
-                  },
-                },
-                {
-                  $lookup: {
-                    from: "carddetails",
-                    localField: "_id",
-                    foreignField: "userId",
-                    as: "cardDetailsId",
-                  },
-                },
-                { $match: { _id: new ObjectId(id) } },
-              ],
-            },
-          },
-        ]);
-        query.results.map((item: any) => {
-          delete item.password;
-          let businessDetailsId = Object.assign(
-            {},
-            item["businessDetailsId"][0]
-          );
-          let cardDetailsId = Object.assign({}, item["cardDetailsId"][0]);
-          let userLeadsDetailsId = Object.assign(
-            {},
-            item["userLeadsDetailsId"][0]
-          );
-          item.userLeadsDetailsId = userLeadsDetailsId;
-          item.businessDetailsId = businessDetailsId;
-          item.cardDetailsId = cardDetailsId;
-        });
-
-        return res.json({ data: query.results[0] });
+      const userMatch: Record<string, any> = {};
+     
+  
+      if (req.user.role === RolesEnum.ACCOUNT_MANAGER) {
+        userMatch.accountManager = new ObjectId(req.user._id);
       }
+      const user = await User.findOne ({ _id : req.params.id})
+      const allowedRoles = [
+        RolesEnum.ACCOUNT_ADMIN,
+        RolesEnum.ACCOUNT_MANAGER,
+        RolesEnum.ADMIN,
+      ];
+      
+      if (user?.role && allowedRoles.includes(user.role)) {
+        return res.json({ data: user });
+      }else{
+      const businessDetails = business ? await BusinessDetails.findById(id) : null;
+
+      const users = business
+        ? await User.findOne({ businessDetailsId: businessDetails?.id })
+        : null;
+
+      const matchId = business ? new ObjectId(users?.id) : new ObjectId(id);
+
+      const query = await User.aggregate([
+        {
+          $match: {
+            _id: matchId,
+            ...userMatch,
+          },
+        },
+        {
+          $lookup: {
+            from: "businessdetails",
+            localField: "businessDetailsId",
+            foreignField: "_id",
+            as: "businessDetailsId",
+          },
+        },
+        {
+          $lookup: {
+            from: "users",
+            localField: "accountManager",
+            foreignField: "_id",
+            as: "accountManager",
+          },
+        },
+        {
+          $unwind: "$accountManager",
+        },
+        {
+          $lookup: {
+            from: "userleadsdetails",
+            localField: "userLeadsDetailsId",
+            foreignField: "_id",
+            as: "userLeadsDetailsId",
+          },
+        },
+        {
+          $lookup: {
+            from: "carddetails",
+            localField: "_id",
+            foreignField: "userId",
+            as: "cardDetailsId",
+          },
+        },
+      ]);
+
+      if (query.length > 0) {
+        const result = query[0];
+        delete result.password;
+        result.businessDetailsId = Object.assign(
+          {},
+          result.businessDetailsId[0]
+        );
+        result.cardDetailsId = Object.assign({}, result.cardDetailsId[0]);
+        result.userLeadsDetailsId = Object.assign(
+          {},
+          result.userLeadsDetailsId[0]
+        );
+        result.accountManager = `${result?.accountManager?.firstName} ${
+          result?.accountManager?.lastName || ""
+        }`;
+
+        return res.json({ data: result });
+      } else {
+        return res.json({ data: [] });
+      }
+    }
     } catch (err) {
       return res
         .status(500)
         .json({ error: { message: "Something went wrong.", err } });
     }
   };
+
 
   static indexName = async (req: Request, res: Response): Promise<Response> => {
     try {
@@ -647,6 +630,42 @@ export class UsersControllers {
     if (input.password) {
       delete input.password;
     }
+    if (!checkUser) {
+      return res
+        .status(404)
+        .json({ success: false, message: "User not found." });
+    }
+
+    let dataToUpdate: { [key: string]: any } = {};
+
+    if (
+      checkUser.role === RolesEnum.ACCOUNT_ADMIN &&
+      input.isAccountAdmin === false
+    ) {
+      dataToUpdate = {
+        ...dataToUpdate,
+        role: RolesEnum.ADMIN,
+        isAccountAdmin: false,
+      };
+    }
+
+    if (input.isAccountAdmin) {
+      dataToUpdate = {
+        ...dataToUpdate,
+        role: RolesEnum.ACCOUNT_ADMIN,
+        isAccountAdmin: true,
+      };
+    }
+    const newRolePermissions: PermissionInterface | null =
+      await Permissions.findOne({
+        role: dataToUpdate.role,
+      });
+
+    if (newRolePermissions) {
+      dataToUpdate.permissions = newRolePermissions.permissions;
+    }
+    await User.findByIdAndUpdate(checkUser.id, dataToUpdate, { new: true });
+
     if (input.credits && user.role == RolesEnum.USER) {
       delete input.credits;
     }
@@ -743,31 +762,97 @@ export class UsersControllers {
         }
       }
 
-      let updatedUser;
-      if (input.secondaryCredits) {
-        updatedUser = await User.findByIdAndUpdate(
-          checkUser?.id,
-          {
-            secondaryCredits: input.secondaryCredits + user.secondaryCredits,
-            ...(user.leadCost &&
-            input.secondaryCredits + user.secondaryCredits > user.leadCost
-              ? { isSecondaryUsage: true }
-              : {}),
+      if (
+        (input.secondaryLeadCost && !input.secondaryLeads) ||
+        (!input.secondaryLeadCost && input.secondaryLeads)
+      ) {
+        return res.status(400).json({
+          error: {
+            message: "Please enter secondary leads and secondary lead cost",
           },
-          { new: true }
-        );
-      }
-
-      if (input.secondaryLeadCost) {
-        await User.findByIdAndUpdate(checkUser?.id, {
-          secondaryLeadCost: input.secondaryLeadCost,
-          ...(updatedUser &&
-          updatedUser.secondaryCredits > input.secondaryLeadCost
-            ? { isSecondaryUsage: true }
-            : checkUser.secondaryCredits > input.secondaryLeadCost
-            ? { isSecondaryUsage: true }
-            : {}),
         });
+      }
+      let secondaryLeadsAnticipating: number;
+      if (input.secondaryLeads) {
+        secondaryLeadsAnticipating =
+          input.secondaryLeads * input.secondaryLeadCost;
+        let dataSave = {
+          secondaryLeadCost: input.secondaryLeadCost,
+          secondaryCredits: secondaryLeadsAnticipating,
+          isSecondaryUsage: true,
+          secondaryLeads: input.secondaryLeads,
+        };
+
+        if (
+          input?.secondaryLeadCost &&
+          secondaryLeadsAnticipating < input?.secondaryLeadCost
+        ) {
+          dataSave.isSecondaryUsage = false;
+        }
+        await User.findByIdAndUpdate(checkUser?.id, dataSave, {
+          new: true,
+        });
+
+        let dataToSave: Partial<TransactionInterface> = {
+          userId: checkUser.id,
+          amount: secondaryLeadsAnticipating,
+          status: PAYMENT_STATUS.CAPTURED,
+          title: transactionTitle.SECONDARY_CREDITS_MANUAL_ADJUSTMENT,
+          isCredited: true,
+          creditsLeft: secondaryLeadsAnticipating,
+        };
+        // if (user?.credits < credits) {
+        let transaction = await Transaction.create(dataToSave);
+        console.log("transaction", transaction);
+        const paramPdf: generatePDFParams = {
+          ContactID: checkUser?.xeroContactId,
+          desc: transactionTitle.CREDITS_ADDED,
+          amount: secondaryLeadsAnticipating,
+          freeCredits: 0,
+          sessionId: transactionTitle.SECONDARY_CREDITS_MANUAL_ADJUSTMENT,
+          isManualAdjustment: false,
+        };
+        generatePDF(paramPdf)
+          .then(async (res: any) => {
+            const dataToSaveInInvoice: Partial<InvoiceInterface> = {
+              userId: checkUser?.id,
+              transactionId: transaction.id,
+              price: secondaryLeadsAnticipating,
+              invoiceId: res.data.Invoices[0].InvoiceID,
+            };
+            await Invoice.create(dataToSaveInInvoice);
+            await Transaction.findByIdAndUpdate(transaction.id, {
+              invoiceId: res.data.Invoices[0].InvoiceID,
+            });
+
+            console.log("pdf generated");
+          })
+          .catch(async (err) => {
+            refreshToken().then(async (res) => {
+              const paramPdf: generatePDFParams = {
+                ContactID: checkUser?.xeroContactId,
+                desc: transactionTitle.CREDITS_ADDED,
+                amount: secondaryLeadsAnticipating,
+                freeCredits: 0,
+                sessionId: transactionTitle.SECONDARY_CREDITS_MANUAL_ADJUSTMENT,
+                isManualAdjustment: false,
+              };
+              generatePDF(paramPdf).then(async (res: any) => {
+                const dataToSaveInInvoice: Partial<InvoiceInterface> = {
+                  userId: checkUser?.id,
+                  transactionId: transaction.id,
+                  price: secondaryLeadsAnticipating,
+                  invoiceId: res.data.Invoices[0].InvoiceID,
+                };
+                await Invoice.create(dataToSaveInInvoice);
+                await Transaction.findByIdAndUpdate(transaction.id, {
+                  invoiceId: res.data.Invoices[0].InvoiceID,
+                });
+
+                console.log("pdf generated");
+              });
+            });
+          });
       }
 
       if (input.smsPhoneNumber) {
@@ -1041,8 +1126,7 @@ export class UsersControllers {
           };
           if (userAfterMod.type === POSTCODE_TYPE.RADIUS) {
             (paramsToSend.type = POSTCODE_TYPE.RADIUS),
-              (paramsToSend.postcode = userAfterMod.postcode),
-              (paramsToSend.miles = userAfterMod?.miles);
+              (paramsToSend.postcode = userAfterMod.postCodeList);
           } else {
             paramsToSend.postCodeList = flattenPostalCodes(
               userAfterMod?.postCodeTargettingList
@@ -1153,8 +1237,7 @@ export class UsersControllers {
           };
           if (userAfterMod.type === POSTCODE_TYPE.RADIUS) {
             (paramsToSend.type = POSTCODE_TYPE.RADIUS),
-              (paramsToSend.postcode = userAfterMod.postcode),
-              (paramsToSend.miles = userAfterMod?.miles);
+              (paramsToSend.postcode = userAfterMod.postCodeList);
           } else {
             paramsToSend.postCodeList = flattenPostalCodes(
               userAfterMod?.postCodeTargettingList
@@ -1213,15 +1296,15 @@ export class UsersControllers {
 
             const transaction = await Transaction.create(dataToSave);
             if (checkUser?.xeroContactId) {
-              generatePDF(
-                checkUser?.xeroContactId,
-                transactionTitle.CREDITS_ADDED,
-                //@ts-ignore
-                input?.credits,
-                0,
-                _res.data.id,
-                false
-              )
+              const paramPdf: generatePDFParams = {
+                ContactID: checkUser?.xeroContactId,
+                desc: transactionTitle.CREDITS_ADDED,
+                amount: input?.credits,
+                freeCredits: 0,
+                sessionId: _res.data.id,
+                isManualAdjustment: false,
+              };
+              generatePDF(paramPdf)
                 .then(async (res: any) => {
                   const dataToSaveInInvoice: any = {
                     userId: checkUser?.id,
@@ -1238,15 +1321,15 @@ export class UsersControllers {
                 })
                 .catch(async (err) => {
                   refreshToken().then(async (res) => {
-                    generatePDF(
-                      checkUser?.xeroContactId,
-                      transactionTitle.CREDITS_ADDED,
-                      //@ts-ignore
-                      input.credits,
-                      0,
-                      _res.data.id,
-                      false
-                    ).then(async (res: any) => {
+                    const paramPdf: generatePDFParams = {
+                      ContactID: checkUser?.xeroContactId,
+                      desc: transactionTitle.CREDITS_ADDED,
+                      amount: input.credits,
+                      freeCredits: 0,
+                      sessionId: _res.data.id,
+                      isManualAdjustment: false,
+                    };
+                    generatePDF(paramPdf).then(async (res: any) => {
                       const dataToSaveInInvoice: any = {
                         userId: checkUser?.id,
                         transactionId: transaction.id,
@@ -1554,14 +1637,14 @@ export class UsersControllers {
           ...dataToFind,
         };
       }
-      if(_req.query.accountManagerId){
-        dataToFind.accountManager=new ObjectId(_req.query.accountManagerId)
+      if (_req.query.accountManagerId) {
+        dataToFind.accountManager = new ObjectId(_req.query.accountManagerId);
       }
-      if(_req.query.clientType===FILTER_FOR_CLIENT.NON_BILLABLE){
-        dataToFind.isCreditsAndBillingEnabled=false
+      if (_req.query.clientType === FILTER_FOR_CLIENT.NON_BILLABLE) {
+        dataToFind.isCreditsAndBillingEnabled = false;
       }
-      if(_req.query.clientType===FILTER_FOR_CLIENT.BILLABLE){
-        dataToFind.isCreditsAndBillingEnabled=true
+      if (_req.query.clientType === FILTER_FOR_CLIENT.BILLABLE) {
+        dataToFind.isCreditsAndBillingEnabled = true;
       }
       if (status) {
         dataToFind.status = status;
@@ -1946,14 +2029,16 @@ export class UsersControllers {
         dataToSave.creditsLeft = credits;
         addCreditsToBuyer(params).then(async (res) => {
           const transaction = await Transaction.create(dataToSave);
-          generatePDF(
-            user?.xeroContactId,
-            transactionTitle.CREDITS_ADDED,
-            0,
-            credits,
-            "Manual Adjustment",
-            true
-          )
+          const paramPdf: generatePDFParams = {
+            ContactID: user?.xeroContactId,
+
+            desc: transactionTitle.CREDITS_ADDED,
+            amount: 0,
+            freeCredits: credits,
+            sessionId: transactionTitle.MANUAL_ADJUSTMENT,
+            isManualAdjustment: true,
+          };
+          generatePDF(paramPdf)
             .then(async (res: any) => {
               const dataToSaveInInvoice: Partial<InvoiceInterface> = {
                 userId: user?.id,
@@ -1970,14 +2055,16 @@ export class UsersControllers {
             })
             .catch(async (err) => {
               refreshToken().then(async (res) => {
-                generatePDF(
-                  user?.xeroContactId,
-                  transactionTitle.CREDITS_ADDED,
-                  0,
-                  credits,
-                  "Manual Adjustment",
-                  true
-                ).then(async (res: any) => {
+                const paramPdf: generatePDFParams = {
+                  ContactID: user?.xeroContactId,
+
+                  desc: transactionTitle.CREDITS_ADDED,
+                  amount: 0,
+                  freeCredits: credits,
+                  sessionId: transactionTitle.MANUAL_ADJUSTMENT,
+                  isManualAdjustment: true,
+                };
+                generatePDF(paramPdf).then(async (res: any) => {
                   const dataToSaveInInvoice: Partial<InvoiceInterface> = {
                     userId: user?.id,
                     transactionId: transaction.id,
@@ -2012,8 +2099,7 @@ export class UsersControllers {
           };
           if (userLead.type === POSTCODE_TYPE.RADIUS) {
             (paramsToSend.type = POSTCODE_TYPE.RADIUS),
-              (paramsToSend.postcode = userLead.postcode),
-              (paramsToSend.miles = userLead?.miles);
+              (paramsToSend.postcode = userLead.postCodeList);
           } else {
             paramsToSend.postCodeList = flattenPostalCodes(
               userLead?.postCodeTargettingList

@@ -120,7 +120,11 @@ export class LeadsController {
         );
     }
 
-    if (user?.credits == 0 && user?.role == RolesEnum.USER) {
+    if (
+      user?.credits == 0 &&
+      user?.secondaryCredits == 0 &&
+      user?.role == RolesEnum.USER
+    ) {
       return res
         .status(400)
         .json({ error: { message: "Insufficient Credits" } });
@@ -138,8 +142,22 @@ export class LeadsController {
         $lt: endOfDay,
       },
     });
+    const startOfWeek = new Date(today);
+startOfWeek.setUTCDate(today.getUTCDate() - today.getUTCDay());
 
-    if (previous.length >= user.userLeadsDetailsId?.daily) {
+const endOfWeek = new Date(startOfWeek);
+endOfWeek.setUTCDate(startOfWeek.getUTCDate() + 7)
+
+const leadsForThisWeek = await Leads.find({
+  bid: user?.buyerId,
+  createdAt: {
+    $gte: startOfWeek,
+    $lt: endOfWeek,
+  },
+});
+    const originalDailyLimit = user.userLeadsDetailsId?.daily;
+    const fiftyPercentVariance = Math.round(originalDailyLimit + 0.5 * originalDailyLimit);
+    if (previous.length >= fiftyPercentVariance || leadsForThisWeek.length >=  user.userLeadsDetailsId.weekly ) {    // 50 % variance implemented here
       const ukOffset = 0;
       const utcDatePlus1Hour = new Date(new Date().getTime() + 60 * 60 * 1000);
       const ukDate = new Date(
@@ -177,16 +195,13 @@ export class LeadsController {
         .then((res) => {})
         .catch((err) => {});
     }
+
     let leadcpl;
-    const cardDetails = await CardDetails.findOne({
-      userId: user._id,
-      isDefault: true,
-      isDeleted: false,
-    });
     let leadsSave;
-    // if (cardDetails) {
+
     const credits = user?.credits;
     let leftCredits;
+    let userf;
     leadsSave = await Leads.create({
       bid: bid,
       leadsCost: user.leadCost,
@@ -195,27 +210,42 @@ export class LeadsController {
       industryId: user.businessIndustryId,
       rowIndex: leads?.rowIndex + 1 || 0,
     });
-    if (user.isLeadCostCheck) {
+    if (!user.isSecondaryUsage) {
       leadcpl = user.leadCost;
       leftCredits = credits - user?.leadCost;
+      userf =
+        (await User.findByIdAndUpdate(
+          user?.id,
+          {
+            credits: leftCredits,
+          },
+          { new: true }
+        )) ?? ({} as UserInterface);
     } else {
-      const industry: any = await BuisnessIndustries.findById(
-        user.businessIndustryId
-      );
-      leftCredits = credits - industry?.leadCost;
-      leadcpl = industry?.leadCost;
+      leadcpl = user.secondaryLeadCost;
+      let leftSecondaryCredits =
+        user.secondaryCredits - user?.secondaryLeadCost;
+      if (leftSecondaryCredits === 0) {
+        await User.findByIdAndUpdate(user.id, {
+          isSecondaryUsage: false,
+          secondaryLeads: 0,
+          secondaryLeadCost: 0,
+        });
+      }
+      userf =
+        (await User.findByIdAndUpdate(
+          user?.id,
+          {
+            secondaryCredits: leftSecondaryCredits,
+          },
+          { new: true }
+        )) ?? ({} as UserInterface);
     }
-    const userf =
-      (await User.findByIdAndUpdate(
-        user?.id,
-        {
-          credits: leftCredits,
-        },
-        { new: true }
-      )) ?? ({} as UserInterface);
+
     if (
       (userf?.credits === 0 || userf?.credits < parseInt(userf?.leadCost)) &&
-      user?.onBoardingPercentage === ONBOARDING_PERCENTAGE.CARD_DETAILS
+      user?.onBoardingPercentage === ONBOARDING_PERCENTAGE.CARD_DETAILS &&
+      !user.isSecondaryUsage
     ) {
       let paramsToSend: PostcodeWebhookParams = {
         userId: user._id,
@@ -224,10 +254,10 @@ export class LeadsController {
         eventCode: EVENT_TITLE.ZERO_CREDITS,
         remainingCredits: userf?.credits,
       };
+
       if (user.userLeadsDetailsId.type === POSTCODE_TYPE.RADIUS) {
         (paramsToSend.type = POSTCODE_TYPE.RADIUS),
-          (paramsToSend.postcode = user.userLeadsDetailsId.postcode),
-          (paramsToSend.miles = user.userLeadsDetailsId?.miles);
+          (paramsToSend.postcode = user.userLeadsDetailsId.postCodeList);
       } else {
         paramsToSend.postCodeList = flattenPostalCodes(
           user.userLeadsDetailsId?.postCodeTargettingList
@@ -250,41 +280,44 @@ export class LeadsController {
         );
     }
 
-    if (leftCredits < leadcpl * PREMIUM_PROMOLINK.LEADS_THRESHOLD) {
-      const txn = await Transaction.find({
-        title: transactionTitle.CREDITS_ADDED,
-      }).sort({ createdAt: -1 });
-      const notify: any = await Notifications.find({
-        title: "BELOW_5_LEADS_PENDING",
-      }).sort({ createdAt: -1 });
-      if (txn[0]?.createdAt > notify[0]?.createdAt) {
-        sendEmailForBelow5LeadsPending(user.email, {
-          credits: leftCredits,
-          name: user?.firstName + " " + user?.lastName,
+    if (leftCredits && !user.isSecondaryUsage) {
+      if (leftCredits < leadcpl * PREMIUM_PROMOLINK.LEADS_THRESHOLD) {
+        const txn = await Transaction.find({
+          title: transactionTitle.CREDITS_ADDED,
+        }).sort({ createdAt: -1 });
+        const notify: any = await Notifications.find({
+          title: "BELOW_5_LEADS_PENDING",
+        }).sort({ createdAt: -1 });
+        if (txn[0]?.createdAt > notify[0]?.createdAt) {
+          sendEmailForBelow5LeadsPending(user.email, {
+            credits: leftCredits,
+            name: user?.firstName + " " + user?.lastName,
+          });
+        } else {
+          console.log("Email already send.");
+        }
+      }
+      if (leftCredits <= 0) {
+        sendEmailForOutOfFunds(user.email, {
+          name: user.firstName + " " + user.lastName,
+          credits: user.credits,
         });
       } else {
         console.log("Email already send.", new Date(), "Today's Date");
       }
     }
-    if (leftCredits <= 0) {
-      sendEmailForOutOfFunds(user.email, {
-        name: user.firstName + " " + user.lastName,
-        credits: user.credits,
-      });
-    }
-    await User.updateMany(
-      { invitedById: user?.id },
-      { $set: { credits: userf?.credits } }
-    );
-    const dataToSave: any = {
+
+    let dataToSave: any = {
       userId: user.id,
-      cardId: cardDetails?.id,
       isDebited: true,
       title: transactionTitle.NEW_LEAD,
       amount: leadcpl,
       status: "success",
       creditsLeft: user?.credits - leadcpl,
     };
+    if (user.isSecondaryUsage) {
+      dataToSave.creditsLeft = user.secondaryCredits - user.secondaryLeadCost;
+    }
     await Transaction.create(dataToSave);
 
     if (
@@ -2346,7 +2379,7 @@ export class LeadsController {
     let sortingOrder = _req.query.sortingOrder || sort.DESC;
     const userId = _req.user?.id;
     const status = _req.query.status;
-    let accountManager=_req.query.accountManagerId
+    let accountManager = _req.query.accountManagerId;
     let industry = _req.query.industry;
 
     if (sortingOrder == sort.ASC) {
@@ -2379,9 +2412,11 @@ export class LeadsController {
         dataToFind.bid = { $in: bids };
       }
 
-      if(accountManager){
+      if (accountManager) {
         let bids: any = [];
-        const users = await User.find({ accountManager: new ObjectId(accountManager) });
+        const users = await User.find({
+          accountManager: new ObjectId(accountManager),
+        });
         users.map((user) => {
           return bids.push(user.buyerId);
         });
@@ -2496,7 +2531,7 @@ export class LeadsController {
     let id = _req.query.id;
     let industry = _req.query.industry;
     let sortingOrder = _req.query.sortingOrder || sort.DESC;
-    let accountManager=_req.query.accountManagerId
+    let accountManager = _req.query.accountManagerId;
 
     if (sortingOrder == sort.ASC) {
       sortingOrder = 1;
@@ -2558,9 +2593,11 @@ export class LeadsController {
       if (status) {
         dataToFind.status = status;
       }
-      if(accountManager){
+      if (accountManager) {
         let bids: any = [];
-        const users = await User.find({ accountManager: new ObjectId(accountManager) });
+        const users = await User.find({
+          accountManager: new ObjectId(accountManager),
+        });
         users.map((user) => {
           return bids.push(user.buyerId);
         });

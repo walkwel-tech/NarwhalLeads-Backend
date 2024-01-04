@@ -13,13 +13,7 @@ export function flattenPostalCodes(postCodeList: County[]): County[] {
     );
     flattenedPostalCodes.push(...postalCodes);
   });
-  let result: County[] =[];
-  flattenedPostalCodes.length > 0 ? 
-  result = [
-    {
-      postalCode: flattenedPostalCodes,
-    },
-  ] : {};
 
+  const result: County[] = [{ postalCode: flattenedPostalCodes }];
   return result;
 }

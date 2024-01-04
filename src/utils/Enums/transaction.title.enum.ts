@@ -7,4 +7,5 @@ export const transactionTitle = {
   INVOICES_VAT: "VAT",
   SESSION_CREATED: "session created",
   MANUAL_ADJUSTMENT: "Manual Adjustment",
+  SECONDARY_CREDITS_MANUAL_ADJUSTMENT: "Secondary Credits Manual Adjustment",
 };

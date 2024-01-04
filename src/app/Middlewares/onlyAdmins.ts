@@ -29,7 +29,7 @@ export default function OnlyAdmins(
         payload.role !== RolesEnum.ADMIN &&
         payload.role !== RolesEnum.SUPER_ADMIN
       ) {
-        return res.status(550).json({
+        return res.status(401).json({
           error: { message: "You dont't have access to this resource.!" },
         });
       }

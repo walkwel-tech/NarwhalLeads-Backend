@@ -49,6 +49,7 @@ import { CardDetails } from "../Models/CardDetails";
 import { eventsWebhook } from "../../utils/webhookUrls/eventExpansionWebhook";
 import { EVENT_TITLE } from "../../utils/constantFiles/events";
 import { DEFAULT } from "../../utils/constantFiles/user.default.values";
+import { INTERNATIONAL_CODE } from "../../utils/constantFiles/internationalCode";
 
 const ObjectId = mongoose.Types.ObjectId;
 
@@ -61,6 +62,7 @@ export class BusinessDetailsController {
         .status(400)
         .json({ error: { message: "User Id is required" } });
     }
+
     const Business = new BusinessDetailsInput();
     (Business.businessIndustry = input.businessIndustry),
       (Business.businessName = input.businessName),
@@ -68,18 +70,27 @@ export class BusinessDetailsController {
       (Business.address1 = input.address1),
       (Business.businessCity = input.businessCity),
       (Business.businessPostCode = input.businessPostCode);
+      (Business.businessMobilePrefixCode = input.businessMobilePrefixCode);
+      
     Business.businessOpeningHours = JSON.parse(input?.businessOpeningHours);
     const errors = await validate(Business);
     const isBusinessNameExist = await BusinessDetails.find({
       businessName: input.businessName,
       isDeleted: false,
     });
+
     if (isBusinessNameExist.length > 0) {
       return res
         .status(400)
         .json({ error: { message: "Business Name Already Exists." } });
     }
-    const { onBoarding }: any = await User.findById(input.userId);
+    const user = await User.findById(input.userId);
+
+if (!user) {
+  return res.status(404).json({ error: { message: "User not found." } });
+}
+
+const { onBoarding }: any = user || {};
     let object = onBoarding || [];
     let array: any = [];
     if (errors.length) {
@@ -141,6 +152,7 @@ export class BusinessDetailsController {
         address2: input?.address2,
         businessCity: Business?.businessCity,
         businessPostCode: Business?.businessPostCode,
+        businessMobilePrefixCode: Business?.businessMobilePrefixCode,
         businessOpeningHours: JSON.parse(input?.businessOpeningHours),
         // businessOpeningHours: (input?.businessOpeningHours),
       };
@@ -357,7 +369,7 @@ export class BusinessDetailsController {
           userId: user?._id,
           bid: user?.buyerId,
           businessName: details?.businessName,
-          businessSalesNumber: input.businessSalesNumber,
+          businessSalesNumber: INTERNATIONAL_CODE + input.businessSalesNumber,
           eventCode: EVENT_TITLE.BUSINESS_PHONE_NUMBER,
         };
         await eventsWebhook(reqBody)

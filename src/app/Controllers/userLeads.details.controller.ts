@@ -51,12 +51,13 @@ export class UserLeadsController {
         .json({ error: { message: "User Id is required" } });
     }
     const leadDetailsInput = new UserLeadDetailsInput();
+
     (leadDetailsInput.daily = input.daily),
       (leadDetailsInput.leadSchedule = input.leadSchedule);
     // (leadDetailsInput.postCodeTargettingList = input.postCodeTargettingList);
 
     const errors = await validate(leadDetailsInput);
-    const { onBoarding }: any = await User.findById(input.userId);
+    const { onBoarding }: any = (await User.findById(input.userId)) || {};
     let object = onBoarding || [];
     let array: any = [];
     if (errors.length) {
@@ -121,20 +122,18 @@ export class UserLeadsController {
     }
     // }
     const user: any = await User.findById(input.userId);
-
     let dataToSave: any = {
       userId: input.userId,
       total: input?.total,
       daily: input?.daily,
-      weekly: input?.weekly,
+      weekly: input?.daily * input.leadSchedule.length,
       monthly: input?.monthly,
       leadSchedule: input?.leadSchedule,
       postCodeTargettingList: input?.postCodeTargettingList,
       leadAlertsFrequency: leadsAlertsEnums.INSTANT,
       //@ts-ignore
       dailyLeadCost: input.daily * user?.leadCost,
-      miles: input.miles,
-      postcode: input.postcode,
+      postCodeList: input?.postCodeList,
       type: input.type,
     };
     try {
@@ -358,6 +357,24 @@ export class UserLeadsController {
           " -_id -userId -createdAt -updatedAt"
         ).lean()) ?? ({} as UserLeadsDetailsInterface);
       const fields = findUpdatedFields(userForActivity, userAfterMod);
+      if (
+        input.type === POSTCODE_TYPE.RADIUS &&
+        userAfterMod.postCodeTargettingList.length != 0
+      ) {
+        await UserLeadsDetails.findByIdAndUpdate(id, {
+          postCodeTargettingList: [],
+        });
+      }
+
+      if (
+        input.type === POSTCODE_TYPE.MAP &&
+        userAfterMod.postCodeList.length != 0
+      ) {
+        await UserLeadsDetails.findByIdAndUpdate(id, {
+          postCodeList: [],
+          type: POSTCODE_TYPE.MAP,
+        });
+      }
 
       if (
         Object.keys(fields.updatedFields).find(
@@ -375,8 +392,7 @@ export class UserLeadsController {
         };
         if (userAfterMod.type === POSTCODE_TYPE.RADIUS) {
           (paramsToSend.type = POSTCODE_TYPE.RADIUS),
-            (paramsToSend.postcode = userAfterMod.postcode),
-            (paramsToSend.miles = userAfterMod?.miles);
+            (paramsToSend.postcode = userAfterMod.postCodeList);
         } else {
           paramsToSend.postCodeList = flattenPostalCodes(
             userAfterMod?.postCodeTargettingList
@@ -426,7 +442,6 @@ export class UserLeadsController {
       const lead = await UserLeadsDetails.findById(id);
       const userId = lead?.userId;
       const business = await BusinessDetails.findById(user.businessDetailsId);
-
       if (
         input.leadSchedule &&
         !arraysAreEqual(input.leadSchedule, details.leadSchedule) &&
@@ -442,8 +457,7 @@ export class UserLeadsController {
         };
         if (userAfterMod.type === POSTCODE_TYPE.RADIUS) {
           (paramsToSend.type = POSTCODE_TYPE.RADIUS),
-            (paramsToSend.postcode = userAfterMod.postcode),
-            (paramsToSend.miles = userAfterMod?.miles);
+            (paramsToSend.postcode = userAfterMod.postCodeList);
         } else {
           paramsToSend.postCodeList = flattenPostalCodes(
             userAfterMod?.postCodeTargettingList
@@ -466,7 +480,7 @@ export class UserLeadsController {
       }
 
       if (
-        input.daily != details?.daily &&
+       input.daily && input.daily != details?.daily &&
         userId &&
         user?.onBoardingPercentage === ONBOARDING_PERCENTAGE.CARD_DETAILS
       ) {
@@ -476,6 +490,7 @@ export class UserLeadsController {
         if (user && user.leadCost !== undefined) {
           await UserLeadsDetails.findByIdAndUpdate(id, {
             dailyLeadCost: user.leadCost ?? 0 * input.daily,
+            weekly: input?.daily * input.leadSchedule.length,
           });
         }
         const business = await BusinessDetails.findById(
@@ -491,8 +506,7 @@ export class UserLeadsController {
         };
         if (userAfterMod.type === POSTCODE_TYPE.RADIUS) {
           (paramsToSend.type = POSTCODE_TYPE.RADIUS),
-            (paramsToSend.postcode = userAfterMod.postcode),
-            (paramsToSend.miles = userAfterMod?.miles);
+            (paramsToSend.postcode = userAfterMod.postCodeList);
         } else {
           paramsToSend.postCodeList = flattenPostalCodes(
             userAfterMod?.postCodeTargettingList

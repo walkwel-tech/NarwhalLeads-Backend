@@ -15,6 +15,8 @@ export interface UserInterface extends Document {
   email: string;
   password: string;
   role: RolesEnum;
+  isAccountAdmin : boolean;
+  mobilePrefixCode: string;
   paymentMethod: string;
   phoneNumber: string;
   credits: number;
@@ -70,4 +72,5 @@ export interface UserInterface extends Document {
   secondaryCredits: number;
   secondaryLeadCost: number;
   isSecondaryUsage: boolean;
+  secondaryLeads: number;
 }
