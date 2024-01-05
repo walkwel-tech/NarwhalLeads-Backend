@@ -68,310 +68,305 @@ type BidFilter = {
 export class LeadsController {
   static create = async (req: Request, res: Response) => {
     try {
-      if (process.env.APP_ENV === APP_ENV.PRODUCTION) {
-        //@ts-ignore
-        if (!WHITE_LIST_IP.IP.includes(req?.headers["x-forwarded-for"])) {
-          return res.status(403).json({
-            error: {
-              message:
-                "Access denied: Your IP address is not allowed to access this API",
-            },
-          });
-        }
-      }
-
-      const bid = req.params.buyerId;
-      const input = req.body;
-      if (Object.keys(input).length === 0) {
-        return res.status(400).json({ error: { message: "Data Required." } });
-      }
-      const user: any = await User.findOne({ buyerId: bid })
-        .populate("userLeadsDetailsId")
-        .populate("businessDetailsId");
-      if (!user.isLeadReceived) {
-        await User.findByIdAndUpdate(user.id, { isLeadReceived: true });
-      }
-      //  event webhook to hit when lead  credit is less then leadCost
-      if (user?.credits === 0 || user?.credits < user?.leadCost) {
-        const paramsToSend = {
-          userId: user._id,
-          buyerId: user.buyerId,
-          buisnessName: user.businessDetailsId.businessName,
-          eventCode: EVENT_TITLE.ZERO_CREDITS,
-          postCodeList: user.userLeadsDetailsId?.postCodeTargettingList,
-          remainingCredits: user?.credits,
-        };
-        await eventsWebhook(paramsToSend)
-          .then(() =>
-            console.log(
-              "event webhook for zero credits hits successfully.",
-              paramsToSend,
-              new Date(),
-              "Today's Date"
-            )
-          )
-          .catch((err) =>
-            console.log(
-              err,
-              "error while triggering zero credits webhooks failed",
-              paramsToSend,
-              new Date(),
-              "Today's Date"
-            )
-          );
-      }
-
-      if (
-        user?.credits == 0 &&
-        user?.secondaryCredits == 0 &&
-        user?.role == RolesEnum.USER
-      ) {
-        return res
-          .status(400)
-          .json({ error: { message: "Insufficient Credits" } });
-      }
-
-      const today = new Date();
-      const endOfDay = new Date(today);
-      endOfDay.setDate(today.getDate() + 1);
-      today.setUTCHours(0, 0, 0, 0);
-      endOfDay.setUTCHours(0, 0, 0, 0);
-      const previous = await Leads.find({
-        bid: user?.buyerId,
-        createdAt: {
-          $gte: today,
-          $lt: endOfDay,
-        },
-      });
-      const startOfWeek = new Date(today);
-      startOfWeek.setUTCDate(today.getUTCDate() - today.getUTCDay());
-
-      const endOfWeek = new Date(startOfWeek);
-      endOfWeek.setUTCDate(startOfWeek.getUTCDate() + 7);
-
-      const leadsForThisWeek = await Leads.find({
-        bid: user?.buyerId,
-        createdAt: {
-          $gte: startOfWeek,
-          $lt: endOfWeek,
-        },
-      });
-      const originalDailyLimit = user.userLeadsDetailsId?.daily;
-      const fiftyPercentVariance = Math.round(
-        originalDailyLimit + 0.5 * originalDailyLimit
-      );
-      if (
-        previous.length >= fiftyPercentVariance ||
-        leadsForThisWeek.length >= (user?.userLeadsDetailsId?.weekly || 0)
-      ) {
-        // 50 % variance implemented here
-        const utcDatePlus1Hour = new Date(
-          new Date().getTime() + 60 * 60 * 1000
-        );
-        const ukDate = new Date(utcDatePlus1Hour.getTime());
-        const ukDateString = ukDate.toUTCString();
-
-        const debuggingLogs = {
-          yesterday: today.toUTCString(),
-          today: endOfDay.toUTCString(),
-          currentServerTime: ukDateString,
-          dailyLimit: user.userLeadsDetailsId?.daily,
-          dailyComputedLimit: fiftyPercentVariance,
-          weeklyLimit: user.userleadsdetails?.weekly,
-        };
-        return res.status(400).json({
+    if (process.env.APP_ENV === APP_ENV.PRODUCTION) {
+      //@ts-ignore
+      if (!WHITE_LIST_IP.IP.includes(req?.headers["x-forwarded-for"])) {
+        return res.status(403).json({
           error: {
-            message: "Daily leads limit exhausted!",
-            logs: debuggingLogs,
+            message:
+              "Access denied: Your IP address is not allowed to access this API",
           },
         });
       }
-      const leads: LeadsInterface =
-        (await Leads.findOne({ bid: user?.buyerId })
-          .sort({ rowIndex: -1 })
-          .limit(1)) ?? ({} as LeadsInterface);
+    }
 
-      if (user.isSmsNotificationActive) {
-        const dataToSent = {
-          name: input.firstname + " " + input.lastname,
-          email: input.email,
-          phoneNumber: input.phone1,
-        };
-        notify(user.smsPhoneNumber, dataToSent);
-      }
-      if (user?.userLeadsDetailsId?.sendDataToZapier) {
-        sendLeadDataToZap(user.userLeadsDetailsId.zapierUrl, input, user)
-          .then((res) => {})
-          .catch((err) => {});
-      }
-
-      let leadcpl;
-      let leadsSave;
-
-      const credits = user?.credits;
-      let leftCredits;
-      let userf;
-      leadsSave = await Leads.create({
-        bid: bid,
-        leadsCost: user.leadCost,
-        leads: input,
-        status: leadsStatusEnums.VALID,
-        industryId: user.businessIndustryId,
-        rowIndex: leads?.rowIndex + 1 || 0,
-      });
-      if (!user.isSecondaryUsage) {
-        leadcpl = user.leadCost;
-        leftCredits = credits - user?.leadCost;
-        userf =
-          (await User.findByIdAndUpdate(
-            user?.id,
-            {
-              credits: leftCredits,
-            },
-            { new: true }
-          )) ?? ({} as UserInterface);
-      } else {
-        leadcpl = user.secondaryLeadCost;
-        let leftSecondaryCredits =
-          user.secondaryCredits - user?.secondaryLeadCost;
-        if (leftSecondaryCredits === 0) {
-          await User.findByIdAndUpdate(user.id, {
-            isSecondaryUsage: false,
-            secondaryLeads: 0,
-            secondaryLeadCost: 0,
-          });
-        }
-        userf =
-          (await User.findByIdAndUpdate(
-            user?.id,
-            {
-              secondaryCredits: leftSecondaryCredits,
-            },
-            { new: true }
-          )) ?? ({} as UserInterface);
-      }
-
-      if (
-        (userf?.credits === 0 || userf?.credits < parseInt(userf?.leadCost)) &&
-        user?.onBoardingPercentage === ONBOARDING_PERCENTAGE.CARD_DETAILS &&
-        !user.isSecondaryUsage
-      ) {
-        let paramsToSend: PostcodeWebhookParams = {
-          userId: user._id,
-          buyerId: user.buyerId,
-          businessName: user.businessDetailsId.businessName,
-          eventCode: EVENT_TITLE.ZERO_CREDITS,
-          remainingCredits: userf?.credits,
-        };
-
-        if (user.userLeadsDetailsId.type === POSTCODE_TYPE.RADIUS) {
-          (paramsToSend.type = POSTCODE_TYPE.RADIUS),
-            (paramsToSend.postcode = user.userLeadsDetailsId.postCodeList);
-        } else {
-          paramsToSend.postCodeList = flattenPostalCodes(
-            user.userLeadsDetailsId?.postCodeTargettingList
-          );
-        }
-
-        await eventsWebhook(paramsToSend)
-          .then(() =>
-            console.log(
-              "event webhook for zero credits hits successfully.",
-              paramsToSend
-            )
-          )
-          .catch((err) =>
-            console.log(
-              err,
-              "error while triggering zero credits webhooks failed",
-              paramsToSend
-            )
-          );
-      }
-
-      if (leftCredits && !user.isSecondaryUsage) {
-        if (leftCredits < leadcpl * PREMIUM_PROMOLINK.LEADS_THRESHOLD) {
-          const txn = await Transaction.find({
-            title: transactionTitle.CREDITS_ADDED,
-          }).sort({ createdAt: -1 });
-          const notify: any = await Notifications.find({
-            title: "BELOW_5_LEADS_PENDING",
-          }).sort({ createdAt: -1 });
-          if (txn[0]?.createdAt > notify[0]?.createdAt) {
-            sendEmailForBelow5LeadsPending(user.email, {
-              credits: leftCredits,
-              name: user?.firstName + " " + user?.lastName,
-            });
-          } else {
-            console.log("Email already send.");
-          }
-        }
-        if (leftCredits <= 0) {
-          sendEmailForOutOfFunds(user.email, {
-            name: user.firstName + " " + user.lastName,
-            credits: user.credits,
-          });
-        } else {
-          console.log("Email already send.", new Date(), "Today's Date");
-        }
-      }
-
-      let dataToSave: any = {
-        userId: user.id,
-        isDebited: true,
-        title: transactionTitle.NEW_LEAD,
-        amount: leadcpl,
-        status: "success",
-        creditsLeft: user?.credits - leadcpl,
+    const bid = req.params.buyerId;
+    const input = req.body;
+    if (Object.keys(input).length === 0) {
+      return res.status(400).json({ error: { message: "Data Required." } });
+    }
+    const user: any = await User.findOne({ buyerId: bid })
+      .populate("userLeadsDetailsId")
+      .populate("businessDetailsId");
+    if (!user.isLeadReceived) {
+      await User.findByIdAndUpdate(user.id, { isLeadReceived: true });
+    }
+    //  event webhook to hit when lead  credit is less then leadCost
+    if (user?.credits === 0 || user?.credits < user?.leadCost) {
+      const paramsToSend = {
+        userId: user._id,
+        buyerId: user.buyerId,
+        buisnessName: user.businessDetailsId.businessName,
+        eventCode: EVENT_TITLE.ZERO_CREDITS,
+        postCodeList: user.userLeadsDetailsId?.postCodeTargettingList,
+        remainingCredits: user?.credits,
       };
-      if (user.isSecondaryUsage) {
-        dataToSave.creditsLeft = user.secondaryCredits - user.secondaryLeadCost;
-      }
-      await Transaction.create(dataToSave);
+      await eventsWebhook(paramsToSend)
+        .then(() =>
+          console.log(
+            "event webhook for zero credits hits successfully.",
+            paramsToSend,
+            new Date(),
+            "Today's Date"
+          )
+        )
+        .catch((err) =>
+          console.log(
+            err,
+            "error while triggering zero credits webhooks failed",
+            paramsToSend,
+            new Date(),
+            "Today's Date"
+          )
+        );
+    }
 
-      if (
-        user.userLeadsDetailsId?.leadAlertsFrequency == leadsAlertsEnums.INSTANT
-      ) {
-        let arr: any = [];
-        Object.keys(input).forEach((key) => {
-          if (key != "c1") {
-            let obj: any = {};
-            obj.keys = key;
-            obj.values = input[key];
-            arr.push(obj);
-          }
-        });
-        let id = leadsSave._id;
-        let encryptedId = btoa(String(id));
-        const message: any = {
-          userName: user.firstName,
-          firstName: input.firstname,
-          lastName: input.lastname,
-          phone: input.phone1,
-          email: input.email,
-          id: encryptedId,
-        };
-        let emails: string[] = [user.email];
-        const invitedUsers = await User.find({
-          role: RolesEnum.INVITED,
-          invitedById: user.id,
-          isDeleted: false,
-        }).populate("userLeadsDetailsId");
-        invitedUsers.map((iUser) => {
-          if (
-            //@ts-ignore
-            iUser?.userLeadsDetailsId?.leadAlertsFrequency ===
-            leadsAlertsEnums.INSTANT
-          ) {
-            emails.push(iUser.email);
-          }
-        });
-        emails.map((users) => {
-          sendEmailForNewLead(users, message);
+    if (
+      user?.credits == 0 &&
+      user?.secondaryCredits == 0 &&
+      user?.role == RolesEnum.USER
+    ) {
+      return res
+        .status(400)
+        .json({ error: { message: "Insufficient Credits" } });
+    }
+
+    const today = new Date();
+    const endOfDay = new Date(today);
+    endOfDay.setDate(today.getDate() + 1);
+    today.setUTCHours(0, 0, 0, 0);
+    endOfDay.setUTCHours(0, 0, 0, 0);
+    const previous = await Leads.find({
+      bid: user?.buyerId,
+      createdAt: {
+        $gte: today,
+        $lt: endOfDay,
+      },
+    });
+    const startOfWeek = new Date(today);
+startOfWeek.setUTCDate(today.getUTCDate() - today.getUTCDay());
+
+const endOfWeek = new Date(startOfWeek);
+      endOfWeek.setUTCDate(startOfWeek.getUTCDate() + 7);
+
+const leadsForThisWeek = await Leads.find({
+  bid: user?.buyerId,
+  createdAt: {
+    $gte: startOfWeek,
+    $lt: endOfWeek,
+  },
+});
+    const originalDailyLimit = user.userLeadsDetailsId?.daily;
+    const fiftyPercentVariance = Math.round(originalDailyLimit + 0.5 * originalDailyLimit);
+    if (previous.length >= fiftyPercentVariance || leadsForThisWeek.length >=  user.userLeadsDetailsId.weekly ) {    // 50 % variance implemented here
+      const utcDatePlus1Hour = new Date(new Date().getTime() + 60 * 60 * 1000);
+      const ukDate = new Date(
+        utcDatePlus1Hour.getTime()
+      );
+      const ukDateString = ukDate.toUTCString();
+
+
+      const debuggingLogs = {
+        yesterday: today.toUTCString(),
+        today: endOfDay.toUTCString(),
+        currentServerTime: ukDateString,
+        dailyLimit: user.userLeadsDetailsId?.daily,
+        dailyComputedLimit:fiftyPercentVariance,
+        weeklyLimit:user.userleadsdetails?.weekly
+      };
+      return res.status(400).json({
+        error: {
+          message: "Daily leads limit exhausted!",
+          logs: debuggingLogs,
+        },
+      });
+    }
+    const leads: LeadsInterface =
+      (await Leads.findOne({ bid: user?.buyerId })
+        .sort({ rowIndex: -1 })
+        .limit(1)) ?? ({} as LeadsInterface);
+
+    if (user.isSmsNotificationActive) {
+      const dataToSent = {
+        name: input.firstname + " " + input.lastname,
+        email: input.email,
+        phoneNumber: input.phone1,
+      };
+      notify(user.smsPhoneNumber, dataToSent);
+    }
+    if (user?.userLeadsDetailsId?.sendDataToZapier) {
+      sendLeadDataToZap(user.userLeadsDetailsId.zapierUrl, input, user)
+        .then((res) => {})
+        .catch((err) => {});
+    }
+
+    let leadcpl;
+    let leadsSave;
+
+    const credits = user?.credits;
+    let leftCredits;
+    let userf;
+    leadsSave = await Leads.create({
+      bid: bid,
+      leadsCost: user.leadCost,
+      leads: input,
+      status: leadsStatusEnums.VALID,
+      industryId: user.businessIndustryId,
+      rowIndex: leads?.rowIndex + 1 || 0,
+    });
+    if (!user.isSecondaryUsage) {
+      leadcpl = user.leadCost;
+      leftCredits = credits - user?.leadCost;
+      userf =
+        (await User.findByIdAndUpdate(
+          user?.id,
+          {
+            credits: leftCredits,
+          },
+          { new: true }
+        )) ?? ({} as UserInterface);
+    } else {
+      leadcpl = user.secondaryLeadCost;
+      let leftSecondaryCredits =
+        user.secondaryCredits - user?.secondaryLeadCost;
+      if (leftSecondaryCredits === 0) {
+        await User.findByIdAndUpdate(user.id, {
+          isSecondaryUsage: false,
+          secondaryLeads: 0,
+          secondaryLeadCost: 0,
         });
       }
+      userf =
+        (await User.findByIdAndUpdate(
+          user?.id,
+          {
+            secondaryCredits: leftSecondaryCredits,
+          },
+          { new: true }
+        )) ?? ({} as UserInterface);
+    }
 
-      return res.json({ data: leadsSave });
+    if (
+      (userf?.credits === 0 || userf?.credits < parseInt(userf?.leadCost)) &&
+      user?.onBoardingPercentage === ONBOARDING_PERCENTAGE.CARD_DETAILS &&
+      !user.isSecondaryUsage
+    ) {
+      let paramsToSend: PostcodeWebhookParams = {
+        userId: user._id,
+        buyerId: user.buyerId,
+        businessName: user.businessDetailsId.businessName,
+        eventCode: EVENT_TITLE.ZERO_CREDITS,
+        remainingCredits: userf?.credits,
+      };
+
+      if (user.userLeadsDetailsId.type === POSTCODE_TYPE.RADIUS) {
+        (paramsToSend.type = POSTCODE_TYPE.RADIUS),
+          (paramsToSend.postcode = user.userLeadsDetailsId.postCodeList);
+      } else {
+        paramsToSend.postCodeList = flattenPostalCodes(
+          user.userLeadsDetailsId?.postCodeTargettingList
+        );
+      }
+
+      await eventsWebhook(paramsToSend)
+        .then(() =>
+          console.log(
+            "event webhook for zero credits hits successfully.",
+            paramsToSend
+          )
+        )
+        .catch((err) =>
+          console.log(
+            err,
+            "error while triggering zero credits webhooks failed",
+            paramsToSend
+          )
+        );
+    }
+
+    if (leftCredits && !user.isSecondaryUsage) {
+      if (leftCredits < leadcpl * PREMIUM_PROMOLINK.LEADS_THRESHOLD) {
+        const txn = await Transaction.find({
+          title: transactionTitle.CREDITS_ADDED,
+        }).sort({ createdAt: -1 });
+        const notify: any = await Notifications.find({
+          title: "BELOW_5_LEADS_PENDING",
+        }).sort({ createdAt: -1 });
+        if (txn[0]?.createdAt > notify[0]?.createdAt) {
+          sendEmailForBelow5LeadsPending(user.email, {
+            credits: leftCredits,
+            name: user?.firstName + " " + user?.lastName,
+          });
+        } else {
+          console.log("Email already send.");
+        }
+      }
+      if (leftCredits <= 0) {
+        sendEmailForOutOfFunds(user.email, {
+          name: user.firstName + " " + user.lastName,
+          credits: user.credits,
+        });
+      } else {
+        console.log("Email already send.", new Date(), "Today's Date");
+      }
+    }
+
+    let dataToSave: any = {
+      userId: user.id,
+      isDebited: true,
+      title: transactionTitle.NEW_LEAD,
+      amount: leadcpl,
+      status: "success",
+      creditsLeft: user?.credits - leadcpl,
+    };
+    if (user.isSecondaryUsage) {
+      dataToSave.creditsLeft = user.secondaryCredits - user.secondaryLeadCost;
+    }
+    await Transaction.create(dataToSave);
+
+    if (
+      user.userLeadsDetailsId?.leadAlertsFrequency == leadsAlertsEnums.INSTANT
+    ) {
+      let arr: any = [];
+      Object.keys(input).forEach((key) => {
+        if (key != "c1") {
+          let obj: any = {};
+          obj.keys = key;
+          obj.values = input[key];
+          arr.push(obj);
+        }
+      });
+      let id = leadsSave._id;
+      let encryptedId = btoa(String(id));
+      const message: any = {
+        userName: user.firstName,
+        firstName: input.firstname,
+        lastName: input.lastname,
+        phone: input.phone1,
+        email: input.email,
+        id: encryptedId,
+      };
+      let emails: string[] = [user.email];
+      const invitedUsers = await User.find({
+        role: RolesEnum.INVITED,
+        invitedById: user.id,
+        isDeleted: false,
+      }).populate("userLeadsDetailsId");
+      invitedUsers.map((iUser) => {
+        if (
+          //@ts-ignore
+          iUser?.userLeadsDetailsId?.leadAlertsFrequency ===
+          leadsAlertsEnums.INSTANT
+        ) {
+          emails.push(iUser.email);
+        }
+      });
+      emails.map((users) => {
+        sendEmailForNewLead(users, message);
+      });
+    }
+
+    return res.json({ data: leadsSave });
     } catch (error) {
       return res
         .status(500)

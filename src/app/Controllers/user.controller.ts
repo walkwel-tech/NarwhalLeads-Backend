@@ -58,7 +58,7 @@ import {
 import { EVENT_TITLE } from "../../utils/constantFiles/events";
 import { flattenPostalCodes } from "../../utils/Functions/flattenPostcodes";
 import {
-  autoTopUp,
+  topUpUserForPaymentMethod,
   getUserPaymentMethods,
   getUsersWithAutoChargeEnabled,
 } from "../AutoUpdateTasks/autoCharge";
@@ -459,13 +459,13 @@ export class UsersControllers {
   static show = async (req: any, res: Response): Promise<Response> => {
     try {
       const { id } = req.params;
-    
-    
+
+
       const business = req.query.business;
 
       const userMatch: Record<string, any> = {};
-     
-  
+
+
       if (req.user.role === RolesEnum.ACCOUNT_MANAGER) {
         userMatch.accountManager = new ObjectId(req.user._id);
       }
@@ -475,7 +475,7 @@ export class UsersControllers {
         RolesEnum.ACCOUNT_MANAGER,
         RolesEnum.ADMIN,
       ];
-      
+
       if (user?.role && allowedRoles.includes(user.role)) {
         return res.json({ data: user });
       }else{
@@ -2254,7 +2254,7 @@ export class UsersControllers {
               status: 200,
             });
             try {
-              await autoTopUp(user, paymentMethod);
+              await topUpUserForPaymentMethod(user, paymentMethod);
               return res.json({
                 data: "Payment initiated, your credits will be added soon!",
               });

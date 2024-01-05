@@ -9,7 +9,7 @@ import { IntentInterface } from "./paymentIntent";
 import axios from "axios";
 const qs = require("qs");
 const POST = "post";
-export const createPaymentOnStrip = async (
+export const createPaymentOnStripe = async (
   params: IntentInterface,
   isAutoCharge: boolean
 ) => {

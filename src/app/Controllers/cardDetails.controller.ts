@@ -76,7 +76,7 @@ import {
   getStripePaymentMethods,
   getUserDetailsByPaymentMethods,
 } from "../../utils/payment/stripe/paymentMethods";
-import { createPaymentOnStrip } from "../../utils/payment/stripe/createPaymentToStripe";
+import { createPaymentOnStripe } from "../../utils/payment/stripe/createPaymentToStripe";
 import { STRIPE_PAYMENT_STATUS } from "../../utils/Enums/stripe.payment.status.enum";
 import { createCustomerOnStripe } from "../../utils/createCustomer/createOnStripe";
 import { getPaymentStatus } from "../../utils/payment/stripe/retrievePaymentStatus";
@@ -660,7 +660,7 @@ export class CardDetailsControllers {
           paymentMethod: card?.paymentMethod,
           currency: user.currency,
         };
-        createPaymentOnStrip(params, false)
+        createPaymentOnStripe(params, false)
           .then(async (_res: any) => {
             console.log("payment initiated!", new Date(), "Today's Date");
             if (!user?.xeroContactId) {
