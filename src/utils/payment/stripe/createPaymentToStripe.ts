@@ -23,6 +23,7 @@ export const createPaymentOnStrip = async (
         confirm: true,
         payment_method: params.paymentMethod,
         setup_future_usage: SRIPE_CONSTANT.OFF_SESSION,
+        return_url: process.env.RETURN_URL,
       });
     } else {
       data = qs.stringify({
