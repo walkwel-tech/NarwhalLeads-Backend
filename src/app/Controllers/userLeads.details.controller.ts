@@ -479,11 +479,11 @@ export class UserLeadsController {
           );
       }
 
-      if (
+       if (
        input.daily && input.daily != details?.daily &&
         userId &&
         user?.onBoardingPercentage === ONBOARDING_PERCENTAGE.CARD_DETAILS
-      ) {
+      )  {
         const user =
           (await User.findById(userId).populate("businessDetailsId")) ??
           ({} as UserInterface);
