@@ -66,6 +66,11 @@ export const autoChargePayment = async () => {
         try {
             const usersToCharge = await getUsersWithAutoChargeEnabled();
             for (const user of usersToCharge) {
+                const shallSkipIfPending = user.pendingTransaction;
+                if (shallSkipIfPending) {
+                    console.log(new Date(), " Skipped: Pending transaction found: ", shallSkipIfPending);
+                     continue;
+                }
                 console.log("Auto charge will work on :", user.email);
                 const dataToSave = {
                     userId: user.id,
