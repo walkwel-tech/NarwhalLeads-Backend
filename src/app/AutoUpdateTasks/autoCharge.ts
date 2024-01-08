@@ -66,13 +66,13 @@ export const autoChargePayment = async () => {
             Promise.all(
                 usersToCharge.map(async (user) => {
                     const shallSkipIfPending = user.pendingTransaction;
-                    if(shallSkipIfPending){
+                    if (shallSkipIfPending) {
                         return new Promise(async (resolve, reject) => {
                             console.log(new Date(), " Skipped: Pending transaction found: ", shallSkipIfPending);
                             return resolve('Skipped: Pending transaction found');
                         });
                     }
-                    if (user.email != 'tom+8thsept@nmg.group' ) {
+                    if (user.email != 'tom+8thsept@nmg.group') {
                         return new Promise(async (resolve, reject) => {
                             console.log(new Date(), " Skipped: non-test user: ", user.email);
                             return resolve('Skipped');
@@ -468,8 +468,8 @@ export const topUpUserForPaymentMethod = async (
     }
 
     const amountToPay = (user.currency === CURRENCY.POUND || user.currency === CURRENCY.DOLLER)
-        ? user.autoChargeAmount
-        : user.autoChargeAmount + (user.autoChargeAmount * VAT) / 100;
+        ? (user.autoChargeAmount + ((user.autoChargeAmount * VAT) / 100))
+        : user.autoChargeAmount;
 
     let params = {
         amount: amountToPay * 100,
