@@ -32,6 +32,7 @@ import {BusinessDetails} from "../Models/BusinessDetails";
 import {CURRENCY} from "../../utils/Enums/currency.enum";
 import {CURRENCY_SIGN} from "../../utils/constantFiles/email.templateIDs";
 import {getOriginalAmountForStripe} from "../Controllers/cardDetails.controller";
+import {stripeCurrency} from "../../utils/constantFiles/currencyConstants";
 
 interface paymentParams {
     fixedAmount: number;
@@ -66,6 +67,11 @@ export const autoChargePayment = async () => {
         try {
             const usersToCharge = await getUsersWithAutoChargeEnabled();
             for (const user of usersToCharge) {
+                const shallSkipIfPending = user.pendingTransaction;
+                if (shallSkipIfPending) {
+                    console.log(new Date(), " Skipped: Pending transaction found: ", shallSkipIfPending);
+                     continue;
+                }
                 console.log("Auto charge will work on :", user.email);
                 const dataToSave = {
                     userId: user.id,
@@ -294,6 +300,7 @@ export const chargeUser = async (params: IntentInterface) => {
                 console.log("payment initiated!", new Date(), {
                     stripeUser: params.customer,
                 });
+                params.amount = params.amount ? (params.amount / 100) : 0;
                 if (_res.status === PAYMENT_STATUS.REQUIRES_ACTION) {
                     const user: UserInterface =
                         (await User.findOne({email: params.email})) ??
@@ -307,7 +314,7 @@ export const chargeUser = async (params: IntentInterface) => {
                     const dataToSave = {
                         userId: user.id,
                         cardId: cards.id,
-                        amount: params.amount ? (params.amount / 100) : 0, //converting back to dollars from cents
+                        amount: params.amount, //converting back to dollars from cents
                         status: PAYMENT_STATUS.REQUIRES_ACTION,
                         title: transactionTitle.CREDITS_ADDED,
                         paymentSessionId: _res.id,
