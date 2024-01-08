@@ -32,7 +32,6 @@ import {BusinessDetails} from "../Models/BusinessDetails";
 import {CURRENCY} from "../../utils/Enums/currency.enum";
 import {CURRENCY_SIGN} from "../../utils/constantFiles/email.templateIDs";
 import {getOriginalAmountForStripe} from "../Controllers/cardDetails.controller";
-import {stripeCurrency} from "../../utils/constantFiles/currencyConstants";
 
 interface paymentParams {
     fixedAmount: number;
