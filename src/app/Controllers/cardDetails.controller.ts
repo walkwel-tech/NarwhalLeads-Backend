@@ -1258,7 +1258,7 @@ export class CardDetailsControllers {
               );
               let message = {
                 firstName: userId?.firstName,
-                amount: amount,
+                amount: amount? (amount/100 ): amount,
                 cardHolderName: `${userId?.firstName} ${userId?.lastName}`,
                 cardNumberEnd: cardDetails?.cardNumber,
                 credits: userId?.credits,
