@@ -299,7 +299,6 @@ export const chargeUser = async (params: IntentInterface) => {
                 console.log("payment initiated!", new Date(), {
                     stripeUser: params.customer,
                 });
-                params.amount = params.amount ? (params.amount / 100) : 0;
                 if (_res.status === PAYMENT_STATUS.REQUIRES_ACTION) {
                     const user: UserInterface =
                         (await User.findOne({email: params.email})) ??
@@ -313,7 +312,7 @@ export const chargeUser = async (params: IntentInterface) => {
                     const dataToSave = {
                         userId: user.id,
                         cardId: cards.id,
-                        amount: params.amount, //converting back to dollars from cents
+                        amount: params.amount ? (params.amount / 100) : 0, //converting back to dollars from cents
                         status: PAYMENT_STATUS.REQUIRES_ACTION,
                         title: transactionTitle.CREDITS_ADDED,
                         paymentSessionId: _res.id,

@@ -1103,10 +1103,12 @@ export class CardDetailsControllers {
       let userId = user.user ?? ({} as UserInterface);
       const card = user.card;
       const amount = parseInt(input.data.object?.amount);
+      console.log("BEFORE CALC ", amount);
       let originalAmount = getOriginalAmountForStripe(
         amount,
         input.data.object?.currency
       );
+      console.log("AFTER CALC ", amount);
       if (userId) {
         if (input.type == STRIPE_PAYMENT_STATUS.FAILED) {
           const business = user.business;
