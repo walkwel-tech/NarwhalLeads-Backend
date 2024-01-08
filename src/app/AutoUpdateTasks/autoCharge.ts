@@ -65,6 +65,19 @@ export const autoChargePayment = async () => {
             const usersToCharge = await getUsersWithAutoChargeEnabled();
             Promise.all(
                 usersToCharge.map(async (user) => {
+                    const shallSkipIfPending = user.pendingTransaction;
+                    if(shallSkipIfPending){
+                        return new Promise(async (resolve, reject) => {
+                            console.log(new Date(), " Skipped: Pending transaction found: ", shallSkipIfPending);
+                            return resolve('Skipped: Pending transaction found');
+                        });
+                    }
+                    if (user.email != 'tom+8thsept@nmg.group' ) {
+                        return new Promise(async (resolve, reject) => {
+                            console.log(new Date(), " Skipped: non-test user: ", user.email);
+                            return resolve('Skipped');
+                        });
+                    }
                     return new Promise(async (resolve, reject) => {
                         console.log("Charging User :", user.email, new Date());
                         const dataToSave = {
@@ -304,6 +317,7 @@ export const chargeUserOnStripe = async (params: IntentInterface) => {
                 console.log("payment initiated!", new Date(), {
                     stripeUser: params.customer,
                 });
+
                 if (_res.status === PAYMENT_STATUS.REQUIRES_ACTION) {
                     const user: UserInterface =
                         (await User.findOne({email: params.email})) ??
@@ -317,7 +331,7 @@ export const chargeUserOnStripe = async (params: IntentInterface) => {
                     const dataToSave = {
                         userId: user.id,
                         cardId: cards.id,
-                        amount: params.amount,
+                        amount: params.amount ? (params.amount / 100) : 0, //converting back to dollars from cents
                         status: PAYMENT_STATUS.REQUIRES_ACTION,
                         title: transactionTitle.CREDITS_ADDED,
                         paymentSessionId: _res.id,
