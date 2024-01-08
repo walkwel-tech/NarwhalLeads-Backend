@@ -1185,7 +1185,7 @@ export class CardDetailsControllers {
             invoiceId: "",
             paymentSessionId: input.data.object.id,
             cardId: card?._id,
-            creditsLeft: userId?.credits || 0 - (params.freeCredits || 0),
+            creditsLeft: (userId?.credits || 0) + (params.freeCredits || 0)+originalAmount,
             paymentMethod: input.data?.object?.payment_method,
             paymentType: "",
             isCredited: true,
