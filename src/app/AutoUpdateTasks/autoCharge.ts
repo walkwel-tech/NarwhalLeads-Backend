@@ -72,12 +72,12 @@ export const autoChargePayment = async () => {
                             return resolve('Skipped: Pending transaction found');
                         });
                     }
-                    if (user.email != 'tom+8thsept@nmg.group') {
-                        return new Promise(async (resolve, reject) => {
-                            console.log(new Date(), " Skipped: non-test user: ", user.email);
-                            return resolve('Skipped');
-                        });
-                    }
+                    // if (user.email != 'tom+8thsept@nmg.group') {
+                    //     return new Promise(async (resolve, reject) => {
+                    //         console.log(new Date(), " Skipped: non-test user: ", user.email);
+                    //         return resolve('Skipped');
+                    //     });
+                    // }
                     return new Promise(async (resolve, reject) => {
                         console.log("Charging User :", user.email, new Date());
                         const dataToSave = {
