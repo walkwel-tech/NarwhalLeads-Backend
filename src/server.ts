@@ -36,9 +36,8 @@ import siteconfigRoutes from "./routes/siteConfig.routes";
 import locationRoutes from "./routes/location.routes";
 import dashboardRoutes from "./routes/dashboard.routes";
 import adsRoutes from "./routes/ads.routes";
-import postCodeAnalyticsRoutes from "./routes/postCodeAnalytics.routes";
 
-const swaggerDocument = require("../swagger.json");
+const swaggerDocument = require("../swagger.json"); // Replace with the path to your actual Swagger document
 const swaggerUi = require("swagger-ui-express");
 
 const swaggerUiOptions = {
@@ -101,7 +100,6 @@ export class Server {
     this.app.use("/api/v1/leads", LeadsRoutes);
     this.app.use("/api/v1/transactions", Auth, TransactionsRoutes);
     this.app.use("/api/v1/userLeadsDetails", Auth, userLeadsDetailsRoutes);
-    this.app.use("/api/v1/postal-dash", Auth, postCodeAnalyticsRoutes);
     this.app.use("/api/v1/invitedUsers", Auth, invitedUserRoutes);
     this.app.use("/api/v1/termsAndConditions", TermsAndConditionsRoutes);
     this.app.use("/api/v1/freeCredits", Auth, freeCreditsLinkRoutes);

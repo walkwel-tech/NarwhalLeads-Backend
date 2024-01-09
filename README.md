@@ -32,6 +32,14 @@ npm run build
 
 ```
 
-- Doccumentation
+- Documentation
 
 Import nodeBase.postman_collection.json to postman 
+
+- Public directories:
+  - category-data
+  - invoice-pdf
+  - logo
+  - map
+  - profile-image
+  - terms&conditions
