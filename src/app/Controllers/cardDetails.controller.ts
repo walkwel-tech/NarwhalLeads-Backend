@@ -76,7 +76,7 @@ import {
   getStripePaymentMethods,
   getUserDetailsByPaymentMethods,
 } from "../../utils/payment/stripe/paymentMethods";
-import { createPaymentOnStrip } from "../../utils/payment/stripe/createPaymentToStripe";
+import { createPaymentOnStripe } from "../../utils/payment/stripe/createPaymentToStripe";
 import { STRIPE_PAYMENT_STATUS } from "../../utils/Enums/stripe.payment.status.enum";
 import { createCustomerOnStripe } from "../../utils/createCustomer/createOnStripe";
 import { getPaymentStatus } from "../../utils/payment/stripe/retrievePaymentStatus";
@@ -660,7 +660,7 @@ export class CardDetailsControllers {
           paymentMethod: card?.paymentMethod,
           currency: user.currency,
         };
-        createPaymentOnStrip(params, false)
+        createPaymentOnStripe(params, false)
           .then(async (_res: any) => {
             console.log("payment initiated!", new Date(), "Today's Date");
             if (!user?.xeroContactId) {
@@ -1103,12 +1103,10 @@ export class CardDetailsControllers {
       let userId = user.user ?? ({} as UserInterface);
       const card = user.card;
       const amount = parseInt(input.data.object?.amount);
-      console.log("BEFORE CALC ", amount);
       let originalAmount = getOriginalAmountForStripe(
         amount,
         input.data.object?.currency
       );
-      console.log("AFTER CALC ", amount);
       if (userId) {
         if (input.type == STRIPE_PAYMENT_STATUS.FAILED) {
           const business = user.business;
@@ -1187,13 +1185,11 @@ export class CardDetailsControllers {
             invoiceId: "",
             paymentSessionId: input.data.object.id,
             cardId: card?._id,
-            // creditsLeft: userId?.credits || 0 - (params.freeCredits || 0),
-            creditsLeft: (userId?.credits || 0) + (params.freeCredits || 0) + originalAmount ,
+            creditsLeft: (userId?.credits || 0) + (params.freeCredits || 0)+originalAmount,
             paymentMethod: input.data?.object?.payment_method,
             paymentType: "",
             isCredited: true,
           };
-          console.log(commonDataSaveInTransaction ,">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>")
           addCreditsToBuyer(params)
             .then(async (res: any) => {
               userId =
@@ -1204,7 +1200,6 @@ export class CardDetailsControllers {
               (commonDataSaveInTransaction.status = PAYMENT_STATUS.CAPTURED),
                 (commonDataSaveInTransaction.title =
                   transactionTitle.CREDITS_ADDED);
-
               if (
                 userId?.paymentMethod === paymentMethodEnum.AUTOCHARGE_METHOD
               ) {
@@ -1258,7 +1253,7 @@ export class CardDetailsControllers {
               );
               let message = {
                 firstName: userId?.firstName,
-                amount: amount? (amount/100 ): amount,
+                amount: amount? (amount/100):amount,
                 cardHolderName: `${userId?.firstName} ${userId?.lastName}`,
                 cardNumberEnd: cardDetails?.cardNumber,
                 credits: userId?.credits,

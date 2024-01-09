@@ -1,37 +1,38 @@
 import moment from "moment-timezone";
+import {Types} from "mongoose";
+import * as cron from "node-cron";
+import {CardDetailsInterface} from "../../types/CardDetailsInterface";
+import {InvoiceInterface} from "../../types/InvoiceInterface";
+import {TransactionInterface} from "../../types/TransactionInterface";
+import {UserInterface} from "../../types/UserInterface";
+import {CURRENCY_SIGN} from "../../utils/constantFiles/email.templateIDs";
+import {VAT} from "../../utils/constantFiles/Invoices";
+import {AUTO_UPDATED_TASKS} from "../../utils/Enums/autoUpdatedTasks.enum";
+import {CARD} from "../../utils/Enums/cardType.enum";
+import {CURRENCY} from "../../utils/Enums/currency.enum";
 import {paymentMethodEnum} from "../../utils/Enums/payment.method.enum";
+import {PAYMENT_STATUS} from "../../utils/Enums/payment.status";
+import {PAYMENT_TYPE_ENUM} from "../../utils/Enums/paymentType.enum";
+import {transactionTitle} from "../../utils/Enums/transaction.title.enum";
 import {addCreditsToBuyer} from "../../utils/payment/addBuyerCredit";
+import {createSessionUnScheduledPayment} from "../../utils/payment/createPaymentToRYFT";
+import {createPaymentOnStripe} from "../../utils/payment/stripe/createPaymentToStripe";
+import {IntentInterface} from "../../utils/payment/stripe/paymentIntent";
+import {refreshToken} from "../../utils/XeroApiIntegration/createContact";
 import {generatePDF, generatePDFParams,} from "../../utils/XeroApiIntegration/generatePDF";
+import {getOriginalAmountForStripe} from "../Controllers/cardDetails.controller";
+import {sendEmailForRequireActionAutocharge} from "../Middlewares/mail";
 import {AdminSettings} from "../Models/AdminSettings";
+import {AutoUpdatedTasksLogs} from "../Models/AutoChargeLogs";
+import {BuisnessIndustries} from "../Models/BuisnessIndustries";
+import {BusinessDetails} from "../Models/BusinessDetails";
 import {CardDetails} from "../Models/CardDetails";
 import {Invoice} from "../Models/Invoice";
 import {Leads} from "../Models/Leads";
 import {Transaction} from "../Models/Transaction";
 import {User} from "../Models/User";
 import {UserLeadsDetails} from "../Models/UserLeadsDetails";
-import {refreshToken} from "../../utils/XeroApiIntegration/createContact";
-import {transactionTitle} from "../../utils/Enums/transaction.title.enum";
-import {BuisnessIndustries} from "../Models/BuisnessIndustries";
-import {VAT} from "../../utils/constantFiles/Invoices";
-import {createSessionUnScheduledPayment} from "../../utils/payment/createPaymentToRYFT";
-import {UserInterface} from "../../types/UserInterface";
-import {CardDetailsInterface} from "../../types/CardDetailsInterface";
-import {PAYMENT_TYPE_ENUM} from "../../utils/Enums/paymentType.enum";
-import * as cron from "node-cron";
-import {TransactionInterface} from "../../types/TransactionInterface";
-import {InvoiceInterface} from "../../types/InvoiceInterface";
-import {PAYMENT_STATUS} from "../../utils/Enums/payment.status";
-import {createPaymentOnStrip} from "../../utils/payment/stripe/createPaymentToStripe";
-import {IntentInterface} from "../../utils/payment/stripe/paymentIntent";
-import {Types} from "mongoose";
-import {AUTO_UPDATED_TASKS} from "../../utils/Enums/autoUpdatedTasks.enum";
-import {AutoUpdatedTasksLogs} from "../Models/AutoChargeLogs";
-import {CARD} from "../../utils/Enums/cardType.enum";
-import {sendEmailForRequireActionAutocharge} from "../Middlewares/mail";
-import {BusinessDetails} from "../Models/BusinessDetails";
-import {CURRENCY} from "../../utils/Enums/currency.enum";
-import {CURRENCY_SIGN} from "../../utils/constantFiles/email.templateIDs";
-import {getOriginalAmountForStripe} from "../Controllers/cardDetails.controller";
+import {APP_ENV} from "../../utils/Enums/serverModes.enum";
 
 interface paymentParams {
     fixedAmount: number;
@@ -59,45 +60,61 @@ interface FindOptions {
 }
 
 export const autoChargePayment = async () => {
-    // cron.schedule("0 */4 * * *", async () => {
-        cron.schedule("*/5 * * * *", async () => {
-        // cron.schedule("* * * * *", async () => {
-        console.log("CRON Job Start", new Date());
+    let cronExpression:string = "0 */4 * * *";
+    if(process.env.APP_ENV == APP_ENV.STAGING){
+        cronExpression = "*/5 * * * *";
+    }
+    cron.schedule(cronExpression, async () => {
+        console.log("AutoCharge: CRON Start", new Date());
         try {
             const usersToCharge = await getUsersWithAutoChargeEnabled();
-            for (const user of usersToCharge) {
-                const shallSkipIfPending = user.pendingTransaction;
-                if (shallSkipIfPending) {
-                    console.log(new Date(), " Skipped: Pending transaction found: ", shallSkipIfPending);
-                     continue;
-                }
-                console.log("Auto charge will work on :", user.email);
-                const dataToSave = {
-                    userId: user.id,
-                    title: AUTO_UPDATED_TASKS.AUTO_CHARGE,
-                };
-                let logs = await AutoUpdatedTasksLogs.create(dataToSave);
-                const paymentMethod = await getUserPaymentMethods(user.id);
-                if (paymentMethod) {
-                    await AutoUpdatedTasksLogs.findByIdAndUpdate(logs.id, {
-                        statusCode: 200,
+            Promise.all(
+                usersToCharge.map(async (user) => {
+                    const shallSkipIfPending = user.pendingTransaction;
+                    if (shallSkipIfPending) {
+                        return new Promise(async (resolve, reject) => {
+                            console.log(new Date(), " Skipped: Pending transaction found: ", shallSkipIfPending);
+                            return resolve('Skipped: Pending transaction found');
+                        });
+                    }
+                    return new Promise(async (resolve, reject) => {
+                        console.log("Charging User :", user.email, new Date());
+                        const dataToSave = {
+                            userId: user.id,
+                            title: AUTO_UPDATED_TASKS.AUTO_CHARGE,
+                        };
+                        let logs = await AutoUpdatedTasksLogs.create(dataToSave);
+                        const paymentMethod = await getUserPaymentMethods(user.id);
+                        if (paymentMethod) {
+                            await AutoUpdatedTasksLogs.findByIdAndUpdate(logs.id, {
+                                statusCode: 200,
+                            });
+                            await topUpUserForPaymentMethod(user, paymentMethod);
+                            resolve("success");
+                        } else {
+                            console.error(`Payment method not found for user ${user.email}`);
+                            await AutoUpdatedTasksLogs.findByIdAndUpdate(logs.id, {
+                                notes: "payment method not found",
+                                statusCode: 400,
+                            });
+                            reject("payment method not found");
+                        }
                     });
-                    return await autoTopUp(user, paymentMethod);
-                } else {
-                    console.log("payment method not found");
-                    await AutoUpdatedTasksLogs.findByIdAndUpdate(logs.id, {
-                        notes: "payment method not found",
-                        statusCode: 400,
-                    });
-                }
-            }
+                })
+            ).then((res) => {
+                console.log("AutoCharge: CRON Ended Successfully ", new Date(), ` charged ${res.length} users`);
+            }).catch((err) => {
+                console.log("AutoCharge: CRON Ended with Errors ", new Date(), ` charged ${err.length} users`);
+            }).finally(() => {
+                console.log("AutoCharge: CRON Ended finally", new Date());
+            });
         } catch (error) {
             console.error("Error in CRON job:", error.response);
         }
     });
 };
 
-export const weeklypayment = async () => {
+export const weeklyPayment = async () => {
     cron.schedule("00 09 * * MON", async () => {
         console.log("Monday 9am Cron Job started.");
         // cron.schedule("* * * * *",  async() => {
@@ -292,13 +309,14 @@ export const getUserPaymentMethods = async (id: string) => {
     return cards;
 };
 
-export const chargeUser = async (params: IntentInterface) => {
+export const chargeUserOnStripe = async (params: IntentInterface) => {
     return new Promise((resolve, reject) => {
-        createPaymentOnStrip(params, true)
+        createPaymentOnStripe(params, true)
             .then(async (_res: any) => {
                 console.log("payment initiated!", new Date(), {
                     stripeUser: params.customer,
                 });
+
                 if (_res.status === PAYMENT_STATUS.REQUIRES_ACTION) {
                     const user: UserInterface =
                         (await User.findOne({email: params.email})) ??
@@ -355,7 +373,7 @@ export const chargeUser = async (params: IntentInterface) => {
                 resolve(_res);
             })
             .catch(async (err) => {
-                console.log("error in payment Api", err.response.data);
+                console.log(`error in payment Api ${new Date()}`, JSON.stringify(err.response.data));
                 // FUTURE: FIX CRON JOB SCHEDULING and Instead use other methods
                 const shouldRetryOtherMethods = false;
                 if (shouldRetryOtherMethods) {
@@ -365,18 +383,21 @@ export const chargeUser = async (params: IntentInterface) => {
                     const cards: CardDetailsInterface[] =
                         (await CardDetails.find({userId: user.id, isDeleted: false})) ??
                         ([] as CardDetailsInterface[]);
-                    await handleFailedCharge(user, cards);
+                    await handleFailedChargeOnStripe(user, cards);
                 }
+
+
                 reject(err);
             });
     });
 };
 
-export const handleFailedCharge = async (
+export const handleFailedChargeOnStripe = async (
     user: UserInterface,
     card: CardDetailsInterface[]
 ) => {
-    cron.schedule("0 2 * * *", async () => {
+    const task = cron.schedule("0 2 * * *", async () => {
+        task.stop();
         const currentDate = new Date();
 
         const yesterday = new Date(currentDate);
@@ -397,11 +418,12 @@ export const handleFailedCharge = async (
             cardsArray.push(card.paymentMethod);
         });
 
-        let TransactionArray: TransactionInterface[] = [];
+        let previousTransactions: TransactionInterface[] = [];
         transactions.map((txn: any) => {
-            TransactionArray.push(txn.paymentMethod);
+            previousTransactions.push(txn.paymentMethod);
         });
-        let leftCards = getElementsNotInSubset(cardsArray, TransactionArray);
+
+        let leftCards = getElementsNotInSubset(cardsArray, previousTransactions);
         if (leftCards.length > 0) {
             const card: CardDetailsInterface =
                 (await CardDetails.findOne({
@@ -409,9 +431,13 @@ export const handleFailedCharge = async (
                     userId: user.id,
                     isDeleted: false,
                 })) ?? ({} as CardDetailsInterface);
+
+            const amountToPay = (user.currency === CURRENCY.POUND || user.currency === CURRENCY.DOLLER)
+                ? user?.autoChargeAmount
+                : user?.autoChargeAmount + (user.autoChargeAmount * VAT) / 100;
+
             const params = {
-                amount:
-                    (user?.autoChargeAmount + (user?.autoChargeAmount * VAT) / 100) * 100,
+                amount: amountToPay * 100,
                 email: user?.email,
                 cardNumber: card?.cardNumber,
                 expiryMonth: card?.expiryMonth,
@@ -424,21 +450,26 @@ export const handleFailedCharge = async (
                 paymentMethod: card?.paymentMethod,
                 currency: user.currency,
             };
-            return await chargeUser(params);
+            return await chargeUserOnStripe(params);
         } else {
-            console.log("email should be sent now");
+            console.log(`No Valid Cards email should be sent now to ${user.email}`, new Date());
             return false;
         }
     });
 };
 
-export const autoTopUp = async (
+export const topUpUserForPaymentMethod = async (
     user: UserInterface,
     paymentMethod: CardDetailsInterface
 ) => {
+    if (!user) {
+        return false;
+    }
+
     const amountToPay = (user.currency === CURRENCY.POUND || user.currency === CURRENCY.DOLLER)
         ? (user.autoChargeAmount + ((user.autoChargeAmount * VAT) / 100))
         : user.autoChargeAmount;
+
     let params = {
         amount: amountToPay * 100,
         email: user?.email,
@@ -454,7 +485,7 @@ export const autoTopUp = async (
         currency: user?.currency,
     };
 
-    const success: any = await chargeUser(params);
+    const success: any = await chargeUserOnStripe(params);
     return success;
 };
 
