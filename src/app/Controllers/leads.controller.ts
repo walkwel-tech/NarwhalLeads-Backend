@@ -91,6 +91,11 @@ export class LeadsController {
       if (!user.isLeadReceived) {
         await User.findByIdAndUpdate(user.id, { isLeadReceived: true });
       }
+      const originalDailyLimit = user.userLeadsDetailsId?.daily;
+
+      const fiftyPercentVariance = Math.round(
+        originalDailyLimit + 0.5 * originalDailyLimit
+      );
       //  event webhook to hit when lead  credit is less then leadCost
       if (user?.credits === 0 || user?.credits < user?.leadCost) {
         const paramsToSend = {
@@ -100,6 +105,9 @@ export class LeadsController {
           eventCode: EVENT_TITLE.ZERO_CREDITS,
           postCodeList: user.userLeadsDetailsId?.postCodeTargettingList,
           remainingCredits: user?.credits,
+          dailyCap: fiftyPercentVariance,
+          weeklyCap: user.userLeadsDetailsId?.weekly,
+          computedCap: Math.round(0.5 * originalDailyLimit),
         };
         await eventsWebhook(paramsToSend)
           .then(() =>
@@ -124,7 +132,7 @@ export class LeadsController {
       if (
         user?.credits == 0 &&
         user?.secondaryCredits == 0 &&
-        user?.role == RolesEnum.USER&&
+        user?.role == RolesEnum.USER &&
         user?.isCreditsAndBillingEnabled == true
       ) {
         return res
@@ -157,10 +165,7 @@ export class LeadsController {
           $lt: endOfWeek,
         },
       });
-      const originalDailyLimit = user.userLeadsDetailsId?.daily;
-      const fiftyPercentVariance = Math.round(
-        originalDailyLimit + 0.5 * originalDailyLimit
-      );
+
       if (
         previous.length >= fiftyPercentVariance ||
         leadsForThisWeek.length >= user.userLeadsDetailsId.weekly
@@ -263,6 +268,9 @@ export class LeadsController {
           businessName: user.businessDetailsId.businessName,
           eventCode: EVENT_TITLE.ZERO_CREDITS,
           remainingCredits: userf?.credits,
+          dailyCap: fiftyPercentVariance,
+          weeklyCap: user.userLeadsDetailsId?.weekly,
+          computedCap: Math.round(0.5 * originalDailyLimit),
         };
 
         if (user.userLeadsDetailsId.type === POSTCODE_TYPE.RADIUS) {
@@ -1055,9 +1063,13 @@ export class LeadsController {
                   as: "accountManager",
                 },
               },
-              {
-                $unwind: "$accountManager",
-              },
+              ...(user?.accountManager
+                ? [
+                    {
+                      $unwind: "$accountManager",
+                    },
+                  ]
+                : []),
               // { $sort: { rowIndex: -1 } },
               { $sort: { createdAt: sortingOrder } },
               { $skip: skip },
@@ -1114,6 +1126,7 @@ export class LeadsController {
           },
         },
       ]);
+
 
       const promises = query.results.map((item: any) => {
         item.leads.clientName =

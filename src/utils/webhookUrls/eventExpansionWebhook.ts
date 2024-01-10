@@ -23,6 +23,9 @@ export interface PostcodeWebhookParams {
   businessSalesNumber?: string;
   leadSchedule?: string[];
   dailyLeadCap?: string | number;
+  dailyCap?: string | number;
+  weeklyCap?: string | number;
+  computedCap?: string | number;
 }
 
 export const eventsWebhook = (data: any) => {
