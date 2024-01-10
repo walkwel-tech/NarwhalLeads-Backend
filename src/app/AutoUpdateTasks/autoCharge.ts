@@ -57,6 +57,7 @@ interface FindOptions {
     isDeleted: boolean;
     isAutoChargeEnabled?: boolean;
     _id?: Types.ObjectId;
+    buyerId?: Record<string,any>;
 }
 
 export const autoChargePayment = async () => {
@@ -77,6 +78,12 @@ export const autoChargePayment = async () => {
                             return resolve('Skipped: Pending transaction found');
                         });
                     }
+                    // if (user.email != 'tom+8thsept@nmg.group') {
+                    //     return new Promise(async (resolve, reject) => {
+                    //         console.log(new Date(), " Skipped: non-test user: ", user.email);
+                    //         return resolve('Skipped');
+                    //     });
+                    // }
                     return new Promise(async (resolve, reject) => {
                         console.log("Charging User :", user.email, new Date());
                         const dataToSave = {
@@ -289,6 +296,7 @@ export const getUsersWithAutoChargeEnabled = async (id?: Types.ObjectId) => {
             paymentMethod: paymentMethodEnum.AUTOCHARGE_METHOD,
             isDeleted: false,
             isAutoChargeEnabled: true,
+            buyerId:{ $exists: true }
         };
     } else {
         dataToFind = {_id: id, isDeleted: false};
