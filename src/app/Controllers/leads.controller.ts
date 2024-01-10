@@ -1065,7 +1065,8 @@ export class LeadsController {
                   as: "accountManager",
                 },
               },
-              ...(user?.accountManager
+                // @ts-ignore
+              ...(user?.accountManager &&user?.accountManager?.length >0
                 ? [
                     {
                       $unwind: "$accountManager",
