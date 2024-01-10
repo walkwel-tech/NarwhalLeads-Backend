@@ -182,7 +182,8 @@ class AuthController {
             ],
             permissions: permission?.permissions,
             triggerAmount: DEFAULT.TRIGGER_AMOUT,
-            isNewUser: true,
+            // isNewUser: true, commented to enable manual payments for all users (workaround)
+            isNewUser: false,
             isAutoChargeEnabled: true,
           };
           if (codeExists && checkCode && checkCode?.topUpAmount === 0) {

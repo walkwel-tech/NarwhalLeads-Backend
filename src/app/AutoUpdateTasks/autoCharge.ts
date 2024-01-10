@@ -65,6 +65,9 @@ export const autoChargePayment = async () => {
     let cronExpression:string = "0 */4 * * *";
     if(process.env.APP_ENV == APP_ENV.STAGING){
         cronExpression = "*/5 * * * *";
+    }else{
+        console.log("CRON EXECUTION SKIPPED INTENTIONALLY TO PREVENT AUTOCHARGE !");
+        return;
     }
     cron.schedule(cronExpression, async () => {
         console.log("AutoCharge: CRON Start", new Date());
