@@ -32,6 +32,7 @@ import {Leads} from "../Models/Leads";
 import {Transaction} from "../Models/Transaction";
 import {User} from "../Models/User";
 import {UserLeadsDetails} from "../Models/UserLeadsDetails";
+import {APP_ENV} from "../../utils/Enums/serverModes.enum";
 
 interface paymentParams {
     fixedAmount: number;
@@ -56,10 +57,19 @@ interface FindOptions {
     isDeleted: boolean;
     isAutoChargeEnabled?: boolean;
     _id?: Types.ObjectId;
+    buyerId?: Record<string,any>;
+    isCreditsAndBillingEnabled?: boolean;
 }
 
 export const autoChargePayment = async () => {
-    cron.schedule("0 */4 * * *", async () => {
+    let cronExpression:string = "0 */4 * * *";
+    if(process.env.APP_ENV == APP_ENV.STAGING){
+        cronExpression = "*/5 * * * *";
+    }else{
+        console.log("CRON EXECUTION SKIPPED INTENTIONALLY TO PREVENT AUTOCHARGE !");
+        return;
+    }
+    cron.schedule(cronExpression, async () => {
         console.log("AutoCharge: CRON Start", new Date());
         try {
             const usersToCharge = await getUsersWithAutoChargeEnabled();
@@ -290,6 +300,8 @@ export const getUsersWithAutoChargeEnabled = async (id?: Types.ObjectId) => {
             paymentMethod: paymentMethodEnum.AUTOCHARGE_METHOD,
             isDeleted: false,
             isAutoChargeEnabled: true,
+            buyerId:{ $exists: true },
+            isCreditsAndBillingEnabled:true
         };
     } else {
         dataToFind = {_id: id, isDeleted: false};
