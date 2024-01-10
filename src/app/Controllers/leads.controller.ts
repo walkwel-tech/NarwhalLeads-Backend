@@ -88,7 +88,7 @@ export class LeadsController {
       const user: any = await User.findOne({ buyerId: bid })
         .populate("userLeadsDetailsId")
         .populate("businessDetailsId");
-      if (!user.isLeadReceived) {
+      if (!user?.isLeadReceived) {
         await User.findByIdAndUpdate(user.id, { isLeadReceived: true });
       }
       const originalDailyLimit = user.userLeadsDetailsId?.daily;
@@ -97,7 +97,7 @@ export class LeadsController {
         originalDailyLimit + 0.5 * originalDailyLimit
       );
       //  event webhook to hit when lead  credit is less then leadCost
-      if (user?.credits === 0 || user?.credits < user?.leadCost) {
+      if ((user?.credits === 0 || user?.credits < user?.leadCost) && user.isCreditsAndBillingEnabled) {
         const paramsToSend = {
           userId: user._id,
           buyerId: user.buyerId,
@@ -130,7 +130,7 @@ export class LeadsController {
       }
 
       if (
-        user?.credits == 0 &&
+        (user?.credits <=0) &&
         user?.secondaryCredits == 0 &&
         user?.role == RolesEnum.USER &&
         user?.isCreditsAndBillingEnabled == true
@@ -225,7 +225,7 @@ export class LeadsController {
         industryId: user.businessIndustryId,
         rowIndex: leads?.rowIndex + 1 || 0,
       });
-      if (!user.isSecondaryUsage) {
+      if (!user.isSecondaryUsage && user.isCreditsAndBillingEnabled) {
         leadcpl = user.leadCost;
         leftCredits = credits - user?.leadCost;
         userf =
@@ -237,7 +237,8 @@ export class LeadsController {
             { new: true }
           )) ?? ({} as UserInterface);
       } else {
-        leadcpl = user.secondaryLeadCost;
+  if(user.isCreditsAndBillingEnabled)
+        {      leadcpl = user.secondaryLeadCost;
         let leftSecondaryCredits =
           user.secondaryCredits - user?.secondaryLeadCost;
         if (leftSecondaryCredits === 0) {
@@ -254,7 +255,7 @@ export class LeadsController {
               secondaryCredits: leftSecondaryCredits,
             },
             { new: true }
-          )) ?? ({} as UserInterface);
+          )) ?? ({} as UserInterface);}
       }
 
       if (
@@ -298,7 +299,7 @@ export class LeadsController {
           );
       }
 
-      if (leftCredits && !user.isSecondaryUsage) {
+      if (leftCredits && !user.isSecondaryUsage && user.isCreditsAndBillingEnabled) {
         if (leftCredits < leadcpl * PREMIUM_PROMOLINK.LEADS_THRESHOLD) {
           const txn = await Transaction.find({
             title: transactionTitle.CREDITS_ADDED,
@@ -325,7 +326,7 @@ export class LeadsController {
         }
       }
 
-      let dataToSave: any = {
+    if(user.isCreditsAndBillingEnabled){  let dataToSave: any = {
         userId: user.id,
         isDebited: true,
         title: transactionTitle.NEW_LEAD,
@@ -336,7 +337,7 @@ export class LeadsController {
       if (user.isSecondaryUsage) {
         dataToSave.creditsLeft = user.secondaryCredits - user.secondaryLeadCost;
       }
-      await Transaction.create(dataToSave);
+      await Transaction.create(dataToSave);}
 
       if (
         user.userLeadsDetailsId?.leadAlertsFrequency == leadsAlertsEnums.INSTANT
@@ -382,6 +383,7 @@ export class LeadsController {
 
       return res.json({ data: leadsSave });
     } catch (error) {
+      console.log("rrrr",error)
       return res
         .status(500)
         .json({ error: { message: "Something went wrong" } });
