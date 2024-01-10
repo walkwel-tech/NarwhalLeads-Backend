@@ -216,7 +216,7 @@ export class LeadsController {
 
       const credits = user?.credits;
       let leftCredits;
-      let userf;
+      let userf:any;
       leadsSave = await Leads.create({
         bid: bid,
         leadsCost: user.leadCost,
@@ -259,7 +259,7 @@ export class LeadsController {
       }
 
       if (
-        (userf?.credits === 0 || userf?.credits < parseInt(userf?.leadCost)) &&
+        (userf?.credits === 0 ||  userf?.credits < parseInt(userf?.leadCost)) &&
         user?.onBoardingPercentage === ONBOARDING_PERCENTAGE.CARD_DETAILS &&
         !user.isSecondaryUsage
       ) {
