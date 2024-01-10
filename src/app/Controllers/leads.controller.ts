@@ -74,7 +74,7 @@ export class LeadsController {
           return res.status(403).json({
             error: {
               message:
-                "Access denied: Your IP address is not allowed to access this API",
+                  "Access denied: Your IP address is not allowed to access this API",
             },
           });
         }
@@ -86,15 +86,15 @@ export class LeadsController {
         return res.status(400).json({ error: { message: "Data Required." } });
       }
       const user: any = await User.findOne({ buyerId: bid })
-        .populate("userLeadsDetailsId")
-        .populate("businessDetailsId");
+          .populate("userLeadsDetailsId")
+          .populate("businessDetailsId");
       if (!user?.isLeadReceived) {
         await User.findByIdAndUpdate(user.id, { isLeadReceived: true });
       }
       const originalDailyLimit = user.userLeadsDetailsId?.daily;
 
       const fiftyPercentVariance = Math.round(
-        originalDailyLimit + 0.5 * originalDailyLimit
+          originalDailyLimit + 0.5 * originalDailyLimit
       );
       //  event webhook to hit when lead  credit is less then leadCost
       if ((user?.credits === 0 || user?.credits < user?.leadCost) && user.isCreditsAndBillingEnabled) {
@@ -110,34 +110,34 @@ export class LeadsController {
           computedCap: Math.round(0.5 * originalDailyLimit),
         };
         await eventsWebhook(paramsToSend)
-          .then(() =>
-            console.log(
-              "event webhook for zero credits hits successfully.",
-              paramsToSend,
-              new Date(),
-              "Today's Date"
+            .then(() =>
+                console.log(
+                    "event webhook for zero credits hits successfully.",
+                    paramsToSend,
+                    new Date(),
+                    "Today's Date"
+                )
             )
-          )
-          .catch((err) =>
-            console.log(
-              err,
-              "error while triggering zero credits webhooks failed",
-              paramsToSend,
-              new Date(),
-              "Today's Date"
-            )
-          );
+            .catch((err) =>
+                console.log(
+                    err,
+                    "error while triggering zero credits webhooks failed",
+                    paramsToSend,
+                    new Date(),
+                    "Today's Date"
+                )
+            );
       }
 
       if (
-        (user?.credits <=0) &&
-        user?.secondaryCredits == 0 &&
-        user?.role == RolesEnum.USER &&
-        user?.isCreditsAndBillingEnabled == true
+          ( ((user?.credits <=0) &&
+              user?.secondaryCredits == 0 &&
+              user?.role == RolesEnum.USER &&
+              user?.isCreditsAndBillingEnabled == true)||user.credits<user.leadCost)
       ) {
         return res
-          .status(400)
-          .json({ error: { message: "Insufficient Credits" } });
+            .status(400)
+            .json({ error: { message: "Insufficient Credits" } });
       }
 
       const today = new Date();
@@ -167,12 +167,12 @@ export class LeadsController {
       });
 
       if (
-        previous.length >= fiftyPercentVariance ||
-        leadsForThisWeek.length >= user.userLeadsDetailsId.weekly
+          previous.length >= fiftyPercentVariance ||
+          leadsForThisWeek.length >= user.userLeadsDetailsId.weekly
       ) {
         // 50 % variance implemented here
         const utcDatePlus1Hour = new Date(
-          new Date().getTime() + 60 * 60 * 1000
+            new Date().getTime() + 60 * 60 * 1000
         );
         const ukDate = new Date(utcDatePlus1Hour.getTime());
         const ukDateString = ukDate.toUTCString();
@@ -193,9 +193,9 @@ export class LeadsController {
         });
       }
       const leads: LeadsInterface =
-        (await Leads.findOne({ bid: user?.buyerId })
-          .sort({ rowIndex: -1 })
-          .limit(1)) ?? ({} as LeadsInterface);
+          (await Leads.findOne({ bid: user?.buyerId })
+              .sort({ rowIndex: -1 })
+              .limit(1)) ?? ({} as LeadsInterface);
 
       if (user.isSmsNotificationActive) {
         const dataToSent = {
@@ -207,8 +207,8 @@ export class LeadsController {
       }
       if (user?.userLeadsDetailsId?.sendDataToZapier) {
         sendLeadDataToZap(user.userLeadsDetailsId.zapierUrl, input, user)
-          .then((res) => {})
-          .catch((err) => {});
+            .then((res) => {})
+            .catch((err) => {});
       }
 
       let leadcpl;
@@ -229,39 +229,39 @@ export class LeadsController {
         leadcpl = user.leadCost;
         leftCredits = credits - user?.leadCost;
         userf =
-          (await User.findByIdAndUpdate(
-            user?.id,
-            {
-              credits: leftCredits,
-            },
-            { new: true }
-          )) ?? ({} as UserInterface);
+            (await User.findByIdAndUpdate(
+                user?.id,
+                {
+                  credits: leftCredits,
+                },
+                { new: true }
+            )) ?? ({} as UserInterface);
       } else {
-  if(user.isCreditsAndBillingEnabled)
+        if(user.isCreditsAndBillingEnabled)
         {      leadcpl = user.secondaryLeadCost;
-        let leftSecondaryCredits =
-          user.secondaryCredits - user?.secondaryLeadCost;
-        if (leftSecondaryCredits === 0) {
-          await User.findByIdAndUpdate(user.id, {
-            isSecondaryUsage: false,
-            secondaryLeads: 0,
-            secondaryLeadCost: 0,
-          });
-        }
-        userf =
-          (await User.findByIdAndUpdate(
-            user?.id,
-            {
-              secondaryCredits: leftSecondaryCredits,
-            },
-            { new: true }
-          )) ?? ({} as UserInterface);}
+          let leftSecondaryCredits =
+              user.secondaryCredits - user?.secondaryLeadCost;
+          if (leftSecondaryCredits === 0) {
+            await User.findByIdAndUpdate(user.id, {
+              isSecondaryUsage: false,
+              secondaryLeads: 0,
+              secondaryLeadCost: 0,
+            });
+          }
+          userf =
+              (await User.findByIdAndUpdate(
+                  user?.id,
+                  {
+                    secondaryCredits: leftSecondaryCredits,
+                  },
+                  { new: true }
+              )) ?? ({} as UserInterface);}
       }
 
       if (
-        (userf?.credits === 0 ||  userf?.credits < parseInt(userf?.leadCost)) &&
-        user?.onBoardingPercentage === ONBOARDING_PERCENTAGE.CARD_DETAILS &&
-        !user.isSecondaryUsage
+          (userf?.credits === 0 || userf?.credits < parseInt(userf?.leadCost)) &&
+          user?.onBoardingPercentage === ONBOARDING_PERCENTAGE.CARD_DETAILS &&
+          !user.isSecondaryUsage
       ) {
         let paramsToSend: PostcodeWebhookParams = {
           userId: user._id,
@@ -276,27 +276,27 @@ export class LeadsController {
 
         if (user.userLeadsDetailsId.type === POSTCODE_TYPE.RADIUS) {
           (paramsToSend.type = POSTCODE_TYPE.RADIUS),
-            (paramsToSend.postcode = user.userLeadsDetailsId.postCodeList);
+              (paramsToSend.postcode = user.userLeadsDetailsId.postCodeList);
         } else {
           paramsToSend.postCodeList = flattenPostalCodes(
-            user.userLeadsDetailsId?.postCodeTargettingList
+              user.userLeadsDetailsId?.postCodeTargettingList
           );
         }
 
         await eventsWebhook(paramsToSend)
-          .then(() =>
-            console.log(
-              "event webhook for zero credits hits successfully.",
-              paramsToSend
+            .then(() =>
+                console.log(
+                    "event webhook for zero credits hits successfully.",
+                    paramsToSend
+                )
             )
-          )
-          .catch((err) =>
-            console.log(
-              err,
-              "error while triggering zero credits webhooks failed",
-              paramsToSend
-            )
-          );
+            .catch((err) =>
+                console.log(
+                    err,
+                    "error while triggering zero credits webhooks failed",
+                    paramsToSend
+                )
+            );
       }
 
       if (leftCredits && !user.isSecondaryUsage && user.isCreditsAndBillingEnabled) {
@@ -326,7 +326,7 @@ export class LeadsController {
         }
       }
 
-    if(user.isCreditsAndBillingEnabled){  let dataToSave: any = {
+      if(user.isCreditsAndBillingEnabled){  let dataToSave: any = {
         userId: user.id,
         isDebited: true,
         title: transactionTitle.NEW_LEAD,
@@ -334,13 +334,13 @@ export class LeadsController {
         status: "success",
         creditsLeft: user?.credits - leadcpl,
       };
-      if (user.isSecondaryUsage) {
-        dataToSave.creditsLeft = user.secondaryCredits - user.secondaryLeadCost;
-      }
-      await Transaction.create(dataToSave);}
+        if (user.isSecondaryUsage) {
+          dataToSave.creditsLeft = user.secondaryCredits - user.secondaryLeadCost;
+        }
+        await Transaction.create(dataToSave);}
 
       if (
-        user.userLeadsDetailsId?.leadAlertsFrequency == leadsAlertsEnums.INSTANT
+          user.userLeadsDetailsId?.leadAlertsFrequency == leadsAlertsEnums.INSTANT
       ) {
         let arr: any = [];
         Object.keys(input).forEach((key) => {
@@ -369,9 +369,9 @@ export class LeadsController {
         }).populate("userLeadsDetailsId");
         invitedUsers.map((iUser) => {
           if (
-            //@ts-ignore
-            iUser?.userLeadsDetailsId?.leadAlertsFrequency ===
-            leadsAlertsEnums.INSTANT
+              //@ts-ignore
+              iUser?.userLeadsDetailsId?.leadAlertsFrequency ===
+              leadsAlertsEnums.INSTANT
           ) {
             emails.push(iUser.email);
           }
@@ -385,8 +385,8 @@ export class LeadsController {
     } catch (error) {
       console.log("rrrr",error)
       return res
-        .status(500)
-        .json({ error: { message: "Something went wrong" } });
+          .status(500)
+          .json({ error: { message: "Something went wrong" } });
     }
   };
 
