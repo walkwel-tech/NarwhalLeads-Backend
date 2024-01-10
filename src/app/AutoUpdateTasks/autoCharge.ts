@@ -33,7 +33,6 @@ import {Transaction} from "../Models/Transaction";
 import {User} from "../Models/User";
 import {UserLeadsDetails} from "../Models/UserLeadsDetails";
 import {APP_ENV} from "../../utils/Enums/serverModes.enum";
-import { RolesEnum } from "../../types/RolesEnum";
 
 interface paymentParams {
     fixedAmount: number;
@@ -60,7 +59,6 @@ interface FindOptions {
     _id?: Types.ObjectId;
     buyerId?: Record<string,any>;
     isCreditsAndBillingEnabled?: boolean;
-    role?: Record<string,any>;
 }
 
 export const autoChargePayment = async () => {
@@ -300,8 +298,7 @@ export const getUsersWithAutoChargeEnabled = async (id?: Types.ObjectId) => {
             isDeleted: false,
             isAutoChargeEnabled: true,
             buyerId:{ $exists: true },
-            isCreditsAndBillingEnabled:true,
-            role: {$ne: RolesEnum.NON_BILLABLE},
+            isCreditsAndBillingEnabled:true
         };
     } else {
         dataToFind = {_id: id, isDeleted: false};
