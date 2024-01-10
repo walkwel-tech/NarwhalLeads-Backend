@@ -2280,7 +2280,7 @@ export class UsersControllers {
     }
   };
 
-  static updateEmail = async (req: Request, res: Response) : Promise<any>=> {
+  static updateEmail = async (req: Request, res: Response): Promise<any> => {
     try {
       const id = req.params.id;
       const { email } = req.body;
