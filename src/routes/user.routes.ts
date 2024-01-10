@@ -40,6 +40,15 @@ user.post(
 );
 
 user.post(
+  "/update-email/:id",
+  OnlyAdmins,
+  checkPermissions([
+    { module: MODULE.CLIENTS, permission: PERMISSIONS.UPDATE },
+  ]),
+  UsersControllers.updateEmail
+);
+
+user.post(
   "/manual-adjustment",
   OnlyAdmins,
   checkPermissions([
@@ -47,6 +56,7 @@ user.post(
   ]),
   UsersControllers.userCreditsManualAdjustment
 );
+
 user.post(
   "/:id",
   Auth,
