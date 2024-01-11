@@ -73,4 +73,5 @@ export interface UserInterface extends Document {
   secondaryLeadCost: number;
   isSecondaryUsage: boolean;
   secondaryLeads: number;
+  retriedTransactionCount: number;
 }
