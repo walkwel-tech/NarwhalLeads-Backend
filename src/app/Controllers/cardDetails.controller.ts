@@ -1362,6 +1362,7 @@ export class CardDetailsControllers {
                 userId: userId._id,
                 buyerId: userId.buyerId,
                 businessName: userBusiness?.businessName,
+                businessIndustry: userBusiness?.businessIndustry,
                 eventCode: EVENT_TITLE.ADD_CREDITS,
                 topUpAmount: originalAmount,
                 type: POSTCODE_TYPE.MAP,

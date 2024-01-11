@@ -13,6 +13,7 @@ export interface PostcodeWebhookParams {
   buyerId?: string;
   bid?: string;
   businessName: string | undefined;
+  businessIndustry?: string;
   eventCode: string;
   topUpAmount?: string | number;
   type?: string;

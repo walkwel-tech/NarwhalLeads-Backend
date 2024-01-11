@@ -2097,6 +2097,7 @@ export class UsersControllers {
             userId: user._id,
             buyerId: user.buyerId,
             businessName: userBusiness?.businessName,
+            businessIndustry: userBusiness?.businessIndustry,
             eventCode: EVENT_TITLE.ADD_CREDITS,
             topUpAmount: credits,
           };
