@@ -1,6 +1,6 @@
 {
   "name": "narwhal-leads",
-  "version": "1.2.95",
+  "version": "1.2.97",
   "description": "",
   "main": "index.js",
   "scripts": {
@@ -9,7 +9,7 @@
     "dev-chat": "ts-node-dev --respawn --rs --transpile-only ./src/indexChat.ts",
     "build": "rimraf ./dist && tsc --build",
     "start": "node ./dist",
-    "test": "ts-node-dev --respawn --rs --transpile-only permissionScript.ts"
+    "test": "ts-node-dev --respawn --rs --transpile-only script.ts"
   },
   "author": "",
   "license": "ISC",
