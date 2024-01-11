@@ -788,7 +788,7 @@ class AuthController {
         title: transactionTitle.CREDITS_ADDED,
       });
       if (!isPendingTransactionCapture) {
-        exists.pendingTransaction = pendingTransactions?.notes;
+        // exists.pendingTransaction = pendingTransactions?.notes;
       }
 
       if (exists) {

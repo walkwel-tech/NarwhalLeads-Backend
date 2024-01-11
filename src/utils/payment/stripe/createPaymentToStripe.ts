@@ -34,7 +34,7 @@ export const createPaymentOnStripe = async (
         return_url: process.env.RETURN_URL,
         confirm: true,
         payment_method: params.paymentMethod,
-      });
+              });
     }
 
     let config = {
