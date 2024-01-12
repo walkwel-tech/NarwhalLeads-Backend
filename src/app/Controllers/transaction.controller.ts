@@ -3,6 +3,7 @@ import mongoose from "mongoose";
 import { Invoice } from "../Models/Invoice";
 import { Transaction } from "../Models/Transaction";
 import { transactionTitle } from "../../utils/Enums/transaction.title.enum";
+import { PAYMENT_STATUS } from "../../utils/Enums/payment.status";
 const ObjectId = mongoose.Types.ObjectId;
 
 // const LIMIT=10
@@ -12,7 +13,8 @@ export class TransactionController {
     try {
       let dataToFind: any = {
         userId: new ObjectId(userId),
-        title:{$nin:[transactionTitle.INVOICES_VAT,transactionTitle.FREE_CREDITS,transactionTitle.SESSION_CREATED]}
+        title:{$nin:[transactionTitle.INVOICES_VAT,transactionTitle.FREE_CREDITS,transactionTitle.SESSION_CREATED]},
+        status: {$ne: PAYMENT_STATUS.REQUIRES_ACTION}
       };
       const [query]: any = await Transaction.aggregate([
         {

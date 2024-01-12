@@ -622,6 +622,7 @@ export class CardDetailsControllers {
             });
         }
       } else {
+        // Process Card via STRIPE
         const currencyObj = countryCurrency.find(
           ({ country, value }) =>
             country === user?.country && value === user?.currency
@@ -679,7 +680,7 @@ export class CardDetailsControllers {
             response.status = 200;
             response.sessionID = _res.id;
             response.paymentMethods = _res.payment_method;
-            return res.json({
+                        return res.json({
               data: response,
             });
           })
@@ -1109,7 +1110,9 @@ export class CardDetailsControllers {
       );
       if (userId) {
         if (input.type == STRIPE_PAYMENT_STATUS.FAILED) {
-          const business = user.business;
+                  const business = user.business;
+           await User.findByIdAndUpdate(userId._id, {pendingTransaction: "", retriedTransactionCount: 0})
+
           const cards = await CardDetails.findOne({
             userId: userId?._id,
             isDefault: true,
@@ -1118,7 +1121,7 @@ export class CardDetailsControllers {
 
           let message = {
             firstName: userId?.firstName,
-            amount: amount,
+            amount: amount / 100, //Converting back to usd
             cardHolderName: `${userId?.firstName} ${userId?.lastName}`,
             cardNumberEnd: cards?.cardNumber,
             credits: userId?.credits,
@@ -1134,6 +1137,7 @@ export class CardDetailsControllers {
             message.currency = CURRENCY_SIGN.EUR;
             message.isIncVat = false;
           }
+          // after payment fail reset user
 
           sendEmailForPaymentFailure(userId?.email, message);
           let dataToSaveInTransaction: Partial<TransactionInterface> = {
@@ -1155,7 +1159,7 @@ export class CardDetailsControllers {
           }
           await Transaction.create(dataToSaveInTransaction);
         } else if (input.type == STRIPE_PAYMENT_STATUS.SUCCESS) {
-          const cardDetails = await CardDetails.findByIdAndUpdate(
+                    const cardDetails = await CardDetails.findByIdAndUpdate(
             card?._id,
             {
               status: PAYMENT_SESSION.SUCCESS,
@@ -1227,7 +1231,7 @@ export class CardDetailsControllers {
               const transaction = await Transaction.create(
                 commonDataSaveInTransaction
               );
-
+              await User.findByIdAndUpdate(userId._id, {pendingTransaction: "", retriedTransactionCount: 0});
               (commonDataSaveInTransaction.status = PAYMENT_STATUS.CAPTURED),
                 (commonDataSaveInTransaction.amount =
                   amount / 100 - originalAmount),
@@ -1362,6 +1366,7 @@ export class CardDetailsControllers {
                 userId: userId._id,
                 buyerId: userId.buyerId,
                 businessName: userBusiness?.businessName,
+                businessIndustry: userBusiness?.businessIndustry,
                 eventCode: EVENT_TITLE.ADD_CREDITS,
                 topUpAmount: originalAmount,
                 type: POSTCODE_TYPE.MAP,
@@ -1402,7 +1407,7 @@ export class CardDetailsControllers {
                 "Today's Date"
               );
             });
-        }
+        } 
       }
       const dataToShow: webhookResponse = {
         message: "success",
@@ -1605,7 +1610,7 @@ export class CardDetailsControllers {
     req: Request,
     res: Response
   ): Promise<any> => {
-    const input = req.query;
+        const input = req.query;
     const setupIntent = String(input.setup_intent);
     try {
       if (setupIntent) {

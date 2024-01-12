@@ -9,7 +9,7 @@
     "dev-chat": "ts-node-dev --respawn --rs --transpile-only ./src/indexChat.ts",
     "build": "rimraf ./dist && tsc --build",
     "start": "node ./dist",
-    "test": "ts-node-dev --respawn --rs --transpile-only permissionScript.ts"
+    "test": "ts-node-dev --respawn --rs --transpile-only script.ts"
   },
   "author": "",
   "license": "ISC",

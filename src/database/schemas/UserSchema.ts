@@ -238,6 +238,10 @@ const UserSchema = new Schema(
     pendingTransaction: {
       type: String,
     },
+    retriedTransactionCount: {
+      type: Number,
+      default: 0
+    },
     secondaryCredits: {
       type: Number,
       default: 0,

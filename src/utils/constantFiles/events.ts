@@ -14,7 +14,7 @@ export const EVENT_TITLE = {
   LEAD_REPORT_ACCEPTED: "Lead Report Accepted",
   LEAD_DATA: "Lead Data",
   ADD_CREDITS: "Add Credits",
-  POST_CODE_UPDATE: "Update post codes",
+  POST_CODE_UPDATE: "Update radius",
   ZERO_CREDITS: "Zero Credits",
   BUSINESS_PHONE_NUMBER: "Business Phone Number",
   DAILY_LEAD_CAP: "Daily Lead Cap",
