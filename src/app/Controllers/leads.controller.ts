@@ -547,7 +547,8 @@ export class LeadsController {
         );
         let reqBody = {
           leadId: lead.leads?.leadId,
-          industry: business?.businessIndustry,
+          // industry: business?.businessIndustry,
+          industry: business?.businessIndustry === "Windows & Doors" ? "Windows" :business?.businessIndustry, // as -676 task
           client: business?.businessName,
           supplier: lead.leads?.sid,
           quantity: 1,
