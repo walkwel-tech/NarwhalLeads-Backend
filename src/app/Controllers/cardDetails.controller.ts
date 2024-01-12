@@ -1121,7 +1121,7 @@ export class CardDetailsControllers {
 
           let message = {
             firstName: userId?.firstName,
-            amount: amount,
+            amount: amount / 100, //Converting back to usd
             cardHolderName: `${userId?.firstName} ${userId?.lastName}`,
             cardNumberEnd: cards?.cardNumber,
             credits: userId?.credits,
