@@ -71,7 +71,6 @@ import { Permissions } from "../Models/Permission";
 import { UpdateEmailBodyValidator } from "../Inputs/updateEmail.input";
 import stripe from "../../utils/payment/stripe/stripeInstance";
 
-
 const ObjectId = mongoose.Types.ObjectId;
 
 const LIMIT = 10;
@@ -463,16 +462,14 @@ export class UsersControllers {
     try {
       const { id } = req.params;
 
-
       const business = req.query.business;
 
       const userMatch: Record<string, any> = {};
 
-
       if (req.user.role === RolesEnum.ACCOUNT_MANAGER) {
         userMatch.accountManager = new ObjectId(req.user._id);
       }
-      const user = await User.findOne ({ _id : req.params.id})
+      const user = await User.findOne({ _id: req.params.id });
       const allowedRoles = [
         RolesEnum.ACCOUNT_ADMIN,
         RolesEnum.ACCOUNT_MANAGER,
@@ -481,8 +478,10 @@ export class UsersControllers {
 
       if (user?.role && allowedRoles.includes(user.role)) {
         return res.json({ data: user });
-      }else{
-        const businessDetails = business ? await BusinessDetails.findById(id) : null;
+      } else {
+        const businessDetails = business
+          ? await BusinessDetails.findById(id)
+          : null;
 
         const users = business
           ? await User.findOne({ businessDetailsId: businessDetails?.id })
@@ -561,7 +560,6 @@ export class UsersControllers {
         .json({ error: { message: "Something went wrong.", err } });
     }
   };
-
 
   static indexName = async (req: Request, res: Response): Promise<Response> => {
     try {
@@ -2029,7 +2027,7 @@ export class UsersControllers {
         // if (user?.credits < credits) {
         amount = credits;
         (params.fixedAmount = amount), (dataToSave.isCredited = true);
-        dataToSave.creditsLeft = user.credits+credits;//@hotfix can have many test cases(Copied logic from develop branch)
+        dataToSave.creditsLeft = user.credits + credits; //@hotfix can have many test cases(Copied logic from develop branch)
         addCreditsToBuyer(params).then(async (res) => {
           const transaction = await Transaction.create(dataToSave);
           const paramPdf: generatePDFParams = {
@@ -2303,14 +2301,14 @@ export class UsersControllers {
         });
       }
 
+      let upCustomer;
       // update email id also at stripe
       if (user.stripeClientId) {
         await stripe.customers.update(user.stripeClientId, {
           email,
         });
+        upCustomer = await stripe.customers.retrieve(user.stripeClientId);
       }
-
-      const upCustomer = await stripe.customers.retrieve(user.stripeClientId);
 
       const updatedUser = await User.findByIdAndUpdate(
         id,

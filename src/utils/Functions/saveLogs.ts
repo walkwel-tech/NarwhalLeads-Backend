@@ -8,6 +8,6 @@ export const saveLogs = async (params: Partial<LogsInterface>) => {
 };
 
 export const saveEventLogs = async (params: Partial<LogsInterface>) => {
-  const data = await EventLogs.create(params);
+  const data = await EventLogs.create({...params, notes: JSON.stringify(params?.notes)});
   return data;
 };
