@@ -3,7 +3,10 @@ import { Request, Response } from "express";
 import { RolesEnum } from "../../types/RolesEnum";
 import { sendEmailToInvitedAdmin } from "../Middlewares/mail";
 import { User } from "../Models/User";
-import { ONBOARDING_KEYS } from "../../utils/constantFiles/OnBoarding.keys";
+import {
+  ONBOARDING_KEYS,
+  ONBOARDING_PERCENTAGE,
+} from "../../utils/constantFiles/OnBoarding.keys";
 import { createCustomerOnRyft } from "../../utils/createCustomer/createOnRyft";
 import {
   BUSINESS_DETAILS,
@@ -36,11 +39,11 @@ export class nonBillableUsersController {
       if (checkExist) {
         return res
           .status(400)
-          .json({ error: { message: "Eamil already exist" } });
+          .json({ error: { message: "Email already exist" } });
       } else {
         const salt = genSaltSync(10);
         const text = randomString(8, true);
-        console.log("🚀 PASSWORD --->", text);
+        console.log("🚀 PASSWORD --->", text, new Date(), "Today's Date");
         const credentials = {
           email: input.email,
           password: text,
@@ -52,12 +55,9 @@ export class nonBillableUsersController {
         const allInvites = await User.findOne({ role: RolesEnum.NON_BILLABLE })
           .sort({ rowIndex: -1 })
           .limit(1);
-        const accManagers = await User.aggregate([
-          { $match: { role: RolesEnum.ACCOUNT_MANAGER } },
-          { $sample: { size: 1 } },
-        ]);
-        let accountManager = accManagers[0];
+
         const dataToSave = {
+          isNewUser: true,
           firstName: input.firstName,
           lastName: input.lastName,
           email: input.email,
@@ -69,7 +69,6 @@ export class nonBillableUsersController {
           //@ts-ignore
           rowIndex: allInvites?.rowIndex + 1 || 0,
           credits: 0,
-          accountManager: accountManager._id,
           isCreditsAndBillingEnabled: false,
           onBoarding: [
             {
@@ -100,6 +99,7 @@ export class nonBillableUsersController {
               dependencies: [],
             },
           ],
+          onBoardingPercentage: ONBOARDING_PERCENTAGE.USER_DETAILS,
         };
 
         const result = await User.create(dataToSave);

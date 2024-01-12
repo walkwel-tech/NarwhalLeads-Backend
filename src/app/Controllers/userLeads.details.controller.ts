@@ -31,6 +31,16 @@ import { ActivityLogs } from "../Models/ActivityLogs";
 import { fullySignupForNonBillableClients } from "../../utils/webhookUrls/fullySignupForNonBillableClients";
 import { cmsUpdateBuyerWebhook } from "../../utils/webhookUrls/cmsUpdateBuyerWebhook";
 import { CardDetails } from "../Models/CardDetails";
+import { EVENT_TITLE } from "../../utils/constantFiles/events";
+import {
+  PostcodeWebhookParams,
+  eventsWebhook,
+} from "../../utils/webhookUrls/eventExpansionWebhook";
+import { UserInterface } from "../../types/UserInterface";
+import { flattenPostalCodes } from "../../utils/Functions/flattenPostcodes";
+import { UserLeadsDetailsInterface } from "../../types/LeadDetailsInterface";
+import { POSTCODE_TYPE } from "../../utils/Enums/postcode.enum";
+import { arraysAreEqual } from "../../utils/Functions/postCodeMatch";
 
 export class UserLeadsController {
   static create = async (req: Request, res: Response) => {
@@ -41,11 +51,13 @@ export class UserLeadsController {
         .json({ error: { message: "User Id is required" } });
     }
     const leadDetailsInput = new UserLeadDetailsInput();
+
     (leadDetailsInput.daily = input.daily),
-      (leadDetailsInput.leadSchedule = input.leadSchedule),
-      (leadDetailsInput.postCodeTargettingList = input.postCodeTargettingList);
+      (leadDetailsInput.leadSchedule = input.leadSchedule);
+    // (leadDetailsInput.postCodeTargettingList = input.postCodeTargettingList);
+
     const errors = await validate(leadDetailsInput);
-    const { onBoarding }: any = await User.findById(input.userId);
+    const { onBoarding }: any = (await User.findById(input.userId)) || {};
     let object = onBoarding || [];
     let array: any = [];
     if (errors.length) {
@@ -110,25 +122,30 @@ export class UserLeadsController {
     }
     // }
     const user: any = await User.findById(input.userId);
-
     let dataToSave: any = {
       userId: input.userId,
       total: input?.total,
       daily: input?.daily,
-      weekly: input?.weekly,
+      weekly: input?.daily * input.leadSchedule.length,
       monthly: input?.monthly,
       leadSchedule: input?.leadSchedule,
       postCodeTargettingList: input?.postCodeTargettingList,
       leadAlertsFrequency: leadsAlertsEnums.INSTANT,
       //@ts-ignore
       dailyLeadCost: input.daily * user?.leadCost,
+      postCodeList: input?.postCodeList,
+      type: input.type,
     };
     try {
       const details = await UserLeadsDetails.create(dataToSave);
-      await User.findByIdAndUpdate(input.userId, {
+      let dataToUpdate = {
         userLeadsDetailsId: details._id,
         onBoardingPercentage: ONBOARDING_PERCENTAGE.LEAD_DETAILS,
-      });
+      };
+      if (user.role === RolesEnum.NON_BILLABLE) {
+        dataToUpdate.onBoardingPercentage = ONBOARDING_PERCENTAGE.CARD_DETAILS;
+      }
+      await User.findByIdAndUpdate(input.userId, dataToUpdate);
       if (
         (checkOnbOardingComplete(user) && !user.registrationMailSentToAdmin) ||
         (user.role === RolesEnum.NON_BILLABLE &&
@@ -186,10 +203,18 @@ export class UserLeadsController {
         };
         addCreditsToBuyer(params)
           .then((_res) => {
-            console.log("free credits added with signup code");
+            console.log(
+              "free credits added with signup code",
+              new Date(),
+              "Today's Date"
+            );
           })
           .catch((error) => {
-            console.log("error during adding free credits with signup code");
+            console.log(
+              "error during adding free credits with signup code",
+              new Date(),
+              "Today's Date"
+            );
           });
       }
       return res.json({ data: details, service });
@@ -282,6 +307,16 @@ export class UserLeadsController {
     const input = req.body;
     delete input._id;
     try {
+      let msg = "Updated successfully.";
+      if (input.leadAlertsFrequency) {
+        msg = "Notifications Updated Successfully";
+      }
+      if (input.sendDataToZapier) {
+        msg = "Webhook URL Updated Successfully";
+      }
+      if (input.smsPhoneNumber) {
+        msg = "SMS Notifications Updated Successfully";
+      }
       const details = await UserLeadsDetails.findById(id);
       const userForActivity = await UserLeadsDetails.findById(
         id,
@@ -315,12 +350,74 @@ export class UserLeadsController {
           new: true,
         }
       );
-      const userAfterMod = await UserLeadsDetails.findById(
-        id,
-        " -_id -userId -createdAt -updatedAt"
-      ).lean();
 
+      const userAfterMod =
+        (await UserLeadsDetails.findById(
+          id,
+          " -_id -userId -createdAt -updatedAt"
+        ).lean()) ?? ({} as UserLeadsDetailsInterface);
       const fields = findUpdatedFields(userForActivity, userAfterMod);
+      if (
+        input.type === POSTCODE_TYPE.RADIUS &&
+        userAfterMod.postCodeTargettingList.length != 0
+      ) {
+        await UserLeadsDetails.findByIdAndUpdate(id, {
+          postCodeTargettingList: [],
+        });
+      }
+
+      if (
+        input.type === POSTCODE_TYPE.MAP &&
+        userAfterMod.postCodeList.length != 0
+      ) {
+        await UserLeadsDetails.findByIdAndUpdate(id, {
+          postCodeList: [],
+          type: POSTCODE_TYPE.MAP,
+        });
+      }
+
+      if (
+        Object.keys(fields.updatedFields).find(
+          (key) => key.startsWith("postCode") || key.startsWith("postcode")
+        ) &&
+        user?.onBoardingPercentage === ONBOARDING_PERCENTAGE.CARD_DETAILS
+      ) {
+        const business = await BusinessDetails.findById(user.businessDetailsId);
+
+        let paramsToSend: PostcodeWebhookParams = {
+          userId: user._id,
+          buyerId: user.buyerId,
+          businessName: business?.businessName,
+          eventCode: EVENT_TITLE.POST_CODE_UPDATE,
+        };
+        if (userAfterMod.type === POSTCODE_TYPE.RADIUS) {
+          (paramsToSend.type = POSTCODE_TYPE.RADIUS),
+            (paramsToSend.postcode = userAfterMod.postCodeList);
+        } else {
+          paramsToSend.postCodeList = flattenPostalCodes(
+            userAfterMod?.postCodeTargettingList
+          );
+        }
+        await eventsWebhook(paramsToSend)
+          .then(() =>
+            console.log(
+              "event webhook for postcode updates hits successfully.",
+              paramsToSend,
+              new Date(),
+              "Today's Date"
+            )
+          )
+          .catch((err) =>
+            console.log(
+              err,
+              "error while triggering postcode updates webhooks failed",
+              paramsToSend,
+              new Date(),
+              "Today's Date"
+            )
+          );
+      }
+
       const userr = await User.findOne({ userLeadsDetailsId: req.params.id });
       const isEmpty = Object.keys(fields.updatedFields).length === 0;
 
@@ -342,10 +439,93 @@ export class UserLeadsController {
         input,
         { new: true }
       );
-      if (input.daily) {
-        await UserLeadsDetails.findByIdAndUpdate(id, {
-          dailyLeadCost: user?.leadCost * input.daily,
-        });
+      const lead = await UserLeadsDetails.findById(id);
+      const userId = lead?.userId;
+      const business = await BusinessDetails.findById(user.businessDetailsId);
+      if (
+        input.leadSchedule &&
+        !arraysAreEqual(input.leadSchedule, details.leadSchedule) &&
+        user?.onBoardingPercentage === ONBOARDING_PERCENTAGE.CARD_DETAILS
+      ) {
+        let paramsToSend: PostcodeWebhookParams = {
+          userId: user?._id,
+          buyerId: user?.buyerId,
+          businessName: business?.businessName,
+          eventCode: EVENT_TITLE.LEAD_SCHEDULE_UPDATE,
+
+          leadSchedule: userAfterMod?.leadSchedule,
+        };
+        if (userAfterMod.type === POSTCODE_TYPE.RADIUS) {
+          (paramsToSend.type = POSTCODE_TYPE.RADIUS),
+            (paramsToSend.postcode = userAfterMod.postCodeList);
+        } else {
+          paramsToSend.postCodeList = flattenPostalCodes(
+            userAfterMod?.postCodeTargettingList
+          );
+        }
+        await eventsWebhook(paramsToSend)
+          .then(() =>
+            console.log(
+              "event webhook for postcode updates hits successfully.",
+              paramsToSend
+            )
+          )
+          .catch((err) =>
+            console.log(
+              err,
+              "error while triggering postcode updates webhooks failed",
+              paramsToSend
+            )
+          );
+      }
+
+      if (
+       input.daily && input.daily != details?.daily &&
+        userId &&
+        user?.onBoardingPercentage === ONBOARDING_PERCENTAGE.CARD_DETAILS
+      ) {
+        const user =
+          (await User.findById(userId).populate("businessDetailsId")) ??
+          ({} as UserInterface);
+        if (user && user.leadCost !== undefined) {
+          await UserLeadsDetails.findByIdAndUpdate(id, {
+            dailyLeadCost: user.leadCost ?? 0 * input.daily,
+            weekly: input?.daily * input.leadSchedule.length,
+          });
+        }
+        const business = await BusinessDetails.findById(
+          user?.businessDetailsId
+        );
+        let paramsToSend: PostcodeWebhookParams = {
+          userId: user?._id,
+          buyerId: user?.buyerId,
+          businessName: business?.businessName,
+          eventCode: EVENT_TITLE.DAILY_LEAD_CAP,
+
+          dailyLeadCap: userAfterMod?.daily,
+        };
+        if (userAfterMod.type === POSTCODE_TYPE.RADIUS) {
+          (paramsToSend.type = POSTCODE_TYPE.RADIUS),
+            (paramsToSend.postcode = userAfterMod.postCodeList);
+        } else {
+          paramsToSend.postCodeList = flattenPostalCodes(
+            userAfterMod?.postCodeTargettingList
+          );
+        }
+        await eventsWebhook(paramsToSend)
+          .then(() =>
+            console.log(
+              "event webhook for postcode updates hits successfully.",
+              paramsToSend
+            )
+          )
+          .catch((err) =>
+            console.log(
+              err,
+              "error while triggering postcode updates webhooks failed",
+              paramsToSend
+            )
+          );
       }
       if (data) {
         const updatedDetails = await UserLeadsDetails.findById(id);
@@ -413,7 +593,7 @@ export class UserLeadsController {
         cmsUpdateBuyerWebhook(userr?.id, card?.id);
         return res.json({
           data: {
-            message: "UserLeadsDetails updated successfully.",
+            message: msg,
             data: updatedDetails,
             service,
           },

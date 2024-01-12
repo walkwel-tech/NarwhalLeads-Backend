@@ -4,17 +4,14 @@ import { freeCreditsLinkInterface } from "../../types/FreeCreditsLinkInterface";
 import { UserInterface } from "../../types/UserInterface";
 import { ObjectId } from "mongodb";
 import { LINK_FILTERS } from "../../utils/Enums/promoLink.enum";
-
-let alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
-
-function randomString(length: number) {
-  let result = "";
-  for (let i = 0; i < length; ++i) {
-    result += alphabet[Math.floor(alphabet.length * Math.random())];
-  }
-  return result;
-}
-
+import { RolesEnum } from "../../types/RolesEnum";
+import { randomString } from "../../utils/Functions/randomString";
+import { Types } from "mongoose";
+type Filter = {
+  isDisabled: Boolean;
+  isDeleted: Boolean;
+  accountManager?: Types.ObjectId;
+};
 export class freeCreditsLinkController {
   static create = async (req: Request, res: Response): Promise<any> => {
     try {
@@ -30,6 +27,8 @@ export class freeCreditsLinkController {
         useCounts: 0,
         name: input.name,
         accountManager: input.accountManager,
+        isCommission: input?.isCommission,
+        businessIndustryId: input?.businessIndustryId,
       };
       if (input.code) {
         dataToSave.code = input.code;
@@ -58,7 +57,7 @@ export class freeCreditsLinkController {
           .json({ error: { message: "Top-up amount is required" } });
       }
     } catch (error) {
-      console.log(error);
+      console.log(error, new Date(), "Today's Date");
       res
         .status(500)
         .json({ error: { message: "something Went wrong.", error } });
@@ -88,6 +87,9 @@ export class freeCreditsLinkController {
     if (req.query.accountManager) {
       dataToFind.accountManager = new ObjectId(req.query.accountManager);
     }
+    if (req.user.role === RolesEnum.ACCOUNT_MANAGER) {
+      dataToFind.accountManager = req.user._id;
+    }
     try {
       let query = await FreeCreditsLink.aggregate([
         { $match: dataToFind },
@@ -116,6 +118,14 @@ export class freeCreditsLinkController {
           },
         },
         {
+          $lookup: {
+            from: "buisnessindustries", // Replace with the actual name of your "BusinessDetails" collection
+            localField: "businessIndustryId",
+            foreignField: "_id",
+            as: "businessIndustryId",
+          },
+        },
+        {
           $sort: { createdAt: -1 },
         },
         {
@@ -133,8 +143,10 @@ export class freeCreditsLinkController {
             createdAt: 1,
             updatedAt: 1,
             isDeleted: 1,
+            isCommission: 1,
             accountManager: 1,
             __v: 1,
+            businessIndustryId: 1,
             users: {
               $mergeObjects: [
                 {
@@ -143,17 +155,7 @@ export class freeCreditsLinkController {
                       input: "$usersData",
                       as: "user",
                       in: {
-                        $mergeObjects: [
-                          "$$user",
-                          // {
-                          //   createdAt: {
-                          //     $dateToString: {
-                          //       format: "%d/%m/%Y", // Define your desired format here
-                          //       date: "$$user.createdAt", // Replace "createdAt" with your actual field name
-                          //     },
-                          //   },
-                          // },
-                        ],
+                        $mergeObjects: ["$$user"],
                       },
                     },
                   },
@@ -174,7 +176,6 @@ export class freeCreditsLinkController {
           const businessName = businessDetails
             ? businessDetails.businessName
             : "";
-
           return {
             _id: user._id,
             firstName: user.firstName,
@@ -182,6 +183,7 @@ export class freeCreditsLinkController {
             email: user.email,
             businessName: businessName,
             createdAt: user.createdAt,
+
             // Add other properties you need from the user object
           };
         });
@@ -200,16 +202,17 @@ export class freeCreditsLinkController {
           updatedAt: item.updatedAt,
           __v: item.__v,
           users: usersData,
-          accountManager: undefined,
+          accountManager: "",
+          businessIndustryId: item?.businessIndustryId[0]?.industry,
+          isCommission: item?.isCommission,
         };
         if (item.accountManager.length > 0) {
-          dataToShow.accountManager =
-            (item.accountManager[0]?.firstName || "") +
-            (item.accountManager[0]?.lastName || "");
+          dataToShow.accountManager = `${
+            item.accountManager[0]?.firstName || ""
+          } ${item.accountManager[0]?.lastName || ""}`;
         }
         return dataToShow;
       });
-
       return res.json({
         data: transformedData,
       });
@@ -252,14 +255,18 @@ export class freeCreditsLinkController {
 
   static stats = async (_req: any, res: Response) => {
     try {
-      const active = await FreeCreditsLink.find({
-        isDisabled: false,
-        isDeleted: false,
-      }).count();
-      const paused = await FreeCreditsLink.find({
+      let dataToFindActive: Filter = { isDisabled: false, isDeleted: false };
+
+      let dataToFindInActive: Filter = {
         isDisabled: true,
         isDeleted: false,
-      }).count();
+      };
+      if (_req.user.role === RolesEnum.ACCOUNT_MANAGER) {
+        dataToFindActive.accountManager = _req.user._id;
+        dataToFindInActive.accountManager = _req.user._id;
+      }
+      const active = await FreeCreditsLink.find(dataToFindActive).count();
+      const paused = await FreeCreditsLink.find(dataToFindInActive).count();
 
       const dataToShow = {
         liveLinks: active,

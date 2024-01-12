@@ -8,6 +8,7 @@ import { MODULE, PERMISSIONS } from "../utils/Enums/permissions.enum";
 const auth: Router = Router();
 auth.get("/map", AuthController.showMapFile);
 auth.get("/map/ireland", AuthController.showMapFileForIreland);
+auth.get("/code", AuthController.promoLink);
 // auth.get('/mapForLabel',AuthController.showMapFileForLabel)
 auth.get(
   "/",
@@ -21,9 +22,7 @@ auth.get(
   checkPermissions([{ module: MODULE.PROFILE, permission: PERMISSIONS.READ }]),
   AuthController.me
 );
-auth.patch("/test", AuthController.test);
 auth.post("/register", AuthController.register);
-auth.post("/return-url", AuthController.returnUrlApi);
 auth.post(
   "/activeUser/:id",
   OnlyAdmins,
@@ -37,6 +36,8 @@ auth.post("/login", AuthController.login);
 auth.post("/adminLogin", AuthController.adminLogin);
 auth.post("/checkUser", AuthController.checkUser);
 auth.post("/forgetPassword", AuthController.forgetPassword);
+auth.post("/changeClientPassword",OnlyAdmins, AuthController.updateClientPassword);
+
 auth.get(
   "/user-status/:id",
   OnlyAdmins,
@@ -44,5 +45,6 @@ auth.get(
   AuthController.userStatus
 );
 auth.post("/createOnRyft", Auth, AuthController.createCustomerOnRyft);
+auth.get("/impersonate/:id", Auth, AuthController.impersonate);
 
 export default auth;

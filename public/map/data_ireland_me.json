@@ -1,0 +1,310 @@
+[
+    {
+        "Postcode": "LH",
+        "county": "Louth",
+        "PostcodeDistrict": [
+            "A92",
+            "A91"
+        ]
+    },
+    {
+        "Postcode": "WW",
+        "county": "Wicklow",
+        "PostcodeDistrict": [
+            "Y14",
+            "A98",
+            "A63",
+            "A63",
+            "A63",
+            "A63",
+            "A63",
+            "A67",
+            "A67"
+        ]
+    },
+    {
+        "Postcode": "MH",
+        "county": "Meath",
+        "PostcodeDistrict": [
+            "A84",
+            "A86",
+            "A85",
+            "R45",
+            "A83",
+            "A82",
+            "A92",
+            "C15",
+            "A85",
+            "A83"
+        ]
+    },
+    {
+        "Postcode": "GY",
+        "county": "Galway",
+        "PostcodeDistrict": [
+            "H65",
+            "H53",
+            "H71",
+            "H91",
+            "H62",
+            "H54"
+        ]
+    },
+    {
+        "Postcode": "WH",
+        "county": "Westmeath",
+        "PostcodeDistrict": [
+            "N37",
+            "N91"
+        ]
+    },
+    {
+        "Postcode": "KE",
+        "county": "Kildare",
+        "PostcodeDistrict": [
+            "R14",
+            "R56",
+            "R51",
+            "W23",
+            "W34",
+            "W91",
+            "W12"
+        ]
+    },
+    {
+        "Postcode": "DN",
+        "county": "Dublin",
+        "PostcodeDistrict": [
+            "K32",
+            "A41",
+            "A94",
+            "A94",
+            "D01",
+            "D02",
+            "D03",
+            "D04",
+            "D05",
+            "D06",
+            "D6W",
+            "D07",
+            "D08",
+            "D09",
+            "D10",
+            "D11",
+            "D12",
+            "D13",
+            "D14",
+            "D15",
+            "D16",
+            "D17",
+            "D18",
+            "D20",
+            "D22",
+            "D24",
+            "A42",
+            "A96",
+            "K78",
+            "K45",
+            "K36",
+            "A94",
+            "A45",
+            "K56",
+            "K34",
+            "K67"
+        ]
+    },
+    {
+        "Postcode": "MO",
+        "county": "Mayo",
+        "PostcodeDistrict": [
+            "F26",
+            "F31",
+            "F35",
+            "F23",
+            "F12",
+            "F28"
+        ]
+    },
+    {
+        "Postcode": "CK",
+        "county": "Cork",
+        "PostcodeDistrict": [
+            "P31",
+            "P72",
+            "P75",
+            "P43",
+            "P56",
+            "P85",
+            "P24",
+            "T12",
+            "T23",
+            "P14",
+            "P32",
+            "P47",
+            "T56",
+            "T34",
+            "P61",
+            "P17",
+            "T45",
+            "P12",
+            "P51",
+            "P25",
+            "P67",
+            "P81",
+            "P36"
+        ]
+    },
+    {
+        "Postcode": "MN",
+        "county": "Monaghan",
+        "PostcodeDistrict": [
+            "A75",
+            "A81",
+            "A75",
+            "H23",
+            "H18"
+        ]
+    },
+    {
+        "Postcode": "SO",
+        "county": "Sligo",
+        "PostcodeDistrict": [
+            "F56",
+            "F91"
+        ]
+    },
+    {
+        "Postcode": "CN",
+        "county": "Cavan",
+        "PostcodeDistrict": [
+            "H14",
+            "H12",
+            "H16",
+            "A82",
+            "A82"
+        ]
+    },
+    {
+        "Postcode": "OY",
+        "county": "Offaly",
+        "PostcodeDistrict": [
+            "R42",
+            "R35"
+        ]
+    },
+    {
+        "Postcode": "RN",
+        "county": "Roscommon",
+        "PostcodeDistrict": [
+            "F52",
+            "F45",
+            "F42"
+        ]
+    },
+    {
+        "Postcode": "KY",
+        "county": "Kerry",
+        "PostcodeDistrict": [
+            "V23",
+            "V93",
+            "V31",
+            "V92"
+        ]
+    },
+    {
+        "Postcode": "TY",
+        "county": "Tipperary",
+        "PostcodeDistrict": [
+            "E21",
+            "E32",
+            "E25",
+            "E91",
+            "E45",
+            "E53",
+            "E41",
+            "E34"
+        ]
+    },
+    {
+        "Postcode": "CW",
+        "county": "Carlow",
+        "PostcodeDistrict": [
+            "R93",
+            "R21"
+        ]
+    },
+    {
+        "Postcode": "LM",
+        "county": "Leitrim",
+        "PostcodeDistrict": [
+            "N41"
+        ]
+    },
+    {
+        "Postcode": "DL",
+        "county": "Donegal",
+        "PostcodeDistrict": [
+            "F94",
+            "F92",
+            "F93"
+        ]
+    },
+    {
+        "Postcode": "WD",
+        "county": "Waterford",
+        "PostcodeDistrict": [
+            "X35",
+            "X42",
+            "X91"
+        ]
+    },
+    {
+        "Postcode": "CE",
+        "county": "Clare",
+        "PostcodeDistrict": [
+            "V95",
+            "V15",
+            "V14"
+        ]
+    },
+    {
+        "Postcode": "WX",
+        "county": "Wexford",
+        "PostcodeDistrict": [
+            "Y21",
+            "Y25",
+            "Y34",
+            "Y35"
+        ]
+    },
+    {
+        "Postcode": "KK",
+        "county": "Kilkenny",
+        "PostcodeDistrict": [
+            "R95"
+        ]
+    },
+    {
+        "Postcode": "LK",
+        "county": "Limerick",
+        "PostcodeDistrict": [
+            "V35",
+            "V94",
+            "V42"
+        ]
+    },
+    {
+        "Postcode": "LD",
+        "county": "Longford",
+        "PostcodeDistrict": [
+            "N39"
+        ]
+    },
+    {
+        "Postcode": "LS",
+        "county": "Laois",
+        "PostcodeDistrict": [
+            "R32"
+        ]
+    }
+]

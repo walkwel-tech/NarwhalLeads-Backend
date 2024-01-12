@@ -1,5 +1,18 @@
 import { Schema, Types } from "mongoose";
 
+const PostCodeSchema = new Schema(
+  {
+    postcode: {
+      type: String,
+      default: "",
+    },
+    miles: {
+      type: String,
+      default: "",
+    },
+  },
+  { _id: false }
+);
 const UserLeadsDetailsSchema = new Schema(
   {
     userId: {
@@ -38,9 +51,9 @@ const UserLeadsDetailsSchema = new Schema(
       type: String,
       default: "",
     },
-    sendDataToZapier: { 
-      type: Boolean ,
-      default:false,
+    sendDataToZapier: {
+      type: Boolean,
+      default: false,
     },
     postCodeTargettingList: {
       type: Array,
@@ -52,7 +65,12 @@ const UserLeadsDetailsSchema = new Schema(
     deletedAt: {
       type: Date,
       default: null,
-    }
+    },
+    postCodeList: [PostCodeSchema],
+    type: {
+      type: String,
+      default: "",
+    },
   },
 
   { timestamps: true }

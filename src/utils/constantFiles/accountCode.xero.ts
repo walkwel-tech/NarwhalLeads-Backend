@@ -1,0 +1,6 @@
+export const ACCOUNT_CODE = {
+  GBP: "214",
+  USA: "216",
+  EURO: "217",
+  SECONDARY_CREDITS_MANUAL_ADJUSTMENT: "213",
+};

@@ -1,57 +1,51 @@
 export const order = [
   {
-    originalName: "firstname",
+    originalName: "received",
     isVisible: true,
     index: 0,
-    displayName:"First Name"
+    displayName: "Date",
+  },
+
+  {
+    originalName: "firstname",
+    isVisible: true,
+    index: 1,
+    displayName: "First Name",
   },
   {
     originalName: "lastname",
     isVisible: true,
-    index: 1,
-    displayName:"Last Name"
+    index: 2,
+    displayName: "Last Name",
   },
   {
     originalName: "phone1",
     isVisible: true,
-    index: 2,
-    displayName:"Phone Number"
+    index: 4,
+    displayName: "Phone Number",
   },
   {
     originalName: "email",
     isVisible: true,
     index: 3,
-    displayName:"Email"
-  },
-  {
-    originalName: "street",
-    isVisible: true,
-    index: 4,
-    displayName:"Street Address"
+    displayName: "Email",
   },
   {
     originalName: "postcode",
     isVisible: true,
     index: 5,
-    displayName:"Postcode"
+    displayName: "Postcode",
   },
   {
     originalName: "leadid",
     isVisible: true,
     index: 6,
-    displayName:"Lead ID"
+    displayName: "Lead ID",
   },
   {
     originalName: "sid",
     isVisible: true,
     index: 7,
-    displayName:"SID"
+    displayName: "SID",
   },
-  {
-    originalName: "recieved",
-    isVisible: true,
-    index: 8,
-    displayName:"Date"
-  }
-]
-
+];

@@ -1,0 +1,1 @@
+export const ROUND_TABLE_MANAGER = "roundTableManager"

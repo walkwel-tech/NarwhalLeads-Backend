@@ -20,6 +20,19 @@ const BuisnessIndustriesSchema = new Schema(
       type: Object,
       default: json,
     },
+    isDeleted: {
+      type: Boolean,
+      default: false,
+    },
+    deletedAt: {
+      type: Date,
+    },
+    associatedCurrency: {
+      type: String,
+    },
+    country: {
+      type: String,
+    },
   },
   { timestamps: true }
 );

@@ -19,6 +19,7 @@ export const TEMPLATES_ID = {
   OUT_OF_FUNDS: "d-3045292d88954e578d2ba9a875724b90",
   INVITED_ACCOUNT_MANAGER: "d-6d0be07496084fdcbf78a0be22651fb3",
   USER_25_PERCENT_SIGNUP: "d-d39ac61c21a84352b80dabd6a3d0f238",
+  AUTO_CHARGE_STATUS_REQUIRE_ACTION: "d-a07cce9600444e78a7f94cc38b89df6e",
 };
 
 export const TEMPLATES_TITLE = {
@@ -42,4 +43,11 @@ export const TEMPLATES_TITLE = {
   OUT_OF_FUNDS: "outOfFunds",
   INVITED_ACCOUNT_MANAGER: "invitedAccountManager",
   USER_25_PERCENT_SIGNUP: "user25PercentSignup",
+  AUTO_CHARGE_STATUS_REQUIRE_ACTION: "autoChargeStatusRequireAction",
+};
+
+export const CURRENCY_SIGN = {
+  GBP: "£",
+  EUR: "Є",
+  USD: "$",
 };

@@ -24,4 +24,8 @@ export const MODULE = {
   LEADS_CSV: "leadsCSVFile",
   CLIENTS_CSV: "clientsCSVFile",
   TERMS_AND_CONDITIONS: "termsAndConditions",
+  CLIENT_MANAGE: "client_manage",
+  DASHBOARD_CSV: "dashboardCSVFile",
+  REPORTED_LEADS: "reportedLeads",
+  PARTNERS: "partners",
 };

@@ -13,7 +13,7 @@ export default function OnlyAdminOrUserLogin(
   return passport.authenticate(
     "jwt",
     { session: false },
-    (err:any, payload: UserInterface) => {
+    (err: any, payload: UserInterface) => {
       if (err) {
         return res
           .status(500)
@@ -22,16 +22,18 @@ export default function OnlyAdminOrUserLogin(
 
       if (!payload) {
         return res
-          .status(401)  
+          .status(401)
           .json({ error: { message: "Invalid Token. Access Denied!" } });
       }
 
-      if (payload.role !== "admin" && payload.id !== userId && payload.role !== RolesEnum.SUPER_ADMIN) {
-        return res
-          .status(401)
-          .json({
-            error: { message: "You dont't have access to this resource.!" },
-          });
+      if (
+        payload.role !== "admin" &&
+        payload.id !== userId &&
+        payload.role !== RolesEnum.SUPER_ADMIN
+      ) {
+        return res.status(401).json({
+          error: { message: "You dont't have access to this resource.!" },
+        });
       }
 
       req.user = payload;

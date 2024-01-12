@@ -53,8 +53,16 @@ export const createContactOnXero = (
           email: paramsToCreateContact.emailAddress,
         };
         createNotesOnXero(params, token)
-          .then(() => console.log("notes added on xero"))
-          .catch((err) => console.log("error while adding notes on xero."));
+          .then(() =>
+            console.log("notes added on xero", new Date(), "Today's Date")
+          )
+          .catch((err) =>
+            console.log(
+              "error while adding notes on xero.",
+              new Date(),
+              "Today's Date"
+            )
+          );
         const logsData = {
           userId: user?.id,
           registrationId: data?.data?.Contacts[0]?.ContactID,
@@ -65,7 +73,12 @@ export const createContactOnXero = (
         resolve(data);
       })
       .catch(async (err) => {
-        console.log("Xero Error", err?.response?.data);
+        console.log(
+          "Xero Error",
+          err?.response?.data,
+          new Date(),
+          "Today's Date"
+        );
         const logsData = {
           userId: user?.id,
           registrationId: REGISTRATION_IDS.NO_REGISTRATION_IDS,
@@ -133,7 +146,7 @@ export const refreshTokenOld = () => {
     };
     axios(config)
       .then(async (data) => {
-        console.log("token updated");
+        console.log("token updated", new Date(), "Today's Date");
         await AccessToken.updateMany(
           {},
           {
@@ -147,7 +160,7 @@ export const refreshTokenOld = () => {
         resolve(data);
       })
       .catch((err) => {
-        console.log("error", err.response?.data);
+        console.log("error", err.response?.data, new Date(), "Today's Date");
         // reject(err)
       });
   });

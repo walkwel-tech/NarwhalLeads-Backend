@@ -26,6 +26,7 @@ export class invitedUsersController {
       const checkExist = await User.findOne({
         invitedById: currentUser?.id,
         email: input.email,
+        isDeleted: false,
       });
       if (checkExist) {
         return res
@@ -54,7 +55,7 @@ export class invitedUsersController {
       } else {
         const salt = genSaltSync(10);
         const text = randomString(8, true);
-        console.log("🚀 PASSWORD --->", text);
+        console.log("🚀 PASSWORD --->", text, new Date(), "Today's Date");
         const credentials = {
           email: input.email,
           password: text,
@@ -86,6 +87,7 @@ export class invitedUsersController {
           //@ts-ignore
           rowIndex: allInvites?.rowIndex + 1 || 0,
           credits: user?.credits,
+          leadCost: user?.leadCost,
         };
 
         const data = await User.create(dataToSave);
@@ -150,9 +152,6 @@ export class invitedUsersController {
         .skip(skip)
         .limit(perPage);
 
-      // if (invitedUsers.length == 0) {
-      // return res.json({ error: { message: "No Data Found" } });
-      // } else {
       return res.json({ data: invitedUsers });
       // }
     } catch (error) {
@@ -287,7 +286,6 @@ export class invitedUsersController {
       dataToFind = {
         ...dataToFind,
         $or: [
-          //$options : 'i' used for case insensitivity search
           { email: { $regex: _req.query.search, $options: "i" } },
           { firstName: { $regex: _req.query.search, $options: "i" } },
           { lastName: { $regex: _req.query.search, $options: "i" } },
@@ -301,11 +299,7 @@ export class invitedUsersController {
         .skip(skip)
         .limit(perPage);
 
-      // if (invitedUsers.length == 0) {
-      // return res.json({ error: { message: "No Data Found" } });
-      // } else {
       return res.json({ data: invitedUsers });
-      // }
     } catch (error) {
       return res
         .status(500)
@@ -334,6 +328,8 @@ export class invitedUsersController {
               RolesEnum.ACCOUNT_MANAGER,
               RolesEnum.NON_BILLABLE,
               RolesEnum.INVITED,
+              RolesEnum.ACCOUNT_ADMIN,
+
             ],
           },
         });
@@ -349,7 +345,7 @@ export class invitedUsersController {
             password: text,
           };
           const hashPassword = hashSync(text, salt);
-          console.log("password", text);
+          console.log("password", text, new Date(), "Today's Date");
           input.password = hashPassword;
           sendEmailToInvitedAdmin(input.email, dataToSend);
           const permission = await Permissions.findOne({
@@ -375,6 +371,7 @@ export class invitedUsersController {
             userId: data.id,
           });
           const show = await User.findById(data.id, "-password");
+
           return res.json({ data: show });
         }
       } else if (input.role === RolesEnum.ACCOUNT_MANAGER) {
@@ -382,7 +379,18 @@ export class invitedUsersController {
         const data = await User.find({
           email: input.email,
           isDeleted: false,
-          role: RolesEnum.ACCOUNT_MANAGER,
+          role: {
+            $in: [
+              RolesEnum.ADMIN,
+              RolesEnum.USER,
+              RolesEnum.SUBSCRIBER,
+              RolesEnum.SUPER_ADMIN,
+              RolesEnum.ACCOUNT_MANAGER,
+              RolesEnum.NON_BILLABLE,
+              RolesEnum.INVITED,
+              RolesEnum.ACCOUNT_ADMIN,
+            ],
+          },
         });
         if (data.length > 0) {
           return res
@@ -396,7 +404,7 @@ export class invitedUsersController {
             password: text,
           };
           const hashPassword = hashSync(text, salt);
-          console.log("password", text);
+          console.log("password", text, new Date(), "Today's Date");
           input.password = hashPassword;
           sendEmailToInvitedAccountManager(input.email, dataToSend);
           const permission = await Permissions.findOne({
@@ -423,10 +431,59 @@ export class invitedUsersController {
             userId: data.id,
           });
           const show = await User.findById(data.id, "-password");
+
+          
           return res.json({ data: show });
         }
       }
-      return;
+      else if (input.role === RolesEnum.ACCOUNT_ADMIN) {
+          input.role = RolesEnum.ACCOUNT_ADMIN;
+          input.isAccountAdmin = true;
+          const data = await User.find({
+            email: input.email,
+            isDeleted: false,
+            role: {
+              $in: [
+                RolesEnum.ADMIN,
+                RolesEnum.USER,
+                RolesEnum.SUBSCRIBER,
+                RolesEnum.SUPER_ADMIN,
+                RolesEnum.ACCOUNT_MANAGER,
+                RolesEnum.NON_BILLABLE,
+                RolesEnum.INVITED,
+                RolesEnum.ACCOUNT_ADMIN,
+  
+              ],
+            },
+          });
+          if (data.length > 0) {
+            return res
+              .status(400)
+              .json({ error: { message: "Email already exist" } });
+          } else {
+            const salt = genSaltSync(10);
+            const text = randomString(8, true);
+            const dataToSend = {
+              name: `${input.firstName} ${input.lastName}`,
+              password: text,
+            };
+            const hashPassword = hashSync(text, salt);
+            console.log("password", text, new Date(), "Today's Date");
+            input.password = hashPassword;
+            sendEmailToInvitedAdmin(input.email, dataToSend);
+            const permission = await Permissions.findOne({
+              role: RolesEnum.ACCOUNT_ADMIN,
+            });
+            input.permissions = permission?.permissions;
+            const data = await User.create(input);
+
+            const show = await User.findById(data.id, "-password");
+
+            return res.json({ data: show });
+          }
+        }
+        return;
+      
     } catch (error) {
       return res
         .status(500)
@@ -467,13 +524,12 @@ export class invitedUsersController {
       perPage;
     let dataToFind: any = {
       isDeleted: false,
-      role: { $in: [RolesEnum.ADMIN, RolesEnum.ACCOUNT_MANAGER] },
+      role: { $in: [RolesEnum.ADMIN, RolesEnum.ACCOUNT_MANAGER, RolesEnum.ACCOUNT_ADMIN]},
     };
     if (_req.query.search) {
       dataToFind = {
         ...dataToFind,
         $or: [
-          //$options : 'i' used for case insensitivity search
           { email: { $regex: _req.query.search, $options: "i" } },
           { firstName: { $regex: _req.query.search, $options: "i" } },
           { lastName: { $regex: _req.query.search, $options: "i" } },

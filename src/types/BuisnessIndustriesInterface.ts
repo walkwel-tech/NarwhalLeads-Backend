@@ -7,4 +7,7 @@ export interface BuisnessIndustriesInterface extends Document {
   columns: columnsObjects[];
   isActive: boolean;
   json: Object;
+  isDeleted: boolean;
+  associatedCurrency: string;
+  country: string;
 }

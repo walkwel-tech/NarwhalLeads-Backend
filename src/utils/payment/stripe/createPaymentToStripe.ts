@@ -4,21 +4,38 @@ import { User } from "../../../app/Models/User";
 import { CARD } from "../../Enums/cardType.enum";
 import { TRANSACTION_STATUS } from "../../Enums/transaction.status.enum";
 import { transactionTitle } from "../../Enums/transaction.title.enum";
+import { SRIPE_CONSTANT } from "../../constantFiles/stripeConstants";
 import { IntentInterface } from "./paymentIntent";
 import axios from "axios";
 const qs = require("qs");
 const POST = "post";
-export const createPaymentOnStrip = async (params: IntentInterface) => {
+export const createPaymentOnStripe = async (
+  params: IntentInterface,
+  isAutoCharge: boolean
+) => {
   return new Promise((resolve, reject) => {
-    let data = qs.stringify({
-      amount: params.amount,
-      currency: process.env.CURRENCY,
-      automatic_payment_methods: { enabled: true },
-      customer: params.customer,
-      return_url: process.env.RETURN_URL,
-      confirm: true,
-      payment_method: params.paymentMethod,
-    });
+    let data;
+    if (isAutoCharge) {
+      data = qs.stringify({
+        amount: Math.ceil(params.amount || 0),
+        currency: params.currency,
+        customer: params.customer,
+        confirm: true,
+        payment_method: params.paymentMethod,
+        setup_future_usage: SRIPE_CONSTANT.OFF_SESSION,
+        return_url: process.env.RETURN_URL,
+      });
+    } else {
+      data = qs.stringify({
+        amount: Math.ceil(params.amount || 0),
+        currency: params.currency,
+        automatic_payment_methods: { enabled: true },
+        customer: params.customer,
+        return_url: process.env.RETURN_URL,
+        confirm: true,
+        payment_method: params.paymentMethod,
+              });
+    }
 
     let config = {
       method: POST,
@@ -30,7 +47,6 @@ export const createPaymentOnStrip = async (params: IntentInterface) => {
       },
       data: data,
     };
-
     axios
       .request(config)
       .then(async (response: any) => {
@@ -39,6 +55,7 @@ export const createPaymentOnStrip = async (params: IntentInterface) => {
         });
         const card = await CardDetails.findOne({
           paymentMethod: response?.data?.payment_method,
+          isDeleted: false,
         });
         await Transaction.create({
           userId: user?.id,
@@ -58,6 +75,7 @@ export const createPaymentOnStrip = async (params: IntentInterface) => {
         });
         const card = await CardDetails.findOne({
           paymentMethod: params.paymentMethod,
+          isDeleted: false,
         });
         await Transaction.create({
           userId: user?.id,

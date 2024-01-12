@@ -27,13 +27,25 @@ const upload = multer({
   ),
   limits: { fileSize: maxSize },
 });
+
+
+user.post("/autoCharge/:id", Auth, UsersControllers.autoChargeNow);
+
 user.post(
   "/account-manager/stats",
-  OnlyAdmins,
   checkPermissions([
     { module: MODULE.DASHBOARD, permission: PERMISSIONS.READ },
   ]),
   UsersControllers.accountManagerStats
+);
+
+user.post(
+  "/update-email/:id",
+  OnlyAdmins,
+  checkPermissions([
+    { module: MODULE.CLIENTS, permission: PERMISSIONS.UPDATE },
+  ]),
+  UsersControllers.updateEmail
 );
 
 user.post(
@@ -44,6 +56,7 @@ user.post(
   ]),
   UsersControllers.userCreditsManualAdjustment
 );
+
 user.post(
   "/:id",
   Auth,
@@ -54,6 +67,7 @@ user.post(
   fileSizeLimitErrorHandler,
   UsersControllers.update
 );
+
 user.get(
   "/invoices",
   Auth,
@@ -92,7 +106,7 @@ user.get(
 
 user.get(
   "/export-csv-file",
-  OnlyAdmins,
+  Auth,
   checkPermissions([
     { module: MODULE.CLIENTS_CSV, permission: PERMISSIONS.READ },
   ]),
@@ -124,5 +138,7 @@ user.delete(
   ]),
   UsersControllers.destroy
 );
+
+user.post("/test-lead/:id", Auth, UsersControllers.sendTestLeadData);
 
 export default user;

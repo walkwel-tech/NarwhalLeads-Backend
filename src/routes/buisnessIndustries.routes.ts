@@ -4,9 +4,10 @@ import { Auth, OnlyAdmins } from "../app/Middlewares";
 import { checkPermissions } from "../app/Middlewares/roleBasedAuthentication";
 import { MODULE, PERMISSIONS } from "../utils/Enums/permissions.enum";
 const industry: Router = Router();
+industry.get("/currency", Auth, IndustryController.getCurrency);
 industry.post(
   "/:id",
-  OnlyAdmins,
+  Auth,
   checkPermissions([
     { module: MODULE.BUSINESS_INDUSTRIES, permission: PERMISSIONS.UPDATE },
   ]),
@@ -38,7 +39,7 @@ industry.get(
 );
 industry.get(
   "/stats",
-  OnlyAdmins,
+  Auth,
   checkPermissions([
     { module: MODULE.BUSINESS_INDUSTRIES, permission: PERMISSIONS.READ },
   ]),

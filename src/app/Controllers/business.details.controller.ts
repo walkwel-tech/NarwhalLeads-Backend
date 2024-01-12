@@ -46,6 +46,10 @@ import { AccessTokenInterface } from "../../types/AccessTokenInterface";
 import { CreateCustomerInput } from "../Inputs/createCustomerOnRyft&Lead.inputs";
 import { cmsUpdateBuyerWebhook } from "../../utils/webhookUrls/cmsUpdateBuyerWebhook";
 import { CardDetails } from "../Models/CardDetails";
+import { eventsWebhook } from "../../utils/webhookUrls/eventExpansionWebhook";
+import { EVENT_TITLE } from "../../utils/constantFiles/events";
+import { DEFAULT } from "../../utils/constantFiles/user.default.values";
+import { INTERNATIONAL_CODE } from "../../utils/constantFiles/internationalCode";
 
 const ObjectId = mongoose.Types.ObjectId;
 
@@ -58,6 +62,7 @@ export class BusinessDetailsController {
         .status(400)
         .json({ error: { message: "User Id is required" } });
     }
+
     const Business = new BusinessDetailsInput();
     (Business.businessIndustry = input.businessIndustry),
       (Business.businessName = input.businessName),
@@ -65,17 +70,27 @@ export class BusinessDetailsController {
       (Business.address1 = input.address1),
       (Business.businessCity = input.businessCity),
       (Business.businessPostCode = input.businessPostCode);
+      (Business.businessMobilePrefixCode = input.businessMobilePrefixCode);
+      
     Business.businessOpeningHours = JSON.parse(input?.businessOpeningHours);
     const errors = await validate(Business);
     const isBusinessNameExist = await BusinessDetails.find({
       businessName: input.businessName,
+      isDeleted: false,
     });
+
     if (isBusinessNameExist.length > 0) {
       return res
         .status(400)
         .json({ error: { message: "Business Name Already Exists." } });
     }
-    const { onBoarding }: any = await User.findById(input.userId);
+    const user = await User.findById(input.userId);
+
+if (!user) {
+  return res.status(404).json({ error: { message: "User not found." } });
+}
+
+const { onBoarding }: any = user || {};
     let object = onBoarding || [];
     let array: any = [];
     if (errors.length) {
@@ -137,6 +152,7 @@ export class BusinessDetailsController {
         address2: input?.address2,
         businessCity: Business?.businessCity,
         businessPostCode: Business?.businessPostCode,
+        businessMobilePrefixCode: Business?.businessMobilePrefixCode,
         businessOpeningHours: JSON.parse(input?.businessOpeningHours),
         // businessOpeningHours: (input?.businessOpeningHours),
       };
@@ -153,7 +169,11 @@ export class BusinessDetailsController {
         businessDetailsId: new ObjectId(userData._id),
         leadCost: industry?.leadCost,
         businessIndustryId: industry?.id,
+        currency: industry.associatedCurrency,
+        country: industry.country,
         onBoardingPercentage: ONBOARDING_PERCENTAGE.BUSINESS_DETAILS,
+        autoChargeAmount: DEFAULT.AUTO_CHARGE_AMOUNT * industry?.leadCost,
+        triggerAmount: DEFAULT.TRIGGER_AMOUT * industry?.leadCost,
       });
       const user: UserInterface =
         (await User.findById(input.userId)) ?? ({} as UserInterface);
@@ -199,12 +219,20 @@ export class BusinessDetailsController {
             },
             { new: true }
           );
-          console.log("success in creating contact");
+          console.log(
+            "success in creating contact",
+            new Date(),
+            "Today's Date"
+          );
         })
         .catch((err) => {
           refreshToken()
             .then(async (res: any) => {
-              console.log("Token updated while creating customer!!!");
+              console.log(
+                "Token updated while creating customer!!!",
+                new Date(),
+                "Today's Date"
+              );
               createContactOnXero(paramsToCreateContact, res.data.access_token)
                 .then(async (res: any) => {
                   await User.findOneAndUpdate(
@@ -217,18 +245,26 @@ export class BusinessDetailsController {
                     },
                     { new: true }
                   );
-                  console.log("success in creating contact");
+                  console.log(
+                    "success in creating contact",
+                    new Date(),
+                    "Today's Date"
+                  );
                 })
                 .catch((error) => {
                   console.log(
-                    "error in creating customer after token updation."
+                    "error in creating customer after token updation.",
+                    new Date(),
+                    "Today's Date"
                   );
                 });
             })
             .catch((err) => {
               console.log(
                 "error in creating contact on xero",
-                err.response.data
+                err.response.data,
+                new Date(),
+                "Today's Date"
               );
             });
         });
@@ -289,10 +325,14 @@ export class BusinessDetailsController {
       if (!paramsObj) {
         createCustomersOnRyftAndLeadByte(params)
           .then(() => {
-            console.log("Customer created!!!!");
+            console.log("Customer created!!!!", new Date(), "Today's Date");
           })
           .catch((err) => {
-            console.log("error while creating customer");
+            console.log(
+              "error while creating customer",
+              new Date(),
+              "Today's Date"
+            );
           });
       }
     } catch (error) {
@@ -310,7 +350,47 @@ export class BusinessDetailsController {
     const input = req.body;
 
     try {
-      const details = await BusinessDetails.findOne({ _id: new ObjectId(id) });
+      const user = await User.findOne({ businessDetailsId: id });
+
+      const details =
+        (await BusinessDetails.findOne({ _id: new ObjectId(id) })) ??
+        ({} as BusinessDetailsInterface);
+      if (
+        input.businessSalesNumber &&
+        user?.onBoardingPercentage === ONBOARDING_PERCENTAGE.CARD_DETAILS
+      ) {
+        await BusinessDetails.findByIdAndUpdate(
+          id,
+          { businessSalesNumber: input.businessSalesNumber },
+          { new: true }
+        );
+
+        let reqBody = {
+          userId: user?._id,
+          bid: user?.buyerId,
+          businessName: details?.businessName,
+          businessSalesNumber: INTERNATIONAL_CODE + input.businessSalesNumber,
+          eventCode: EVENT_TITLE.BUSINESS_PHONE_NUMBER,
+        };
+        await eventsWebhook(reqBody)
+          .then(() =>
+            console.log(
+              "event webhook for updating business phone number hits successfully.",
+              reqBody,
+              new Date(),
+              "Today's Date"
+            )
+          )
+          .catch((err) =>
+            console.log(
+              err,
+              "error while triggering business phone number webhooks failed",
+              reqBody,
+              new Date(),
+              "Today's Date"
+            )
+          );
+      }
       const userForActivity = await BusinessDetails.findById(
         id,
         " -_id -createdAt -updatedAt"
@@ -322,6 +402,7 @@ export class BusinessDetailsController {
           .json({ error: { message: "details does not exists." } });
       }
       let userData = await User.findOne({ businessDetailsId: id });
+
       if (input.businessOpeningHours) {
         input.businessOpeningHours = JSON.parse(input.businessOpeningHours);
       }
@@ -330,6 +411,7 @@ export class BusinessDetailsController {
         // if (userData?.registrationMailSentToAdmin) {
         const businesses = await BusinessDetails.find({
           businessName: input.businessName,
+          isDeleted: false,
         });
         if (businesses.length > 0) {
           let array: mongoose.Types.ObjectId[] = [];
@@ -358,6 +440,7 @@ export class BusinessDetailsController {
         );
         // }
       }
+
       if ((req.file || {}).filename) {
         input.businessLogo = `${FileEnum.PROFILEIMAGE}${req?.file?.filename}`;
       }
@@ -367,6 +450,8 @@ export class BusinessDetailsController {
         });
         await User.findByIdAndUpdate(userData?.id, {
           leadCost: industry?.leadCost,
+          currency: industry?.associatedCurrency,
+          country: industry?.country,
         });
         await LeadTablePreference.findOneAndUpdate(
           { userId: userData?.id },
@@ -641,6 +726,7 @@ export class BusinessDetailsController {
     Business.businessOpeningHours = JSON.parse(input?.businessOpeningHours);
     const isBusinessNameExist = await BusinessDetails.findOne({
       businessName: input.businessName,
+      isDeleted: false,
     });
     const user: UserInterface =
       (await User.findById(input.userId)) ?? ({} as UserInterface);
@@ -748,10 +834,14 @@ export class BusinessDetailsController {
       if (!paramsObj) {
         createCustomerOnLeadByte(params)
           .then(() => {
-            console.log("Customer created!!!!");
+            console.log("Customer created!!!!", new Date(), "Today's Date");
           })
           .catch((ERR) => {
-            console.log("error while creating customer");
+            console.log(
+              "error while creating customer",
+              new Date(),
+              "Today's Date"
+            );
           });
       }
     } catch (error) {

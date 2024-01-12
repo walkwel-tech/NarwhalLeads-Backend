@@ -22,7 +22,7 @@ export default function Auth(req: Request, res: Response, next: NextFunction) {
           .json({ error: { message: "Invalid Token. Access Denied!" } });
       }
       if (!tokenUser?.isActive) {
-        return res.status(401).json({ error: { message: "User not Active!" } });
+        return res.status(409).json({ error: { message: "User not Active!" } });
       }
       if (tokenUser?.isDeleted) {
         return res.status(401).json({

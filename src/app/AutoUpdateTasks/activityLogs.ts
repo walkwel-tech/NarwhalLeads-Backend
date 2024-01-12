@@ -1,19 +1,11 @@
 import { ActivityLogsInterface } from "../../types/ActivityLogInterface";
-import {
-  BusinessDetailsInterface,
-  isBusinessObject,
-} from "../../types/BusinessInterface";
+
 import { UserInterface } from "../../types/UserInterface";
 import { activityLogsWebhookUrl } from "../../utils/webhookUrls/activityLogsWebhook";
 import { ActivityLogs } from "../Models/ActivityLogs";
+import { BusinessDetails } from "../Models/BusinessDetails";
 import { User } from "../Models/User";
 import * as cron from "node-cron";
-
-type UserPromise = {
-  buyerId: string | null;
-  businessName: string | null;
-  updatedValue: string | null;
-};
 
 export const activityLogs = async () => {
   cron.schedule("*/10 * * * *", async () => {
@@ -24,7 +16,7 @@ export const activityLogs = async () => {
     const activity = await ActivityLogs.find({
       createdAt: { $gte: tenMinutesAgo, $lt: currentTime },
     });
-    const userDataPromises: Array<Promise<UserPromise>> = activity.map(
+    const userDataPromises = activity.map(
       async (activity: ActivityLogsInterface) => {
         const user: UserInterface =
           (await User.findOne({
@@ -32,34 +24,54 @@ export const activityLogs = async () => {
             isSignUpCompleteWithCredit: true,
             isDeleted: false,
           }).populate("businessDetailsId")) ?? ({} as UserInterface);
-
-        const userBusiness: BusinessDetailsInterface | null = isBusinessObject(
+        const userBusiness = await BusinessDetails.findById(
           user.businessDetailsId
-        )
-          ? user.businessDetailsId
-          : null;
-
-        return (
-          user.id !== null
-            ? {
-                buyerId: user.buyerId,
-                businessName: userBusiness?.businessName ?? "",
-                updatedValues: activity.modifiedValues,
-              }
-            : {
-                buyerId: null,
-                businessName: null,
-                updatedValue: null,
-              }
-        ) as UserPromise;
+        );
+        return {
+          buyerId: user.buyerId,
+          businessName: userBusiness?.businessName,
+          updatedValues: activity.modifiedValues,
+        };
       }
     );
 
     const userData = await Promise.all(userDataPromises);
     if (userData.length > 0) {
-      await activityLogsWebhookUrl(userData);
+      const data = transformData(userData);
+      await activityLogsWebhookUrl(data);
     } else {
-      console.log("No Data Found for 10 minutes activity logs");
+      console.log(
+        "No Data Found for 10 minutes activity logs",
+        new Date(),
+        "Today's Date"
+      );
     }
   });
 };
+interface User {
+  buyerId: string;
+  businessName?: string;
+  updatedValues: Array<{ [key: string]: any }>;
+}
+
+function transformData(input: User[]): any[] {
+  const groupedData: { [key: string]: any } = {};
+
+  input.forEach((user) => {
+    const buyerId = user.buyerId;
+    if (!groupedData[buyerId]) {
+      groupedData[buyerId] = {
+        buyerId: user.buyerId,
+        businessName: user.businessName,
+      };
+    }
+
+    user.updatedValues.forEach((updatedValue) => {
+      for (const key in updatedValue) {
+        groupedData[buyerId][key] = updatedValue[key];
+      }
+    });
+  });
+
+  return Object.values(groupedData);
+}

@@ -38,16 +38,3 @@ export const mailForTotalLeadsInDay = async () => {
     Promise.all(data);
   });
 };
-
-// export const outOfFunds = async () => {
-//   // cron.schedule("2 */24 * * *", async () => {
-
-//   const users = await User.find({ role: RolesEnum.USER, credits: 0 });
-//   users.map((user: UserInterface) => {
-//     sendEmailForOutOfFunds(user.email, {
-//       name: user.firstName + " " + user.lastName,
-//       credits: user.credits,
-//     });
-//   });
-//   // });
-// };

@@ -8,7 +8,10 @@ import { paymentMethodEnum } from "../../utils/Enums/payment.method.enum";
 import { sort } from "../../utils/Enums/sorting.enum";
 import { transactionTitle } from "../../utils/Enums/transaction.title.enum";
 import { refreshToken } from "../../utils/XeroApiIntegration/createContact";
-import { generatePDF } from "../../utils/XeroApiIntegration/generatePDF";
+import {
+  generatePDF,
+  generatePDFParams,
+} from "../../utils/XeroApiIntegration/generatePDF";
 import { RegisterInput } from "../Inputs/Register.input";
 import { sendEmailForUpdatedDetails } from "../Middlewares/mail";
 import { BusinessDetails } from "../Models/BusinessDetails";
@@ -35,6 +38,39 @@ import { addCreditsToBuyer } from "../../utils/payment/addBuyerCredit";
 import { TransactionInterface } from "../../types/TransactionInterface";
 import { InvoiceInterface } from "../../types/InvoiceInterface";
 import { cmsUpdateBuyerWebhook } from "../../utils/webhookUrls/cmsUpdateBuyerWebhook";
+import {
+  ONBOARDING_KEYS,
+  ONBOARDING_PERCENTAGE,
+} from "../../utils/constantFiles/OnBoarding.keys";
+import { CARD_DETAILS } from "../../utils/constantFiles/signupFields";
+import { BuisnessIndustries } from "../Models/BuisnessIndustries";
+import { sendLeadDataToZap } from "../../utils/webhookUrls/sendDataZap";
+
+import {
+  BusinessDetailsInterface,
+  isBusinessObject,
+} from "../../types/BusinessInterface";
+import { UserLeadsDetailsInterface } from "../../types/LeadDetailsInterface";
+import {
+  PostcodeWebhookParams,
+  eventsWebhook,
+} from "../../utils/webhookUrls/eventExpansionWebhook";
+import { EVENT_TITLE } from "../../utils/constantFiles/events";
+import { flattenPostalCodes } from "../../utils/Functions/flattenPostcodes";
+import {
+  topUpUserForPaymentMethod,
+  getUserPaymentMethods,
+  getUsersWithAutoChargeEnabled,
+} from "../AutoUpdateTasks/autoCharge";
+import { AUTO_UPDATED_TASKS } from "../../utils/Enums/autoUpdatedTasks.enum";
+import { AutoUpdatedTasksLogs } from "../Models/AutoChargeLogs";
+import { POSTCODE_TYPE } from "../../utils/Enums/postcode.enum";
+import { arraysAreEqual } from "../../utils/Functions/postCodeMatch";
+import { PermissionInterface } from "../../types/PermissionsInterface";
+import { Permissions } from "../Models/Permission";
+import { UpdateEmailBodyValidator } from "../Inputs/updateEmail.input";
+import stripe from "../../utils/payment/stripe/stripeInstance";
+
 const ObjectId = mongoose.Types.ObjectId;
 
 const LIMIT = 10;
@@ -45,6 +81,13 @@ interface DataObject {
 type RoleFilter = {
   $in: (RolesEnum.USER | RolesEnum.NON_BILLABLE)[];
 };
+
+type FindOptions = {
+  isDeleted: boolean;
+  role: RoleFilter;
+  accountManager?: Types.ObjectId;
+};
+
 export class UsersControllers {
   static create = async (req: Request, res: Response): Promise<Response> => {
     const input = req.body;
@@ -56,7 +99,6 @@ export class UsersControllers {
     registerInput.password = input.password;
 
     const errors = await validate(registerInput);
-
     if (errors.length) {
       const errorsInfo: ValidationErrorResponse[] = errors.map((error) => ({
         property: error.property,
@@ -122,9 +164,7 @@ export class UsersControllers {
 
   static index = async (_req: any, res: Response): Promise<Response> => {
     try {
-      let sortingOrder = _req.query.sortBy
-        ? JSON.parse(_req.query.sortBy)[0]?.order || sort.DESC
-        : "";
+      let sortingOrder = _req.query.sortingOrder || sort.DESC;
 
       let filter = _req.query.clientType;
       let accountManagerBoolean = _req.query.accountManager;
@@ -162,7 +202,7 @@ export class UsersControllers {
             RolesEnum.ADMIN,
             RolesEnum.INVITED,
             RolesEnum.SUPER_ADMIN,
-            RolesEnum.ACCOUNT_MANAGER,
+            // RolesEnum.ACCOUNT_MANAGER,
             RolesEnum.SUBSCRIBER,
           ],
         },
@@ -174,13 +214,32 @@ export class UsersControllers {
         dataToFind.role = { $in: [RolesEnum.NON_BILLABLE, RolesEnum.USER] };
       }
       if (filter === FILTER_FOR_CLIENT.BILLABLE && !accountManagerBoolean) {
-        dataToFind.role = { $in: [RolesEnum.USER] };
+        // dataToFind.role = { $in: [RolesEnum.USER] };
+        dataToFind.isCreditsAndBillingEnabled = true;
       }
       if (filter === FILTER_FOR_CLIENT.NON_BILLABLE && !accountManagerBoolean) {
-        dataToFind.role = { $in: [RolesEnum.NON_BILLABLE] };
+        // dataToFind.role = { $in: [RolesEnum.NON_BILLABLE] };
+        dataToFind.isCreditsAndBillingEnabled = false;
       }
+      // if (accountManagerBoolean) {
+      //   dataToFind.role = { $in: [RolesEnum.ACCOUNT_MANAGER, RolesEnum.ACCOUNT_ADMIN] };
+      //   dataToFind.isActive = true;
+      // }
       if (accountManagerBoolean) {
-        dataToFind.role = RolesEnum.ACCOUNT_MANAGER;
+        dataToFind.permissions = {
+          $elemMatch: {
+            module: "client_manage",
+            permission: { $in: ["create", "read", "update", "delete"] },
+          },
+        };
+
+        dataToFind.isActive = true;
+      }
+      if (
+        accountManagerBoolean &&
+        _req.user.role === RolesEnum.ACCOUNT_MANAGER
+      ) {
+        dataToFind._id = new ObjectId(_req.user._id);
       }
       if (_req.query.isActive) {
         dataToFind.isActive = JSON.parse(isActive?.toLowerCase());
@@ -195,7 +254,10 @@ export class UsersControllers {
       if (accountManagerId != "" && accountManagerId) {
         dataToFind.accountManager = new ObjectId(_req.query.accountManagerId);
       }
-      if (_req.user.role === RolesEnum.ACCOUNT_MANAGER) {
+      if (
+        _req.user.role === RolesEnum.ACCOUNT_MANAGER &&
+        !accountManagerBoolean
+      ) {
         dataToFind.accountManager = new ObjectId(_req.user._id);
       }
       if (_req.query.search) {
@@ -331,6 +393,31 @@ export class UsersControllers {
         //@ts-ignore
         pipeline[0].$facet.results.push({ $limit: perPage });
       }
+      if (
+        _req.query.onBoardingPercentage &&
+        _req.query.onBoardingPercentage != "all" &&
+        !accountManagerBoolean === true
+      ) {
+        dataToFind.onBoardingPercentage = parseInt(
+          _req.query.onBoardingPercentage
+        );
+      }
+
+      if (
+        _req.query.onBoardingPercentage &&
+        _req.query.onBoardingPercentage === "all" &&
+        !accountManagerBoolean === true
+      ) {
+        dataToFind.onBoardingPercentage = {
+          $in: [
+            ONBOARDING_PERCENTAGE.BUSINESS_DETAILS,
+            ONBOARDING_PERCENTAGE.USER_DETAILS,
+            ONBOARDING_PERCENTAGE.LEAD_DETAILS,
+            ONBOARDING_PERCENTAGE.CARD_DETAILS,
+          ],
+        };
+      }
+
       const [query]: any = await User.aggregate(pipeline);
       query.results.map((item: any) => {
         let businessDetailsId = Object.assign({}, item["businessDetailsId"][0]);
@@ -346,6 +433,7 @@ export class UsersControllers {
         item.businessDetailsId.daily = item.userLeadsDetailsId.daily;
         item.accountManager =
           (item.accountManager[0]?.firstName || "") +
+          " " +
           (item.accountManager[0]?.lastName || "");
       });
 
@@ -371,134 +459,100 @@ export class UsersControllers {
   };
 
   static show = async (req: any, res: Response): Promise<Response> => {
-    const { id } = req.params;
-    const business = req.query.business;
-    let query;
     try {
-      if (business) {
-        const business = await BusinessDetails.findById(id);
-        let dataTpFind: Record<string, string | Types.ObjectId> = {
-          businessDetailsId: business?.id,
-        };
-        if (req.user.role === RolesEnum.ACCOUNT_MANAGER) {
-          dataTpFind.accountManager = new ObjectId(req.user._id);
-        }
-        const users = await User.findOne({ businessDetailsId: business?.id });
-        [query] = await User.aggregate([
-          {
-            $facet: {
-              results: [
-                {
-                  $lookup: {
-                    from: "businessdetails",
-                    localField: "businessDetailsId",
-                    foreignField: "_id",
-                    as: "businessDetailsId",
-                  },
-                },
-                {
-                  $lookup: {
-                    from: "users",
-                    localField: "accountManager",
-                    foreignField: "_id",
-                    as: "accountManager",
-                  },
-                },
-                {
-                  $unwind: "$accountManager",
-                },
-                {
-                  $lookup: {
-                    from: "userleadsdetails",
-                    localField: "userLeadsDetailsId",
-                    foreignField: "_id",
-                    as: "userLeadsDetailsId",
-                  },
-                },
-                {
-                  $lookup: {
-                    from: "carddetails",
-                    localField: "_id",
-                    foreignField: "userId",
-                    as: "cardDetailsId",
-                  },
-                },
-                { $match: { _id: new ObjectId(users?.id) } },
-              ],
-            },
-          },
-        ]);
-        query.results.map((item: any) => {
-          delete item.password;
-          let businessDetailsId = Object.assign(
-            {},
-            item["businessDetailsId"][0]
-          );
-          let cardDetailsId = Object.assign({}, item["cardDetailsId"][0]);
-          let userLeadsDetailsId = Object.assign(
-            {},
-            item["userLeadsDetailsId"][0]
-          );
-          item.userLeadsDetailsId = userLeadsDetailsId;
-          item.businessDetailsId = businessDetailsId;
-          item.cardDetailsId = cardDetailsId;
-          item.accountManager =
-            item.accountManager.firstName +
-            (item.accountManager.lastName || "");
-        });
+      const { id } = req.params;
 
-        return res.json({ data: query.results[0] });
+      const business = req.query.business;
+
+      const userMatch: Record<string, any> = {};
+
+      if (req.user.role === RolesEnum.ACCOUNT_MANAGER) {
+        userMatch.accountManager = new ObjectId(req.user._id);
+      }
+      const user = await User.findOne({ _id: req.params.id });
+      const allowedRoles = [
+        RolesEnum.ACCOUNT_ADMIN,
+        RolesEnum.ACCOUNT_MANAGER,
+        RolesEnum.ADMIN,
+      ];
+
+      if (user?.role && allowedRoles.includes(user.role)) {
+        return res.json({ data: user });
       } else {
-        [query] = await User.aggregate([
+        const businessDetails = business
+          ? await BusinessDetails.findById(id)
+          : null;
+
+        const users = business
+          ? await User.findOne({ businessDetailsId: businessDetails?.id })
+          : null;
+
+        const matchId = business ? new ObjectId(users?.id) : new ObjectId(id);
+
+        const query = await User.aggregate([
           {
-            $facet: {
-              results: [
-                {
-                  $lookup: {
-                    from: "businessdetails",
-                    localField: "businessDetailsId",
-                    foreignField: "_id",
-                    as: "businessDetailsId",
-                  },
-                },
-                {
-                  $lookup: {
-                    from: "userleadsdetails",
-                    localField: "userLeadsDetailsId",
-                    foreignField: "_id",
-                    as: "userLeadsDetailsId",
-                  },
-                },
-                {
-                  $lookup: {
-                    from: "carddetails",
-                    localField: "_id",
-                    foreignField: "userId",
-                    as: "cardDetailsId",
-                  },
-                },
-                { $match: { _id: new ObjectId(id) } },
-              ],
+            $match: {
+              _id: matchId,
+              ...userMatch,
+            },
+          },
+          {
+            $lookup: {
+              from: "businessdetails",
+              localField: "businessDetailsId",
+              foreignField: "_id",
+              as: "businessDetailsId",
+            },
+          },
+          {
+            $lookup: {
+              from: "users",
+              localField: "accountManager",
+              foreignField: "_id",
+              as: "accountManager",
+            },
+          },
+          {
+            $unwind: "$accountManager",
+          },
+          {
+            $lookup: {
+              from: "userleadsdetails",
+              localField: "userLeadsDetailsId",
+              foreignField: "_id",
+              as: "userLeadsDetailsId",
+            },
+          },
+          {
+            $lookup: {
+              from: "carddetails",
+              localField: "_id",
+              foreignField: "userId",
+              as: "cardDetailsId",
             },
           },
         ]);
-        query.results.map((item: any) => {
-          delete item.password;
-          let businessDetailsId = Object.assign(
-            {},
-            item["businessDetailsId"][0]
-          );
-          let cardDetailsId = Object.assign({}, item["cardDetailsId"][0]);
-          let userLeadsDetailsId = Object.assign(
-            {},
-            item["userLeadsDetailsId"][0]
-          );
-          item.userLeadsDetailsId = userLeadsDetailsId;
-          item.businessDetailsId = businessDetailsId;
-          item.cardDetailsId = cardDetailsId;
-        });
 
-        return res.json({ data: query.results[0] });
+        if (query.length > 0) {
+          const result = query[0];
+          delete result.password;
+          result.businessDetailsId = Object.assign(
+            {},
+            result.businessDetailsId[0]
+          );
+          result.cardDetailsId = Object.assign({}, result.cardDetailsId[0]);
+          result.userLeadsDetailsId = Object.assign(
+            {},
+            result.userLeadsDetailsId[0]
+          );
+          result.accountManager = `${result?.accountManager?.firstName} ${
+            result?.accountManager?.lastName || ""
+          }`;
+
+          return res.json({ data: result });
+        } else {
+          return res.json({ data: [] });
+        }
       }
     } catch (err) {
       return res
@@ -509,9 +563,19 @@ export class UsersControllers {
 
   static indexName = async (req: Request, res: Response): Promise<Response> => {
     try {
+      let user: Partial<UserInterface> = req.user ?? ({} as UserInterface);
+      let dataToFind: FindOptions = {
+        isDeleted: false,
+        role: { $in: [RolesEnum.USER, RolesEnum.NON_BILLABLE] },
+      };
+      if (user?.role === RolesEnum.ACCOUNT_MANAGER) {
+        dataToFind.accountManager = new ObjectId(user._id);
+      }
       const business = await User.aggregate(
         [
-          { $match: { isDeleted: false, role: RolesEnum.USER } },
+          {
+            $match: dataToFind,
+          },
           {
             $lookup: {
               from: "businessdetails",
@@ -557,42 +621,84 @@ export class UsersControllers {
   };
 
   static update = async (req: Request, res: Response): Promise<any> => {
+    let user: Partial<UserInterface> = req.user ?? ({} as UserInterface);
     const { id } = req.params;
     const input = req.body;
+    const checkUser =
+      (await User.findById(id)
+        .populate("businessDetailsId")
+        .populate("userLeadsDetailsId")) ?? ({} as UserInterface);
     if (input.password) {
-      // @ts-ignore
       delete input.password;
     }
-    // @ts-ignore
-    if (input.credits && req?.user.role == RolesEnum.USER) {
-      // @ts-ignore
+    if (!checkUser) {
+      return res
+        .status(404)
+        .json({ success: false, message: "User not found." });
+    }
+
+    let dataToUpdate: { [key: string]: any } = {};
+
+    if (
+      checkUser.role === RolesEnum.ACCOUNT_ADMIN &&
+      input.isAccountAdmin === false
+    ) {
+      dataToUpdate = {
+        ...dataToUpdate,
+        role: RolesEnum.ADMIN,
+        isAccountAdmin: false,
+      };
+    }
+
+    if (input.isAccountAdmin) {
+      dataToUpdate = {
+        ...dataToUpdate,
+        role: RolesEnum.ACCOUNT_ADMIN,
+        isAccountAdmin: true,
+      };
+    }
+    const newRolePermissions: PermissionInterface | null =
+      await Permissions.findOne({
+        role: dataToUpdate.role,
+      });
+
+    if (newRolePermissions) {
+      dataToUpdate.permissions = newRolePermissions.permissions;
+    }
+    await User.findByIdAndUpdate(checkUser.id, dataToUpdate, { new: true });
+
+    if (input.credits && user.role == RolesEnum.USER) {
       delete input.credits;
     }
 
-    if (
-      // @ts-ignore
-      req?.user.role === RolesEnum.USER &&
-      (input.email || input.email == "")
-    ) {
-      // @ts-ignore
-      input.email = req.user?.email;
+    if (user.role === RolesEnum.USER && (input.email || input.email == "")) {
+      input.email = user?.email;
+    }
+    if (user.role === RolesEnum.SUPER_ADMIN && input.email) {
+      const email = await User.findOne({
+        email: input.email,
+        isDeleted: false,
+      });
+      if (email && checkUser.email != email.email) {
+        return res.status(400).json({
+          error: {
+            message: "Email already registered with another user",
+          },
+        });
+      }
     }
 
     try {
-      const checkUser = await User.findById(id);
       const businesBeforeUpdate = await BusinessDetails.findById(
         checkUser?.businessDetailsId
       );
-      // const userLeadDetailsBeforeUpdate=await UserLeadsDetails.findById(checkUser?.userLeadsDetailsId)
       const userForActivity = await User.findById(
         id,
-        " -_id -businessDetailsId -businessIndustryId -userLeadsDetailsId -onBoarding -createdAt -updatedAt"
+        " -__v -_id -businessDetailsId -businessIndustryId -userLeadsDetailsId -userServiceId -accountManager -onBoarding -createdAt -updatedAt -password"
       ).lean();
       if (
         input.paymentMethod === paymentMethodEnum.WEEKLY_PAYMENT_METHOD &&
-        // checkUser?.paymentMethod == paymentMethodEnum.WEEKLY_PAYMENT_METHOD
-        //@ts-ignore
-        req.user?.role === RolesEnum.USER
+        user?.role === RolesEnum.USER
       ) {
         return res.status(403).json({
           error: {
@@ -602,14 +708,12 @@ export class UsersControllers {
         });
       }
       if (
-        // @ts-ignore
         (input.buyerId ||
           input.leadCost ||
           input.ryftClientId ||
           input.xeroContactId ||
           input.role) &&
-        //@ts-ignore
-        req.user?.role == RolesEnum.USER
+        user?.role == RolesEnum.USER
       ) {
         return res
           .status(403)
@@ -617,15 +721,141 @@ export class UsersControllers {
       }
       if (
         input.paymentMethod &&
-        // @ts-ignore
         checkUser?.paymentMethod == paymentMethodEnum.WEEKLY_PAYMENT_METHOD &&
-        // @ts-ignore
-        req.user?.role === RolesEnum.USER
+        user?.role === RolesEnum.USER
       ) {
         return res.status(403).json({
           error: { message: "Please contact admin to change payment method" },
         });
       }
+
+      if (
+        input.isCreditsAndBillingEnabled === false &&
+        checkUser?.role === RolesEnum.USER
+      ) {
+        let object = checkUser.onBoarding;
+        object.map((fields) => {
+          if (fields.key === ONBOARDING_KEYS.CARD_DETAILS) {
+            fields.pendingFields = [];
+          }
+        });
+        await User.findByIdAndUpdate(checkUser?.id, {
+          isCreditsAndBillingEnabled: false,
+          onBoarding: object,
+        });
+      }
+      if (
+        input.isCreditsAndBillingEnabled === true &&
+        checkUser?.role === RolesEnum.NON_BILLABLE
+      ) {
+        let object = checkUser.onBoarding;
+
+        if (!areAllPendingFieldsEmpty(object)) {
+          object.map((fields) => {
+            if (fields.key === ONBOARDING_KEYS.CARD_DETAILS) {
+              fields.pendingFields = [CARD_DETAILS.CARD_NUMBER];
+            }
+          });
+          await User.findByIdAndUpdate(checkUser?.id, {
+            isCreditsAndBillingEnabled: false,
+            onBoarding: object,
+          });
+        }
+      }
+
+      if (
+        (input.secondaryLeadCost && !input.secondaryLeads) ||
+        (!input.secondaryLeadCost && input.secondaryLeads)
+      ) {
+        return res.status(400).json({
+          error: {
+            message: "Please enter secondary leads and secondary lead cost",
+          },
+        });
+      }
+      let secondaryLeadsAnticipating: number;
+      if (input.secondaryLeads) {
+        secondaryLeadsAnticipating =
+          input.secondaryLeads * input.secondaryLeadCost;
+        let dataSave = {
+          secondaryLeadCost: input.secondaryLeadCost,
+          secondaryCredits: secondaryLeadsAnticipating,
+          isSecondaryUsage: true,
+          secondaryLeads: input.secondaryLeads,
+        };
+
+        if (
+          input?.secondaryLeadCost &&
+          secondaryLeadsAnticipating < input?.secondaryLeadCost
+        ) {
+          dataSave.isSecondaryUsage = false;
+        }
+        await User.findByIdAndUpdate(checkUser?.id, dataSave, {
+          new: true,
+        });
+
+        let dataToSave: Partial<TransactionInterface> = {
+          userId: checkUser.id,
+          amount: secondaryLeadsAnticipating,
+          status: PAYMENT_STATUS.CAPTURED,
+          title: transactionTitle.SECONDARY_CREDITS_MANUAL_ADJUSTMENT,
+          isCredited: true,
+          creditsLeft: secondaryLeadsAnticipating,
+        };
+        // if (user?.credits < credits) {
+        let transaction = await Transaction.create(dataToSave);
+        console.log("transaction", transaction);
+        const paramPdf: generatePDFParams = {
+          ContactID: checkUser?.xeroContactId,
+          desc: transactionTitle.CREDITS_ADDED,
+          amount: secondaryLeadsAnticipating,
+          freeCredits: 0,
+          sessionId: transactionTitle.SECONDARY_CREDITS_MANUAL_ADJUSTMENT,
+          isManualAdjustment: false,
+        };
+        generatePDF(paramPdf)
+          .then(async (res: any) => {
+            const dataToSaveInInvoice: Partial<InvoiceInterface> = {
+              userId: checkUser?.id,
+              transactionId: transaction.id,
+              price: secondaryLeadsAnticipating,
+              invoiceId: res.data.Invoices[0].InvoiceID,
+            };
+            await Invoice.create(dataToSaveInInvoice);
+            await Transaction.findByIdAndUpdate(transaction.id, {
+              invoiceId: res.data.Invoices[0].InvoiceID,
+            });
+
+            console.log("pdf generated");
+          })
+          .catch(async (err) => {
+            refreshToken().then(async (res) => {
+              const paramPdf: generatePDFParams = {
+                ContactID: checkUser?.xeroContactId,
+                desc: transactionTitle.CREDITS_ADDED,
+                amount: secondaryLeadsAnticipating,
+                freeCredits: 0,
+                sessionId: transactionTitle.SECONDARY_CREDITS_MANUAL_ADJUSTMENT,
+                isManualAdjustment: false,
+              };
+              generatePDF(paramPdf).then(async (res: any) => {
+                const dataToSaveInInvoice: Partial<InvoiceInterface> = {
+                  userId: checkUser?.id,
+                  transactionId: transaction.id,
+                  price: secondaryLeadsAnticipating,
+                  invoiceId: res.data.Invoices[0].InvoiceID,
+                };
+                await Invoice.create(dataToSaveInInvoice);
+                await Transaction.findByIdAndUpdate(transaction.id, {
+                  invoiceId: res.data.Invoices[0].InvoiceID,
+                });
+
+                console.log("pdf generated");
+              });
+            });
+          });
+      }
+
       if (input.smsPhoneNumber) {
         const userExist = await User.findOne({
           smsPhoneNumber: input.smsPhoneNumber,
@@ -645,6 +875,7 @@ export class UsersControllers {
           });
         }
       }
+
       if (!checkUser) {
         return res
           .status(404)
@@ -654,17 +885,15 @@ export class UsersControllers {
       const cardExist = await CardDetails.findOne({
         userId: checkUser?._id,
         isDefault: true,
+        isDeleted: false,
       });
 
       if (
         !cardExist &&
         input.credits &&
-        //@ts-ignore
-        (req?.user.role == RolesEnum.USER ||
-          //@ts-ignore
-          req?.user.role == RolesEnum.ADMIN ||
-          //@ts-ignore
-          req?.user.role == RolesEnum.SUPER_ADMIN)
+        (user.role == RolesEnum.USER ||
+          user.role == RolesEnum.ADMIN ||
+          user.role == RolesEnum.SUPER_ADMIN)
       ) {
         return res
           .status(404)
@@ -678,6 +907,7 @@ export class UsersControllers {
         }
         const businesses = await BusinessDetails.find({
           businessName: input.businessName,
+          isDeleted: false,
         });
         if (businesses.length > 0) {
           let array: mongoose.Types.ObjectId[] = [];
@@ -719,20 +949,45 @@ export class UsersControllers {
           { new: true }
         );
       }
-      if (input.businessSalesNumber) {
+      if (
+        input.businessSalesNumber &&
+        checkUser?.onBoardingPercentage === ONBOARDING_PERCENTAGE.CARD_DETAILS
+      ) {
         if (!checkUser.businessDetailsId) {
           return res
             .status(404)
             .json({ error: { message: "business details not found" } });
         }
 
-        await BusinessDetails.findByIdAndUpdate(
+        const details = await BusinessDetails.findByIdAndUpdate(
           checkUser?.businessDetailsId,
           { businessSalesNumber: input.businessSalesNumber },
 
           { new: true }
         );
+        let reqBody: PostcodeWebhookParams = {
+          userId: checkUser?._id,
+          bid: checkUser?.buyerId,
+          businessName: details?.businessName,
+          businessSalesNumber: input.businessSalesNumber,
+          eventCode: EVENT_TITLE.BUSINESS_PHONE_NUMBER,
+        };
+        await eventsWebhook(reqBody)
+          .then(() =>
+            console.log(
+              "event webhook for updating business phone number hits successfully.",
+              reqBody
+            )
+          )
+          .catch((err) =>
+            console.log(
+              err,
+              "error while triggering business phone number webhooks failed",
+              reqBody
+            )
+          );
       }
+
       if (input.businessCity) {
         if (!checkUser.businessDetailsId) {
           return res
@@ -843,12 +1098,56 @@ export class UsersControllers {
             .status(404)
             .json({ error: { message: "lead details not found" } });
         }
-        await UserLeadsDetails.findByIdAndUpdate(
-          checkUser?.userLeadsDetailsId,
-          { leadSchedule: input.leadSchedule },
+        const userBeforeMod =
+          (await UserLeadsDetails.findById(checkUser?.userLeadsDetailsId)) ??
+          ({} as UserLeadsDetailsInterface);
 
-          { new: true }
+        const userAfterMod =
+          (await UserLeadsDetails.findByIdAndUpdate(
+            checkUser?.userLeadsDetailsId,
+            { leadSchedule: input.leadSchedule },
+
+            { new: true }
+          )) ?? ({} as UserLeadsDetailsInterface);
+        const business = await BusinessDetails.findById(
+          checkUser.businessDetailsId
         );
+
+        if (
+          input.leadSchedule &&
+          !arraysAreEqual(input.leadSchedule, userBeforeMod?.leadSchedule) &&
+          user?.onBoardingPercentage === ONBOARDING_PERCENTAGE.CARD_DETAILS
+        ) {
+          let paramsToSend: PostcodeWebhookParams = {
+            userId: checkUser?._id,
+            buyerId: checkUser?.buyerId,
+            businessName: business?.businessName,
+            eventCode: EVENT_TITLE.LEAD_SCHEDULE_UPDATE,
+            leadSchedule: userAfterMod?.leadSchedule,
+          };
+          if (userAfterMod.type === POSTCODE_TYPE.RADIUS) {
+            (paramsToSend.type = POSTCODE_TYPE.RADIUS),
+              (paramsToSend.postcode = userAfterMod.postCodeList);
+          } else {
+            paramsToSend.postCodeList = flattenPostalCodes(
+              userAfterMod?.postCodeTargettingList
+            );
+          }
+          await eventsWebhook(paramsToSend)
+            .then(() =>
+              console.log(
+                "event webhook for postcode updates hits successfully.",
+                paramsToSend
+              )
+            )
+            .catch((err) =>
+              console.log(
+                err,
+                "error while triggering postcode updates webhooks failed",
+                paramsToSend
+              )
+            );
+        }
       }
       if (input.postCodeTargettingList) {
         if (!checkUser.userLeadsDetailsId) {
@@ -882,6 +1181,22 @@ export class UsersControllers {
             .status(404)
             .json({ error: { message: "lead details not found" } });
         }
+
+        const industry = await BuisnessIndustries.findById(
+          checkUser.businessIndustryId
+        );
+        const columns = industry?.columns;
+
+        const result: { [key: string]: string } = {};
+        if (columns) {
+          for (const item of columns) {
+            if (item.isVisible === true) {
+              //@ts-ignore
+              result[item.originalName] = item.displayName;
+            }
+          }
+        }
+
         await UserLeadsDetails.findByIdAndUpdate(
           checkUser?.userLeadsDetailsId,
           { zapierUrl: input.zapierUrl, sendDataToZapier: true },
@@ -896,19 +1211,61 @@ export class UsersControllers {
             .json({ error: { message: "lead details not found" } });
         }
         input.daily = parseInt(input.daily);
-        await UserLeadsDetails.findByIdAndUpdate(
-          checkUser?.userLeadsDetailsId,
-          { daily: input.daily },
-
-          { new: true }
+        const business = await BusinessDetails.findById(
+          checkUser.businessDetailsId
         );
+        const userBeforeMod =
+          (await UserLeadsDetails.findById(checkUser?.userLeadsDetailsId)) ??
+          ({} as UserLeadsDetailsInterface);
+        const userAfterMod =
+          (await UserLeadsDetails.findByIdAndUpdate(
+            checkUser?.userLeadsDetailsId,
+            { daily: input.daily },
+
+            { new: true }
+          )) ?? ({} as UserLeadsDetailsInterface);
+        if (
+          input.daily != userBeforeMod?.daily &&
+          user?.onBoardingPercentage === ONBOARDING_PERCENTAGE.CARD_DETAILS
+        ) {
+          let paramsToSend: PostcodeWebhookParams = {
+            userId: checkUser?._id,
+            buyerId: checkUser?.buyerId,
+            businessName: business?.businessName,
+            eventCode: EVENT_TITLE.DAILY_LEAD_CAP,
+
+            dailyLeadCap: userAfterMod?.daily,
+          };
+          if (userAfterMod.type === POSTCODE_TYPE.RADIUS) {
+            (paramsToSend.type = POSTCODE_TYPE.RADIUS),
+              (paramsToSend.postcode = userAfterMod.postCodeList);
+          } else {
+            paramsToSend.postCodeList = flattenPostalCodes(
+              userAfterMod?.postCodeTargettingList
+            );
+          }
+
+          await eventsWebhook(paramsToSend)
+            .then(() =>
+              console.log(
+                "event webhook for postcode updates hits successfully.",
+                paramsToSend
+              )
+            )
+            .catch((err) =>
+              console.log(
+                err,
+                "error while triggering postcode updates webhooks failed",
+                paramsToSend
+              )
+            );
+        }
       }
       if (
         input.credits &&
-        // @ts-ignore
-        (req?.user.role == RolesEnum.ADMIN ||
+        (user.role == RolesEnum.ADMIN ||
           // @ts-ignore
-          req?.user.role == RolesEnum.SUPER_ADMIN)
+          user.role == RolesEnum.SUPER_ADMIN)
       ) {
         const params: any = {
           fixedAmount: input.credits,
@@ -922,7 +1279,11 @@ export class UsersControllers {
         createSessionUnScheduledPayment(params)
           .then(async (_res: any) => {
             if (!checkUser.xeroContactId) {
-              console.log("xeroContact ID not found. Failed to generate pdf.");
+              console.log(
+                "xeroContact ID not found. Failed to generate pdf.",
+                new Date(),
+                "Today's Date"
+              );
             }
             const dataToSave: any = {
               userId: checkUser?.id,
@@ -936,15 +1297,15 @@ export class UsersControllers {
 
             const transaction = await Transaction.create(dataToSave);
             if (checkUser?.xeroContactId) {
-              generatePDF(
-                checkUser?.xeroContactId,
-                transactionTitle.CREDITS_ADDED,
-                //@ts-ignore
-                input?.credits,
-                0,
-                _res.data.id,
-                false
-              )
+              const paramPdf: generatePDFParams = {
+                ContactID: checkUser?.xeroContactId,
+                desc: transactionTitle.CREDITS_ADDED,
+                amount: input?.credits,
+                freeCredits: 0,
+                sessionId: _res.data.id,
+                isManualAdjustment: false,
+              };
+              generatePDF(paramPdf)
                 .then(async (res: any) => {
                   const dataToSaveInInvoice: any = {
                     userId: checkUser?.id,
@@ -957,19 +1318,19 @@ export class UsersControllers {
                     invoiceId: res.data.Invoices[0].InvoiceID,
                   });
 
-                  console.log("pdf generated");
+                  console.log("pdf generated", new Date(), "Today's Date");
                 })
                 .catch(async (err) => {
                   refreshToken().then(async (res) => {
-                    generatePDF(
-                      checkUser?.xeroContactId,
-                      transactionTitle.CREDITS_ADDED,
-                      //@ts-ignore
-                      input.credits,
-                      0,
-                      _res.data.id,
-                      false
-                    ).then(async (res: any) => {
+                    const paramPdf: generatePDFParams = {
+                      ContactID: checkUser?.xeroContactId,
+                      desc: transactionTitle.CREDITS_ADDED,
+                      amount: input.credits,
+                      freeCredits: 0,
+                      sessionId: _res.data.id,
+                      isManualAdjustment: false,
+                    };
+                    generatePDF(paramPdf).then(async (res: any) => {
                       const dataToSaveInInvoice: any = {
                         userId: checkUser?.id,
                         transactionId: transaction.id,
@@ -981,13 +1342,17 @@ export class UsersControllers {
                         invoiceId: res.data.Invoices[0].InvoiceID,
                       });
 
-                      console.log("pdf generated");
+                      console.log("pdf generated", new Date(), "Today's Date");
                     });
                   });
                 });
             }
 
-            console.log("payment success!!!!!!!!!!!!!");
+            console.log(
+              "payment success!!!!!!!!!!!!!",
+              new Date(),
+              "Today's Date"
+            );
 
             await User.findByIdAndUpdate(
               id,
@@ -1037,12 +1402,13 @@ export class UsersControllers {
         const leadData = await UserLeadsDetails.findById(
           result?.userLeadsDetailsId
         );
+
         const formattedPostCodes = leadData?.postCodeTargettingList
           .map((item: any) => item.postalCode)
           .flat();
         const userAfterMod = await User.findById(
           id,
-          " -_id -businessDetailsId -businessIndustryId -userLeadsDetailsId -onBoarding -createdAt -updatedAt"
+          "-__v -_id -businessDetailsId -businessIndustryId -userServiceId -accountManager -userLeadsDetailsId -onBoarding -createdAt -updatedAt -password"
         ).lean();
         const message = {
           firstName: result?.firstName,
@@ -1066,6 +1432,7 @@ export class UsersControllers {
           area: `${formattedPostCodes}`,
           leadCost: user?.leadCost,
         };
+
         sendEmailForUpdatedDetails(message);
 
         const fields = findUpdatedFields(userForActivity, userAfterMod);
@@ -1073,8 +1440,7 @@ export class UsersControllers {
 
         if (!isEmpty && user?.isSignUpCompleteWithCredit) {
           const activity = {
-            //@ts-ignore
-            actionBy: req?.user?.role,
+            actionBy: user?.role,
             actionType: ACTION.UPDATING,
             targetModel: MODEL_ENUM.USER,
             userEntity: req.params.id,
@@ -1097,7 +1463,7 @@ export class UsersControllers {
           });
         } else if (input.paymentMethod) {
           return res.json({
-            message: "Payment Mode Changed Successfully",
+            message: "Updated Successfully",
             data: result,
           });
         } else {
@@ -1121,14 +1487,13 @@ export class UsersControllers {
               businesBeforeUpdate,
               businesAfterUpdate
             );
+
             const isEmpty = Object.keys(fields.updatedFields).length === 0;
             if (!isEmpty && user?.isSignUpCompleteWithCredit) {
               const activity = {
-                //@ts-ignore
-                actionBy: req?.user?.role,
+                actionBy: user?.role,
                 actionType: ACTION.UPDATING,
                 targetModel: MODEL_ENUM.BUSINESS_DETAILS,
-                //@ts-ignore
                 userEntity: checkUser?.id,
                 originalValues: fields.oldFields,
                 modifiedValues: fields.updatedFields,
@@ -1156,14 +1521,28 @@ export class UsersControllers {
         .status(400)
         .json({ error: { message: "User has been already deleted." } });
     }
+    if (userExist?.role === RolesEnum.ACCOUNT_MANAGER) {
+      const usersAssign = await User.find({ accountManager: userExist.id });
+      if (usersAssign.length > 0) {
+        await Promise.all(
+          usersAssign.map(async (user) => {
+            await User.findByIdAndUpdate(user.id, { accountManager: null });
+          })
+        );
+      }
+    }
 
     try {
       const user = await User.findByIdAndUpdate(id, {
         isDeleted: true,
         deletedAt: new Date(),
       });
-      await BusinessDetails.findByIdAndDelete(userExist?.businessDetailsId);
-      await UserLeadsDetails.findByIdAndDelete(userExist?.userLeadsDetailsId);
+      await BusinessDetails.findByIdAndUpdate(userExist?.businessDetailsId, {
+        isDeleted: true,
+      });
+      await UserLeadsDetails.findByIdAndUpdate(userExist?.userLeadsDetailsId, {
+        isDeleted: true,
+      });
       await CardDetails.deleteMany({ userId: userExist?.id });
 
       //@ts-ignore
@@ -1220,6 +1599,8 @@ export class UsersControllers {
     _req: any,
     res: Response
   ) => {
+    let user: Partial<UserInterface> = _req.user ?? ({} as UserInterface);
+
     const id = _req.query.id;
     const status = _req.query.status;
     let sortingOrder = _req.query.sortingOrder || sort.DESC;
@@ -1257,11 +1638,28 @@ export class UsersControllers {
           ...dataToFind,
         };
       }
+      if (_req.query.accountManagerId) {
+        dataToFind.accountManager = new ObjectId(_req.query.accountManagerId);
+      }
+      if (_req.query.clientType === FILTER_FOR_CLIENT.NON_BILLABLE) {
+        dataToFind.isCreditsAndBillingEnabled = false;
+      }
+      if (_req.query.clientType === FILTER_FOR_CLIENT.BILLABLE) {
+        dataToFind.isCreditsAndBillingEnabled = true;
+      }
       if (status) {
         dataToFind.status = status;
       }
       if (id) {
         dataToFind._id = new ObjectId(id);
+      }
+      if (_req.user.role === RolesEnum.ACCOUNT_MANAGER) {
+        let ids: any = [];
+        const users = await User.find({ accountManager: user._id });
+        users.map((user) => {
+          return ids.push(new ObjectId(user._id));
+        });
+        dataToFind._id = { $in: ids };
       }
       if (industry) {
         let ids: any = [];
@@ -1590,7 +1988,10 @@ export class UsersControllers {
   static userCreditsManualAdjustment = async (req: any, res: Response) => {
     try {
       const input = req.body;
-      const user = (await User.findById(input.userId)) ?? ({} as UserInterface);
+      const user =
+        (await User.findById(input.userId)
+          .populate("userLeadsDetailsId")
+          .populate("businessDetailsId")) ?? ({} as UserInterface);
       const credits = input.credits * parseInt(user?.leadCost);
       if (user?.isDeleted) {
         return res.status(400).json({
@@ -1626,17 +2027,19 @@ export class UsersControllers {
         // if (user?.credits < credits) {
         amount = credits;
         (params.fixedAmount = amount), (dataToSave.isCredited = true);
-        dataToSave.creditsLeft = credits;
+        dataToSave.creditsLeft = user.credits + credits; //@hotfix can have many test cases(Copied logic from develop branch)
         addCreditsToBuyer(params).then(async (res) => {
           const transaction = await Transaction.create(dataToSave);
-          generatePDF(
-            user?.xeroContactId,
-            transactionTitle.CREDITS_ADDED,
-            0,
-            credits,
-            "Manual Adjustment",
-            true
-          )
+          const paramPdf: generatePDFParams = {
+            ContactID: user?.xeroContactId,
+
+            desc: transactionTitle.CREDITS_ADDED,
+            amount: 0,
+            freeCredits: credits,
+            sessionId: transactionTitle.MANUAL_ADJUSTMENT,
+            isManualAdjustment: true,
+          };
+          generatePDF(paramPdf)
             .then(async (res: any) => {
               const dataToSaveInInvoice: Partial<InvoiceInterface> = {
                 userId: user?.id,
@@ -1649,18 +2052,20 @@ export class UsersControllers {
                 invoiceId: res.data.Invoices[0].InvoiceID,
               });
 
-              console.log("pdf generated");
+              console.log("pdf generated", new Date(), "Today's Date");
             })
             .catch(async (err) => {
               refreshToken().then(async (res) => {
-                generatePDF(
-                  user?.xeroContactId,
-                  transactionTitle.CREDITS_ADDED,
-                  0,
-                  credits,
-                  "Manual Adjustment",
-                  true
-                ).then(async (res: any) => {
+                const paramPdf: generatePDFParams = {
+                  ContactID: user?.xeroContactId,
+
+                  desc: transactionTitle.CREDITS_ADDED,
+                  amount: 0,
+                  freeCredits: credits,
+                  sessionId: transactionTitle.MANUAL_ADJUSTMENT,
+                  isManualAdjustment: true,
+                };
+                generatePDF(paramPdf).then(async (res: any) => {
                   const dataToSaveInInvoice: Partial<InvoiceInterface> = {
                     userId: user?.id,
                     transactionId: transaction.id,
@@ -1672,18 +2077,56 @@ export class UsersControllers {
                     invoiceId: res.data.Invoices[0].InvoiceID,
                   });
 
-                  console.log("pdf generated");
+                  console.log("pdf generated", new Date(), "Today's Date");
                 });
               });
             });
+          const userBusiness: BusinessDetailsInterface | null =
+            isBusinessObject(user?.businessDetailsId)
+              ? user?.businessDetailsId
+              : null;
+
+          const userLead =
+            (await UserLeadsDetails.findById(
+              user?.userLeadsDetailsId,
+              "postCodeTargettingList"
+            )) ?? ({} as UserLeadsDetailsInterface);
+          let paramsToSend: PostcodeWebhookParams = {
+            userId: user._id,
+            buyerId: user.buyerId,
+            businessName: userBusiness?.businessName,
+            businessIndustry: userBusiness?.businessIndustry,
+            eventCode: EVENT_TITLE.ADD_CREDITS,
+            topUpAmount: credits,
+          };
+          if (userLead.type === POSTCODE_TYPE.RADIUS) {
+            (paramsToSend.type = POSTCODE_TYPE.RADIUS),
+              (paramsToSend.postcode = userLead.postCodeList);
+          } else {
+            paramsToSend.postCodeList = flattenPostalCodes(
+              userLead?.postCodeTargettingList
+            );
+          }
+          await eventsWebhook(paramsToSend)
+            .then(() =>
+              console.log(
+                "event webhook for add credits hits successfully.",
+                paramsToSend,
+                new Date(),
+                "Today's Date",
+                user._id,
+                "user's id"
+              )
+            )
+            .catch((err) =>
+              console.log(
+                "error while triggering webhooks for add credits failed",
+                paramsToSend,
+                new Date(),
+                "Today's Date"
+              )
+            );
         });
-        // } else {
-        //   return res.json({
-        //     data: {
-        //       message: "Credits remains the same",
-        //     },
-        //   });
-        // }
 
         return res.json({
           data: { message: "Credits Adjusted" },
@@ -1738,6 +2181,149 @@ export class UsersControllers {
           err,
         },
       });
+    }
+  };
+
+  static sendTestLeadData = async (req: any, res: Response) => {
+    try {
+      const { id } = req.params;
+      const input = req.body;
+      const checkUser = (await User.findById(id)) ?? ({} as UserInterface);
+      if (!checkUser.userLeadsDetailsId) {
+        return res
+          .status(404)
+          .json({ error: { message: "lead details not found" } });
+      }
+      const industry = await BuisnessIndustries.findById(
+        checkUser.businessIndustryId
+      );
+      const columns = industry?.columns;
+
+      const result: { [key: string]: string } = {};
+      if (columns) {
+        for (const item of columns) {
+          if (item.isVisible === true) {
+            //@ts-ignore
+            result[item.originalName] = item.displayName;
+          }
+        }
+      }
+      let message = "";
+      let response = {};
+      let status;
+      try {
+        await sendLeadDataToZap(input.zapierUrl, result, checkUser);
+        message = "Test Lead Sent!";
+        response = { data: message };
+        status = 200;
+      } catch (err) {
+        message = "Error while sending Test Lead!";
+        status = 400;
+        response = { data: message };
+      }
+
+      return res.status(status).json(response);
+
+      // return res.json({ data: { message: message } });
+    } catch (err) {
+      return res.status(500).json({
+        error: {
+          message: "something went wrong",
+          err,
+        },
+      });
+    }
+  };
+
+  static autoChargeNow = async (req: any, res: Response): Promise<any> => {
+    const id = req.params.id;
+    try {
+      const usersToCharge = await getUsersWithAutoChargeEnabled(id);
+      for (const user of usersToCharge) {
+        const dataToSave = {
+          userId: user.id,
+          title: AUTO_UPDATED_TASKS.INSTANT_AUTO_CHARGE,
+        };
+        let logs = await AutoUpdatedTasksLogs.create(dataToSave);
+        if (usersToCharge.length === 0) {
+          return res.status(400).json({ data: "No users to charge." });
+        }
+        for (const user of usersToCharge) {
+          const paymentMethod = await getUserPaymentMethods(user.id);
+
+          if (paymentMethod) {
+            await AutoUpdatedTasksLogs.findByIdAndUpdate(logs.id, {
+              status: 200,
+            });
+            try {
+              await topUpUserForPaymentMethod(user, paymentMethod);
+              return res.json({
+                data: "Payment initiated, your credits will be added soon!",
+              });
+            } catch (err) {
+              return res
+                .status(500)
+                .json({ message: "Something went wrong", err });
+            }
+          } else {
+            await AutoUpdatedTasksLogs.findByIdAndUpdate(logs.id, {
+              notes: "payment method not found",
+              status: 400,
+            });
+            return res.status(400).json({ data: "please add payment method." });
+          }
+        }
+      }
+    } catch (error) {
+      console.error("Error in Auto charge:", error.response);
+    }
+  };
+
+  static updateEmail = async (req: Request, res: Response): Promise<any> => {
+    try {
+      const id = req.params.id;
+      const { email } = req.body;
+      const reqBody = new UpdateEmailBodyValidator();
+      reqBody.email = email;
+      const validationErrors = await validate(reqBody);
+
+      if (validationErrors.length > 0) {
+        return res.status(400).json({
+          error: { message: "Invalid request body", validationErrors },
+        });
+      }
+
+      const user = await User.findById(id);
+
+      if (!user) {
+        return res.status(400).json({
+          error: { message: "user does not exist" },
+        });
+      }
+
+      let upCustomer;
+      // update email id also at stripe
+      if (user.stripeClientId) {
+        await stripe.customers.update(user.stripeClientId, {
+          email,
+        });
+        upCustomer = await stripe.customers.retrieve(user.stripeClientId);
+      }
+
+      const updatedUser = await User.findByIdAndUpdate(
+        id,
+        { email: email },
+        { new: true }
+      );
+
+      res.json({
+        data: { user: updatedUser, stripeCustomer: upCustomer },
+        message: "User email updated successfully",
+      });
+    } catch (err) {
+      return res
+        .status(500)
+        .json({ error: { message: "Something went wrong.", err } });
     }
   };
 }
@@ -1828,4 +2414,15 @@ function convertDataForDaysInMonth(data: any, labels: any, year: any) {
 
   // Create an object with labels and data properties
   return { labels, data: dataArr, years: years };
+}
+
+export function areAllPendingFieldsEmpty(
+  object: { key: string; pendingFields: string[]; dependencies: string[] }[]
+) {
+  for (const item of object) {
+    if (item.pendingFields && item.pendingFields.length > 0) {
+      return false;
+    }
+  }
+  return true;
 }

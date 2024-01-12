@@ -1,76 +1,101 @@
 import { checkAccess } from "../../app/Middlewares/serverAccess";
 import { AccessToken } from "../../app/Models/AccessToken";
 import { User } from "../../app/Models/User";
+import { CURRENCY, DISCOUNT } from "../Enums/currency.enum";
 import { transactionTitle } from "../Enums/transaction.title.enum";
-// import { transactionTitle } from "../Enums/transaction.title.enum";
 import axios from "axios";
+import { ACCOUNT_CODE } from "../constantFiles/accountCode.xero";
 
-export const generatePDF = (
-  ContactID: string,
-  desc: string,
-  amount: number,
-  freeCredits: number,
-  sessionId: string,
-  isManualAdjustment: boolean
-) => {
+export interface generatePDFParams {
+  ContactID: string;
+  desc: string;
+  amount: number;
+  freeCredits: number;
+  sessionId: string;
+  isManualAdjustment: boolean;
+}
+export const generatePDF = (param: generatePDFParams) => {
   return new Promise(async (resolve, reject) => {
     const industry: any = await User.findOne({
-      xeroContactId: ContactID,
+      xeroContactId: param.ContactID,
     }).populate("businessDetailsId");
-    const quantity = amount / parseInt(industry.leadCost);
-
+    let quantity = param.amount / parseInt(industry.leadCost);
+    let accountCode;
+    if (
+      industry.currency === CURRENCY.POUND &&
+      param.sessionId != transactionTitle.SECONDARY_CREDITS_MANUAL_ADJUSTMENT
+    ) {
+      accountCode = ACCOUNT_CODE.GBP;
+    } else if (industry.currency === CURRENCY.EURO) {
+      accountCode = ACCOUNT_CODE.EURO;
+    } else if (industry.currency === CURRENCY.DOLLER) {
+      accountCode = ACCOUNT_CODE.USA;
+    } else if (
+      param.sessionId === transactionTitle.SECONDARY_CREDITS_MANUAL_ADJUSTMENT
+    ) {
+      accountCode = ACCOUNT_CODE.SECONDARY_CREDITS_MANUAL_ADJUSTMENT;
+    }
     let unitAmount = industry.leadCost;
-
+    if (accountCode === ACCOUNT_CODE.SECONDARY_CREDITS_MANUAL_ADJUSTMENT) {
+      unitAmount = industry.secondaryLeadCost;
+      quantity = param.amount / industry.secondaryLeadCost;
+    }
     let data = {
       Invoices: [
         {
           Type: "ACCREC",
           Contact: {
-            ContactID: ContactID,
+            ContactID: param.ContactID,
           },
           LineItems: [
             {
-              Description: `${industry?.businessDetailsId?.businessIndustry} - ${desc}`,
+              Description: `${industry?.businessDetailsId?.businessIndustry} - ${param.desc}`,
               //@ts-ignore
               Quantity: parseInt(quantity),
               UnitAmount: unitAmount,
-              AccountCode: "214",
-              LineAmount: amount,
+              AccountCode: accountCode,
+              LineAmount: param.amount,
               LeadDepartment: industry?.businessDetailsId?.businessIndustry,
             },
           ],
           Date: new Date(),
           DueDate: new Date(new Date().setDate(new Date().getDate() + 7)),
-          Reference: sessionId,
+          Reference: param.sessionId,
           Status: "AUTHORISED",
+          CurrencyCode: industry.currency,
         },
       ],
     };
-    if (freeCredits > 0 && !isManualAdjustment) {
-      const quantity = freeCredits / parseInt(industry.leadCost);
+    if (
+      param.freeCredits > 0 &&
+      !param.isManualAdjustment &&
+      param.sessionId != transactionTitle.SECONDARY_CREDITS_MANUAL_ADJUSTMENT
+    ) {
+      const quantity = param.freeCredits / parseInt(industry.leadCost);
       data.Invoices[0].LineItems[1] = {
         Description: `${industry?.businessDetailsId?.businessIndustry} - ${transactionTitle.FREE_CREDITS}`,
         //@ts-ignore
         Quantity: parseInt(quantity),
         UnitAmount: unitAmount,
-        AccountCode: "214",
+        AccountCode: accountCode,
         //@ts-ignore
-        DiscountRate: "100",
+        DiscountRate: DISCOUNT,
         LeadDepartment: industry?.businessDetailsId?.businessIndustry,
       };
-    } else if (freeCredits > 0 && isManualAdjustment) {
-      const quantity = freeCredits / parseInt(industry.leadCost);
+    } else if (param.freeCredits > 0 && param.isManualAdjustment) {
+      const quantity = param.freeCredits / parseInt(industry.leadCost);
       data.Invoices[0].LineItems[0] = {
         Description: `${industry?.businessDetailsId?.businessIndustry} - ${transactionTitle.FREE_CREDITS}`,
         //@ts-ignore
         Quantity: parseInt(quantity),
         UnitAmount: unitAmount,
-        AccountCode: "214",
+        AccountCode: accountCode,
         //@ts-ignore
-        DiscountRate: "100",
+        DiscountRate: DISCOUNT,
         LeadDepartment: industry?.businessDetailsId?.businessIndustry,
       };
     }
+
     const token = await AccessToken.findOne();
     var config = {
       method: "post",
@@ -88,18 +113,25 @@ export const generatePDF = (
     if (checkAccess()) {
       axios(config)
         .then(function (response: any) {
-          console.log("data while getting response of invoices", response.data);
+          console.log(
+            "data while getting response of invoices",
+            response.data,
+            new Date(),
+            "Today's Date"
+          );
 
           resolve(response);
         })
         .catch(function (error: any) {
-          console.log(error.response?.data);
+          console.log(error.response?.data, new Date(), "Today's Date");
 
           reject(error);
         });
     } else {
       console.log(
-        "No Access for generating PDF to this " + process.env.APP_ENV
+        "No Access for generating PDF to this " + process.env.APP_ENV,
+        new Date(),
+        "Today's Date"
       );
     }
   });

@@ -5,6 +5,7 @@ import { CardDetails } from "../../app/Models/CardDetails";
 const POST = "post";
 export const cmsUpdateBuyerWebhook = async (userId: String, cardId: String) => {
   const data = await userData(userId, cardId);
+
   return new Promise((resolve, reject) => {
     let config = {
       method: POST,
@@ -15,16 +16,22 @@ export const cmsUpdateBuyerWebhook = async (userId: String, cardId: String) => {
       },
       data: data,
     };
-
     axios(config)
       .then(async (response) => {
         console.log(
           "cms update buyer webhook hits successfully",
-          response.data
+          response.data,
+          new Date(),
+          "Today's Date"
         );
       })
       .catch((err) => {
-        console.log("cms update buyer webhook hits error", err.response?.data);
+        console.log(
+          "cms update buyer webhook hits error",
+          err.response?.data,
+          new Date(),
+          "Today's Date"
+        );
       });
   });
 };
@@ -36,10 +43,9 @@ const userData = async (userId: String, cardId: String) => {
     .populate("userServiceId");
   const cards = await CardDetails.findById(cardId);
   let data: any = {
-    firstName: user?.firstName,
-    lastName: user?.lastName,
+    buyerName: `${user?.firstName} ${user?.lastName}`,
     email: user?.email,
-    phoneNumber: user?.phoneNumber,
+    buyerPhone: user?.phoneNumber,
     credits: user?.credits,
     autoChargeAmount: user?.autoChargeAmount,
     leadCost: user?.leadCost,
@@ -69,7 +75,7 @@ const userData = async (userId: String, cardId: String) => {
     leadAlertsFrequency: user?.userLeadsDetailsId?.leadAlertsFrequency,
     zapierUrl: user?.userLeadsDetailsId?.zapierUrl,
     sendDataToZapier: user?.userLeadsDetailsId?.sendDataToZapier,
-    businessIndustry: user?.businessDetailsId?.businessIndustry,
+    industry: user?.businessDetailsId?.businessIndustry,
     businessDescription: user?.businessDetailsId?.businessDescription,
     businessName: user?.businessDetailsId?.businessName,
     address1: user?.businessDetailsId?.address1,
@@ -78,14 +84,15 @@ const userData = async (userId: String, cardId: String) => {
     businessAddress: user?.businessDetailsId?.businessAddress,
     businessCity: user?.businessDetailsId?.businessCity,
     businessPostCode: user?.businessDetailsId?.businessPostCode,
-    businessOpeningHours: JSON.stringify(
-      user?.businessDetailsId?.businessOpeningHours
-    ),
-    financeOffers: user?.userServiceId?.financeOffers,
-    prices: user?.userServiceId?.prices,
+    buyerColorLogo: user?.businessDetailsId?.businessLogo,
+    // openingHoursWeekday: JSON.stringify(
+    //   user?.businessDetailsId?.businessOpeningHours
+    // ),
+    financeAvailable: user?.userServiceId?.financeOffers,
+    pricing: user?.userServiceId?.prices,
     accreditations: user?.userServiceId?.accreditations,
-    avgInstallTime: user?.userServiceId?.avgInstallTime,
-    trustpilotReviews: user?.userServiceId?.trustpilotReviews,
+    installsIn: user?.userServiceId?.avgInstallTime,
+    rating: user?.userServiceId?.trustpilotReviews,
     criteria: JSON.stringify(user?.userServiceId?.criteria),
     cardHolderName: cards?.cardHolderName,
     cardNumber: cards?.cardNumber,
@@ -95,10 +102,47 @@ const userData = async (userId: String, cardId: String) => {
     paymentSessionID: cards?.paymentSessionID,
     status: cards?.status,
     leadUrl: `${process.env.APP_URL}/api/v1/leads/${user?.buyerId}`,
+    openingHoursMonday: formatTime(
+      user?.businessDetailsId?.businessOpeningHours[0] || defaultValue
+    ),
+    openingHoursTuesday: formatTime(
+      user?.businessDetailsId?.businessOpeningHours[1] || defaultValue
+    ),
+    openingHoursWednesday: formatTime(
+      user?.businessDetailsId?.businessOpeningHours[2] || defaultValue
+    ),
+    openingHoursThursday: formatTime(
+      user?.businessDetailsId?.businessOpeningHours[3] || defaultValue
+    ),
+    openingHoursFriday: formatTime(
+      user?.businessDetailsId?.businessOpeningHours[4] || defaultValue
+    ),
+    openingHoursSaturday: formatTime(
+      user?.businessDetailsId?.businessOpeningHours[5] || defaultValue
+    ),
+    openingHoursSunday: formatTime(
+      user?.businessDetailsId?.businessOpeningHours[6] || defaultValue
+    ),
   };
   if (user?.businessDetailsId?.businessLogo) {
     data.businessLogo = `${process.env.APP_URL}${user?.businessDetailsId?.businessLogo}`;
   }
 
   return data;
+};
+
+const defaultValue = {
+  day: "",
+  openTime: "00:00",
+  closeTime: "00:00",
+};
+
+const formatTime = (data: any) => {
+  let dayOpen;
+  let dayClose;
+  data["openTime"].split(":")[0] >= 12 ? (dayOpen = "pm") : (dayOpen = "am");
+  data["closeTime"].split(":")[0] >= 12 ? (dayClose = "pm") : (dayClose = "am");
+
+  const a = `${data["openTime"]}${dayOpen} - ${data["closeTime"]}${dayClose} `;
+  return a;
 };

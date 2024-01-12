@@ -8,10 +8,15 @@ export interface UserInterface extends Document {
   _id: Types.ObjectId;
   businessIndustryId: Types.ObjectId;
   firstName: string;
+  currency: string;
+  country: string;
   lastName: string;
+  isCommissionedUser: boolean;
   email: string;
   password: string;
   role: RolesEnum;
+  isAccountAdmin : boolean;
+  mobilePrefixCode: string;
   paymentMethod: string;
   phoneNumber: string;
   credits: number;
@@ -60,4 +65,13 @@ export interface UserInterface extends Document {
   }>;
   isStripeCustomer: boolean;
   stripeClientId: string;
+  showImpersonate: boolean;
+  isNewUser: boolean;
+  isAutoChargeEnabled: boolean;
+  pendingTransaction: string;
+  secondaryCredits: number;
+  secondaryLeadCost: number;
+  isSecondaryUsage: boolean;
+  secondaryLeads: number;
+  retriedTransactionCount: number;
 }

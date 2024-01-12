@@ -6,4 +6,5 @@ export enum RolesEnum {
   NON_BILLABLE = "nonBillable",
   ACCOUNT_MANAGER = "accountManager",
   SUBSCRIBER = "subscriber",
+  ACCOUNT_ADMIN = "accountAdmin",
 }

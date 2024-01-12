@@ -16,19 +16,38 @@ const UserSchema = new Schema(
       // required: true,
       // unique: true,
     },
+    mobilePrefixCode: {
+      type: String,
+      required: false,
+    },
     password: {
       type: String,
       // required: true,
+    },
+    currency: {
+      type: String,
+    },
+    country: {
+      type: String,
     },
     role: {
       type: String,
       required: true,
       default: RolesEnum.USER,
     },
+    isAccountAdmin: {
+      type: Boolean,
+      required: true,
+      default:false,
+    },
     leadCost: {
       type: Number,
-      default: 10,
       required: false,
+    },
+    isCommissionedUser: {
+      type: Boolean,
+      default: false,
+      // required: true,
     },
     phoneNumber: {
       type: String,
@@ -203,6 +222,40 @@ const UserSchema = new Schema(
     },
     permissions: {
       type: Array,
+    },
+    showImpersonate: {
+      type: Boolean,
+      default: false,
+    },
+    isNewUser: {
+      type: Boolean,
+      default: false,
+    },
+    isAutoChargeEnabled: {
+      type: Boolean,
+      default: false,
+    },
+    pendingTransaction: {
+      type: String,
+    },
+    retriedTransactionCount: {
+      type: Number,
+      default: 0
+    },
+    secondaryCredits: {
+      type: Number,
+      default: 0,
+    },
+    secondaryLeadCost: {
+      type: Number,
+      default: 0,
+    },
+    isSecondaryUsage: {
+      type: Boolean,
+      default: false,
+    },
+    secondaryLeads: {
+      type: Number,
     },
   },
   { timestamps: true }
