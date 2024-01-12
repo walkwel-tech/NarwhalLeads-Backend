@@ -1111,6 +1111,8 @@ export class CardDetailsControllers {
       if (userId) {
         if (input.type == STRIPE_PAYMENT_STATUS.FAILED) {
                   const business = user.business;
+           await User.findByIdAndUpdate(userId._id, {pendingTransaction: "", retriedTransactionCount: 0})
+
           const cards = await CardDetails.findOne({
             userId: userId?._id,
             isDefault: true,
@@ -1136,8 +1138,6 @@ export class CardDetailsControllers {
             message.isIncVat = false;
           }
           // after payment fail reset user
-           await User.findByIdAndUpdate(userId._id, {pendingTransaction: "", retriedTransactionCount: 0})
-
 
           sendEmailForPaymentFailure(userId?.email, message);
           let dataToSaveInTransaction: Partial<TransactionInterface> = {
