@@ -57,10 +57,10 @@ interface addCreditsParams {
 
 export const autoChargePayment = async () => {
 
-  let cronExpression:string = "0 */4 * * *";
+  let cronExpression:string = "0 0 * * *";
 
   if(process.env.APP_ENV == APP_ENV.STAGING){
-    cronExpression = "*/5 * * * *";
+    cronExpression = "*/30 * * * *";
   }
   
   cron.schedule(cronExpression, async () => {
