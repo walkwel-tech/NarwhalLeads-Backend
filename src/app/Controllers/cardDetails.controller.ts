@@ -97,6 +97,7 @@ import { UserLeadsDetailsInterface } from "../../types/LeadDetailsInterface";
 import { POSTCODE_TYPE } from "../../utils/Enums/postcode.enum";
 import { CURRENCY_SIGN } from "../../utils/constantFiles/email.templateIDs";
 import { CURRENCY } from "../../utils/Enums/currency.enum";
+import { calculateVariance } from "../../utils/Functions/calculateVariance";
 const ObjectId = mongoose.Types.ObjectId;
 
 export class CardDetailsControllers {
@@ -680,7 +681,7 @@ export class CardDetailsControllers {
             response.status = 200;
             response.sessionID = _res.id;
             response.paymentMethods = _res.payment_method;
-                        return res.json({
+            return res.json({
               data: response,
             });
           })
@@ -1110,8 +1111,8 @@ export class CardDetailsControllers {
       );
       if (userId) {
         if (input.type == STRIPE_PAYMENT_STATUS.FAILED) {
-                  const business = user.business;
-           await User.findByIdAndUpdate(userId._id, {pendingTransaction: "", retriedTransactionCount: 0})
+          const business = user.business;
+          await User.findByIdAndUpdate(userId._id, {pendingTransaction: "", retriedTransactionCount: 0})
 
           const cards = await CardDetails.findOne({
             userId: userId?._id,
@@ -1159,7 +1160,7 @@ export class CardDetailsControllers {
           }
           await Transaction.create(dataToSaveInTransaction);
         } else if (input.type == STRIPE_PAYMENT_STATUS.SUCCESS) {
-                    const cardDetails = await CardDetails.findByIdAndUpdate(
+          const cardDetails = await CardDetails.findByIdAndUpdate(
             card?._id,
             {
               status: PAYMENT_SESSION.SUCCESS,
@@ -1196,7 +1197,7 @@ export class CardDetailsControllers {
           };
           addCreditsToBuyer(params)
             .then(async (res: any) => {
-              userId =
+                            userId =
                 (await User.findById(userId?.id)
                   .populate("userLeadsDetailsId")
                   .populate("businessDetailsId")) ?? ({} as UserInterface);
@@ -1271,7 +1272,7 @@ export class CardDetailsControllers {
                 message.currency = CURRENCY_SIGN.EUR;
                 message.isIncVat = false;
               }
-              sendEmailForPaymentSuccess(userId?.email, message);
+                            sendEmailForPaymentSuccess(userId?.email, message);
               let invoice: InvoiceInterface | null;
               if (userId?.xeroContactId) {
                 let freeCredits: number;
@@ -1338,6 +1339,7 @@ export class CardDetailsControllers {
                     });
                   });
               }
+
               if (params.freeCredits) {
                 userId =
                   (await User.findById(userId?.id)) ?? ({} as UserInterface);
@@ -1360,7 +1362,7 @@ export class CardDetailsControllers {
               const userLead =
                 (await UserLeadsDetails.findById(
                   userId?.userLeadsDetailsId,
-                  "postCodeTargettingList"
+                  // "postCodeTargettingList"
                 )) ?? ({} as UserLeadsDetailsInterface);
               let paramsToSend: PostcodeWebhookParams = {
                 userId: userId._id,
@@ -1368,9 +1370,13 @@ export class CardDetailsControllers {
                 businessName: userBusiness?.businessName,
                 businessIndustry: userBusiness?.businessIndustry,
                 eventCode: EVENT_TITLE.ADD_CREDITS,
+                weeklyCap: userLead?.daily * userLead.leadSchedule?.length,
+                dailyCap: userLead?.daily + calculateVariance(userLead?.daily),
+                computedCap: calculateVariance(userLead?.daily),
                 topUpAmount: originalAmount,
                 type: POSTCODE_TYPE.MAP,
               };
+
               if (userLead.type === POSTCODE_TYPE.RADIUS) {
                 (paramsToSend.type = POSTCODE_TYPE.RADIUS),
                   (paramsToSend.postcode = userLead.postCodeList);
@@ -1407,7 +1413,7 @@ export class CardDetailsControllers {
                 "Today's Date"
               );
             });
-        } 
+        }
       }
       const dataToShow: webhookResponse = {
         message: "success",
@@ -1610,7 +1616,7 @@ export class CardDetailsControllers {
     req: Request,
     res: Response
   ): Promise<any> => {
-        const input = req.query;
+    const input = req.query;
     const setupIntent = String(input.setup_intent);
     try {
       if (setupIntent) {

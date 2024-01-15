@@ -41,6 +41,7 @@ import { flattenPostalCodes } from "../../utils/Functions/flattenPostcodes";
 import { UserLeadsDetailsInterface } from "../../types/LeadDetailsInterface";
 import { POSTCODE_TYPE } from "../../utils/Enums/postcode.enum";
 import { arraysAreEqual } from "../../utils/Functions/postCodeMatch";
+import { calculateVariance } from "../../utils/Functions/calculateVariance";
 
 export class UserLeadsController {
   static create = async (req: Request, res: Response) => {
@@ -187,6 +188,9 @@ export class UserLeadsController {
           dailyLeads: leadData?.daily,
           postCodes: leadData?.postCodeTargettingList,
           detailsType: "NEW DETAILS",
+          weeklyCap: input?.daily * input.leadSchedule?.length,
+          dailyCap: input?.daily + calculateVariance(input?.daily),
+          computedCap: calculateVariance(input?.daily),
         };
         businessDetailsSubmission(messageToSendInBusinessSubmission);
         fullySignupForNonBillableClients(messageToSendInBusinessSubmission);
@@ -374,11 +378,10 @@ export class UserLeadsController {
           postCodeList: [],
           type: POSTCODE_TYPE.MAP,
         });
-      }
-
+      }      
       if (
         Object.keys(fields.updatedFields).find(
-          (key) => key.startsWith("postCode") || key.startsWith("postcode")
+          (key) => key.startsWith("postCodeTargettingList") || key.startsWith("postCodeTargettingList")
         ) &&
         user?.onBoardingPercentage === ONBOARDING_PERCENTAGE.CARD_DETAILS
       ) {
@@ -402,19 +405,45 @@ export class UserLeadsController {
           .then(() =>
             console.log(
               "event webhook for postcode updates hits successfully.",
-              paramsToSend,
-              new Date(),
-              "Today's Date"
+              paramsToSend
             )
           )
           .catch((err) =>
-            console.log(
+            console.error(
               err,
               "error while triggering postcode updates webhooks failed",
-              paramsToSend,
-              new Date(),
-              "Today's Date"
+              paramsToSend
             )
+          );
+      }
+
+      if (
+        Object.keys(fields.updatedFields).find(
+          (key) => key.startsWith("postCodeList") || key.startsWith("postCodeList")
+        ) &&
+        user?.onBoardingPercentage === ONBOARDING_PERCENTAGE.CARD_DETAILS
+      ) {
+        const business = await BusinessDetails.findById(user.businessDetailsId);
+
+        let paramsToSend: PostcodeWebhookParams = {
+          userId: user._id,
+          buyerId: user.buyerId,
+          businessName: business?.businessName,
+          eventCode: EVENT_TITLE.RADIUS_UPDATE,
+        };
+        await eventsWebhook(paramsToSend)
+          .then(() =>
+            console.log(
+              "event webhook for radius updates hits successfully.",
+              paramsToSend
+            )
+          )
+          .catch((err) =>
+            console.error(
+              err,
+              "error while triggering radius updates webhooks failed",
+              paramsToSend,
+          )
           );
       }
 
@@ -478,9 +507,9 @@ export class UserLeadsController {
             )
           );
       }
-
       if (
-       input.daily && input.daily != details?.daily &&
+        input.daily &&
+        input.daily != details?.daily &&
         userId &&
         user?.onBoardingPercentage === ONBOARDING_PERCENTAGE.CARD_DETAILS
       ) {
@@ -501,8 +530,10 @@ export class UserLeadsController {
           buyerId: user?.buyerId,
           businessName: business?.businessName,
           eventCode: EVENT_TITLE.DAILY_LEAD_CAP,
-
+          weeklyCap: input?.daily * input.leadSchedule?.length,
+          dailyCap: input?.daily + calculateVariance(input?.daily),
           dailyLeadCap: userAfterMod?.daily,
+          computedCap: calculateVariance(input?.daily),
         };
         if (userAfterMod.type === POSTCODE_TYPE.RADIUS) {
           (paramsToSend.type = POSTCODE_TYPE.RADIUS),
