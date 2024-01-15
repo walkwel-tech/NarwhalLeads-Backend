@@ -47,6 +47,9 @@ export const eventsWebhook = (data: any) => {
         config.url = `${process.env.TOP_UP_URL_WEBHOOK}`;
       } else if (data.eventCode === EVENT_TITLE.POST_CODE_UPDATE) {
         config.url = `${process.env.POST_CODE_UPDATE_URL_WEBHOOK}`;
+      }
+      else if (data.eventCode === EVENT_TITLE.RADIUS_UPDATE) {
+        config.url = `${process.env.RADIUS_UPDATE_URL_WEBHOOK}`;
       } else if (data.eventCode === EVENT_TITLE.BUSINESS_PHONE_NUMBER) {
         config.url = `${process.env.BUSINESS_SALES_NUMBER_UPDATE_WEHOOK_URL}`;
       } else if (data.eventCode === EVENT_TITLE.DAILY_LEAD_CAP) {

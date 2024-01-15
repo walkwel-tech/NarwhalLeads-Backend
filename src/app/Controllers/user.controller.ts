@@ -70,6 +70,7 @@ import { PermissionInterface } from "../../types/PermissionsInterface";
 import { Permissions } from "../Models/Permission";
 import { UpdateEmailBodyValidator } from "../Inputs/updateEmail.input";
 import stripe from "../../utils/payment/stripe/stripeInstance";
+import { calculateVariance } from "../../utils/Functions/calculateVariance";
 
 const ObjectId = mongoose.Types.ObjectId;
 
@@ -2089,7 +2090,6 @@ export class UsersControllers {
           const userLead =
             (await UserLeadsDetails.findById(
               user?.userLeadsDetailsId,
-              "postCodeTargettingList"
             )) ?? ({} as UserLeadsDetailsInterface);
           let paramsToSend: PostcodeWebhookParams = {
             userId: user._id,
@@ -2098,6 +2098,9 @@ export class UsersControllers {
             businessIndustry: userBusiness?.businessIndustry,
             eventCode: EVENT_TITLE.ADD_CREDITS,
             topUpAmount: credits,
+            weeklyCap: userLead?.daily * userLead.leadSchedule.length,
+            dailyCap: userLead?.daily + calculateVariance(userLead?.daily),
+            computedCap: calculateVariance(userLead?.daily),
           };
           if (userLead.type === POSTCODE_TYPE.RADIUS) {
             (paramsToSend.type = POSTCODE_TYPE.RADIUS),
