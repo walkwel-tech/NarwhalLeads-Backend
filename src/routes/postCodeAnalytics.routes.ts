@@ -8,5 +8,8 @@ postCodeAnalyticsRoutes.post(
   "/",
   PostCodeAnalyticsController.getActiveClientsByPostalCode
 );
-
+postCodeAnalyticsRoutes.post(
+  "/export-csv-file",
+  PostCodeAnalyticsController.exportPostCodesCSVFile
+);
 export default postCodeAnalyticsRoutes;

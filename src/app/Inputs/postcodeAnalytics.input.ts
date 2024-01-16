@@ -15,4 +15,8 @@ export class PostcodeAnalyticsValidator {
   @IsArray()
   @IsString({ each: true })
   industry: string[];
+
+  @IsOptional()
+  @IsString()
+  search: string;
 }

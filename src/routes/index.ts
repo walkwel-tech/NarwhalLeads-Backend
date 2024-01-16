@@ -9,6 +9,7 @@ import userLeadsDetailsRoutes from "./userLeadsDetails.routes";
 import invitedUserRoutes from "./invite.routes";
 import BusinessIndustriesRoutes from "./buisnessIndustries.routes"
 import userServiceRoutes from "./userService.routes";
+import postCodeAnalyticsRoutes from "./postCodeAnalytics.routes";
 // import guestRoutes from "./guest.routes";
 
 export {
@@ -23,5 +24,7 @@ export {
     invitedUserRoutes,
     BusinessIndustriesRoutes,
     userServiceRoutes,
+    postCodeAnalyticsRoutes,
+
     // guestRoutes
 };
