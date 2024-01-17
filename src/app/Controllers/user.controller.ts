@@ -71,12 +71,17 @@ import { Permissions } from "../Models/Permission";
 import { UpdateEmailBodyValidator } from "../Inputs/updateEmail.input";
 import stripe from "../../utils/payment/stripe/stripeInstance";
 import { calculateVariance } from "../../utils/Functions/calculateVariance";
-import { ClientType, GetClientBodyValidator, userStatus } from "../Inputs/GetClients.input";
+import {
+  ClientType,
+  GetClientBodyValidator,
+  userStatus,
+} from "../Inputs/GetClients.input";
 
 const ObjectId = mongoose.Types.ObjectId;
 
 const LIMIT = 10;
-const daysAgo = (day: number) => new Date(Date.now() - day * 24 * 60 * 60 * 1000)
+const daysAgo = (day: number) =>
+  new Date(Date.now() - day * 24 * 60 * 60 * 1000);
 interface DataObject {
   [key: string]: any;
 }
@@ -499,7 +504,7 @@ export class UsersControllers {
 
       const { page, perPage } = bodyValidator;
       let skip = 0,
-        defaultPerPage = perPage ? perPage * 1 : LIMIT; 
+        defaultPerPage = perPage ? perPage * 1 : LIMIT;
       if (page) {
         skip = (page > 0 ? page - 1 : 0) * defaultPerPage;
       }
@@ -524,7 +529,7 @@ export class UsersControllers {
             ...(clientType
               ? {
                   ...(clientType === ClientType.BILLABLE
-                    ? { isCreditsAndBillingEnabled: true}
+                    ? { isCreditsAndBillingEnabled: true }
                     : {
                         isCreditsAndBillingEnabled: false,
                       }),
@@ -603,10 +608,7 @@ export class UsersControllers {
                 else: {
                   $cond: {
                     if: {
-                      $gte: [
-                        "$latestTransaction",
-                        daysAgo(60),
-                      ],
+                      $gte: ["$latestTransaction", daysAgo(60)],
                     },
                     then: userStatus.ACTIVE,
                     else: {
@@ -634,14 +636,14 @@ export class UsersControllers {
                   isDeleted: false,
                   isActive: true,
                 },
-              } 
+              },
             ]
           : []),
         ...(clientStatus == userStatus.PENDING
           ? [
               {
                 $match: {
-                  clientStatus: userStatus.PENDING
+                  clientStatus: userStatus.PENDING,
                 },
               },
             ]
@@ -659,7 +661,7 @@ export class UsersControllers {
           ? [
               {
                 $match: {
-                  clientStatus: userStatus.INACTIVE
+                  clientStatus: userStatus.INACTIVE,
                 },
               },
             ]
@@ -680,7 +682,73 @@ export class UsersControllers {
                 },
               },
             ],
-            data: [{ $skip: skip }, { $limit: defaultPerPage }],
+            data: [
+              { $skip: skip },
+              { $limit: defaultPerPage },
+              {
+                $lookup: {
+                  from: "userleadsdetails",
+                  localField: "userLeadsDetailsId",
+                  foreignField: "_id",
+                  as: "userLeadsDetail",
+                },
+              },
+              {
+                $lookup: {
+                  from: "businessdetails", // Target collection
+                  localField: "businessDetailsId",
+                  foreignField: "_id",
+                  as: "businessDetail",
+                },
+              },
+              {
+                $lookup: {
+                  from: "users",
+                  localField: "accountManager",
+                  foreignField: "_id",
+                  as: "account",
+                },
+              },
+              {
+                $lookup: {
+                  from: "userservices",
+                  localField: "userServiceId",
+                  foreignField: "_id",
+                  as: "userService",
+                },
+              },
+              {
+                $addFields: {
+                  businessDetailsId: {
+                    $ifNull: [{ $arrayElemAt: ["$businessDetail", 0] }, {}],
+                  },
+                  userLeadsDetailsId: {
+                    $ifNull: [{ $arrayElemAt: ["$userLeadsDetail", 0] }, {}],
+                  },
+                  userServiceId: {
+                    $ifNull: [{ $arrayElemAt: ["$userService", 0] }, {}],
+                  },
+                  // accountManager:{ $arrayElemAt: ['$account.firstName', 0] },
+                  accountManager: {
+                    $ifNull: [{ $arrayElemAt: ["$account.firstName", 0] }, ""],
+                  },
+                },
+              },
+
+              {
+                $project: {
+                  password: 0,
+                  businessDetail: 0,
+                  userService: 0,
+                  account: 0,
+                  userLeadsDetail: 0,
+                  // businessDetailsId: "$businessDetailsId",
+                  // userLeadsDetailsId: "$userLeadsDetailsId",
+                  // accountManager: "$accountManager",
+                  userTransactions: 0,
+                },
+              },
+            ],
           },
         },
       ]);
@@ -691,6 +759,7 @@ export class UsersControllers {
       };
       res.json(data);
     } catch (err) {
+      console.log(err, ">>>>>");
       return res
         .status(500)
         .json({ error: { message: "Something went wrong.", err } });
@@ -2464,10 +2533,7 @@ export class UsersControllers {
                 else: {
                   $cond: {
                     if: {
-                      $gte: [
-                        "$latestTransaction",
-                        daysAgo(60),
-                      ],
+                      $gte: ["$latestTransaction", daysAgo(60)],
                     },
                     then: "Active",
                     else: {
