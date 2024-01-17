@@ -28,6 +28,13 @@ const upload = multer({
   limits: { fileSize: maxSize },
 });
 
+user.get(
+  "/v2",
+  Auth,
+  checkPermissions([{ module: MODULE.CLIENTS, permission: PERMISSIONS.READ }]),
+  UsersControllers.indexV2
+);
+
 
 user.post("/autoCharge/:id", Auth, UsersControllers.autoChargeNow);
 
@@ -101,7 +108,7 @@ user.get(
   "/stats",
   Auth,
   checkPermissions([{ module: MODULE.CLIENTS, permission: PERMISSIONS.READ }]),
-  UsersControllers.clientsStat
+  UsersControllers.clientsStatsV2
 );
 
 user.get(
