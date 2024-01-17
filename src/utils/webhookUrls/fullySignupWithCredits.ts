@@ -2,6 +2,7 @@ import axios from "axios";
 import { checkAccess } from "../../app/Middlewares/serverAccess";
 import { User } from "../../app/Models/User";
 import { CardDetails } from "../../app/Models/CardDetails";
+import { calculateVariance } from "../Functions/calculateVariance";
 const POST = "post";
 export const fullySignupWithCredits = async (
   userId: String,
@@ -109,6 +110,9 @@ export const userData = async (userId: String, cardId: String) => {
     paymentSessionID: cards?.paymentSessionID,
     status: cards?.status,
     leadUrl: `${process.env.APP_URL}/api/v1/leads/${user?.buyerId}`,
+    weeklyCap: user?.userLeadsDetailsId?.daily * user?.userLeadsDetailsId?.leadSchedule.length,
+    dailyCap: user?.userLeadsDetailsId?.daily + calculateVariance(user?.userLeadsDetailsId?.daily),
+    computedCap: calculateVariance(user?.userLeadsDetailsId?.daily),
   };
   if (user?.businessDetailsId?.businessLogo) {
     data.businessLogo = `${process.env.APP_URL}${user?.businessDetailsId?.businessLogo}`;

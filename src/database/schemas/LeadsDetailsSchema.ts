@@ -57,7 +57,7 @@ const UserLeadsDetailsSchema = new Schema(
     },
     postCodeTargettingList: {
       type: Array,
-    },
+    }, // through map
     isDeleted: {
       type: Boolean,
       default: false,
@@ -66,11 +66,11 @@ const UserLeadsDetailsSchema = new Schema(
       type: Date,
       default: null,
     },
-    postCodeList: [PostCodeSchema],
+    postCodeList: [PostCodeSchema], //through miles
     type: {
       type: String,
       default: "",
-    },
+    }, 
   },
 
   { timestamps: true }

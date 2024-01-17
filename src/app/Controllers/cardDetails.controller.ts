@@ -97,6 +97,11 @@ import { UserLeadsDetailsInterface } from "../../types/LeadDetailsInterface";
 import { POSTCODE_TYPE } from "../../utils/Enums/postcode.enum";
 import { CURRENCY_SIGN } from "../../utils/constantFiles/email.templateIDs";
 import { CURRENCY } from "../../utils/Enums/currency.enum";
+import { calculateVariance } from "../../utils/Functions/calculateVariance";
+import { slackWebhook } from "../../utils/webhookUrls/slackWebhook";
+import { generatePdfAsync } from "../../utils/Functions/generatePdfAsync";
+import { PostalCodeInterface } from "../../types/PostalCodeInterface";
+
 const ObjectId = mongoose.Types.ObjectId;
 
 export class CardDetailsControllers {
@@ -680,7 +685,7 @@ export class CardDetailsControllers {
             response.status = 200;
             response.sessionID = _res.id;
             response.paymentMethods = _res.payment_method;
-                        return res.json({
+            return res.json({
               data: response,
             });
           })
@@ -1096,22 +1101,22 @@ export class CardDetailsControllers {
     req: Request,
     res: Response
   ): Promise<any> => {
-    const input = req.body;
+    const { data, type, id } = req.body;
     try {
-      const customerId = input.data.object?.customer;
-      const paymentMethodId = input.data.object?.payment_method;
+      const customerId = data.object?.customer;
+      const paymentMethodId = data.object?.payment_method;
       const user = await getUserDetails(customerId, paymentMethodId);
       let userId = user.user ?? ({} as UserInterface);
       const card = user.card;
-      const amount = parseInt(input.data.object?.amount);
+      const amount = parseInt(data.object?.amount);
       let originalAmount = getOriginalAmountForStripe(
         amount,
-        input.data.object?.currency
+        data.object?.currency
       );
       if (userId) {
-        if (input.type == STRIPE_PAYMENT_STATUS.FAILED) {
-                  const business = user.business;
-           await User.findByIdAndUpdate(userId._id, {pendingTransaction: "", retriedTransactionCount: 0})
+        if (type == STRIPE_PAYMENT_STATUS.FAILED) {
+          const business = user.business;
+          await User.findByIdAndUpdate(userId._id, {pendingTransaction: "", retriedTransactionCount: 0})
 
           const cards = await CardDetails.findOne({
             userId: userId?._id,
@@ -1139,6 +1144,8 @@ export class CardDetailsControllers {
           }
           // after payment fail reset user
 
+          await slackWebhook(userId.id, id);
+
           sendEmailForPaymentFailure(userId?.email, message);
           let dataToSaveInTransaction: Partial<TransactionInterface> = {
             userId: userId?.id,
@@ -1148,18 +1155,18 @@ export class CardDetailsControllers {
             isCredited: false,
             isDebited: false,
             invoiceId: "",
-            paymentSessionId: input.data.object?.id,
+            paymentSessionId: data.object?.id,
             cardId: card?._id,
             creditsLeft: userId?.credits || 0,
-            paymentMethod: input.data?.object.payment_method,
-            notes: input.data.object.last_payment_error.code,
+            paymentMethod: data?.object.payment_method,
+            notes: data.object.last_payment_error.code,
           };
           if (userId?.paymentMethod === paymentMethodEnum.AUTOCHARGE_METHOD) {
             dataToSaveInTransaction.paymentType = PAYMENT_TYPE_ENUM.AUTO_CHARGE;
           }
           await Transaction.create(dataToSaveInTransaction);
-        } else if (input.type == STRIPE_PAYMENT_STATUS.SUCCESS) {
-                    const cardDetails = await CardDetails.findByIdAndUpdate(
+        } else if (type == STRIPE_PAYMENT_STATUS.SUCCESS) {
+          const cardDetails = await CardDetails.findByIdAndUpdate(
             card?._id,
             {
               status: PAYMENT_SESSION.SUCCESS,
@@ -1187,16 +1194,16 @@ export class CardDetailsControllers {
             status: "",
             title: "",
             invoiceId: "",
-            paymentSessionId: input.data.object.id,
+            paymentSessionId: data.object.id,
             cardId: card?._id,
             creditsLeft: (userId?.credits || 0) + (params.freeCredits || 0)+originalAmount,
-            paymentMethod: input.data?.object?.payment_method,
+            paymentMethod: data?.object?.payment_method,
             paymentType: "",
             isCredited: true,
           };
           addCreditsToBuyer(params)
-            .then(async (res: any) => {
-              userId =
+            .then(async (res) => {
+                            userId =
                 (await User.findById(userId?.id)
                   .populate("userLeadsDetailsId")
                   .populate("businessDetailsId")) ?? ({} as UserInterface);
@@ -1221,12 +1228,12 @@ export class CardDetailsControllers {
                 });
                 fullySignupWithCredits(userId?.id, cardDetails?.id);
                 cmsUpdateBuyerWebhook(userId?.id, cardDetails?.id);
-                let data = await userData(userId?.id, cardDetails?.id);
-                const formattedPostCodes = data?.postCodeTargettingList
-                  .map((item: any) => item.postalCode)
+                let userDetails = await userData(userId?.id, cardDetails?.id);
+                const formattedPostCodes = userDetails?.postCodeTargettingList
+                  .map((item: PostalCodeInterface) => item.postalCode)
                   .flat();
-                data.area = formattedPostCodes;
-                sendEmailForFullySignupToAdmin(data);
+                  userDetails.area = formattedPostCodes;
+                sendEmailForFullySignupToAdmin(userDetails);
               }
               const transaction = await Transaction.create(
                 commonDataSaveInTransaction
@@ -1272,7 +1279,7 @@ export class CardDetailsControllers {
                 message.isIncVat = false;
               }
               sendEmailForPaymentSuccess(userId?.email, message);
-              let invoice: InvoiceInterface | null;
+              let invoice!: InvoiceInterface;
               if (userId?.xeroContactId) {
                 let freeCredits: number;
                 if (params.freeCredits) {
@@ -1286,58 +1293,16 @@ export class CardDetailsControllers {
                   desc: transactionTitle.CREDITS_ADDED,
                   amount: originalAmount,
                   freeCredits: freeCredits,
-                  sessionId: input.data.object.id,
+                  sessionId: data.object.id,
                   isManualAdjustment: false,
                 };
-                generatePDF(paramPdf)
-                  .then(async (res: any) => {
-                    const dataToSaveInInvoice: Partial<InvoiceInterface> = {
-                      userId: userId?.id,
-                      transactionId: transaction.id,
-                      price: userId?.credits,
-                      invoiceId: res.data.Invoices[0].InvoiceID,
-                    };
-                    invoice = await Invoice.create(dataToSaveInInvoice);
-                    await Transaction.findByIdAndUpdate(transaction.id, {
-                      invoiceId: res.data.Invoices[0].InvoiceID,
-                    });
-                    await Transaction.findByIdAndUpdate(transactionForVat.id, {
-                      invoiceId: res.data.Invoices[0].InvoiceID,
-                    });
+                // Call the new function here and send the params it requires.
 
-                    console.log("pdf generated", new Date(), "Today's Date");
-                  })
-                  .catch(async (err) => {
-                    refreshToken().then(async (res) => {
-                      const paramPdf: generatePDFParams = {
-                        ContactID: userId?.xeroContactId,
-                        desc: transactionTitle.CREDITS_ADDED,
-                        amount: originalAmount,
-                        freeCredits: freeCredits,
-                        sessionId: input.data.object?.id,
-                        isManualAdjustment: false,
-                      };
-                      generatePDF(paramPdf).then(async (res: any) => {
-                        const dataToSaveInInvoice: Partial<InvoiceInterface> = {
-                          userId: userId?.id,
-                          transactionId: transaction.id,
-                          price: userId?.credits,
-                          invoiceId: res.data.Invoices[0].InvoiceID,
-                        };
-                        invoice = await Invoice.create(dataToSaveInInvoice);
-                        await Transaction.findByIdAndUpdate(transaction.id, {
-                          invoiceId: res.data.Invoices[0].InvoiceID,
-                        });
-
-                        console.log(
-                          "pdf generated",
-                          new Date(),
-                          "Today's Date"
-                        );
-                      });
-                    });
-                  });
+                const generatedPdf = await generatePdfAsync(userId, transaction, paramPdf, transactionForVat, invoice, originalAmount, freeCredits, data.object?.id)
+              
+                invoice = generatedPdf
               }
+
               if (params.freeCredits) {
                 userId =
                   (await User.findById(userId?.id)) ?? ({} as UserInterface);
@@ -1348,8 +1313,7 @@ export class CardDetailsControllers {
                   (commonDataSaveInTransaction.title =
                     transactionTitle.FREE_CREDITS),
                   (commonDataSaveInTransaction.isCredited = true),
-                  //@ts-ignore
-                  (commonDataSaveInTransaction.invoiceId = invoice?.invoiceId),
+                  (commonDataSaveInTransaction.invoiceId = invoice?.invoiceId!),
                   (commonDataSaveInTransaction.creditsLeft = userId?.credits),
                   await Transaction.create(commonDataSaveInTransaction);
               }
@@ -1360,7 +1324,7 @@ export class CardDetailsControllers {
               const userLead =
                 (await UserLeadsDetails.findById(
                   userId?.userLeadsDetailsId,
-                  "postCodeTargettingList"
+                  // "postCodeTargettingList"
                 )) ?? ({} as UserLeadsDetailsInterface);
               let paramsToSend: PostcodeWebhookParams = {
                 userId: userId._id,
@@ -1368,9 +1332,13 @@ export class CardDetailsControllers {
                 businessName: userBusiness?.businessName,
                 businessIndustry: userBusiness?.businessIndustry,
                 eventCode: EVENT_TITLE.ADD_CREDITS,
+                weeklyCap: userLead?.daily * userLead.leadSchedule?.length,
+                dailyCap: userLead?.daily + calculateVariance(userLead?.daily),
+                computedCap: calculateVariance(userLead?.daily),
                 topUpAmount: originalAmount,
                 type: POSTCODE_TYPE.MAP,
               };
+
               if (userLead.type === POSTCODE_TYPE.RADIUS) {
                 (paramsToSend.type = POSTCODE_TYPE.RADIUS),
                   (paramsToSend.postcode = userLead.postCodeList);
@@ -1407,18 +1375,18 @@ export class CardDetailsControllers {
                 "Today's Date"
               );
             });
-        } 
+        }
       }
       const dataToShow: webhookResponse = {
         message: "success",
-        sessionId: input?.data?.object?.id,
+        sessionId: data?.object?.id,
       };
-      if (input.type === STRIPE_PAYMENT_STATUS.SUCCESS) {
+      if (type === STRIPE_PAYMENT_STATUS.SUCCESS) {
         dataToShow.status = STRIPE_PAYMENT_STATUS.SUCCESS;
-      } else if (input.type === STRIPE_PAYMENT_STATUS.FAILED) {
+      } else if (type === STRIPE_PAYMENT_STATUS.FAILED) {
         dataToShow.status = STRIPE_PAYMENT_STATUS.FAILED;
       }
-      res.status(200).json({ data: dataToShow });
+      return res.status(200).json({ data: dataToShow });
     } catch (err) {
       return res
         .status(500)
@@ -1610,7 +1578,7 @@ export class CardDetailsControllers {
     req: Request,
     res: Response
   ): Promise<any> => {
-        const input = req.query;
+    const input = req.query;
     const setupIntent = String(input.setup_intent);
     try {
       if (setupIntent) {
