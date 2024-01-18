@@ -98,7 +98,7 @@ import { POSTCODE_TYPE } from "../../utils/Enums/postcode.enum";
 import { CURRENCY_SIGN } from "../../utils/constantFiles/email.templateIDs";
 import { CURRENCY } from "../../utils/Enums/currency.enum";
 import { calculateVariance } from "../../utils/Functions/calculateVariance";
-import { slackWebhook } from "../../utils/webhookUrls/slackWebhook";
+import { paymentFailedWebhook } from "../../utils/webhookUrls/paymentFailedWebhook";
 import { generatePdfAsync } from "../../utils/Functions/generatePdfAsync";
 import { PostalCodeInterface } from "../../types/PostalCodeInterface";
 
@@ -1100,7 +1100,7 @@ export class CardDetailsControllers {
   static handlepaymentStatusWebhookStripe = async (
     req: Request,
     res: Response
-  ): Promise<any> => {
+  ): Promise<Response> => {
     const { data, type, id } = req.body;
     try {
       const customerId = data.object?.customer;
@@ -1144,7 +1144,7 @@ export class CardDetailsControllers {
           }
           // after payment fail reset user
 
-          await slackWebhook(userId.id, id);
+          await paymentFailedWebhook(userId, id);
 
           sendEmailForPaymentFailure(userId?.email, message);
           let dataToSaveInTransaction: Partial<TransactionInterface> = {
