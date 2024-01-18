@@ -777,20 +777,17 @@ class AuthController {
           .populate("userServiceId")) ?? ({} as UserInterface);
       const currentDateTime = new Date();
       currentDateTime.setHours(currentDateTime.getHours() - 4);
-      const pendingTransactions = await Transaction.findOne({
+      
+      const transaction = await Transaction.findOne({
         userId: user.id,
-        status: PAYMENT_STATUS.REQUIRES_ACTION,
-        createdAt: { $gte: currentDateTime, $lte: new Date() },
-      }).sort({ createdAt: -1 });
-      const isPendingTransactionCapture = await Transaction.findOne({
-        paymentSessionId: pendingTransactions?.paymentSessionId,
-        status: { $in: [PAYMENT_STATUS.CAPTURED, PAYMENT_STATUS.DECLINE] },
-        title: transactionTitle.CREDITS_ADDED,
+        isCredited: true,
+        status: PAYMENT_STATUS.CAPTURED,
+        amount: {$gt: 0}
       });
-      if (!isPendingTransactionCapture) {
-        // exists.pendingTransaction = pendingTransactions?.notes;
+      exists.hasEverTopped = false
+      if (transaction) {
+        exists.hasEverTopped = true
       }
-
       if (exists) {
         return res.json({
           data: exists,
