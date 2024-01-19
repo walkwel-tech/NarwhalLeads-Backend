@@ -503,7 +503,7 @@ export class UsersControllers {
           role: {
             $nin: [
               RolesEnum.ADMIN,
-              // RolesEnum.INVITED,
+              RolesEnum.INVITED,
               RolesEnum.SUPER_ADMIN,
               RolesEnum.SUBSCRIBER,
             ],
@@ -2666,7 +2666,7 @@ export class UsersControllers {
             role: {
               $nin: [
                 RolesEnum.ADMIN,
-                // RolesEnum.INVITED,
+                RolesEnum.INVITED,
                 RolesEnum.SUPER_ADMIN,
                 RolesEnum.SUBSCRIBER,
               ],
