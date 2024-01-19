@@ -117,7 +117,8 @@ user.get(
   checkPermissions([
     { module: MODULE.CLIENTS_CSV, permission: PERMISSIONS.READ },
   ]),
-  UsersControllers.showAllClientsForAdminExportFileV2
+  // UsersControllers.showAllClientsForAdminExportFileV2
+  UsersControllers.showAllClientsForAdminExportFile
 );
 user.patch("/reorder", OnlyAdmins, UsersControllers.reOrderIndex);
 user.post("/reorder", OnlyAdmins, UsersControllers.reOrderIndex);
