@@ -10,3 +10,4 @@ example.live
 .github/.DS_Store
 public/.DS_Store
 src/.DS_Store
+package-lock.json
