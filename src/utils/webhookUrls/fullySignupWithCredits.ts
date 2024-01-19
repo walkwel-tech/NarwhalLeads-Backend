@@ -83,6 +83,7 @@ export const userData = async (userId: String, cardId: String) => {
     daily: user?.userLeadsDetailsId?.daily,
     leadSchedule: user?.userLeadsDetailsId?.leadSchedule,
     postCodeTargettingList: user?.userLeadsDetailsId?.postCodeTargettingList,
+    postCodeList: user?.userLeadsDetailsId?.postCodeList,
     leadAlertsFrequency: user?.userLeadsDetailsId?.leadAlertsFrequency,
     zapierUrl: user?.userLeadsDetailsId?.zapierUrl,
     sendDataToZapier: user?.userLeadsDetailsId?.sendDataToZapier,
