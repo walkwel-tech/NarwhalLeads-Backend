@@ -108,7 +108,8 @@ user.get(
   "/stats",
   Auth,
   checkPermissions([{ module: MODULE.CLIENTS, permission: PERMISSIONS.READ }]),
-  UsersControllers.clientsStatsV2
+  // UsersControllers.clientsStatsV2
+  UsersControllers.clientsStat
 );
 
 user.get(
