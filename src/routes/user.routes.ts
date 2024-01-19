@@ -28,6 +28,13 @@ const upload = multer({
   limits: { fileSize: maxSize },
 });
 
+user.get(
+  "/v2",
+  Auth,
+  checkPermissions([{ module: MODULE.CLIENTS, permission: PERMISSIONS.READ }]),
+  UsersControllers.indexV2
+);
+
 
 user.post("/autoCharge/:id", Auth, UsersControllers.autoChargeNow);
 
@@ -101,7 +108,7 @@ user.get(
   "/stats",
   Auth,
   checkPermissions([{ module: MODULE.CLIENTS, permission: PERMISSIONS.READ }]),
-  UsersControllers.clientsStat
+  UsersControllers.clientsStatsV2
 );
 
 user.get(
@@ -110,7 +117,7 @@ user.get(
   checkPermissions([
     { module: MODULE.CLIENTS_CSV, permission: PERMISSIONS.READ },
   ]),
-  UsersControllers.showAllClientsForAdminExportFile
+  UsersControllers.showAllClientsForAdminExportFileV2
 );
 user.patch("/reorder", OnlyAdmins, UsersControllers.reOrderIndex);
 user.post("/reorder", OnlyAdmins, UsersControllers.reOrderIndex);

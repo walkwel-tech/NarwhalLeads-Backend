@@ -1,7 +1,7 @@
 import { genSaltSync, hashSync } from "bcryptjs";
 import { validate } from "class-validator";
 import { Request, Response } from "express";
-import mongoose, { Types } from "mongoose";
+import mongoose, { PipelineStage, Types } from "mongoose";
 import { RolesEnum } from "../../types/RolesEnum";
 import { ValidationErrorResponse } from "../../types/ValidationErrorResponse";
 import { paymentMethodEnum } from "../../utils/Enums/payment.method.enum";
@@ -71,14 +71,25 @@ import { Permissions } from "../Models/Permission";
 import { UpdateEmailBodyValidator } from "../Inputs/updateEmail.input";
 import stripe from "../../utils/payment/stripe/stripeInstance";
 import { calculateVariance } from "../../utils/Functions/calculateVariance";
+import {
+  ClientType,
+  GetClientBodyValidator,
+  userStatus,
+} from "../Inputs/GetClients.input";
 
 const ObjectId = mongoose.Types.ObjectId;
 
 const LIMIT = 10;
-
+const daysAgo = (day: number) =>
+  new Date(Date.now() - day * 24 * 60 * 60 * 1000);
 interface DataObject {
   [key: string]: any;
 }
+
+interface SortStage {
+  $sort: Record<string, 1 | -1>;
+}
+
 type RoleFilter = {
   $in: (RolesEnum.USER | RolesEnum.NON_BILLABLE)[];
 };
@@ -88,6 +99,17 @@ type FindOptions = {
   role: RoleFilter;
   accountManager?: Types.ObjectId;
 };
+
+interface IGetClientsQuery {
+  sortingOrder: string,
+  clientType:string,
+  search: string,
+  accountManagerId: string,
+  businessDetailId: string,
+  industryId: string,
+  clientStatus: string,
+  onBoardingPercentage: string
+}
 
 export class UsersControllers {
   static create = async (req: Request, res: Response): Promise<Response> => {
@@ -453,6 +475,455 @@ export class UsersControllers {
         },
       });
     } catch (err) {
+      return res
+        .status(500)
+        .json({ error: { message: "Something went wrong.", err } });
+    }
+  };
+
+  static getClientsQuery({
+    sortingOrder,
+    clientType,
+    search,
+    accountManagerId,
+    businessDetailId,
+    industryId,
+    clientStatus,
+    onBoardingPercentage,
+  }: IGetClientsQuery): PipelineStage[] {
+    const sortStage: SortStage = {
+      $sort: {
+        createdAt: sortingOrder == sort.DESC ? -1 : 1,
+      },
+    };
+
+    const pipeline: PipelineStage[] = [
+      {
+        $match: {
+          role: {
+            $nin: [
+              RolesEnum.ADMIN,
+              // RolesEnum.INVITED,
+              RolesEnum.SUPER_ADMIN,
+              RolesEnum.SUBSCRIBER,
+            ],
+          },
+          ...(clientType
+            ? {
+                ...(clientType === ClientType.BILLABLE
+                  ? { isCreditsAndBillingEnabled: true }
+                  : {
+                      isCreditsAndBillingEnabled: false,
+                    }),
+              }
+            : {}),
+          // isDeleted: false,
+          isActive: true,
+          ...(search
+            ? {
+                $or: [
+                  { email: { $regex: search, $options: "i" } },
+                  { firstName: { $regex: search, $options: "i" } },
+                  { lastName: { $regex: search, $options: "i" } },
+                  { buyerId: { $regex: search, $options: "i" } },
+                  {
+                    "businessDetailsId.businessName": {
+                      $regex: search,
+                      $options: "i",
+                    },
+                  },
+                  {
+                    "businessDetailsId.businessIndustry": {
+                      $regex: search,
+                      $options: "i",
+                    },
+                  },
+                ],
+              }
+            : {}),
+          ...(accountManagerId
+            ? { accountManager: new ObjectId(accountManagerId as string) }
+            : {}),
+          ...(businessDetailId
+            ? {
+                businessDetailsId: new Types.ObjectId(
+                  businessDetailId as string
+                ),
+              }
+            : {}),
+          ...(industryId
+            ? { businessIndustryId: new ObjectId(industryId as string) }
+            : {}),
+          ...(onBoardingPercentage
+            ? { onBoardingPercentage: +onBoardingPercentage }
+            : {}),
+
+          ...(clientStatus && clientStatus === userStatus.LOST
+            ? { isDeleted: true }
+            : { isDeleted: false }),
+          ...(clientStatus && clientStatus === userStatus.ARCHIVED
+            ? { isArchived: true }
+            : {}),
+        },
+      },
+      {
+        $lookup: {
+          from: "transactions",
+          localField: "_id",
+          foreignField: "userId",
+          as: "userTransactions",
+        },
+      },
+      {
+        $addFields: {
+          latestTransaction: {
+            $max: "$userTransactions.createdAt",
+          },
+        },
+      },
+      {
+        $addFields: {
+          clientStatus: {
+            $cond: {
+              if: { $eq: ["$isDeleted", true] },
+              then: userStatus.LOST,
+              else: {
+                $cond: {
+                  if: {
+                    $gte: ["$latestTransaction", daysAgo(60)],
+                  },
+                  then: userStatus.ACTIVE,
+                  else: {
+                    $cond: {
+                      if: {
+                        $eq: [{ $size: "$userTransactions" }, 0],
+                      },
+                      then: userStatus.PENDING,
+                      else: userStatus.INACTIVE,
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+      ...(clientStatus &&
+      (clientStatus == userStatus.PENDING ||
+        clientStatus == userStatus.ACTIVE ||
+        clientStatus == userStatus.INACTIVE)
+        ? [
+            {
+              $match: {
+                isDeleted: false,
+                isActive: true,
+              },
+            },
+          ]
+        : []),
+      ...(clientStatus == userStatus.PENDING
+        ? [
+            {
+              $match: {
+                clientStatus: userStatus.PENDING,
+              },
+            },
+          ]
+        : []),
+      ...(clientStatus == userStatus.ACTIVE
+        ? [
+            {
+              $match: {
+                clientStatus: userStatus.ACTIVE,
+              },
+            },
+          ]
+        : []),
+      ...(clientStatus == userStatus.INACTIVE
+        ? [
+            {
+              $match: {
+                clientStatus: userStatus.INACTIVE,
+              },
+            },
+          ]
+        : []),
+      sortStage,
+    ];
+
+    return pipeline;
+  }
+
+  static indexV2 = async (req: Request, res: Response): Promise<any> => {
+    try {
+      const {
+        onBoardingPercentage,
+        sortingOrder,
+        accountManagerId,
+        businessDetailId,
+        industryId,
+        clientStatus,
+        search,
+        clientType,
+      } = req.query;
+
+      const bodyValidator = new GetClientBodyValidator();
+      bodyValidator.page = req.query.page ? +req.query.page : 1;
+      bodyValidator.perPage = req.query.perPage ? +req.query.perPage : 10;
+      bodyValidator.sortingOrder = sortingOrder
+        ? (sortingOrder as string)
+        : sort.DESC;
+      bodyValidator.onBoardingPercentage = onBoardingPercentage as string;
+      bodyValidator.accountManagerId = accountManagerId as string;
+      bodyValidator.businessDetailId = businessDetailId as string;
+      bodyValidator.industryId = industryId as string;
+      bodyValidator.search = search as string;
+      bodyValidator.clientStatus = clientStatus as string;
+      bodyValidator.clientType = clientType as string;
+      const validationErrors = await validate(bodyValidator);
+      if (validationErrors.length > 0) {
+        return res.status(400).json({
+          error: { message: "Invalid query parameters", validationErrors },
+        });
+      }
+
+      const { page, perPage } = bodyValidator;
+      let skip = 0,
+        defaultPerPage = perPage ? perPage * 1 : LIMIT;
+      if (page) {
+        skip = (page > 0 ? page - 1 : 0) * defaultPerPage;
+      }
+
+      const pipeline: PipelineStage[] = this.getClientsQuery(
+        bodyValidator as IGetClientsQuery
+      );
+
+      const formatPipeline: PipelineStage[] = [
+        {
+          $facet: {
+            metaData: [
+              { $count: "total" },
+              { $addFields: { page, perPage: defaultPerPage } },
+              {
+                $addFields: {
+                  pageCount: {
+                    $ceil: {
+                      $divide: ["$total", perPage],
+                    },
+                  },
+                },
+              },
+            ],
+            data: [
+              { $skip: skip },
+              { $limit: defaultPerPage },
+              {
+                $lookup: {
+                  from: "userleadsdetails",
+                  localField: "userLeadsDetailsId",
+                  foreignField: "_id",
+                  as: "userLeadsDetail",
+                },
+              },
+              {
+                $lookup: {
+                  from: "businessdetails", // Target collection
+                  localField: "businessDetailsId",
+                  foreignField: "_id",
+                  as: "businessDetail",
+                },
+              },
+              {
+                $lookup: {
+                  from: "users",
+                  localField: "accountManager",
+                  foreignField: "_id",
+                  as: "account",
+                },
+              },
+              {
+                $lookup: {
+                  from: "userservices",
+                  localField: "userServiceId",
+                  foreignField: "_id",
+                  as: "userService",
+                },
+              },
+              {
+                $addFields: {
+                  businessDetailsId: {
+                    $ifNull: [{ $arrayElemAt: ["$businessDetail", 0] }, {}],
+                  },
+                  userLeadsDetailsId: {
+                    $ifNull: [{ $arrayElemAt: ["$userLeadsDetail", 0] }, {}],
+                  },
+                  userServiceId: {
+                    $ifNull: [{ $arrayElemAt: ["$userService", 0] }, {}],
+                  },
+                  // accountManager:{ $arrayElemAt: ['$account.firstName', 0] },
+                  accountManager: {
+                    $ifNull: [{ $arrayElemAt: ["$account.firstName", 0] }, ""],
+                  },
+                },
+              },
+
+              {
+                $project: {
+                  password: 0,
+                  businessDetail: 0,
+                  userService: 0,
+                  account: 0,
+                  userLeadsDetail: 0,
+                  // businessDetailsId: "$businessDetailsId",
+                  // userLeadsDetailsId: "$userLeadsDetailsId",
+                  // accountManager: "$accountManager",
+                  userTransactions: 0,
+                },
+              },
+            ],
+          },
+        },
+      ];
+
+      const result = await User.aggregate([...pipeline, ...formatPipeline]);
+
+      let data = {
+        data: result[0]?.data ?? [],
+        meta: result[0]?.metaData?.[0] ?? {},
+      };
+      res.json(data);
+    } catch (err) {
+      console.log(err, ">>>>>");
+      return res
+        .status(500)
+        .json({ error: { message: "Something went wrong.", err } });
+    }
+  };
+
+  static showAllClientsForAdminExportFileV2 = async (
+    req: Request,
+    res: Response
+  ): Promise<any> => {
+    try {
+      const {
+        onBoardingPercentage,
+        sortingOrder,
+        accountManagerId,
+        businessDetailId,
+        industryId,
+        clientStatus,
+        search,
+        clientType,
+      } = req.query;
+
+      const bodyValidator = new GetClientBodyValidator();
+
+      bodyValidator.sortingOrder = sortingOrder
+        ? (sortingOrder as string)
+        : sort.DESC;
+      bodyValidator.onBoardingPercentage = onBoardingPercentage as string;
+      bodyValidator.accountManagerId = accountManagerId as string;
+      bodyValidator.businessDetailId = businessDetailId as string;
+      bodyValidator.industryId = industryId as string;
+      bodyValidator.search = search as string;
+      bodyValidator.clientStatus = clientStatus as string;
+      bodyValidator.clientType = clientType as string;
+      const validationErrors = await validate(bodyValidator);
+      if (validationErrors.length > 0) {
+        return res.status(400).json({
+          error: { message: "Invalid query parameters", validationErrors },
+        });
+      }
+      const pipeline: PipelineStage[] = this.getClientsQuery(
+        bodyValidator as IGetClientsQuery
+      );
+
+      const formatPipeline: PipelineStage[] = [
+        // { $skip: 10 },
+        //       { $limit: 10 },
+        {
+          $lookup: {
+            from: "userleadsdetails",
+            localField: "userLeadsDetailsId",
+            foreignField: "_id",
+            as: "userLeadsDetail",
+          },
+        },
+        {
+          $lookup: {
+            from: "businessdetails", // Target collection
+            localField: "businessDetailsId",
+            foreignField: "_id",
+            as: "businessDetail",
+          },
+        },
+        {
+          $lookup: {
+            from: "users",
+            localField: "accountManager",
+            foreignField: "_id",
+            as: "account",
+          },
+        },
+        {
+          $lookup: {
+            from: "userservices",
+            localField: "userServiceId",
+            foreignField: "_id",
+            as: "userService",
+          },
+        },
+        {
+          $addFields: {
+            businessDetailsId: {
+              $ifNull: [{ $arrayElemAt: ["$businessDetail", 0] }, {}],
+            },
+            userLeadsDetailsId: {
+              $ifNull: [{ $arrayElemAt: ["$userLeadsDetail", 0] }, {}],
+            },
+            userServiceId: {
+              $ifNull: [{ $arrayElemAt: ["$userService", 0] }, {}],
+            },
+            // accountManager:{ $arrayElemAt: ['$account.firstName', 0] },
+            accountManager: {
+              $ifNull: [{ $arrayElemAt: ["$account.firstName", 0] }, ""],
+            },
+          },
+        },
+
+        {
+          $project: {
+            password: 0,
+            businessDetail: 0,
+            userService: 0,
+            account: 0,
+            userLeadsDetail: 0,
+            // businessDetailsId: "$businessDetailsId",
+            // userLeadsDetailsId: "$userLeadsDetailsId",
+            // accountManager: "$accountManager",
+            userTransactions: 0,
+          },
+        },
+      ];
+
+      const result = await User.aggregate([...pipeline, ...formatPipeline]);
+
+      const pref: ClientTablePreferenceInterface | null =
+        await ClientTablePreference.findOne({
+          userId: (req.user as UserInterface).id,
+        });
+
+      const filteredDataArray: DataObject[] = filterAndTransformData(
+        //@ts-ignore
+        pref?.columns,
+        convertArray(result)
+      );
+      const arr = filteredDataArray;
+      return res.json({
+        data: arr,
+      });
+    } catch (err) {
+      console.log(err, ">>>>>");
       return res
         .status(500)
         .json({ error: { message: "Something went wrong.", err } });
@@ -1723,6 +2194,8 @@ export class UsersControllers {
         item.userLeadsDetailsId = userLeadsDetailsId;
         item.businessDetailsId = businessDetailsId;
       });
+
+      console.log(query.results, ">>>>>");
       const pref: ClientTablePreferenceInterface | null =
         await ClientTablePreference.findOne({ userId: _req.user.id });
       const filteredDataArray: DataObject[] = filterAndTransformData(
@@ -2088,9 +2561,8 @@ export class UsersControllers {
               : null;
 
           const userLead =
-            (await UserLeadsDetails.findById(
-              user?.userLeadsDetailsId,
-            )) ?? ({} as UserLeadsDetailsInterface);
+            (await UserLeadsDetails.findById(user?.userLeadsDetailsId)) ??
+            ({} as UserLeadsDetailsInterface);
           let paramsToSend: PostcodeWebhookParams = {
             userId: user._id,
             buyerId: user.buyerId,
@@ -2177,6 +2649,109 @@ export class UsersControllers {
         pausedClients: paused,
       };
       return res.json({ data: dataToShow });
+    } catch (err) {
+      return res.status(500).json({
+        error: {
+          message: "something went wrong",
+          err,
+        },
+      });
+    }
+  };
+  static clientsStatsV2 = async (_req: any, res: Response) => {
+    try {
+      const stats: PipelineStage[] = await User.aggregate([
+        {
+          $match: {
+            role: {
+              $nin: [
+                RolesEnum.ADMIN,
+                // RolesEnum.INVITED,
+                RolesEnum.SUPER_ADMIN,
+                RolesEnum.SUBSCRIBER,
+              ],
+            },
+            // isDeleted: false,
+            isActive: true,
+          },
+        },
+        {
+          $lookup: {
+            from: "transactions",
+            localField: "_id",
+            foreignField: "userId",
+            as: "userTransactions",
+          },
+        },
+        {
+          $addFields: {
+            latestTransaction: {
+              $max: "$userTransactions.createdAt",
+            },
+          },
+        },
+        {
+          $addFields: {
+            status: {
+              $cond: {
+                if: { $eq: ["$isDeleted", true] },
+                then: "Lost",
+                else: {
+                  $cond: {
+                    if: {
+                      $gte: ["$latestTransaction", daysAgo(60)],
+                    },
+                    then: "Active",
+                    else: {
+                      $cond: {
+                        if: {
+                          $eq: [{ $size: "$userTransactions" }, 0],
+                        },
+                        then: "Pending",
+                        else: "Non-Active",
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+        {
+          $group: {
+            _id: null,
+            activeClients: {
+              $sum: {
+                $cond: { if: { $eq: ["$status", "Active"] }, then: 1, else: 0 },
+              },
+            },
+            pausedClients: {
+              $sum: {
+                $cond: {
+                  if: { $eq: ["$status", "Non-Active"] },
+                  then: 1,
+                  else: 0,
+                },
+              },
+            },
+            pendingClients: {
+              $sum: {
+                $cond: {
+                  if: { $eq: ["$status", "Pending"] },
+                  then: 1,
+                  else: 0,
+                },
+              },
+            },
+            lostClients: {
+              $sum: {
+                $cond: { if: { $eq: ["$status", "Lost"] }, then: 1, else: 0 },
+              },
+            },
+          },
+        },
+      ]);
+      return res.json({ data: stats[0] });
     } catch (err) {
       return res.status(500).json({
         error: {

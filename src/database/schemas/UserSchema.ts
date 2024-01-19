@@ -257,6 +257,10 @@ const UserSchema = new Schema(
     secondaryLeads: {
       type: Number,
     },
+    hasEverTopped: {
+      type: Boolean,
+      default: false
+    },
   },
   { timestamps: true }
 );

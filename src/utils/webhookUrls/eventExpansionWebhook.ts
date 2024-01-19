@@ -17,7 +17,7 @@ export interface PostcodeWebhookParams {
   eventCode: string;
   topUpAmount?: string | number;
   type?: string;
-  postCodeList?: County[] | PostCode[];
+  postCodeList?: County[] | PostCode[] | string[];
   miles?: string;
   postcode?: PostCode[];
   remainingCredits?: string | number;
