@@ -74,7 +74,7 @@ export class LeadsController {
           return res.status(403).json({
             error: {
               message:
-                  "Access denied: Your IP address is not allowed to access this API",
+                "Access denied: Your IP address is not allowed to access this API",
             },
           });
         }
@@ -86,58 +86,69 @@ export class LeadsController {
         return res.status(400).json({ error: { message: "Data Required." } });
       }
       const user: any = await User.findOne({ buyerId: bid })
-          .populate("userLeadsDetailsId")
-          .populate("businessDetailsId");
+        .populate("userLeadsDetailsId")
+        .populate("businessDetailsId");
       if (!user?.isLeadReceived) {
         await User.findByIdAndUpdate(user.id, { isLeadReceived: true });
       }
       const originalDailyLimit = user.userLeadsDetailsId?.daily;
 
       const fiftyPercentVariance = Math.round(
-          originalDailyLimit + 0.5 * originalDailyLimit
+        originalDailyLimit + 0.5 * originalDailyLimit
       );
       //  event webhook to hit when lead  credit is less then leadCost
-      if ((user?.credits === 0 || user?.credits < user?.leadCost) && user.isCreditsAndBillingEnabled) {
-        const paramsToSend = {
+      if (
+        (user?.credits === 0 || user?.credits < user?.leadCost) &&
+        user.isCreditsAndBillingEnabled
+      ) {
+        const paramsToSend: PostcodeWebhookParams = {
           userId: user._id,
           buyerId: user.buyerId,
-          buisnessName: user.businessDetailsId.businessName,
+          businessName: user.businessDetailsId.businessName,
           eventCode: EVENT_TITLE.ZERO_CREDITS,
-          postCodeList: user.userLeadsDetailsId?.postCodeTargettingList,
           remainingCredits: user?.credits,
           dailyCap: fiftyPercentVariance,
           weeklyCap: user.userLeadsDetailsId?.weekly,
           computedCap: Math.round(0.5 * originalDailyLimit),
         };
+        if (user.userLeadsDetailsId.type === POSTCODE_TYPE.RADIUS) {
+          (paramsToSend.type = POSTCODE_TYPE.RADIUS),
+            (paramsToSend.postcode = user.userLeadsDetailsId.postCodeList);
+        } else {
+          paramsToSend.postCodeList = flattenPostalCodes(
+            user.userLeadsDetailsId?.postCodeTargettingList
+          )[0].postalCode;
+        }
+
         await eventsWebhook(paramsToSend)
-            .then(() =>
-                console.log(
-                    "event webhook for zero credits hits successfully.",
-                    paramsToSend,
-                    new Date(),
-                    "Today's Date"
-                )
+          .then(() =>
+            console.log(
+              "event webhook for zero credits hits successfully..",
+              paramsToSend,
+              new Date(),
+              "Today's Date"
             )
-            .catch((err) =>
-                console.log(
-                    err,
-                    "error while triggering zero credits webhooks failed",
-                    paramsToSend,
-                    new Date(),
-                    "Today's Date"
-                )
-            );
+          )
+          .catch((err) =>
+            console.log(
+              err,
+              "error while triggering zero credits webhooks failed",
+              paramsToSend,
+              new Date(),
+              "Today's Date"
+            )
+          );
       }
 
       if (
-          ( ((user?.credits <=0) &&
-              user?.secondaryCredits == 0 &&
-              user?.role == RolesEnum.USER &&
-              user?.isCreditsAndBillingEnabled == true)||user.credits<user.leadCost)
+        ( ((user?.credits <=0) &&
+          user?.secondaryCredits == 0 &&
+          user?.role == RolesEnum.USER &&
+          user?.isCreditsAndBillingEnabled == true)||user.credits<user.leadCost)
       ) {
         return res
-            .status(400)
-            .json({ error: { message: "Insufficient Credits" } });
+          .status(400)
+          .json({ error: { message: "Insufficient Credits" } });
       }
 
       const today = new Date();
@@ -167,12 +178,12 @@ export class LeadsController {
       });
 
       if (
-          previous.length >= fiftyPercentVariance ||
-          leadsForThisWeek.length >= user.userLeadsDetailsId.weekly
+        previous.length >= fiftyPercentVariance ||
+        leadsForThisWeek.length >= user.userLeadsDetailsId.weekly
       ) {
         // 50 % variance implemented here
         const utcDatePlus1Hour = new Date(
-            new Date().getTime() + 60 * 60 * 1000
+          new Date().getTime() + 60 * 60 * 1000
         );
         const ukDate = new Date(utcDatePlus1Hour.getTime());
         const ukDateString = ukDate.toUTCString();
@@ -193,9 +204,9 @@ export class LeadsController {
         });
       }
       const leads: LeadsInterface =
-          (await Leads.findOne({ bid: user?.buyerId })
-              .sort({ rowIndex: -1 })
-              .limit(1)) ?? ({} as LeadsInterface);
+        (await Leads.findOne({ bid: user?.buyerId })
+          .sort({ rowIndex: -1 })
+          .limit(1)) ?? ({} as LeadsInterface);
 
       if (user.isSmsNotificationActive) {
         const dataToSent = {
@@ -207,8 +218,8 @@ export class LeadsController {
       }
       if (user?.userLeadsDetailsId?.sendDataToZapier) {
         sendLeadDataToZap(user.userLeadsDetailsId.zapierUrl, input, user)
-            .then((res) => {})
-            .catch((err) => {});
+          .then((res) => {})
+          .catch((err) => {});
       }
 
       let leadcpl;
@@ -229,18 +240,18 @@ export class LeadsController {
         leadcpl = user.leadCost;
         leftCredits = credits - user?.leadCost;
         userf =
-            (await User.findByIdAndUpdate(
-                user?.id,
-                {
-                  credits: leftCredits,
-                },
-                { new: true }
-            )) ?? ({} as UserInterface);
+          (await User.findByIdAndUpdate(
+            user?.id,
+            {
+              credits: leftCredits,
+            },
+            { new: true }
+          )) ?? ({} as UserInterface);
       } else {
         if(user.isCreditsAndBillingEnabled)
         {      leadcpl = user.secondaryLeadCost;
           let leftSecondaryCredits =
-              user.secondaryCredits - user?.secondaryLeadCost;
+            user.secondaryCredits - user?.secondaryLeadCost;
           if (leftSecondaryCredits === 0) {
             await User.findByIdAndUpdate(user.id, {
               isSecondaryUsage: false,
@@ -249,19 +260,19 @@ export class LeadsController {
             });
           }
           userf =
-              (await User.findByIdAndUpdate(
-                  user?.id,
-                  {
-                    secondaryCredits: leftSecondaryCredits,
-                  },
-                  { new: true }
-              )) ?? ({} as UserInterface);}
+            (await User.findByIdAndUpdate(
+              user?.id,
+              {
+                secondaryCredits: leftSecondaryCredits,
+              },
+              { new: true }
+            )) ?? ({} as UserInterface);}
       }
 
       if (
-          (userf?.credits === 0 || userf?.credits < parseInt(userf?.leadCost)) &&
-          user?.onBoardingPercentage === ONBOARDING_PERCENTAGE.CARD_DETAILS &&
-          !user.isSecondaryUsage
+        (userf?.credits === 0 || userf?.credits < parseInt(userf?.leadCost)) &&
+        user?.onBoardingPercentage === ONBOARDING_PERCENTAGE.CARD_DETAILS &&
+        !user.isSecondaryUsage
       ) {
         let paramsToSend: PostcodeWebhookParams = {
           userId: user._id,
@@ -276,27 +287,27 @@ export class LeadsController {
 
         if (user.userLeadsDetailsId.type === POSTCODE_TYPE.RADIUS) {
           (paramsToSend.type = POSTCODE_TYPE.RADIUS),
-              (paramsToSend.postcode = user.userLeadsDetailsId.postCodeList);
+            (paramsToSend.postcode = user.userLeadsDetailsId.postCodeList);
         } else {
           paramsToSend.postCodeList = flattenPostalCodes(
-              user.userLeadsDetailsId?.postCodeTargettingList
-          );
+            user.userLeadsDetailsId?.postCodeTargettingList
+          )[0].postalCode;
         }
 
         await eventsWebhook(paramsToSend)
-            .then(() =>
-                console.log(
-                    "event webhook for zero credits hits successfully.",
-                    paramsToSend
-                )
+          .then(() =>
+            console.log(
+              "event webhook for zero credits hits successfully.",
+              paramsToSend
             )
-            .catch((err) =>
-                console.log(
-                    err,
-                    "error while triggering zero credits webhooks failed",
-                    paramsToSend
-                )
-            );
+          )
+          .catch((err) =>
+            console.log(
+              err,
+              "error while triggering zero credits webhooks failed",
+              paramsToSend
+            )
+          );
       }
 
       if (leftCredits && !user.isSecondaryUsage && user.isCreditsAndBillingEnabled) {
@@ -326,21 +337,22 @@ export class LeadsController {
         }
       }
 
-      if(user.isCreditsAndBillingEnabled){  let dataToSave: any = {
-        userId: user.id,
-        isDebited: true,
-        title: transactionTitle.NEW_LEAD,
-        amount: leadcpl,
-        status: "success",
-        creditsLeft: user?.credits - leadcpl,
-      };
+      if (user.isCreditsAndBillingEnabled) {
+        let dataToSave: any = {
+          userId: user.id,
+          isDebited: true,
+          title: transactionTitle.NEW_LEAD,
+          amount: leadcpl,
+          status: "success",
+          creditsLeft: user?.credits - leadcpl,
+        };
         if (user.isSecondaryUsage) {
           dataToSave.creditsLeft = user.secondaryCredits - user.secondaryLeadCost;
         }
         await Transaction.create(dataToSave);}
 
       if (
-          user.userLeadsDetailsId?.leadAlertsFrequency == leadsAlertsEnums.INSTANT
+        user.userLeadsDetailsId?.leadAlertsFrequency == leadsAlertsEnums.INSTANT
       ) {
         let arr: any = [];
         Object.keys(input).forEach((key) => {
@@ -369,9 +381,9 @@ export class LeadsController {
         }).populate("userLeadsDetailsId");
         invitedUsers.map((iUser) => {
           if (
-              //@ts-ignore
-              iUser?.userLeadsDetailsId?.leadAlertsFrequency ===
-              leadsAlertsEnums.INSTANT
+            //@ts-ignore
+            iUser?.userLeadsDetailsId?.leadAlertsFrequency ===
+            leadsAlertsEnums.INSTANT
           ) {
             emails.push(iUser.email);
           }
@@ -383,10 +395,10 @@ export class LeadsController {
 
       return res.json({ data: leadsSave });
     } catch (error) {
-      console.log("rrrr",error)
+      console.log("rrrr", error);
       return res
-          .status(500)
-          .json({ error: { message: "Something went wrong" } });
+        .status(500)
+        .json({ error: { message: "Something went wrong" } });
     }
   };
 
@@ -1066,7 +1078,7 @@ export class LeadsController {
                   as: "accountManager",
                 },
               },
-                // @ts-ignore
+              // @ts-ignore
               ...(user?.accountManager &&user?.accountManager?.length >0
                 ? [
                     {
@@ -2635,41 +2647,53 @@ export class LeadsController {
         });
         dataToFind.bid = { $in: bids };
       }
-      const [query]: any = await Leads.aggregate([
-        {
-          $facet: {
-            results: [
-              { $match: dataToFind },
-              {
-                $lookup: {
-                  from: "users",
-                  localField: "bid",
-                  foreignField: "buyerId",
-                  as: "clientName",
+    
+      const batchSize = 1500; 
+      const totalDocuments = await Leads.countDocuments({...dataToFind});
+      const totalPages = Math.ceil(totalDocuments / batchSize);
+      let document = []
+      for (let page = 0; page < totalPages; page++) {
+        const [query]: any = await Leads.aggregate([
+          {
+            $facet: {
+              results: [
+                { $match: dataToFind },
+                {
+                  $lookup: {
+                    from: "users",
+                    localField: "bid",
+                    foreignField: "buyerId",
+                    as: "clientName",
+                  },
                 },
-              },
-              { $sort: { createdAt: sortingOrder } },
-              {
-                $project: {
-                  rowIndex: 0,
-                  __v: 0,
-                  updatedAt: 0,
-                  "leads.c1": 0,
+                { $sort: { createdAt: sortingOrder } },
+                {
+                  $project: {
+                    rowIndex: 0,
+                    __v: 0,
+                    updatedAt: 0,
+                    "leads.c1": 0,
+                  },
                 },
-              },
-            ],
-            leadsCount: [{ $match: dataToFind }, { $count: "count" }],
+                {
+                  $skip: page * batchSize,
+                },
+                {
+                  $limit: batchSize,
+                },
+              ],
+              leadsCount: [{ $match: dataToFind }, { $count: "count" }],
+            },
           },
-        },
-      ]);
-      query.results.map((item: any) => {
-        item.leads.clientName =
-          item["clientName"][0]?.firstName +
-          " " +
-          item["clientName"][0]?.lastName;
-      });
-      // const pref: LeadTablePreferenceInterface | null =
-      //   await LeadTablePreference.findOne({ userId: _req.user.id });
+        ]);
+        query.results.map((item: any) => {
+          item.leads.clientName =
+            item["clientName"][0]?.firstName +
+            " " +
+            item["clientName"][0]?.lastName;
+        });
+        document.push(...query.results)
+      }
 
       const pref = await BuisnessIndustries.aggregate([
         {
@@ -2707,7 +2731,8 @@ export class LeadsController {
       const filteredDataArray: DataObject[] = filterAndTransformData(
         //@ts-ignore
         pref[0]?.columns,
-        convertArray(query.results)
+        convertArray(document)
+        // convertArray(query.results)
       );
       const resultArray = filteredDataArray.map((obj) => {
         const newObj: Record<string, string> = {};

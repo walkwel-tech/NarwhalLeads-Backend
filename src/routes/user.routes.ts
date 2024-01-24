@@ -56,6 +56,15 @@ user.post(
 );
 
 user.post(
+  "/process-report",
+  OnlyAdmins,
+  checkPermissions([
+    { module: MODULE.CLIENTS, permission: PERMISSIONS.UPDATE },
+  ]),
+  UsersControllers.updateClientsStatus
+);
+
+user.post(
   "/manual-adjustment",
   OnlyAdmins,
   checkPermissions([
@@ -117,7 +126,7 @@ user.get(
   checkPermissions([
     { module: MODULE.CLIENTS_CSV, permission: PERMISSIONS.READ },
   ]),
-  UsersControllers.showAllClientsForAdminExportFile
+  UsersControllers.showAllClientsForAdminExportFileV2
 );
 user.patch("/reorder", OnlyAdmins, UsersControllers.reOrderIndex);
 user.post("/reorder", OnlyAdmins, UsersControllers.reOrderIndex);

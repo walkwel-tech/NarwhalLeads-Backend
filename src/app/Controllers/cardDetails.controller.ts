@@ -98,9 +98,10 @@ import { POSTCODE_TYPE } from "../../utils/Enums/postcode.enum";
 import { CURRENCY_SIGN } from "../../utils/constantFiles/email.templateIDs";
 import { CURRENCY } from "../../utils/Enums/currency.enum";
 import { calculateVariance } from "../../utils/Functions/calculateVariance";
-import { slackWebhook } from "../../utils/webhookUrls/slackWebhook";
+import { paymentFailedWebhook } from "../../utils/webhookUrls/paymentFailedWebhook";
 import { generatePdfAsync } from "../../utils/Functions/generatePdfAsync";
 import { PostalCodeInterface } from "../../types/PostalCodeInterface";
+import { userStatus } from "../Inputs/GetClients.input";
 
 const ObjectId = mongoose.Types.ObjectId;
 
@@ -1100,7 +1101,7 @@ export class CardDetailsControllers {
   static handlepaymentStatusWebhookStripe = async (
     req: Request,
     res: Response
-  ): Promise<any> => {
+  ): Promise<Response> => {
     const { data, type, id } = req.body;
     try {
       const customerId = data.object?.customer;
@@ -1144,7 +1145,7 @@ export class CardDetailsControllers {
           }
           // after payment fail reset user
 
-          await slackWebhook(userId.id, id);
+          await paymentFailedWebhook(userId, id);
 
           sendEmailForPaymentFailure(userId?.email, message);
           let dataToSaveInTransaction: Partial<TransactionInterface> = {
@@ -1238,7 +1239,7 @@ export class CardDetailsControllers {
               const transaction = await Transaction.create(
                 commonDataSaveInTransaction
               );
-              await User.findByIdAndUpdate(userId._id, {pendingTransaction: "", retriedTransactionCount: 0});
+              await User.findByIdAndUpdate(userId._id, {pendingTransaction: "", retriedTransactionCount: 0, clientReported: userStatus.ACTIVE});
               (commonDataSaveInTransaction.status = PAYMENT_STATUS.CAPTURED),
                 (commonDataSaveInTransaction.amount =
                   amount / 100 - originalAmount),

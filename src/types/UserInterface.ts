@@ -74,4 +74,6 @@ export interface UserInterface extends Document {
   isSecondaryUsage: boolean;
   secondaryLeads: number;
   retriedTransactionCount: number;
+  hasEverTopped?: boolean,
+  clientStatus?: string
 }
