@@ -2647,41 +2647,53 @@ export class LeadsController {
         });
         dataToFind.bid = { $in: bids };
       }
-      const [query]: any = await Leads.aggregate([
-        {
-          $facet: {
-            results: [
-              { $match: dataToFind },
-              {
-                $lookup: {
-                  from: "users",
-                  localField: "bid",
-                  foreignField: "buyerId",
-                  as: "clientName",
+    
+      const batchSize = 1500; 
+      const totalDocuments = await Leads.countDocuments({...dataToFind});
+      const totalPages = Math.ceil(totalDocuments / batchSize);
+      let document = []
+      for (let page = 0; page < totalPages; page++) {
+        const [query]: any = await Leads.aggregate([
+          {
+            $facet: {
+              results: [
+                { $match: dataToFind },
+                {
+                  $lookup: {
+                    from: "users",
+                    localField: "bid",
+                    foreignField: "buyerId",
+                    as: "clientName",
+                  },
                 },
-              },
-              { $sort: { createdAt: sortingOrder } },
-              {
-                $project: {
-                  rowIndex: 0,
-                  __v: 0,
-                  updatedAt: 0,
-                  "leads.c1": 0,
+                { $sort: { createdAt: sortingOrder } },
+                {
+                  $project: {
+                    rowIndex: 0,
+                    __v: 0,
+                    updatedAt: 0,
+                    "leads.c1": 0,
+                  },
                 },
-              },
-            ],
-            leadsCount: [{ $match: dataToFind }, { $count: "count" }],
+                {
+                  $skip: page * batchSize,
+                },
+                {
+                  $limit: batchSize,
+                },
+              ],
+              leadsCount: [{ $match: dataToFind }, { $count: "count" }],
+            },
           },
-        },
-      ]);
-      query.results.map((item: any) => {
-        item.leads.clientName =
-          item["clientName"][0]?.firstName +
-          " " +
-          item["clientName"][0]?.lastName;
-      });
-      // const pref: LeadTablePreferenceInterface | null =
-      //   await LeadTablePreference.findOne({ userId: _req.user.id });
+        ]);
+        query.results.map((item: any) => {
+          item.leads.clientName =
+            item["clientName"][0]?.firstName +
+            " " +
+            item["clientName"][0]?.lastName;
+        });
+        document.push(...query.results)
+      }
 
       const pref = await BuisnessIndustries.aggregate([
         {
@@ -2719,7 +2731,8 @@ export class LeadsController {
       const filteredDataArray: DataObject[] = filterAndTransformData(
         //@ts-ignore
         pref[0]?.columns,
-        convertArray(query.results)
+        convertArray(document)
+        // convertArray(query.results)
       );
       const resultArray = filteredDataArray.map((obj) => {
         const newObj: Record<string, string> = {};

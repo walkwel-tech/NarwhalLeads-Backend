@@ -531,7 +531,7 @@ export class UserLeadsController {
           businessName: business?.businessName,
           eventCode: EVENT_TITLE.DAILY_LEAD_CAP,
           weeklyCap: input?.daily * input.leadSchedule?.length,
-          dailyCap: input?.daily + calculateVariance(input?.daily),
+          dailyCap: +input?.daily + (+calculateVariance(input?.daily)),
           dailyLeadCap: userAfterMod?.daily,
           computedCap: calculateVariance(input?.daily),
         };
