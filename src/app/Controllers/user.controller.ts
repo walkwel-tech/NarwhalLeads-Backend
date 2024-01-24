@@ -74,14 +74,15 @@ import { calculateVariance } from "../../utils/Functions/calculateVariance";
 import {
   ClientType,
   GetClientBodyValidator,
+  NULL_MANAGER,
   userStatus,
 } from "../Inputs/GetClients.input";
+import { updateReport } from "../AutoUpdateTasks/ReportingStatusUpdate";
 
 const ObjectId = mongoose.Types.ObjectId;
 
 const LIMIT = 10;
-const daysAgo = (day: number) =>
-  new Date(Date.now() - day * 24 * 60 * 60 * 1000);
+
 interface DataObject {
   [key: string]: any;
 }
@@ -101,14 +102,14 @@ type FindOptions = {
 };
 
 interface IGetClientsQuery {
-  sortingOrder: string,
-  clientType:string,
-  search: string,
-  accountManagerId: string,
-  businessDetailId: string,
-  industryId: string,
-  clientStatus: string,
-  onBoardingPercentage: string
+  sortingOrder: string;
+  clientType: string;
+  search: string;
+  accountManagerId: string;
+  businessDetailId: string;
+  industryId: string;
+  clientStatus: string;
+  onBoardingPercentage: string;
 }
 
 export class UsersControllers {
@@ -527,6 +528,15 @@ export class UsersControllers {
                   { lastName: { $regex: search, $options: "i" } },
                   { buyerId: { $regex: search, $options: "i" } },
                   {
+                    $expr: {
+                      $regexMatch: {
+                        input: { $concat: ["$firstName", " ", "$lastName"] },
+                        regex: search,
+                        options: "i",
+                      }
+                    }
+                  },
+                  {
                     "businessDetailsId.businessName": {
                       $regex: search,
                       $options: "i",
@@ -542,7 +552,7 @@ export class UsersControllers {
               }
             : {}),
           ...(accountManagerId
-            ? { accountManager: new ObjectId(accountManagerId as string) }
+            ? { accountManager: accountManagerId === NULL_MANAGER ?  null : new ObjectId(accountManagerId as string) }
             : {}),
           ...(businessDetailId
             ? {
@@ -566,61 +576,7 @@ export class UsersControllers {
             : {}),
         },
       },
-      {
-        $lookup: {
-          from: "transactions",
-          localField: "_id",
-          foreignField: "userId",
-          as: "userTransactions",
-        },
-      },
-      {
-        $addFields: {
-          latestTransaction: {
-            $max: "$userTransactions.createdAt",
-          },
-        },
-      },
-      {
-        $addFields: {
-          clientStatus: {
-            $cond: {
-              if: { $eq: ["$isDeleted", true] },
-              then: userStatus.LOST,
-              else: {
-                $cond: {
-                  if: {
-                    $gte: ["$latestTransaction", daysAgo(60)],
-                  },
-                  then: userStatus.ACTIVE,
-                  else: {
-                    $cond: {
-                      if: {
-                        $eq: [{ $size: "$userTransactions" }, 0],
-                      },
-                      then: userStatus.PENDING,
-                      else: userStatus.INACTIVE,
-                    },
-                  },
-                },
-              },
-            },
-          },
-        },
-      },
-      ...(clientStatus &&
-      (clientStatus == userStatus.PENDING ||
-        clientStatus == userStatus.ACTIVE ||
-        clientStatus == userStatus.INACTIVE)
-        ? [
-            {
-              $match: {
-                isDeleted: false,
-                isActive: true,
-              },
-            },
-          ]
-        : []),
+      
       ...(clientStatus == userStatus.PENDING
         ? [
             {
@@ -2676,59 +2632,21 @@ export class UsersControllers {
           },
         },
         {
-          $lookup: {
-            from: "transactions",
-            localField: "_id",
-            foreignField: "userId",
-            as: "userTransactions",
-          },
-        },
-        {
-          $addFields: {
-            latestTransaction: {
-              $max: "$userTransactions.createdAt",
-            },
-          },
-        },
-        {
-          $addFields: {
-            status: {
-              $cond: {
-                if: { $eq: ["$isDeleted", true] },
-                then: "Lost",
-                else: {
-                  $cond: {
-                    if: {
-                      $gte: ["$latestTransaction", daysAgo(60)],
-                    },
-                    then: "Active",
-                    else: {
-                      $cond: {
-                        if: {
-                          $eq: [{ $size: "$userTransactions" }, 0],
-                        },
-                        then: "Pending",
-                        else: "Non-Active",
-                      },
-                    },
-                  },
-                },
-              },
-            },
-          },
-        },
-        {
           $group: {
             _id: null,
             activeClients: {
               $sum: {
-                $cond: { if: { $eq: ["$status", "Active"] }, then: 1, else: 0 },
+                $cond: {
+                  if: { $eq: ["$clientStatus", userStatus.ACTIVE] },
+                  then: 1,
+                  else: 0,
+                },
               },
             },
             pausedClients: {
               $sum: {
                 $cond: {
-                  if: { $eq: ["$status", "Non-Active"] },
+                  if: { $eq: ["$clientStatus", userStatus.INACTIVE] },
                   then: 1,
                   else: 0,
                 },
@@ -2737,7 +2655,7 @@ export class UsersControllers {
             pendingClients: {
               $sum: {
                 $cond: {
-                  if: { $eq: ["$status", "Pending"] },
+                  if: { $eq: ["$clientStatus", userStatus.PENDING] },
                   then: 1,
                   else: 0,
                 },
@@ -2745,7 +2663,11 @@ export class UsersControllers {
             },
             lostClients: {
               $sum: {
-                $cond: { if: { $eq: ["$status", "Lost"] }, then: 1, else: 0 },
+                $cond: {
+                  if: { $eq: ["$clientStatus", userStatus.LOST] },
+                  then: 1,
+                  else: 0,
+                },
               },
             },
           },
@@ -2902,6 +2824,20 @@ export class UsersControllers {
       return res
         .status(500)
         .json({ error: { message: "Something went wrong.", err } });
+    }
+  };
+
+  static updateClientsStatus = async (
+    req: Request,
+    res: Response
+  ): Promise<any> => {
+    try {
+      await updateReport(100);
+      return res.json({ message: "client status updated " });
+    } catch (err) {
+      res.status(500).json({
+        err,
+      });
     }
   };
 }
