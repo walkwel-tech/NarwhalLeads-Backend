@@ -564,9 +564,19 @@ export class UserLeadsController {
         const businessDeatilsData = await BusinessDetails.findById(
           userData?.businessDetailsId
         );
-        const formattedPostCodes = updatedDetails?.postCodeTargettingList
+        let formattedPostCodes ;
+        if (userAfterMod.type === POSTCODE_TYPE.RADIUS) {
+            (formattedPostCodes = userAfterMod.postCodeList?.map(({postcode}) => {
+              return postcode
+            }));
+        } else {
+          formattedPostCodes = updatedDetails?.postCodeTargettingList
           .map((item: any) => item.postalCode)
           .flat();
+        }
+        // let formattedPostCodes = updatedDetails?.postCodeTargettingList
+        //   .map((item: any) => item.postalCode)
+        //   .flat();
 
         const message = {
           firstName: userData?.firstName,

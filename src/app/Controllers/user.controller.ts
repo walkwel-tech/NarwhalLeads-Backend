@@ -1831,9 +1831,19 @@ export class UsersControllers {
           result?.userLeadsDetailsId
         );
 
-        const formattedPostCodes = leadData?.postCodeTargettingList
+        // const formattedPostCodes = leadData?.postCodeTargettingList
+        //   .map((item: any) => item.postalCode)
+        //   .flat();
+        let formattedPostCodes ;
+        if (leadData && leadData.type === POSTCODE_TYPE.RADIUS) {
+            (formattedPostCodes = leadData.postCodeList?.map(({postcode}) => {
+              return postcode
+            }));
+        } else {
+          formattedPostCodes = leadData?.postCodeTargettingList
           .map((item: any) => item.postalCode)
           .flat();
+        }
         const userAfterMod = await User.findById(
           id,
           "-__v -_id -businessDetailsId -businessIndustryId -userServiceId -accountManager -userLeadsDetailsId -onBoarding -createdAt -updatedAt -password"

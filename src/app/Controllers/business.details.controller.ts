@@ -50,6 +50,7 @@ import { eventsWebhook } from "../../utils/webhookUrls/eventExpansionWebhook";
 import { EVENT_TITLE } from "../../utils/constantFiles/events";
 import { DEFAULT } from "../../utils/constantFiles/user.default.values";
 import { INTERNATIONAL_CODE } from "../../utils/constantFiles/internationalCode";
+import { POSTCODE_TYPE } from "../../utils/Enums/postcode.enum";
 
 const ObjectId = mongoose.Types.ObjectId;
 
@@ -508,10 +509,20 @@ const { onBoarding }: any = user || {};
         const leadData = await UserLeadsDetails.findOne({
           userId: userData?._id,
         });
-        const formattedPostCodes = leadData?.postCodeTargettingList
+        // const formattedPostCodes = leadData?.postCodeTargettingList
+        //   .map((item: any) => item.postalCode)
+        //   .flat();
+
+        let formattedPostCodes ;
+        if (leadData && leadData.type === POSTCODE_TYPE.RADIUS) {
+            (formattedPostCodes = leadData.postCodeList?.map(({postcode}) => {
+              return postcode
+            }));
+        } else {
+          formattedPostCodes = leadData?.postCodeTargettingList
           .map((item: any) => item.postalCode)
           .flat();
-
+        }
         const message = {
           firstName: userData?.firstName,
           lastName: userData?.lastName,
