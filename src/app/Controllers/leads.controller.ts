@@ -164,9 +164,11 @@ export class LeadsController {
         },
       });
       const startOfWeek = new Date(today);
+      startOfWeek.setHours(0, 0, 0, 0);
       startOfWeek.setUTCDate(today.getUTCDate() - today.getUTCDay());
 
       const endOfWeek = new Date(startOfWeek);
+      endOfWeek.setHours(23, 59, 59, 999);
       endOfWeek.setUTCDate(startOfWeek.getUTCDate() + 7);
 
       const leadsForThisWeek = await Leads.find({
@@ -1339,7 +1341,10 @@ export class LeadsController {
                 },
               },
               {
-                $unwind: "$accountManager",
+                $unwind: {
+                  path: "$accountManager", 
+                  "preserveNullAndEmptyArrays": true
+                }
               },
               // { $sort: { rowIndex: -1 } },
               { $sort: { createdAt: sortingOrder } },
@@ -1406,7 +1411,7 @@ export class LeadsController {
           item.leads.accountManager =
             item["accountManager"]?.firstName +
             " " +
-            (item["accountManager"].lastName || "");
+            (item["accountManager"]?.lastName || "");
         } else {
           item.leads.clientName = "Deleted User";
         }
@@ -1484,6 +1489,7 @@ export class LeadsController {
           console.error(error);
         });
     } catch (err) {
+      console.log(err, ">>>> err")
       return res.status(500).json({
         error: {
           message: "something went wrong",

@@ -1103,7 +1103,7 @@ export class CardDetailsControllers {
     res: Response
   ): Promise<Response> => {
     const { data, type, id } = req.body;
-    try {
+        try {
       const customerId = data.object?.customer;
       const paymentMethodId = data.object?.payment_method;
       const user = await getUserDetails(customerId, paymentMethodId);
@@ -1118,7 +1118,7 @@ export class CardDetailsControllers {
         if (type == STRIPE_PAYMENT_STATUS.FAILED) {
           const business = user.business;
           await User.findByIdAndUpdate(userId._id, {pendingTransaction: "", retriedTransactionCount: 0})
-
+          
           const cards = await CardDetails.findOne({
             userId: userId?._id,
             isDefault: true,
@@ -1135,7 +1135,7 @@ export class CardDetailsControllers {
             currency: CURRENCY_SIGN.GBP,
             isIncVat: true,
           };
-
+          
           if (userId.currency === CURRENCY.DOLLER) {
             message.currency = CURRENCY_SIGN.USD;
             message.isIncVat = false;
@@ -1144,8 +1144,8 @@ export class CardDetailsControllers {
             message.isIncVat = false;
           }
           // after payment fail reset user
-
-          await paymentFailedWebhook(userId, id);
+          const content = "We have recently identified a payment failure of user"
+          await paymentFailedWebhook(userId, id, business?.businessName as string, content, business?.businessIndustry as string );
 
           sendEmailForPaymentFailure(userId?.email, message);
           let dataToSaveInTransaction: Partial<TransactionInterface> = {

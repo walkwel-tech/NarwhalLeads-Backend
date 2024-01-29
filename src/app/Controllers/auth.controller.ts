@@ -51,6 +51,8 @@ import { reCaptchaValidation } from "../../utils/Functions/reCaptcha";
 import { UpdatePasswordInput } from "../Inputs/ClientPassword.input";
 import { Transaction } from "../Models/Transaction";
 import { PAYMENT_STATUS } from "../../utils/Enums/payment.status";
+import { BuisnessIndustries } from "../Models/BuisnessIndustries";
+import { BuisnessIndustriesInterface } from "../../types/BuisnessIndustriesInterface";
 class AuthController {
   static register = async (req: Request, res: Response): Promise<any> => {
     const input = req.body;
@@ -776,7 +778,14 @@ class AuthController {
           .populate("userServiceId")) ?? ({} as UserInterface);
       const currentDateTime = new Date();
       currentDateTime.setHours(currentDateTime.getHours() - 4);
+      // This is done because i can't use populate on businessIndustryId as same key is used at multiplaces in frontend
+      if (exists.businessIndustryId) {
+        let businessIndustryObj = (await BuisnessIndustries.findById(
+          exists.businessIndustryId
+        )) as BuisnessIndustriesInterface;
+        exists.avgConversionRate = businessIndustryObj?.avgConversionRate;
       
+      }
       const transaction = await Transaction.findOne({
         userId: user.id,
         isCredited: true,

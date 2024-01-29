@@ -7,6 +7,7 @@ export interface UserInterface extends Document {
   createdAt: any;
   _id: Types.ObjectId;
   businessIndustryId: Types.ObjectId;
+  avgConversionRate: number | undefined;
   firstName: string;
   currency: string;
   country: string;
