@@ -6,6 +6,9 @@ const BuisnessIndustriesSchema = new Schema(
     industry: {
       type: String,
     },
+    avgConversionRate: {
+      type: Number,
+    },
     leadCost: {
       type: Number,
     },

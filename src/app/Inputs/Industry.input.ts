@@ -1,4 +1,4 @@
-import { IsNotEmpty, IsString } from "class-validator";
+import { IsNotEmpty, IsNumber, IsString } from "class-validator";
 
 export class IndustryInput {
   @IsNotEmpty()
@@ -9,4 +9,8 @@ export class IndustryInput {
   @IsNotEmpty()
   leadCost: string;
   currencyCode: string;
+
+  @IsNotEmpty()
+  @IsNumber()
+  avgConversionRate: number;
 }

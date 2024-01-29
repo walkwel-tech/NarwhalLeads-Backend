@@ -37,6 +37,7 @@ import { User } from "../Models/User";
 import { UserLeadsDetails } from "../Models/UserLeadsDetails";
 import fs from "fs"
 import {APP_ENV} from "../../utils/Enums/serverModes.enum";
+import { paymentFailedWebhook } from "../../utils/webhookUrls/paymentFailedWebhook";
 
 interface paymentParams {
   fixedAmount: number;
@@ -336,6 +337,10 @@ export const chargeUserOnStripe = async (params: IntentInterface) => {
         });
         
         if (_res.status === PAYMENT_STATUS.REQUIRES_ACTION) {
+
+
+
+
           const user: UserInterface =
             (await User.findOne({email: params.email})) ??
             ({} as UserInterface);
@@ -390,6 +395,12 @@ export const chargeUserOnStripe = async (params: IntentInterface) => {
             message.currency = CURRENCY_SIGN.EUR;
             message.isIncVat = false;
           }
+          const content = "We have recently identified a payment which require 3DS action of user"
+          await paymentFailedWebhook(user, user.id, business?.businessName as string, content, business?.businessIndustry as string ).then((res) => {
+            console.log(res, "PAYMENT FAILED WEBHOOK RESPONSE", new Date())
+          }).catch((err) => {
+            console.error(err, "PAYMENT FAILED WEBHOOK ERROR", new Date())
+          });
 
           sendEmailForRequireActionAutocharge(user.email, message);
         }
