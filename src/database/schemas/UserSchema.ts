@@ -266,6 +266,9 @@ const UserSchema = new Schema(
       type: Boolean,
       default: false
     },
+    avgConversionRate: {
+      type: Number,
+    },
   },
   { timestamps: true }
 );

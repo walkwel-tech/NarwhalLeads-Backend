@@ -10,4 +10,5 @@ export interface BuisnessIndustriesInterface extends Document {
   isDeleted: boolean;
   associatedCurrency: string;
   country: string;
+  avgConversionRate: number;
 }

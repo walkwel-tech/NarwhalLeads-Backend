@@ -1293,7 +1293,8 @@ export class UsersControllers {
           userExist &&
           // @ts-ignore
           userExist.id !== req?.user?.id &&
-          userExist.role !== RolesEnum.SUPER_ADMIN
+          userExist.role !== RolesEnum.SUPER_ADMIN && 
+          !userExist?.isDeleted 
         ) {
           return res.status(400).json({
             error: {
@@ -2459,14 +2460,22 @@ export class UsersControllers {
         };
         let dataToSave: Partial<TransactionInterface> = {
           userId: user.id,
-          amount: credits,
+          amount: Math.abs(credits),
           status: PAYMENT_STATUS.CAPTURED,
           title: transactionTitle.MANUAL_ADJUSTMENT,
           paymentType: transactionTitle.MANUAL_ADJUSTMENT,
         };
         // if (user?.credits < credits) {
         amount = credits;
-        (params.fixedAmount = amount), (dataToSave.isCredited = true);
+        (params.fixedAmount = amount)
+        if(amount < 0){
+          (dataToSave.isCredited = false);
+          (dataToSave.isDebited = true);
+          
+        }else{
+
+          (dataToSave.isCredited = true);
+        }
         dataToSave.creditsLeft = user.credits + credits; //@hotfix can have many test cases(Copied logic from develop branch)
         addCreditsToBuyer(params).then(async (res) => {
           const transaction = await Transaction.create(dataToSave);
