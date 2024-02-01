@@ -144,7 +144,7 @@ export class LeadsController {
         ( ((user?.credits <=0) &&
           user?.secondaryCredits == 0 &&
           user?.role == RolesEnum.USER &&
-          user?.isCreditsAndBillingEnabled == true)||user.credits<user.leadCost)
+          user?.isCreditsAndBillingEnabled == true) && user.credits<user.leadCost)
       ) {
         return res
           .status(400)
