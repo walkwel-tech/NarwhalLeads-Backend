@@ -1,6 +1,7 @@
 // import { NotificationsParams } from "../../types/NotificationsParams";
 import { NOTIFICATION_STATUS } from "../../utils/Enums/notificationType.enum";
 import { APP_ENV } from "../../utils/Enums/serverModes.enum";
+import { countryCurrency } from "../../utils/constantFiles/currencyConstants";
 import {
   TEMPLATES_ID,
   TEMPLATES_TITLE,
@@ -782,7 +783,7 @@ export function sendEmailForFullySignupToAdmin(message: any) {
       businessDescription: message?.businessDescription,
       businessLogo: `${process.env.APP_URL}${message?.businessLogo}`,
       address1: message?.address1,
-      businessSalesNumber: message?.businessSalesNumber,
+      businessSalesNumber: '+'+  message?.mobilePrefixCode+ " " +message?.businessSalesNumber,
       businessAddress: message?.businessAddress,
       businessCity: message?.businessCity,
       businessPostCode: message?.businessPostCode,
@@ -793,8 +794,13 @@ export function sendEmailForFullySignupToAdmin(message: any) {
       avgInstallTime: message?.avgInstallTime,
       trustpilotReviews: message?.trustpilotReviews,
       criteria: message?.criteria,
-      leadCost: message?.leadCost,
+      leadCost: countryCurrency.find(({value}) => value === message?.currency)?.label + " "  +message?.leadCost,
       area: message?.area,
+      computedLead: +message?.daily + +message?.computedCap,
+      weeklyCap: message?.weeklyCap,
+      postCodeType: message?.type
+
+
     },
   };
   // if (checkAccess()) {
@@ -824,7 +830,7 @@ export function sendEmailForFullySignupToAdmin(message: any) {
       saveNotifications(params);
     });
   // } else {
-  //   console.log("Emails access only on production");
+  //     console.log("Emails access only on production");
   // }
 }
 
