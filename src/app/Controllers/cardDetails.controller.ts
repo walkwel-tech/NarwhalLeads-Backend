@@ -93,14 +93,13 @@ import {
   stripeCurrency,
 } from "../../utils/constantFiles/currencyConstants";
 import { flattenPostalCodes } from "../../utils/Functions/flattenPostcodes";
-import { UserLeadsDetailsInterface } from "../../types/LeadDetailsInterface";
+import { PostCode, UserLeadsDetailsInterface } from "../../types/LeadDetailsInterface";
 import { POSTCODE_TYPE } from "../../utils/Enums/postcode.enum";
 import { CURRENCY_SIGN } from "../../utils/constantFiles/email.templateIDs";
 import { CURRENCY } from "../../utils/Enums/currency.enum";
 import { calculateVariance } from "../../utils/Functions/calculateVariance";
 import { paymentFailedWebhook } from "../../utils/webhookUrls/paymentFailedWebhook";
 import { generatePdfAsync } from "../../utils/Functions/generatePdfAsync";
-import { PostalCodeInterface } from "../../types/PostalCodeInterface";
 import { userStatus } from "../Inputs/GetClients.input";
 
 const ObjectId = mongoose.Types.ObjectId;
@@ -1230,10 +1229,20 @@ export class CardDetailsControllers {
                 fullySignupWithCredits(userId?.id, cardDetails?.id);
                 cmsUpdateBuyerWebhook(userId?.id, cardDetails?.id);
                 let userDetails = await userData(userId?.id, cardDetails?.id);
-                const formattedPostCodes = userDetails?.postCodeTargettingList
-                  .map((item: PostalCodeInterface) => item.postalCode)
-                  .flat();
-                  userDetails.area = formattedPostCodes;
+
+
+                if (userDetails?.type === POSTCODE_TYPE.RADIUS) {
+                  userDetails.area= (userDetails.postCodeList as PostCode[])?.map(({postcode}) => postcode)
+                } else {
+                  userDetails.area = flattenPostalCodes(
+                    userDetails?.postCodeTargettingList
+                  )[0].postalCode;
+                }
+
+                // const formattedPostCodes = userDetails?.postCodeTargettingList
+                //   .map((item: PostalCodeInterface) => item.postalCode)
+                //   .flat();
+                //   userDetails.area = formattedPostCodes;
                 sendEmailForFullySignupToAdmin(userDetails);
               }
               const transaction = await Transaction.create(
