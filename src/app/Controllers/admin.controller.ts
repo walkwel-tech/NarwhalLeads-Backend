@@ -14,6 +14,8 @@ import { UserInterface } from "../../types/UserInterface";
 import mongoose from "mongoose";
 import { Permissions } from "../Models/Permission";
 import { PlanPackages } from "../Models/PlanPackages";
+import { FreeCreditsConfig } from "../Models/FreeCreditsConfig";
+import { FirstCardBonusInterface } from "../../types/FirstCardBonusInterface";
 
 interface QueryParams {
   userId: string;
@@ -298,4 +300,53 @@ export class AdminSettingsController {
         .json({ error: { message: "Something went wrong" } });
     }
   };
+
+  static getFreeCreditsConfig = async (req: Request, res: Response) => {
+    try {
+      const data = await FreeCreditsConfig.aggregate([
+        {
+            $replaceRoot: {
+                newRoot: {
+                    $arrayToObject: [
+                        [{
+                            k: "$tag",
+                            v: {
+                                enabled: "$enabled",
+                                amount: "$amount"
+                            }
+                        }]
+                    ]
+                }
+            }
+        },
+    ]);
+ 
+    const result = Object.assign({}, ...data);
+   
+      return res.json({ data: result });
+    } catch (error) {
+      return res
+        .status(500)
+        .json({ error: { message: "Something went wrong" } });
+    }
+  };
+ 
+  static updateFreeCreditsConfig = async (req: Request, res: Response) => {
+    try{
+      const { enabled, amount, tags } = req.body as FirstCardBonusInterface ;
+      // console.log(firstCardBonus, ">>>" , req.body)
+      let options = {upsert: true, new: true, setDefaultsOnInsert: true};
+      await FreeCreditsConfig.findOneAndUpdate({tag: "firstCardBonus"},  {enabled, amount, tags}, options);
+ 
+      return res
+      .status(200)
+      .json({ message: "Site config updated successfully." });
+ 
+    } catch (error) {
+      console.log(error, ">>>>>>> error")
+      return res
+        .status(500)
+        .json({ error: { message: "Something went wrong" } });
+    }
+  }
 }
