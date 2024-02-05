@@ -51,6 +51,7 @@ import {
 } from "../../utils/Enums/payment.status";
 import { PROMO_LINK } from "../../utils/Enums/promoLink.enum";
 import { VAT } from "../../utils/constantFiles/Invoices";
+import { Types } from "mongoose";
 import mongoose from "mongoose";
 import { PaymentResponse } from "../../types/PaymentResponseInterface";
 import { PREMIUM_PROMOLINK } from "../../utils/constantFiles/spotDif.offers.promoLink";
@@ -101,6 +102,8 @@ import { calculateVariance } from "../../utils/Functions/calculateVariance";
 import { paymentFailedWebhook } from "../../utils/webhookUrls/paymentFailedWebhook";
 import { generatePdfAsync } from "../../utils/Functions/generatePdfAsync";
 import { userStatus } from "../Inputs/GetClients.input";
+import { freeCreditsTagsEnum } from "../../utils/Enums/freeCreditsTagsEnum";
+import { FreeCreditsConfig } from "../Models/FreeCreditsConfig";
 
 const ObjectId = mongoose.Types.ObjectId;
 
@@ -1587,7 +1590,7 @@ export class CardDetailsControllers {
   static stripeReturnURL = async (
     req: Request,
     res: Response
-  ): Promise<any> => {
+  ): Promise<Response | void> => {
     const input = req.query;
     const setupIntent = String(input.setup_intent);
     try {
@@ -1596,9 +1599,9 @@ export class CardDetailsControllers {
         const userDetails = await getUserDetailsByPaymentMethods(
           details?.payment_method
         );
-        const user = await User.findOne({
+        const user: UserInterface = await User.findOne({
           stripeClientId: details.customer,
-        });
+        }) ?? {} as UserInterface;
         const cards = await CardDetails.findOne({
           userId: user?._id,
           isDeleted: false,
@@ -1651,6 +1654,44 @@ export class CardDetailsControllers {
             },
             { new: true }
           );
+
+          let params: webhhokParams = {
+            buyerId: user?.buyerId,
+            fixedAmount: 0
+          };
+          
+          params.freeCredits = await cardAddBonusCheck(user?.id);
+
+          let transactionData = {
+            userId: user?.id,
+            status: "",
+            title: "",
+            cardId: cards?._id,
+            isCredited: true,
+            creditsLeft: (user?.credits || 0) + (params.freeCredits || 0),
+            paymentMethod: details?.payment_method
+          };
+
+          addCreditsToBuyer(params)
+          .then(async (res) => {
+
+            transactionData.status = PAYMENT_STATUS.CAPTURED
+            transactionData.title = transactionTitle.CREDITS_ADDED
+            transactionData.isCredited = true
+
+            await Transaction.create(
+              transactionData
+            );
+          })
+          .catch((error) => {
+            console.log(
+              "error in webhook",
+              error,
+              new Date(),
+              "Today's Date"
+            );
+          });
+
           res.status(302).redirect(process.env.TEMP_RETURN_URL || "");
         }
       }
@@ -1735,4 +1776,22 @@ async function checkUserUsedPromoCode(
     freeCredits = PREMIUM_PROMOLINK.FREE_CREDITS * parseInt(user?.leadCost);
   }
   return freeCredits;
+}
+
+async function cardAddBonusCheck(userId: Types.ObjectId): Promise<number> {
+  const freeCreditsConfig = await FreeCreditsConfig.findOne({tag: freeCreditsTagsEnum.FirstCardBonus, enabled: true});
+  const userData = await User.findOne({ _id: userId });
+
+  let leads: number = 0; 
+  let freeCredits: number = 0;
+
+  if(freeCreditsConfig && freeCreditsConfig.amount && userData && userData.leadCost) {
+    const leadCost: string = userData.leadCost;
+    leads = freeCreditsConfig.amount;
+    freeCredits = leads * parseInt(leadCost);
+    
+    return freeCredits
+  }
+
+  return freeCredits
 }
