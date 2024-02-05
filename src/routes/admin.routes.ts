@@ -2,6 +2,8 @@ import { Router } from "express";
 
 import { AdminSettingsController } from "../app/Controllers/admin.controller";
 import { Auth, OnlyAdmins } from "../app/Middlewares";
+import { checkPermissions } from "../app/Middlewares/roleBasedAuthentication";
+import { MODULE, PERMISSIONS } from "../utils/Enums/permissions.enum";
 const adminSettings: Router = Router();
 
 adminSettings.post("/", OnlyAdmins, AdminSettingsController.create);
@@ -42,6 +44,24 @@ adminSettings.get(
   "/plan-packages",
   Auth,
   AdminSettingsController.getPlanPackages
+);
+
+adminSettings.get(
+  "/site-configs",
+  Auth,
+  checkPermissions([
+    { module: MODULE.FREE_CREDITS_CONFIG, permission: PERMISSIONS.READ },
+  ]),
+  AdminSettingsController.getFreeCreditsConfig
+);
+
+adminSettings.post(
+  "/site-configs",
+  Auth,
+  checkPermissions([
+    { module: MODULE.FREE_CREDITS_CONFIG, permission: PERMISSIONS.UPDATE },
+  ]),
+  AdminSettingsController.updateFreeCreditsConfig
 );
 
 export default adminSettings;

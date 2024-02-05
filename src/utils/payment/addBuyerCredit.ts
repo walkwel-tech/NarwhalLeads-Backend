@@ -18,6 +18,7 @@ export const addCreditsToBuyer = (params: any) => {
           parseInt(params?.fixedAmount) + parseInt(params?.freeCredits || 0),
       },
     };
+    console.log(config, ">>>>>>>> config")
     axios(config)
       .then(async (response) => {
         const buyerIdUser: UserInterface = await User.findOne({
