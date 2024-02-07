@@ -21,7 +21,7 @@ export const generatePDF = (param: generatePDFParams): Promise<XeroResponseInter
     const industry: any = await User.findOne({
       xeroContactId: param.ContactID,
     }).populate("businessDetailsId");
-    let quantity = param.amount / parseInt(industry.leadCost);
+    let quantity = param.amount / parseFloat(industry.leadCost)
     let accountCode = ACCOUNT_CODE.GBP;
 
     switch(true){
