@@ -1631,6 +1631,8 @@ export class CardDetailsControllers {
             dataToSave.isDefault = true;
           }
           const card = await CardDetails.create(dataToSave);
+         const credits = await cardAddBonusCheck(user?.id);
+
           await Transaction.create({
             userId: user?._id,
             title: transactionTitle.CARD_ADDED,
@@ -1669,7 +1671,6 @@ export class CardDetailsControllers {
             fixedAmount: 0,
           };
 
-         const credits = await cardAddBonusCheck(user?.id);
 
 
           if (credits) {
