@@ -51,6 +51,7 @@ import { EVENT_TITLE } from "../../utils/constantFiles/events";
 import { DEFAULT } from "../../utils/constantFiles/user.default.values";
 import { INTERNATIONAL_CODE } from "../../utils/constantFiles/internationalCode";
 import { POSTCODE_TYPE } from "../../utils/Enums/postcode.enum";
+import { countryCurrency } from "../../utils/constantFiles/currencyConstants";
 
 const ObjectId = mongoose.Types.ObjectId;
 
@@ -523,6 +524,17 @@ const { onBoarding }: any = user || {};
           .map((item: any) => item.postalCode)
           .flat();
         }
+
+        const currencyObj = countryCurrency.find(
+          ({ country, value }) =>
+            country === user?.country && value === user?.currency
+        );
+
+        const originalDailyLimit = leadData?.daily ?? 0;
+
+        const fiftyPercentVariance = Math.round(
+          originalDailyLimit + 0.5 * originalDailyLimit
+        );
         const message = {
           firstName: userData?.firstName,
           lastName: userData?.lastName,
@@ -544,6 +556,9 @@ const { onBoarding }: any = user || {};
           leadsHours: leadData?.leadSchedule,
           area: `${formattedPostCodes}`,
           leadCost: userData?.leadCost,
+          currencyCode: currencyObj?.symbol,
+          mobilePrefixCode: userData?.mobilePrefixCode,
+          dailyCap: fiftyPercentVariance
         };
         sendEmailForUpdatedDetails(message);
 
