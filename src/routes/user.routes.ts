@@ -56,6 +56,15 @@ user.post(
 );
 
 user.post(
+  "/process-report",
+  OnlyAdmins,
+  checkPermissions([
+    { module: MODULE.CLIENTS, permission: PERMISSIONS.UPDATE },
+  ]),
+  UsersControllers.updateClientsStatus
+);
+
+user.post(
   "/manual-adjustment",
   OnlyAdmins,
   checkPermissions([

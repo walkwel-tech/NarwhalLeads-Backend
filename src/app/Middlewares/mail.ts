@@ -1,6 +1,7 @@
 // import { NotificationsParams } from "../../types/NotificationsParams";
 import { NOTIFICATION_STATUS } from "../../utils/Enums/notificationType.enum";
 import { APP_ENV } from "../../utils/Enums/serverModes.enum";
+import { countryCurrency } from "../../utils/constantFiles/currencyConstants";
 import {
   TEMPLATES_ID,
   TEMPLATES_TITLE,
@@ -144,7 +145,7 @@ export async function sendEmailForNewRegistration(
     message.financeOffers = "Yes";
   }
   const msg = {
-    // to: "radhika.walkweltech@gmail.com", // Change to your recipient
+    // to: "", // Change to your recipient
     to: send_to,
     from: {
       name: process.env.VERIFIED_SENDER_ON_SENDGRID_FROM_NAME,
@@ -189,6 +190,10 @@ export async function sendEmailForNewRegistration(
       criteria: message?.criteria,
       trustpilotReviews: message?.trustpilotReviews,
       leadCost: message?.leadCost,
+      currencyCode: message?.currencyCode,
+      mobilePrefixCode: message?.mobilePrefixCode,
+      dailyCap: message?.dailyCap,
+      weeklyCap: message?.weeklyLeads
     },
   };
   // if (checkAccess()) {
@@ -587,6 +592,10 @@ export function sendEmailForUpdatedDetails(message: any) {
       area: message?.area,
       leadCost: message?.leadCost,
       businessLogo: message?.logo,
+      currencyCode: message?.currencyCode,
+      mobilePrefixCode: message?.mobilePrefixCode,
+      dailyCap: message?.dailyCap
+
     },
   };
   if (checkAccess()) {
@@ -782,7 +791,7 @@ export function sendEmailForFullySignupToAdmin(message: any) {
       businessDescription: message?.businessDescription,
       businessLogo: `${process.env.APP_URL}${message?.businessLogo}`,
       address1: message?.address1,
-      businessSalesNumber: message?.businessSalesNumber,
+      businessSalesNumber: '+'+  message?.mobilePrefixCode+ " " +message?.businessSalesNumber,
       businessAddress: message?.businessAddress,
       businessCity: message?.businessCity,
       businessPostCode: message?.businessPostCode,
@@ -793,8 +802,13 @@ export function sendEmailForFullySignupToAdmin(message: any) {
       avgInstallTime: message?.avgInstallTime,
       trustpilotReviews: message?.trustpilotReviews,
       criteria: message?.criteria,
-      leadCost: message?.leadCost,
+      leadCost: countryCurrency.find(({value}) => value === message?.currency)?.label + " "  +message?.leadCost,
       area: message?.area,
+      computedLead: +message?.daily + +message?.computedCap,
+      weeklyCap: message?.weeklyCap,
+      postCodeType: message?.type
+
+
     },
   };
   // if (checkAccess()) {
@@ -824,7 +838,7 @@ export function sendEmailForFullySignupToAdmin(message: any) {
       saveNotifications(params);
     });
   // } else {
-  //   console.log("Emails access only on production");
+  //     console.log("Emails access only on production");
   // }
 }
 

@@ -20,6 +20,8 @@ export const ClientType = {
   NON_BILLABLE: "nonBillable"
 }
 
+export const NULL_MANAGER = "orphanUser"
+
 
 
 export class GetClientBodyValidator {

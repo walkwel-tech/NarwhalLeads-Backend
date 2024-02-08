@@ -1,5 +1,6 @@
 import { Schema, Types } from "mongoose";
 import { RolesEnum } from "../../types/RolesEnum";
+import { userStatus } from "../../app/Inputs/GetClients.input";
 
 const UserSchema = new Schema(
   {
@@ -29,6 +30,10 @@ const UserSchema = new Schema(
     },
     country: {
       type: String,
+    },
+    clientStatus: {
+      type: String,
+      default: userStatus.PENDING
     },
     role: {
       type: String,
@@ -260,6 +265,9 @@ const UserSchema = new Schema(
     hasEverTopped: {
       type: Boolean,
       default: false
+    },
+    avgConversionRate: {
+      type: Number,
     },
   },
   { timestamps: true }

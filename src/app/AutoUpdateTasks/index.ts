@@ -1,3 +1,4 @@
+import { updateReportStatus } from "./ReportingStatusUpdate/updateReportStatus";
 import { activityLogs } from "./activityLogs";
 import {autoChargePayment, weeklyPayment} from "./autoCharge";
 import { db_dump } from "./db.dump";
@@ -7,6 +8,7 @@ import { userSignupReminder } from "./userSignupReminder";
 
 export const autoUpdateTasks = () => {
   autoChargePayment();
+  updateReportStatus()
   weeklyPayment();
   mailForTotalLeadsInDay();
   autoWebhookURLHitLeadSubmission();

@@ -144,7 +144,7 @@ export class LeadsController {
         ( ((user?.credits <=0) &&
           user?.secondaryCredits == 0 &&
           user?.role == RolesEnum.USER &&
-          user?.isCreditsAndBillingEnabled == true)||user.credits<user.leadCost)
+          user?.isCreditsAndBillingEnabled == true) && user.credits<user.leadCost)
       ) {
         return res
           .status(400)
@@ -164,9 +164,11 @@ export class LeadsController {
         },
       });
       const startOfWeek = new Date(today);
+      startOfWeek.setHours(0, 0, 0, 0);
       startOfWeek.setUTCDate(today.getUTCDate() - today.getUTCDay());
 
       const endOfWeek = new Date(startOfWeek);
+      endOfWeek.setHours(23, 59, 59, 999);
       endOfWeek.setUTCDate(startOfWeek.getUTCDate() + 7);
 
       const leadsForThisWeek = await Leads.find({
@@ -1339,7 +1341,10 @@ export class LeadsController {
                 },
               },
               {
-                $unwind: "$accountManager",
+                $unwind: {
+                  path: "$accountManager", 
+                  "preserveNullAndEmptyArrays": true
+                }
               },
               // { $sort: { rowIndex: -1 } },
               { $sort: { createdAt: sortingOrder } },
@@ -1406,7 +1411,7 @@ export class LeadsController {
           item.leads.accountManager =
             item["accountManager"]?.firstName +
             " " +
-            (item["accountManager"].lastName || "");
+            (item["accountManager"]?.lastName || "");
         } else {
           item.leads.clientName = "Deleted User";
         }
@@ -1484,6 +1489,7 @@ export class LeadsController {
           console.error(error);
         });
     } catch (err) {
+      console.log(err, ">>>> err")
       return res.status(500).json({
         error: {
           message: "something went wrong",
@@ -2543,11 +2549,11 @@ export class LeadsController {
       } else {
         filteredDataArray = filterAndTransformData(
           //@ts-ignore
-          pref?.columns,
+          [...pref?.columns, {isVisible: true, displayName: "Client Notes", originalName: "clientNotes"}],
           convertArray(query.results)
         );
       }
-
+      
       const resultArray = filteredDataArray.map((obj) => {
         const newObj: Record<string, string> = {};
         for (const key in obj) {
@@ -2647,41 +2653,53 @@ export class LeadsController {
         });
         dataToFind.bid = { $in: bids };
       }
-      const [query]: any = await Leads.aggregate([
-        {
-          $facet: {
-            results: [
-              { $match: dataToFind },
-              {
-                $lookup: {
-                  from: "users",
-                  localField: "bid",
-                  foreignField: "buyerId",
-                  as: "clientName",
+    
+      const batchSize = 1500; 
+      const totalDocuments = await Leads.countDocuments({...dataToFind});
+      const totalPages = Math.ceil(totalDocuments / batchSize);
+      let document = []
+      for (let page = 0; page < totalPages; page++) {
+        const [query]: any = await Leads.aggregate([
+          {
+            $facet: {
+              results: [
+                { $match: dataToFind },
+                {
+                  $lookup: {
+                    from: "users",
+                    localField: "bid",
+                    foreignField: "buyerId",
+                    as: "clientName",
+                  },
                 },
-              },
-              { $sort: { createdAt: sortingOrder } },
-              {
-                $project: {
-                  rowIndex: 0,
-                  __v: 0,
-                  updatedAt: 0,
-                  "leads.c1": 0,
+                { $sort: { createdAt: sortingOrder } },
+                {
+                  $project: {
+                    rowIndex: 0,
+                    __v: 0,
+                    updatedAt: 0,
+                    "leads.c1": 0,
+                  },
                 },
-              },
-            ],
-            leadsCount: [{ $match: dataToFind }, { $count: "count" }],
+                {
+                  $skip: page * batchSize,
+                },
+                {
+                  $limit: batchSize,
+                },
+              ],
+              leadsCount: [{ $match: dataToFind }, { $count: "count" }],
+            },
           },
-        },
-      ]);
-      query.results.map((item: any) => {
-        item.leads.clientName =
-          item["clientName"][0]?.firstName +
-          " " +
-          item["clientName"][0]?.lastName;
-      });
-      // const pref: LeadTablePreferenceInterface | null =
-      //   await LeadTablePreference.findOne({ userId: _req.user.id });
+        ]);
+        query.results.map((item: any) => {
+          item.leads.clientName =
+            item["clientName"][0]?.firstName +
+            " " +
+            item["clientName"][0]?.lastName;
+        });
+        document.push(...query.results)
+      }
 
       const pref = await BuisnessIndustries.aggregate([
         {
@@ -2716,10 +2734,12 @@ export class LeadsController {
           },
         },
       ]);
+      console.log(pref[0]?.columns, ">>>>> pref")
       const filteredDataArray: DataObject[] = filterAndTransformData(
         //@ts-ignore
-        pref[0]?.columns,
-        convertArray(query.results)
+        [...pref[0]?.columns, {isVisible: true, displayName: "Client Notes", originalName: "clientNotes"}],
+        convertArray(document)
+        // convertArray(query.results)
       );
       const resultArray = filteredDataArray.map((obj) => {
         const newObj: Record<string, string> = {};

@@ -23,6 +23,7 @@ export class IndustryController {
     Industry.industry = input.industry;
     Industry.leadCost = input.leadCost;
     Industry.currencyCode = input.currencyCode;
+    Industry.avgConversionRate = input.avgConversionRate;
 
     const errors = await validate(Industry);
 
@@ -46,6 +47,7 @@ export class IndustryController {
     let dataToSave: Partial<BuisnessIndustriesInterface> = {
       industry: input.industry.trim(),
       leadCost: input.leadCost,
+      avgConversionRate: input.avgConversionRate,
       columns: order,
       json: json,
       country: currency.country,

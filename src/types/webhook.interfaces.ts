@@ -1,6 +1,6 @@
 export interface webhhokParams{
     buyerId:string,
-    fixedAmount:number,
+    fixedAmount?:number,
     freeCredits?:number
   }
   

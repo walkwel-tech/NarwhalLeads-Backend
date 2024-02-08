@@ -81,6 +81,7 @@ export const userData = async (userId: String, cardId: String) => {
     smsPhoneNumber: user?.smsPhoneNumber,
     isSignUpCompleteWithCredit: user?.isSignUpCompleteWithCredit,
     daily: user?.userLeadsDetailsId?.daily,
+    type: user?.userLeadsDetailsId?.type,
     leadSchedule: user?.userLeadsDetailsId?.leadSchedule,
     postCodeTargettingList: user?.userLeadsDetailsId?.postCodeTargettingList,
     postCodeList: user?.userLeadsDetailsId?.postCodeList,
@@ -114,6 +115,8 @@ export const userData = async (userId: String, cardId: String) => {
     weeklyCap: user?.userLeadsDetailsId?.daily * user?.userLeadsDetailsId?.leadSchedule.length,
     dailyCap: user?.userLeadsDetailsId?.daily + calculateVariance(user?.userLeadsDetailsId?.daily),
     computedCap: calculateVariance(user?.userLeadsDetailsId?.daily),
+    mobilePrefixCode: user?.mobilePrefixCode,
+    currency: user?.currency
   };
   if (user?.businessDetailsId?.businessLogo) {
     data.businessLogo = `${process.env.APP_URL}${user?.businessDetailsId?.businessLogo}`;

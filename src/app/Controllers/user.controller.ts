@@ -74,14 +74,16 @@ import { calculateVariance } from "../../utils/Functions/calculateVariance";
 import {
   ClientType,
   GetClientBodyValidator,
+  NULL_MANAGER,
   userStatus,
 } from "../Inputs/GetClients.input";
+import { countryCurrency } from "../../utils/constantFiles/currencyConstants";
+import { updateReport } from "../AutoUpdateTasks/ReportingStatusUpdate";
 
 const ObjectId = mongoose.Types.ObjectId;
 
 const LIMIT = 10;
-const daysAgo = (day: number) =>
-  new Date(Date.now() - day * 24 * 60 * 60 * 1000);
+
 interface DataObject {
   [key: string]: any;
 }
@@ -101,14 +103,14 @@ type FindOptions = {
 };
 
 interface IGetClientsQuery {
-  sortingOrder: string,
-  clientType:string,
-  search: string,
-  accountManagerId: string,
-  businessDetailId: string,
-  industryId: string,
-  clientStatus: string,
-  onBoardingPercentage: string
+  sortingOrder: string;
+  clientType: string;
+  search: string;
+  accountManagerId: string;
+  businessDetailId: string;
+  industryId: string;
+  clientStatus: string;
+  onBoardingPercentage: string;
 }
 
 export class UsersControllers {
@@ -503,7 +505,7 @@ export class UsersControllers {
           role: {
             $nin: [
               RolesEnum.ADMIN,
-              // RolesEnum.INVITED,
+              RolesEnum.INVITED,
               RolesEnum.SUPER_ADMIN,
               RolesEnum.SUBSCRIBER,
             ],
@@ -527,6 +529,15 @@ export class UsersControllers {
                   { lastName: { $regex: search, $options: "i" } },
                   { buyerId: { $regex: search, $options: "i" } },
                   {
+                    $expr: {
+                      $regexMatch: {
+                        input: { $concat: ["$firstName", " ", "$lastName"] },
+                        regex: search,
+                        options: "i",
+                      }
+                    }
+                  },
+                  {
                     "businessDetailsId.businessName": {
                       $regex: search,
                       $options: "i",
@@ -542,7 +553,7 @@ export class UsersControllers {
               }
             : {}),
           ...(accountManagerId
-            ? { accountManager: new ObjectId(accountManagerId as string) }
+            ? { accountManager: accountManagerId === NULL_MANAGER ?  null : new ObjectId(accountManagerId as string) }
             : {}),
           ...(businessDetailId
             ? {
@@ -566,61 +577,7 @@ export class UsersControllers {
             : {}),
         },
       },
-      {
-        $lookup: {
-          from: "transactions",
-          localField: "_id",
-          foreignField: "userId",
-          as: "userTransactions",
-        },
-      },
-      {
-        $addFields: {
-          latestTransaction: {
-            $max: "$userTransactions.createdAt",
-          },
-        },
-      },
-      {
-        $addFields: {
-          clientStatus: {
-            $cond: {
-              if: { $eq: ["$isDeleted", true] },
-              then: userStatus.LOST,
-              else: {
-                $cond: {
-                  if: {
-                    $gte: ["$latestTransaction", daysAgo(60)],
-                  },
-                  then: userStatus.ACTIVE,
-                  else: {
-                    $cond: {
-                      if: {
-                        $eq: [{ $size: "$userTransactions" }, 0],
-                      },
-                      then: userStatus.PENDING,
-                      else: userStatus.INACTIVE,
-                    },
-                  },
-                },
-              },
-            },
-          },
-        },
-      },
-      ...(clientStatus &&
-      (clientStatus == userStatus.PENDING ||
-        clientStatus == userStatus.ACTIVE ||
-        clientStatus == userStatus.INACTIVE)
-        ? [
-            {
-              $match: {
-                isDeleted: false,
-                isActive: true,
-              },
-            },
-          ]
-        : []),
+      
       ...(clientStatus == userStatus.PENDING
         ? [
             {
@@ -1337,7 +1294,8 @@ export class UsersControllers {
           userExist &&
           // @ts-ignore
           userExist.id !== req?.user?.id &&
-          userExist.role !== RolesEnum.SUPER_ADMIN
+          userExist.role !== RolesEnum.SUPER_ADMIN && 
+          !userExist?.isDeleted 
         ) {
           return res.status(400).json({
             error: {
@@ -1867,27 +1825,53 @@ export class UsersControllers {
             .status(404)
             .json({ error: { message: "User to update does not exists." } });
         }
-        const result = await User.findById(id, "-password -__v");
+
+        // const result = await User.findById(id, "-password -__v");
+        const userData = await User.findById(id, "-password -__v");
+
         const buinessData = await BusinessDetails.findById(
-          result?.businessDetailsId
+          userData?.businessDetailsId
         );
         const leadData = await UserLeadsDetails.findById(
-          result?.userLeadsDetailsId
+          userData?.userLeadsDetailsId
         );
 
-        const formattedPostCodes = leadData?.postCodeTargettingList
+        // const formattedPostCodes = leadData?.postCodeTargettingList
+        //   .map((item: any) => item.postalCode)
+        //   .flat();
+        let formattedPostCodes ;
+        if (leadData && leadData.type === POSTCODE_TYPE.RADIUS) {
+            (formattedPostCodes = leadData.postCodeList?.map(({postcode}) => {
+              return postcode
+            }));
+        } else {
+          formattedPostCodes = leadData?.postCodeTargettingList
           .map((item: any) => item.postalCode)
           .flat();
+        }
         const userAfterMod = await User.findById(
           id,
           "-__v -_id -businessDetailsId -businessIndustryId -userServiceId -accountManager -userLeadsDetailsId -onBoarding -createdAt -updatedAt -password"
         ).lean();
+
+        const currencyObj = countryCurrency.find(
+          ({ country, value }) =>
+            country === user?.country && value === user?.currency
+        );
+
+        const originalDailyLimit = leadData?.daily ?? 0;
+
+        const fiftyPercentVariance = Math.round(
+          originalDailyLimit + 0.5 * originalDailyLimit
+        );
+
+
         const message = {
-          firstName: result?.firstName,
-          lastName: result?.lastName,
+          firstName: userData?.firstName,
+          lastName: userData?.lastName,
           businessName: buinessData?.businessName,
           phone: buinessData?.businessSalesNumber,
-          email: result?.email,
+          email: userData?.email,
           industry: buinessData?.businessIndustry,
           address: buinessData?.address1 + " " + buinessData?.address2,
           city: buinessData?.businessCity,
@@ -1903,6 +1887,9 @@ export class UsersControllers {
           leadsHours: leadData?.leadSchedule,
           area: `${formattedPostCodes}`,
           leadCost: user?.leadCost,
+          currencyCode: currencyObj?.symbol,
+          mobilePrefixCode: userData?.mobilePrefixCode,
+          dailyCap: fiftyPercentVariance
         };
 
         sendEmailForUpdatedDetails(message);
@@ -1925,18 +1912,18 @@ export class UsersControllers {
         if (input.triggerAmount || input.autoChargeAmount) {
           return res.json({
             message: "Auto Top-Up Settings Updated Successfully",
-            data: result,
+            data: userData,
           });
         }
         if (input.isSmsNotificationActive || input.smsPhoneNumber) {
           return res.json({
             message: "SMS Settings Saved Successfully",
-            data: result,
+            data: userData,
           });
         } else if (input.paymentMethod) {
           return res.json({
             message: "Updated Successfully",
-            data: result,
+            data: userData,
           });
         } else {
           if (
@@ -1975,7 +1962,7 @@ export class UsersControllers {
           }
           cmsUpdateBuyerWebhook(id, cardExist?.id);
 
-          return res.json({ message: "Updated Successfully", data: result });
+          return res.json({ message: "Updated Successfully", data: userData });
         }
       }
     } catch (err) {
@@ -2493,14 +2480,22 @@ export class UsersControllers {
         };
         let dataToSave: Partial<TransactionInterface> = {
           userId: user.id,
-          amount: credits,
+          amount: Math.abs(credits),
           status: PAYMENT_STATUS.CAPTURED,
           title: transactionTitle.MANUAL_ADJUSTMENT,
           paymentType: transactionTitle.MANUAL_ADJUSTMENT,
         };
         // if (user?.credits < credits) {
         amount = credits;
-        (params.fixedAmount = amount), (dataToSave.isCredited = true);
+        (params.fixedAmount = amount)
+        if(amount < 0){
+          (dataToSave.isCredited = false);
+          (dataToSave.isDebited = true);
+          
+        }else{
+
+          (dataToSave.isCredited = true);
+        }
         dataToSave.creditsLeft = user.credits + credits; //@hotfix can have many test cases(Copied logic from develop branch)
         addCreditsToBuyer(params).then(async (res) => {
           const transaction = await Transaction.create(dataToSave);
@@ -2666,7 +2661,7 @@ export class UsersControllers {
             role: {
               $nin: [
                 RolesEnum.ADMIN,
-                // RolesEnum.INVITED,
+                RolesEnum.INVITED,
                 RolesEnum.SUPER_ADMIN,
                 RolesEnum.SUBSCRIBER,
               ],
@@ -2676,59 +2671,21 @@ export class UsersControllers {
           },
         },
         {
-          $lookup: {
-            from: "transactions",
-            localField: "_id",
-            foreignField: "userId",
-            as: "userTransactions",
-          },
-        },
-        {
-          $addFields: {
-            latestTransaction: {
-              $max: "$userTransactions.createdAt",
-            },
-          },
-        },
-        {
-          $addFields: {
-            status: {
-              $cond: {
-                if: { $eq: ["$isDeleted", true] },
-                then: "Lost",
-                else: {
-                  $cond: {
-                    if: {
-                      $gte: ["$latestTransaction", daysAgo(60)],
-                    },
-                    then: "Active",
-                    else: {
-                      $cond: {
-                        if: {
-                          $eq: [{ $size: "$userTransactions" }, 0],
-                        },
-                        then: "Pending",
-                        else: "Non-Active",
-                      },
-                    },
-                  },
-                },
-              },
-            },
-          },
-        },
-        {
           $group: {
             _id: null,
             activeClients: {
               $sum: {
-                $cond: { if: { $eq: ["$status", "Active"] }, then: 1, else: 0 },
+                $cond: {
+                  if: { $eq: ["$clientStatus", userStatus.ACTIVE] },
+                  then: 1,
+                  else: 0,
+                },
               },
             },
             pausedClients: {
               $sum: {
                 $cond: {
-                  if: { $eq: ["$status", "Non-Active"] },
+                  if: { $eq: ["$clientStatus", userStatus.INACTIVE] },
                   then: 1,
                   else: 0,
                 },
@@ -2737,7 +2694,7 @@ export class UsersControllers {
             pendingClients: {
               $sum: {
                 $cond: {
-                  if: { $eq: ["$status", "Pending"] },
+                  if: { $eq: ["$clientStatus", userStatus.PENDING] },
                   then: 1,
                   else: 0,
                 },
@@ -2745,7 +2702,11 @@ export class UsersControllers {
             },
             lostClients: {
               $sum: {
-                $cond: { if: { $eq: ["$status", "Lost"] }, then: 1, else: 0 },
+                $cond: {
+                  if: { $eq: ["$clientStatus", userStatus.LOST] },
+                  then: 1,
+                  else: 0,
+                },
               },
             },
           },
@@ -2902,6 +2863,20 @@ export class UsersControllers {
       return res
         .status(500)
         .json({ error: { message: "Something went wrong.", err } });
+    }
+  };
+
+  static updateClientsStatus = async (
+    req: Request,
+    res: Response
+  ): Promise<any> => {
+    try {
+      await updateReport(100);
+      return res.json({ message: "client status updated " });
+    } catch (err) {
+      res.status(500).json({
+        err,
+      });
     }
   };
 }
