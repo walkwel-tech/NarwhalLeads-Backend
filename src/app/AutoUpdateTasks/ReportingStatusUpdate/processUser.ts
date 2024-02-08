@@ -15,8 +15,22 @@ export async function processUsers(userId: Types.ObjectId) {
     {
       $lookup: {
         from: "transactions",
-        localField: "_id",
-        foreignField: "userId",
+        // localField: "_id",
+        // foreignField: "userId",
+        let: { userId: "$_id" },
+        pipeline: [
+          {
+            $match: {
+              $expr: {
+                $and: [
+                  { $eq: ["$userId", "$$userId"] },
+                  { $eq: ["$status", "success"] },
+                  { $eq: ["$title", "Credits Added"] },
+                ],
+              },
+            },
+          },
+        ],
         as: "userTransactions",
       },
     },

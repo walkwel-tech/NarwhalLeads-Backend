@@ -51,6 +51,7 @@ import {
 } from "../../utils/Enums/payment.status";
 import { PROMO_LINK } from "../../utils/Enums/promoLink.enum";
 import { VAT } from "../../utils/constantFiles/Invoices";
+import { Types } from "mongoose";
 import mongoose from "mongoose";
 import { PaymentResponse } from "../../types/PaymentResponseInterface";
 import { PREMIUM_PROMOLINK } from "../../utils/constantFiles/spotDif.offers.promoLink";
@@ -93,15 +94,16 @@ import {
   stripeCurrency,
 } from "../../utils/constantFiles/currencyConstants";
 import { flattenPostalCodes } from "../../utils/Functions/flattenPostcodes";
-import { UserLeadsDetailsInterface } from "../../types/LeadDetailsInterface";
+import { PostCode, UserLeadsDetailsInterface } from "../../types/LeadDetailsInterface";
 import { POSTCODE_TYPE } from "../../utils/Enums/postcode.enum";
 import { CURRENCY_SIGN } from "../../utils/constantFiles/email.templateIDs";
 import { CURRENCY } from "../../utils/Enums/currency.enum";
 import { calculateVariance } from "../../utils/Functions/calculateVariance";
 import { paymentFailedWebhook } from "../../utils/webhookUrls/paymentFailedWebhook";
 import { generatePdfAsync } from "../../utils/Functions/generatePdfAsync";
-import { PostalCodeInterface } from "../../types/PostalCodeInterface";
 import { userStatus } from "../Inputs/GetClients.input";
+import { freeCreditsTagsEnum } from "../../utils/Enums/freeCreditsTagsEnum";
+import { FreeCreditsConfig } from "../Models/FreeCreditsConfig";
 
 const ObjectId = mongoose.Types.ObjectId;
 
@@ -202,6 +204,17 @@ export class CardDetailsControllers {
           .map((item: any) => item.postalCode)
           .flat();
 
+          const currencyObj = countryCurrency.find(
+            ({ country, value }) =>
+              country === user?.country && value === user?.currency
+          );
+  
+          const originalDailyLimit = leadData?.daily ?? 0;
+  
+          const fiftyPercentVariance = Math.round(
+            originalDailyLimit + 0.5 * originalDailyLimit
+          );
+
         const message = {
           firstName: user?.firstName,
           lastName: user?.lastName,
@@ -223,6 +236,9 @@ export class CardDetailsControllers {
           leadsHours: leadData?.leadSchedule,
           area: `${formattedPostCodes}`,
           leadCost: user?.leadCost,
+          currencyCode: currencyObj?.symbol,
+          mobilePrefixCode: user?.mobilePrefixCode,
+          dailyCap: fiftyPercentVariance
         };
         let subscribers: string[] = [`${process.env.ADMIN_EMAIL}`];
         const data = await User.find({ role: RolesEnum.SUBSCRIBER });
@@ -1103,7 +1119,7 @@ export class CardDetailsControllers {
     res: Response
   ): Promise<Response> => {
     const { data, type, id } = req.body;
-        try {
+    try {
       const customerId = data.object?.customer;
       const paymentMethodId = data.object?.payment_method;
       const user = await getUserDetails(customerId, paymentMethodId);
@@ -1118,7 +1134,7 @@ export class CardDetailsControllers {
         if (type == STRIPE_PAYMENT_STATUS.FAILED) {
           const business = user.business;
           await User.findByIdAndUpdate(userId._id, {pendingTransaction: "", retriedTransactionCount: 0})
-          
+
           const cards = await CardDetails.findOne({
             userId: userId?._id,
             isDefault: true,
@@ -1135,7 +1151,7 @@ export class CardDetailsControllers {
             currency: CURRENCY_SIGN.GBP,
             isIncVat: true,
           };
-          
+
           if (userId.currency === CURRENCY.DOLLER) {
             message.currency = CURRENCY_SIGN.USD;
             message.isIncVat = false;
@@ -1204,7 +1220,7 @@ export class CardDetailsControllers {
           };
           addCreditsToBuyer(params)
             .then(async (res) => {
-                            userId =
+              userId =
                 (await User.findById(userId?.id)
                   .populate("userLeadsDetailsId")
                   .populate("businessDetailsId")) ?? ({} as UserInterface);
@@ -1230,10 +1246,20 @@ export class CardDetailsControllers {
                 fullySignupWithCredits(userId?.id, cardDetails?.id);
                 cmsUpdateBuyerWebhook(userId?.id, cardDetails?.id);
                 let userDetails = await userData(userId?.id, cardDetails?.id);
-                const formattedPostCodes = userDetails?.postCodeTargettingList
-                  .map((item: PostalCodeInterface) => item.postalCode)
-                  .flat();
-                  userDetails.area = formattedPostCodes;
+
+
+                if (userDetails?.type === POSTCODE_TYPE.RADIUS) {
+                  userDetails.area= (userDetails.postCodeList as PostCode[])?.map(({postcode}) => postcode)
+                } else {
+                  userDetails.area = flattenPostalCodes(
+                    userDetails?.postCodeTargettingList
+                  )[0].postalCode;
+                }
+
+                // const formattedPostCodes = userDetails?.postCodeTargettingList
+                //   .map((item: PostalCodeInterface) => item.postalCode)
+                //   .flat();
+                //   userDetails.area = formattedPostCodes;
                 sendEmailForFullySignupToAdmin(userDetails);
               }
               const transaction = await Transaction.create(
@@ -1300,7 +1326,7 @@ export class CardDetailsControllers {
                 // Call the new function here and send the params it requires.
 
                 const generatedPdf = await generatePdfAsync(userId, transaction, paramPdf, transactionForVat, invoice, originalAmount, freeCredits, data.object?.id)
-              
+
                 invoice = generatedPdf
               }
 
@@ -1324,7 +1350,7 @@ export class CardDetailsControllers {
               );
               const userLead =
                 (await UserLeadsDetails.findById(
-                  userId?.userLeadsDetailsId,
+                  userId?.userLeadsDetailsId
                   // "postCodeTargettingList"
                 )) ?? ({} as UserLeadsDetailsInterface);
               let paramsToSend: PostcodeWebhookParams = {
@@ -1578,7 +1604,7 @@ export class CardDetailsControllers {
   static stripeReturnURL = async (
     req: Request,
     res: Response
-  ): Promise<any> => {
+  ): Promise<Response | void> => {
     const input = req.query;
     const setupIntent = String(input.setup_intent);
     try {
@@ -1587,9 +1613,10 @@ export class CardDetailsControllers {
         const userDetails = await getUserDetailsByPaymentMethods(
           details?.payment_method
         );
-        const user = await User.findOne({
-          stripeClientId: details.customer,
-        });
+        const user: UserInterface =
+          (await User.findOne({
+            stripeClientId: details.customer,
+          })) ?? ({} as UserInterface);
         const cards = await CardDetails.findOne({
           userId: user?._id,
           isDeleted: false,
@@ -1617,7 +1644,17 @@ export class CardDetailsControllers {
           if (!cards) {
             dataToSave.isDefault = true;
           }
-          await CardDetails.create(dataToSave);
+          const card = await CardDetails.create(dataToSave);
+         const credits = await cardAddBonusCheck(user?.id);
+
+          await Transaction.create({
+            userId: user?._id,
+            title: transactionTitle.CARD_ADDED,
+            cardId: card._id,
+            status :PAYMENT_STATUS.CAPTURED,
+            amount: 0
+
+          });
           await User.findByIdAndUpdate(
             user?._id,
             {
@@ -1642,6 +1679,46 @@ export class CardDetailsControllers {
             },
             { new: true }
           );
+
+          let params: webhhokParams = {
+            buyerId: user?.buyerId,
+            fixedAmount: 0,
+          };
+
+
+
+          if (credits) {
+            // params.freeCredits = credits
+            params.fixedAmount = credits
+
+            let transactionData = {
+              userId: user?.id,
+              status: "",
+              title: "",
+              cardId: cards?._id,
+              isCredited: true,
+              creditsLeft: (user?.credits || 0) + (params.freeCredits || 0),
+              paymentMethod: details?.payment_method,
+            };
+
+            addCreditsToBuyer(params)
+              .then(async (res) => {
+                transactionData.status = PAYMENT_STATUS.CAPTURED;
+                transactionData.title = transactionTitle.FREE_LEADS_ADDED;
+                transactionData.isCredited = true;
+
+                await Transaction.create(transactionData);
+              })
+              .catch((error) => {
+                console.log(
+                  "error in webhook",
+                  error,
+                  new Date(),
+                  "Today's Date"
+                );
+              });
+          }
+
           res.status(302).redirect(process.env.TEMP_RETURN_URL || "");
         }
       }
@@ -1725,5 +1802,39 @@ async function checkUserUsedPromoCode(
   ) {
     freeCredits = PREMIUM_PROMOLINK.FREE_CREDITS * parseInt(user?.leadCost);
   }
+  return freeCredits;
+}
+
+async function cardAddBonusCheck(userId: Types.ObjectId): Promise<number> {
+  const transacation = await Transaction.findOne({
+    userId,
+    title: transactionTitle.CARD_ADDED,
+  });
+  if(transacation){
+    return 0
+  }
+
+  const freeCreditsConfig = await FreeCreditsConfig.findOne({
+    tag: freeCreditsTagsEnum.FirstCardBonus,
+    enabled: true,
+  });
+  const userData = await User.findOne({ _id: userId });
+
+  let leads: number = 0;
+  let freeCredits: number = 0;
+
+  if (
+    freeCreditsConfig &&
+    freeCreditsConfig.amount &&
+    userData &&
+    userData.leadCost
+  ) {
+    const leadCost: string = userData.leadCost;
+    leads = freeCreditsConfig.amount;
+    freeCredits = leads * parseInt(leadCost);
+
+    return freeCredits;
+  }
+
   return freeCredits;
 }

@@ -42,6 +42,8 @@ import { UserLeadsDetailsInterface } from "../../types/LeadDetailsInterface";
 import { POSTCODE_TYPE } from "../../utils/Enums/postcode.enum";
 import { arraysAreEqual } from "../../utils/Functions/postCodeMatch";
 import { calculateVariance } from "../../utils/Functions/calculateVariance";
+import { countryCurrency } from "../../utils/constantFiles/currencyConstants";
+import logger from "../../utils/winstonLogger/logger";
 
 export class UserLeadsController {
   static create = async (req: Request, res: Response) => {
@@ -378,10 +380,12 @@ export class UserLeadsController {
           postCodeList: [],
           type: POSTCODE_TYPE.MAP,
         });
-      }      
+      }
       if (
         Object.keys(fields.updatedFields).find(
-          (key) => key.startsWith("postCodeTargettingList") || key.startsWith("postCodeTargettingList")
+          (key) =>
+            key.startsWith("postCodeTargettingList") ||
+            key.startsWith("postCodeTargettingList")
         ) &&
         user?.onBoardingPercentage === ONBOARDING_PERCENTAGE.CARD_DETAILS
       ) {
@@ -419,7 +423,8 @@ export class UserLeadsController {
 
       if (
         Object.keys(fields.updatedFields).find(
-          (key) => key.startsWith("postCodeList") || key.startsWith("postCodeList")
+          (key) =>
+            key.startsWith("postCodeList") || key.startsWith("postCodeList")
         ) &&
         user?.onBoardingPercentage === ONBOARDING_PERCENTAGE.CARD_DETAILS
       ) {
@@ -442,8 +447,8 @@ export class UserLeadsController {
             console.error(
               err,
               "error while triggering radius updates webhooks failed",
-              paramsToSend,
-          )
+              paramsToSend
+            )
           );
       }
 
@@ -531,7 +536,7 @@ export class UserLeadsController {
           businessName: business?.businessName,
           eventCode: EVENT_TITLE.DAILY_LEAD_CAP,
           weeklyCap: input?.daily * input.leadSchedule?.length,
-          dailyCap: +input?.daily + (+calculateVariance(input?.daily)),
+          dailyCap: +input?.daily + +calculateVariance(input?.daily),
           dailyLeadCap: userAfterMod?.daily,
           computedCap: calculateVariance(input?.daily),
         };
@@ -544,36 +549,57 @@ export class UserLeadsController {
           );
         }
         await eventsWebhook(paramsToSend)
-          .then(() =>
+          .then(() => {
             console.log(
               "event webhook for postcode updates hits successfully.",
               paramsToSend
-            )
-          )
-          .catch((err) =>
+            );
+            logger.info('Webhook processed successfully', {paramsToSend});
+          })
+          .catch((err) => {
             console.log(
               err,
               "error while triggering postcode updates webhooks failed",
               paramsToSend
-            )
-          );
+            );
+            logger.error('Error in API response', {error: JSON.stringify(err), paramsToSend });
+
+          });
+
       }
       if (data) {
-        const updatedDetails = await UserLeadsDetails.findById(id);
+        // const updatedDetails = await UserLeadsDetails.findById(id);
+        const userLeadDetails = await UserLeadsDetails.findById(id);
+
         const userData = await User.findOne({ userLeadsDetailsId: id });
         const businessDeatilsData = await BusinessDetails.findById(
           userData?.businessDetailsId
         );
-        let formattedPostCodes ;
+        let formattedPostCodes;
         if (userAfterMod.type === POSTCODE_TYPE.RADIUS) {
-            (formattedPostCodes = userAfterMod.postCodeList?.map(({postcode}) => {
-              return postcode
-            }));
+          formattedPostCodes = userAfterMod.postCodeList?.map(
+            ({ postcode }) => {
+              return postcode;
+            }
+          );
         } else {
-          formattedPostCodes = updatedDetails?.postCodeTargettingList
-          .map((item: any) => item.postalCode)
-          .flat();
+          formattedPostCodes = userLeadDetails?.postCodeTargettingList
+            .map((item: any) => item.postalCode)
+            .flat();
         }
+
+        const currencyObj = countryCurrency.find(
+          ({ country, value }) =>
+            country === user?.country && value === user?.currency
+        );
+
+        const originalDailyLimit = userLeadDetails?.daily ?? 0;
+
+        const fiftyPercentVariance = Math.round(
+          originalDailyLimit + 0.5 * originalDailyLimit
+        );
+
+
         // let formattedPostCodes = updatedDetails?.postCodeTargettingList
         //   .map((item: any) => item.postalCode)
         //   .flat();
@@ -592,14 +618,17 @@ export class UserLeadsController {
           // openingHours:formattedOpeningHours,
           openingHours: businessDeatilsData?.businessOpeningHours,
           logo: businessDeatilsData?.businessLogo,
-          totalLeads: updatedDetails?.total,
-          monthlyLeads: updatedDetails?.monthly,
-          weeklyLeads: updatedDetails?.weekly,
-          dailyLeads: updatedDetails?.daily,
-          leadsHours: updatedDetails?.leadSchedule,
+          totalLeads: userLeadDetails?.total,
+          monthlyLeads: userLeadDetails?.monthly,
+          weeklyLeads: userLeadDetails?.weekly,
+          dailyLeads: userLeadDetails?.daily,
+          leadsHours: userLeadDetails?.leadSchedule,
           // leadsHours:formattedLeadSchedule,
           area: `${formattedPostCodes}`,
           leadCost: userData?.leadCost,
+          currencyCode: currencyObj?.symbol,
+          mobilePrefixCode: userData?.mobilePrefixCode,
+          dailyCap: fiftyPercentVariance
         };
         sendEmailForUpdatedDetails(message);
         if (input.criteria) {
@@ -635,7 +664,7 @@ export class UserLeadsController {
         return res.json({
           data: {
             message: msg,
-            data: updatedDetails,
+            data: userLeadDetails,
             service,
           },
         });

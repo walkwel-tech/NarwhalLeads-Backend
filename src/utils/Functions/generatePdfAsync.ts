@@ -69,7 +69,11 @@ export const generatePdfAsync = (userId: UserInterface, transaction: Transaction
                             new Date(),
                             "Today's Date"
                         );
+                    }).catch((err) => {
+                        console.error("Error while generating pdf.", JSON.stringify(err), new Date())
                     });
+                }).catch((err) => {
+                    console.error("Error in retreiving refresh token", JSON.stringify(err), new Date())
                 });
             });
     })
