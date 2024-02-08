@@ -42,6 +42,7 @@ import { UserLeadsDetailsInterface } from "../../types/LeadDetailsInterface";
 import { POSTCODE_TYPE } from "../../utils/Enums/postcode.enum";
 import { arraysAreEqual } from "../../utils/Functions/postCodeMatch";
 import { calculateVariance } from "../../utils/Functions/calculateVariance";
+import { countryCurrency } from "../../utils/constantFiles/currencyConstants";
 import logger from "../../utils/winstonLogger/logger";
 
 export class UserLeadsController {
@@ -567,7 +568,9 @@ export class UserLeadsController {
 
       }
       if (data) {
-        const updatedDetails = await UserLeadsDetails.findById(id);
+        // const updatedDetails = await UserLeadsDetails.findById(id);
+        const userLeadDetails = await UserLeadsDetails.findById(id);
+
         const userData = await User.findOne({ userLeadsDetailsId: id });
         const businessDeatilsData = await BusinessDetails.findById(
           userData?.businessDetailsId
@@ -580,10 +583,23 @@ export class UserLeadsController {
             }
           );
         } else {
-          formattedPostCodes = updatedDetails?.postCodeTargettingList
+          formattedPostCodes = userLeadDetails?.postCodeTargettingList
             .map((item: any) => item.postalCode)
             .flat();
         }
+
+        const currencyObj = countryCurrency.find(
+          ({ country, value }) =>
+            country === user?.country && value === user?.currency
+        );
+
+        const originalDailyLimit = userLeadDetails?.daily ?? 0;
+
+        const fiftyPercentVariance = Math.round(
+          originalDailyLimit + 0.5 * originalDailyLimit
+        );
+
+
         // let formattedPostCodes = updatedDetails?.postCodeTargettingList
         //   .map((item: any) => item.postalCode)
         //   .flat();
@@ -602,14 +618,17 @@ export class UserLeadsController {
           // openingHours:formattedOpeningHours,
           openingHours: businessDeatilsData?.businessOpeningHours,
           logo: businessDeatilsData?.businessLogo,
-          totalLeads: updatedDetails?.total,
-          monthlyLeads: updatedDetails?.monthly,
-          weeklyLeads: updatedDetails?.weekly,
-          dailyLeads: updatedDetails?.daily,
-          leadsHours: updatedDetails?.leadSchedule,
+          totalLeads: userLeadDetails?.total,
+          monthlyLeads: userLeadDetails?.monthly,
+          weeklyLeads: userLeadDetails?.weekly,
+          dailyLeads: userLeadDetails?.daily,
+          leadsHours: userLeadDetails?.leadSchedule,
           // leadsHours:formattedLeadSchedule,
           area: `${formattedPostCodes}`,
           leadCost: userData?.leadCost,
+          currencyCode: currencyObj?.symbol,
+          mobilePrefixCode: userData?.mobilePrefixCode,
+          dailyCap: fiftyPercentVariance
         };
         sendEmailForUpdatedDetails(message);
         if (input.criteria) {
@@ -645,7 +664,7 @@ export class UserLeadsController {
         return res.json({
           data: {
             message: msg,
-            data: updatedDetails,
+            data: userLeadDetails,
             service,
           },
         });

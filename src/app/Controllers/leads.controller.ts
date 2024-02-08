@@ -2549,11 +2549,11 @@ export class LeadsController {
       } else {
         filteredDataArray = filterAndTransformData(
           //@ts-ignore
-          pref?.columns,
+          [...pref?.columns, {isVisible: true, displayName: "Client Notes", originalName: "clientNotes"}],
           convertArray(query.results)
         );
       }
-
+      
       const resultArray = filteredDataArray.map((obj) => {
         const newObj: Record<string, string> = {};
         for (const key in obj) {
@@ -2734,9 +2734,10 @@ export class LeadsController {
           },
         },
       ]);
+      console.log(pref[0]?.columns, ">>>>> pref")
       const filteredDataArray: DataObject[] = filterAndTransformData(
         //@ts-ignore
-        pref[0]?.columns,
+        [...pref[0]?.columns, {isVisible: true, displayName: "Client Notes", originalName: "clientNotes"}],
         convertArray(document)
         // convertArray(query.results)
       );
