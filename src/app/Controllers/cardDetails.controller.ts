@@ -204,6 +204,17 @@ export class CardDetailsControllers {
           .map((item: any) => item.postalCode)
           .flat();
 
+          const currencyObj = countryCurrency.find(
+            ({ country, value }) =>
+              country === user?.country && value === user?.currency
+          );
+  
+          const originalDailyLimit = leadData?.daily ?? 0;
+  
+          const fiftyPercentVariance = Math.round(
+            originalDailyLimit + 0.5 * originalDailyLimit
+          );
+
         const message = {
           firstName: user?.firstName,
           lastName: user?.lastName,
@@ -225,6 +236,9 @@ export class CardDetailsControllers {
           leadsHours: leadData?.leadSchedule,
           area: `${formattedPostCodes}`,
           leadCost: user?.leadCost,
+          currencyCode: currencyObj?.symbol,
+          mobilePrefixCode: user?.mobilePrefixCode,
+          dailyCap: fiftyPercentVariance
         };
         let subscribers: string[] = [`${process.env.ADMIN_EMAIL}`];
         const data = await User.find({ role: RolesEnum.SUBSCRIBER });

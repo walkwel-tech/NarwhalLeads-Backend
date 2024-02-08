@@ -77,6 +77,7 @@ import {
   NULL_MANAGER,
   userStatus,
 } from "../Inputs/GetClients.input";
+import { countryCurrency } from "../../utils/constantFiles/currencyConstants";
 import { updateReport } from "../AutoUpdateTasks/ReportingStatusUpdate";
 
 const ObjectId = mongoose.Types.ObjectId;
@@ -1824,12 +1825,15 @@ export class UsersControllers {
             .status(404)
             .json({ error: { message: "User to update does not exists." } });
         }
-        const result = await User.findById(id, "-password -__v");
+
+        // const result = await User.findById(id, "-password -__v");
+        const userData = await User.findById(id, "-password -__v");
+
         const buinessData = await BusinessDetails.findById(
-          result?.businessDetailsId
+          userData?.businessDetailsId
         );
         const leadData = await UserLeadsDetails.findById(
-          result?.userLeadsDetailsId
+          userData?.userLeadsDetailsId
         );
 
         // const formattedPostCodes = leadData?.postCodeTargettingList
@@ -1849,12 +1853,25 @@ export class UsersControllers {
           id,
           "-__v -_id -businessDetailsId -businessIndustryId -userServiceId -accountManager -userLeadsDetailsId -onBoarding -createdAt -updatedAt -password"
         ).lean();
+
+        const currencyObj = countryCurrency.find(
+          ({ country, value }) =>
+            country === user?.country && value === user?.currency
+        );
+
+        const originalDailyLimit = leadData?.daily ?? 0;
+
+        const fiftyPercentVariance = Math.round(
+          originalDailyLimit + 0.5 * originalDailyLimit
+        );
+
+
         const message = {
-          firstName: result?.firstName,
-          lastName: result?.lastName,
+          firstName: userData?.firstName,
+          lastName: userData?.lastName,
           businessName: buinessData?.businessName,
           phone: buinessData?.businessSalesNumber,
-          email: result?.email,
+          email: userData?.email,
           industry: buinessData?.businessIndustry,
           address: buinessData?.address1 + " " + buinessData?.address2,
           city: buinessData?.businessCity,
@@ -1870,6 +1887,9 @@ export class UsersControllers {
           leadsHours: leadData?.leadSchedule,
           area: `${formattedPostCodes}`,
           leadCost: user?.leadCost,
+          currencyCode: currencyObj?.symbol,
+          mobilePrefixCode: userData?.mobilePrefixCode,
+          dailyCap: fiftyPercentVariance
         };
 
         sendEmailForUpdatedDetails(message);
@@ -1892,18 +1912,18 @@ export class UsersControllers {
         if (input.triggerAmount || input.autoChargeAmount) {
           return res.json({
             message: "Auto Top-Up Settings Updated Successfully",
-            data: result,
+            data: userData,
           });
         }
         if (input.isSmsNotificationActive || input.smsPhoneNumber) {
           return res.json({
             message: "SMS Settings Saved Successfully",
-            data: result,
+            data: userData,
           });
         } else if (input.paymentMethod) {
           return res.json({
             message: "Updated Successfully",
-            data: result,
+            data: userData,
           });
         } else {
           if (
@@ -1942,7 +1962,7 @@ export class UsersControllers {
           }
           cmsUpdateBuyerWebhook(id, cardExist?.id);
 
-          return res.json({ message: "Updated Successfully", data: result });
+          return res.json({ message: "Updated Successfully", data: userData });
         }
       }
     } catch (err) {

@@ -145,7 +145,7 @@ export async function sendEmailForNewRegistration(
     message.financeOffers = "Yes";
   }
   const msg = {
-    // to: "radhika.walkweltech@gmail.com", // Change to your recipient
+    // to: "", // Change to your recipient
     to: send_to,
     from: {
       name: process.env.VERIFIED_SENDER_ON_SENDGRID_FROM_NAME,
@@ -190,6 +190,10 @@ export async function sendEmailForNewRegistration(
       criteria: message?.criteria,
       trustpilotReviews: message?.trustpilotReviews,
       leadCost: message?.leadCost,
+      currencyCode: message?.currencyCode,
+      mobilePrefixCode: message?.mobilePrefixCode,
+      dailyCap: message?.dailyCap,
+      weeklyCap: message?.weeklyLeads
     },
   };
   // if (checkAccess()) {
@@ -588,6 +592,10 @@ export function sendEmailForUpdatedDetails(message: any) {
       area: message?.area,
       leadCost: message?.leadCost,
       businessLogo: message?.logo,
+      currencyCode: message?.currencyCode,
+      mobilePrefixCode: message?.mobilePrefixCode,
+      dailyCap: message?.dailyCap
+
     },
   };
   if (checkAccess()) {
