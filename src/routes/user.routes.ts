@@ -117,8 +117,7 @@ user.get(
   "/stats",
   Auth,
   checkPermissions([{ module: MODULE.CLIENTS, permission: PERMISSIONS.READ }]),
-  // UsersControllers.clientsStatsV2
-  UsersControllers.clientsStat
+  UsersControllers.clientsStatsV2
 );
 
 user.get(
@@ -127,8 +126,7 @@ user.get(
   checkPermissions([
     { module: MODULE.CLIENTS_CSV, permission: PERMISSIONS.READ },
   ]),
-  // UsersControllers.showAllClientsForAdminExportFileV2
-  UsersControllers.showAllClientsForAdminExportFile
+  UsersControllers.showAllClientsForAdminExportFileV2
 );
 user.patch("/reorder", OnlyAdmins, UsersControllers.reOrderIndex);
 user.post("/reorder", OnlyAdmins, UsersControllers.reOrderIndex);

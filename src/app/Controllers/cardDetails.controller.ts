@@ -104,6 +104,7 @@ import { generatePdfAsync } from "../../utils/Functions/generatePdfAsync";
 import { userStatus } from "../Inputs/GetClients.input";
 import { freeCreditsTagsEnum } from "../../utils/Enums/freeCreditsTagsEnum";
 import { FreeCreditsConfig } from "../Models/FreeCreditsConfig";
+import logger from "../../utils/winstonLogger/logger";
 
 const ObjectId = mongoose.Types.ObjectId;
 
@@ -204,16 +205,16 @@ export class CardDetailsControllers {
           .map((item: any) => item.postalCode)
           .flat();
 
-          const currencyObj = countryCurrency.find(
-            ({ country, value }) =>
-              country === user?.country && value === user?.currency
-          );
-  
-          const originalDailyLimit = leadData?.daily ?? 0;
-  
-          const fiftyPercentVariance = Math.round(
-            originalDailyLimit + 0.5 * originalDailyLimit
-          );
+        const currencyObj = countryCurrency.find(
+          ({ country, value }) =>
+            country === user?.country && value === user?.currency
+        );
+
+        const originalDailyLimit = leadData?.daily ?? 0;
+
+        const fiftyPercentVariance = Math.round(
+          originalDailyLimit + 0.5 * originalDailyLimit
+        );
 
         const message = {
           firstName: user?.firstName,
@@ -1617,6 +1618,12 @@ export class CardDetailsControllers {
           (await User.findOne({
             stripeClientId: details.customer,
           })) ?? ({} as UserInterface);
+        const businessDetail = await BusinessDetails.findById(
+          user.businessDetailsId
+        );
+        const userLead = (await UserLeadsDetails.findById(
+          user.userLeadsDetailsId
+        )) as UserLeadsDetailsInterface;
         const cards = await CardDetails.findOne({
           userId: user?._id,
           isDeleted: false,
@@ -1645,7 +1652,7 @@ export class CardDetailsControllers {
             dataToSave.isDefault = true;
           }
           const card = await CardDetails.create(dataToSave);
-         const credits = await cardAddBonusCheck(user?.id);
+          const credits = await cardAddBonusCheck(user?.id);
 
           await Transaction.create({
             userId: user?._id,
@@ -1706,6 +1713,43 @@ export class CardDetailsControllers {
                 transactionData.status = PAYMENT_STATUS.CAPTURED;
                 transactionData.title = transactionTitle.FREE_LEADS_ADDED;
                 transactionData.isCredited = true;
+
+                let paramsToSend: PostcodeWebhookParams = {
+                  userId: user._id,
+                  buyerId: user.buyerId,
+                  businessName: businessDetail?.businessName,
+                  businessIndustry: businessDetail?.businessIndustry,
+                  eventCode: EVENT_TITLE.ADD_CREDITS,
+                  weeklyCap: userLead?.daily * userLead.leadSchedule?.length,
+                  dailyCap:
+                    userLead?.daily + calculateVariance(userLead?.daily),
+                  computedCap: calculateVariance(userLead?.daily),
+                  topUpAmount: credits,
+                  type: POSTCODE_TYPE.MAP,
+                };
+
+                if (userLead.type === POSTCODE_TYPE.RADIUS) {
+                  (paramsToSend.type = POSTCODE_TYPE.RADIUS),
+                    (paramsToSend.postcode = userLead.postCodeList);
+                } else {
+                  paramsToSend.postCodeList = flattenPostalCodes(
+                    userLead?.postCodeTargettingList
+                  );
+                }
+
+                await eventsWebhook(paramsToSend)
+                  .then(() => {
+                    logger.info(
+                      "event webhook for add credits hits successfully.",
+                      paramsToSend
+                    );
+                  })
+                  .catch((err) => {
+                    logger.error(
+                      "error while triggering add credits webhooks failed",
+                      err
+                    );
+                  });
 
                 await Transaction.create(transactionData);
               })

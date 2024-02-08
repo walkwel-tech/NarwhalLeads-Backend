@@ -2611,48 +2611,6 @@ export class UsersControllers {
       });
     }
   };
-
-  static clientsStat = async (_req: any, res: Response) => {
-    try {
-      let dataToFindActive: Record<
-        string,
-        string | Types.ObjectId | string[] | boolean | RoleFilter
-      > = {
-        role: { $in: [RolesEnum.USER, RolesEnum.NON_BILLABLE] },
-        isActive: true,
-        isDeleted: false,
-        isArchived: false,
-      };
-      let dataToFindPaused: Record<
-        string,
-        string | Types.ObjectId | string[] | boolean | RoleFilter
-      > = {
-        role: { $in: [RolesEnum.USER, RolesEnum.NON_BILLABLE] },
-        isActive: false,
-        isDeleted: false,
-        isArchived: false,
-      };
-      if (_req.user.role === RolesEnum.ACCOUNT_MANAGER) {
-        dataToFindActive.accountManager = _req.user._id;
-        dataToFindPaused.accountManager = _req.user._id;
-      }
-      const active = await User.find(dataToFindActive).count();
-      const paused = await User.find(dataToFindPaused).count();
-
-      const dataToShow = {
-        activeClients: active,
-        pausedClients: paused,
-      };
-      return res.json({ data: dataToShow });
-    } catch (err) {
-      return res.status(500).json({
-        error: {
-          message: "something went wrong",
-          err,
-        },
-      });
-    }
-  };
   static clientsStatsV2 = async (_req: any, res: Response) => {
     try {
       const stats: PipelineStage[] = await User.aggregate([
@@ -2722,6 +2680,49 @@ export class UsersControllers {
       });
     }
   };
+
+  static clientsStat = async (_req: any, res: Response) => {
+    try {
+      let dataToFindActive: Record<
+        string,
+        string | Types.ObjectId | string[] | boolean | RoleFilter
+      > = {
+        role: { $in: [RolesEnum.USER, RolesEnum.NON_BILLABLE] },
+        isActive: true,
+        isDeleted: false,
+        isArchived: false,
+      };
+      let dataToFindPaused: Record<
+        string,
+        string | Types.ObjectId | string[] | boolean | RoleFilter
+      > = {
+        role: { $in: [RolesEnum.USER, RolesEnum.NON_BILLABLE] },
+        isActive: false,
+        isDeleted: false,
+        isArchived: false,
+      };
+      if (_req.user.role === RolesEnum.ACCOUNT_MANAGER) {
+        dataToFindActive.accountManager = _req.user._id;
+        dataToFindPaused.accountManager = _req.user._id;
+      }
+      const active = await User.find(dataToFindActive).count();
+      const paused = await User.find(dataToFindPaused).count();
+
+      const dataToShow = {
+        activeClients: active,
+        pausedClients: paused,
+      };
+      return res.json({ data: dataToShow });
+    } catch (err) {
+      return res.status(500).json({
+        error: {
+          message: "something went wrong",
+          err,
+        },
+      });
+    }
+  };
+  
 
   static sendTestLeadData = async (req: any, res: Response) => {
     try {
