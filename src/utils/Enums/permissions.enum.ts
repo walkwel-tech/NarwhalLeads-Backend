@@ -28,5 +28,7 @@ export const MODULE = {
   DASHBOARD_CSV: "dashboardCSVFile",
   REPORTED_LEADS: "reportedLeads",
   PARTNERS: "partners",
-  FREE_CREDITS_CONFIG: "freeCreditsConfigs"
+  FREE_CREDITS_CONFIG: "freeCreditsConfigs",
+  VALIDATION_CONFIG:"validationConfigs"
+  
 };

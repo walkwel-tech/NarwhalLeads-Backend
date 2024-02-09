@@ -784,17 +784,17 @@ class AuthController {
           exists.businessIndustryId
         )) as BuisnessIndustriesInterface;
         exists.avgConversionRate = businessIndustryObj?.avgConversionRate;
-      
+        exists.minimumTopupLeads = businessIndustryObj?.minimumTopupLeads;
       }
       const transaction = await Transaction.findOne({
         userId: user.id,
         isCredited: true,
         status: PAYMENT_STATUS.CAPTURED,
-        amount: {$gt: 0}
+        amount: { $gt: 0 },
       });
-      exists.hasEverTopped = false
+      exists.hasEverTopped = false;
       if (transaction) {
-        exists.hasEverTopped = true
+        exists.hasEverTopped = true;
       }
       if (exists) {
         return res.json({

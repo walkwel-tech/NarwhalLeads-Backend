@@ -24,6 +24,7 @@ export class IndustryController {
     Industry.leadCost = input.leadCost;
     Industry.currencyCode = input.currencyCode;
     Industry.avgConversionRate = input.avgConversionRate;
+    Industry.minimumTopupLeads = input.minimumTopupLeads;
 
     const errors = await validate(Industry);
 
@@ -52,6 +53,7 @@ export class IndustryController {
       json: json,
       country: currency.country,
       associatedCurrency: Industry.currencyCode,
+      minimumTopupLeads: Industry.minimumTopupLeads,
     };
 
     try {
