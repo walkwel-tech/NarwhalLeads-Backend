@@ -8,6 +8,7 @@ export interface UserInterface extends Document {
   _id: Types.ObjectId;
   businessIndustryId: Types.ObjectId;
   avgConversionRate: number | undefined;
+  minimumTopupLeads: number | undefined
   firstName: string;
   currency: string;
   country: string;

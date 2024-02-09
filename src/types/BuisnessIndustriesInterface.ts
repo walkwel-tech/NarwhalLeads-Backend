@@ -11,4 +11,5 @@ export interface BuisnessIndustriesInterface extends Document {
   associatedCurrency: string;
   country: string;
   avgConversionRate: number;
+  minimumTopupLeads: number;
 }
