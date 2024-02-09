@@ -269,6 +269,9 @@ const UserSchema = new Schema(
     avgConversionRate: {
       type: Number,
     },
+    minimumTopupLeads: {
+      type: Number,
+    }
   },
   { timestamps: true }
 );

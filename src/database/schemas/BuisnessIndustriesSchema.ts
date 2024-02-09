@@ -36,6 +36,9 @@ const BuisnessIndustriesSchema = new Schema(
     country: {
       type: String,
     },
+    minimumTopupLeads:{
+      type: Number,
+    }
   },
   { timestamps: true }
 );
