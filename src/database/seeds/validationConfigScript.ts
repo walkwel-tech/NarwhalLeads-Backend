@@ -13,6 +13,13 @@ export const addValidationConfigRecord = async () => {
   try {
     await db();
 
+    const existingRecord = await ValidationConfig.findOne({ key: "minimum_topUp_leadCount" });
+
+    if (existingRecord) {
+      console.log("Record already exists:", existingRecord);
+      return;
+    }
+
     const newRecordValues = {
       key: "minimum_topUp_leadCount",
       value: 10,
