@@ -534,8 +534,8 @@ export class UsersControllers {
                         input: { $concat: ["$firstName", " ", "$lastName"] },
                         regex: search,
                         options: "i",
-                      }
-                    }
+                      },
+                    },
                   },
                   {
                     "businessDetailsId.businessName": {
@@ -553,7 +553,12 @@ export class UsersControllers {
               }
             : {}),
           ...(accountManagerId
-            ? { accountManager: accountManagerId === NULL_MANAGER ?  null : new ObjectId(accountManagerId as string) }
+            ? {
+                accountManager:
+                  accountManagerId === NULL_MANAGER
+                    ? null
+                    : new ObjectId(accountManagerId as string),
+              }
             : {}),
           ...(businessDetailId
             ? {
@@ -577,7 +582,7 @@ export class UsersControllers {
             : {}),
         },
       },
-      
+
       ...(clientStatus == userStatus.PENDING
         ? [
             {
@@ -1051,7 +1056,8 @@ export class UsersControllers {
 
   static update = async (req: Request, res: Response): Promise<any> => {
     let user: Partial<UserInterface> = req.user ?? ({} as UserInterface);
-    const { id } = req.params;
+    
+    const { id, generateInvoice  } = req.params;
     const input = req.body;
     const checkUser =
       (await User.findById(id)
@@ -1242,6 +1248,8 @@ export class UsersControllers {
           sessionId: transactionTitle.SECONDARY_CREDITS_MANUAL_ADJUSTMENT,
           isManualAdjustment: false,
         };
+       if (typeof generateInvoice === 'boolean' && generateInvoice === true) {
+
         generatePDF(paramPdf)
           .then(async (res: any) => {
             const dataToSaveInInvoice: Partial<InvoiceInterface> = {
@@ -1283,6 +1291,7 @@ export class UsersControllers {
               });
             });
           });
+        }
       }
 
       if (input.smsPhoneNumber) {
@@ -1294,8 +1303,8 @@ export class UsersControllers {
           userExist &&
           // @ts-ignore
           userExist.id !== req?.user?.id &&
-          userExist.role !== RolesEnum.SUPER_ADMIN && 
-          !userExist?.isDeleted 
+          userExist.role !== RolesEnum.SUPER_ADMIN &&
+          !userExist?.isDeleted
         ) {
           return res.status(400).json({
             error: {
@@ -1839,15 +1848,15 @@ export class UsersControllers {
         // const formattedPostCodes = leadData?.postCodeTargettingList
         //   .map((item: any) => item.postalCode)
         //   .flat();
-        let formattedPostCodes ;
+        let formattedPostCodes;
         if (leadData && leadData.type === POSTCODE_TYPE.RADIUS) {
-            (formattedPostCodes = leadData.postCodeList?.map(({postcode}) => {
-              return postcode
-            }));
+          formattedPostCodes = leadData.postCodeList?.map(({ postcode }) => {
+            return postcode;
+          });
         } else {
           formattedPostCodes = leadData?.postCodeTargettingList
-          .map((item: any) => item.postalCode)
-          .flat();
+            .map((item: any) => item.postalCode)
+            .flat();
         }
         const userAfterMod = await User.findById(
           id,
@@ -1864,7 +1873,6 @@ export class UsersControllers {
         const fiftyPercentVariance = Math.round(
           originalDailyLimit + 0.5 * originalDailyLimit
         );
-
 
         const message = {
           firstName: userData?.firstName,
@@ -1889,7 +1897,7 @@ export class UsersControllers {
           leadCost: user?.leadCost,
           currencyCode: currencyObj?.symbol,
           mobilePrefixCode: userData?.mobilePrefixCode,
-          dailyCap: fiftyPercentVariance
+          dailyCap: fiftyPercentVariance,
         };
 
         sendEmailForUpdatedDetails(message);
@@ -2449,6 +2457,8 @@ export class UsersControllers {
   static userCreditsManualAdjustment = async (req: any, res: Response) => {
     try {
       const input = req.body;
+      const{ generateInvoice }  = req.params;
+
       const user =
         (await User.findById(input.userId)
           .populate("userLeadsDetailsId")
@@ -2487,14 +2497,12 @@ export class UsersControllers {
         };
         // if (user?.credits < credits) {
         amount = credits;
-        (params.fixedAmount = amount)
-        if(amount < 0){
-          (dataToSave.isCredited = false);
-          (dataToSave.isDebited = true);
-          
-        }else{
-
-          (dataToSave.isCredited = true);
+        params.fixedAmount = amount;
+        if (amount < 0) {
+          dataToSave.isCredited = false;
+          dataToSave.isDebited = true;
+        } else {
+          dataToSave.isCredited = true;
         }
         dataToSave.creditsLeft = user.credits + credits; //@hotfix can have many test cases(Copied logic from develop branch)
         addCreditsToBuyer(params).then(async (res) => {
@@ -2508,48 +2516,50 @@ export class UsersControllers {
             sessionId: transactionTitle.MANUAL_ADJUSTMENT,
             isManualAdjustment: true,
           };
-          generatePDF(paramPdf)
-            .then(async (res: any) => {
-              const dataToSaveInInvoice: Partial<InvoiceInterface> = {
-                userId: user?.id,
-                transactionId: transaction.id,
-                price: credits,
-                invoiceId: res.data.Invoices[0].InvoiceID,
-              };
-              await Invoice.create(dataToSaveInInvoice);
-              await Transaction.findByIdAndUpdate(transaction.id, {
-                invoiceId: res.data.Invoices[0].InvoiceID,
-              });
-
-              console.log("pdf generated", new Date(), "Today's Date");
-            })
-            .catch(async (err) => {
-              refreshToken().then(async (res) => {
-                const paramPdf: generatePDFParams = {
-                  ContactID: user?.xeroContactId,
-
-                  desc: transactionTitle.CREDITS_ADDED,
-                  amount: 0,
-                  freeCredits: credits,
-                  sessionId: transactionTitle.MANUAL_ADJUSTMENT,
-                  isManualAdjustment: true,
+          if (typeof generateInvoice === 'boolean' && generateInvoice === true) {
+            generatePDF(paramPdf)
+              .then(async (res: any) => {
+                const dataToSaveInInvoice: Partial<InvoiceInterface> = {
+                  userId: user?.id,
+                  transactionId: transaction.id,
+                  price: credits,
+                  invoiceId: res.data.Invoices[0].InvoiceID,
                 };
-                generatePDF(paramPdf).then(async (res: any) => {
-                  const dataToSaveInInvoice: Partial<InvoiceInterface> = {
-                    userId: user?.id,
-                    transactionId: transaction.id,
-                    price: credits,
-                    invoiceId: res.data.Invoices[0].InvoiceID,
-                  };
-                  await Invoice.create(dataToSaveInInvoice);
-                  await Transaction.findByIdAndUpdate(transaction.id, {
-                    invoiceId: res.data.Invoices[0].InvoiceID,
-                  });
+                await Invoice.create(dataToSaveInInvoice);
+                await Transaction.findByIdAndUpdate(transaction.id, {
+                  invoiceId: res.data.Invoices[0].InvoiceID,
+                });
 
-                  console.log("pdf generated", new Date(), "Today's Date");
+                console.log("pdf generated", new Date(), "Today's Date");
+              })
+              .catch(async (err) => {
+                refreshToken().then(async (res) => {
+                  const paramPdf: generatePDFParams = {
+                    ContactID: user?.xeroContactId,
+
+                    desc: transactionTitle.CREDITS_ADDED,
+                    amount: 0,
+                    freeCredits: credits,
+                    sessionId: transactionTitle.MANUAL_ADJUSTMENT,
+                    isManualAdjustment: true,
+                  };
+                  generatePDF(paramPdf).then(async (res: any) => {
+                    const dataToSaveInInvoice: Partial<InvoiceInterface> = {
+                      userId: user?.id,
+                      transactionId: transaction.id,
+                      price: credits,
+                      invoiceId: res.data.Invoices[0].InvoiceID,
+                    };
+                    await Invoice.create(dataToSaveInInvoice);
+                    await Transaction.findByIdAndUpdate(transaction.id, {
+                      invoiceId: res.data.Invoices[0].InvoiceID,
+                    });
+
+                    console.log("pdf generated", new Date(), "Today's Date");
+                  });
                 });
               });
-            });
+          }
           const userBusiness: BusinessDetailsInterface | null =
             isBusinessObject(user?.businessDetailsId)
               ? user?.businessDetailsId

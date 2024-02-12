@@ -395,12 +395,12 @@ export const chargeUserOnStripe = async (params: IntentInterface) => {
             message.currency = CURRENCY_SIGN.EUR;
             message.isIncVat = false;
           }
-          const content = "We have recently identified a payment which require 3DS action of user"
-          await paymentFailedWebhook(user, user.id, business?.businessName as string, content, business?.businessIndustry as string ).then((res) => {
-            console.log(res, "PAYMENT FAILED WEBHOOK RESPONSE", new Date())
-          }).catch((err) => {
-            console.error(err, "PAYMENT FAILED WEBHOOK ERROR", new Date())
-          });
+          // const content = "We have recently identified a payment which require 3DS action of user"
+          // await paymentFailedWebhook(user, user.id, business?.businessName as string, content, business?.businessIndustry as string ).then((res) => {
+          //   console.log(res, "PAYMENT FAILED WEBHOOK RESPONSE", new Date())
+          // }).catch((err) => {
+          //   console.error(err, "PAYMENT FAILED WEBHOOK ERROR", new Date())
+          // });
 
           sendEmailForRequireActionAutocharge(user.email, message);
         }
