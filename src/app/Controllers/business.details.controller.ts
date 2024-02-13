@@ -52,6 +52,10 @@ import { DEFAULT } from "../../utils/constantFiles/user.default.values";
 import { INTERNATIONAL_CODE } from "../../utils/constantFiles/internationalCode";
 import { POSTCODE_TYPE } from "../../utils/Enums/postcode.enum";
 import { countryCurrency } from "../../utils/constantFiles/currencyConstants";
+import { createContact } from "../../utils/sendgrid/createContactSendgrid";
+import { updateUserSendgridJobIds } from "../../utils/sendgrid/updateSendgridJobIds";
+import { SENDGRID_STATUS_PERCENTAGE } from "../../utils/constantFiles/sendgridStatusPercentage";
+import { checkAccess } from "../Middlewares/serverAccess";
 
 const ObjectId = mongoose.Types.ObjectId;
 
@@ -72,8 +76,8 @@ export class BusinessDetailsController {
       (Business.address1 = input.address1),
       (Business.businessCity = input.businessCity),
       (Business.businessPostCode = input.businessPostCode);
-      (Business.businessMobilePrefixCode = input.businessMobilePrefixCode);
-      
+    Business.businessMobilePrefixCode = input.businessMobilePrefixCode;
+
     Business.businessOpeningHours = JSON.parse(input?.businessOpeningHours);
     const errors = await validate(Business);
     const isBusinessNameExist = await BusinessDetails.find({
@@ -88,11 +92,13 @@ export class BusinessDetailsController {
     }
     const user = await User.findById(input.userId);
 
-if (!user) {
-  return res.status(404).json({ error: { message: "User not found." } });
-}
+    if (!user) {
+      return res.status(404).json({ error: { message: "User not found." } });
+    }
 
-const { onBoarding }: any = user || {};
+    let userEmail = user.email;
+
+    const { onBoarding }: any = user || {};
     let object = onBoarding || [];
     let array: any = [];
     if (errors.length) {
@@ -179,6 +185,16 @@ const { onBoarding }: any = user || {};
       });
       const user: UserInterface =
         (await User.findById(input.userId)) ?? ({} as UserInterface);
+      if (checkAccess()) {
+        const sendgridResponse = await createContact(userEmail, {
+          signUpStatus:
+            SENDGRID_STATUS_PERCENTAGE.BUSINESS_DETAILS_PERCENTAGE || "",
+          businessIndustry: Business?.businessIndustry,
+        });
+        const jobId = sendgridResponse?.body?.job_id;
+
+        await updateUserSendgridJobIds(user.id, jobId);
+      }
       const additionalColumns = additionalColumnsForLeads(
         industry?.columns.length
       );
@@ -514,15 +530,15 @@ const { onBoarding }: any = user || {};
         //   .map((item: any) => item.postalCode)
         //   .flat();
 
-        let formattedPostCodes ;
+        let formattedPostCodes;
         if (leadData && leadData.type === POSTCODE_TYPE.RADIUS) {
-            (formattedPostCodes = leadData.postCodeList?.map(({postcode}) => {
-              return postcode
-            }));
+          formattedPostCodes = leadData.postCodeList?.map(({ postcode }) => {
+            return postcode;
+          });
         } else {
           formattedPostCodes = leadData?.postCodeTargettingList
-          .map((item: any) => item.postalCode)
-          .flat();
+            .map((item: any) => item.postalCode)
+            .flat();
         }
         const currencyObj = countryCurrency.find(
           ({ country, value }) => country === userData?.country && value === userData?.currency
@@ -556,7 +572,7 @@ const { onBoarding }: any = user || {};
           leadCost: userData?.leadCost,
           currencyCode: currencyObj?.symbol,
           mobilePrefixCode: userData?.mobilePrefixCode,
-          dailyCap: fiftyPercentVariance
+          dailyCap: fiftyPercentVariance,
         };
         sendEmailForUpdatedDetails(message);
 

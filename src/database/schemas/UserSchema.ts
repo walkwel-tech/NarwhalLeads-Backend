@@ -271,7 +271,11 @@ const UserSchema = new Schema(
     },
     minimumTopupLeads: {
       type: Number,
-    }
+    },
+    sendgridJobIds: {
+        type: [String],
+        default: [],
+      },   
   },
   { timestamps: true }
 );
