@@ -1,5 +1,6 @@
-import { Document } from "mongoose";
-import { columnsObjects } from "../types/columnsInterface";
+import {Document} from "mongoose";
+import {SupplierBadgeIndustryConfig} from "../types/SupplierBadgeIndustryConfig";
+import {columnsObjects} from "../types/columnsInterface";
 
 export interface BuisnessIndustriesInterface extends Document {
   industry: string;
@@ -11,5 +12,8 @@ export interface BuisnessIndustriesInterface extends Document {
   associatedCurrency: string;
   country: string;
   avgConversionRate: number;
+
+  // TODO: Add the following fields
+  supplierBadges: SupplierBadgeIndustryConfig[];
   minimumTopupLeads: number;
 }
