@@ -10,6 +10,7 @@ import invitedUserRoutes from "./invite.routes";
 import BusinessIndustriesRoutes from "./buisnessIndustries.routes"
 import userServiceRoutes from "./userService.routes";
 import postCodeAnalyticsRoutes from "./postCodeAnalytics.routes";
+import supplierBadgeRoutes from "./supplierBadge.routes";
 // import guestRoutes from "./guest.routes";
 
 export {
@@ -25,6 +26,7 @@ export {
     BusinessIndustriesRoutes,
     userServiceRoutes,
     postCodeAnalyticsRoutes,
+    supplierBadgeRoutes
 
     // guestRoutes
 };

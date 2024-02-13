@@ -524,10 +524,8 @@ const { onBoarding }: any = user || {};
           .map((item: any) => item.postalCode)
           .flat();
         }
-
         const currencyObj = countryCurrency.find(
-          ({ country, value }) =>
-            country === user?.country && value === user?.currency
+          ({ country, value }) => country === userData?.country && value === userData?.currency
         );
 
         const originalDailyLimit = leadData?.daily ?? 0;
@@ -659,6 +657,7 @@ const { onBoarding }: any = user || {};
         });
       }
     } catch (error) {
+      console.log(error, ">>>> error")
       return res
         .status(500)
         .json({ error: { message: "Something went wrong.", error } });

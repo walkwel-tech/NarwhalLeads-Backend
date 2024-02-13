@@ -755,7 +755,6 @@ export class UsersControllers {
       };
       res.json(data);
     } catch (err) {
-      console.log(err, ">>>>>");
       return res
         .status(500)
         .json({ error: { message: "Something went wrong.", err } });

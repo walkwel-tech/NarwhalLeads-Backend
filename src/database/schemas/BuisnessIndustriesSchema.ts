@@ -36,6 +36,21 @@ const BuisnessIndustriesSchema = new Schema(
     country: {
       type: String,
     },
+    supplierBadges: {
+      type: [
+        {
+          src: {
+            type: String,
+            required: true,
+          },
+          type: {
+            type: String,
+            enum: ["badge", "banner", "post"],
+            required: true,
+          },
+        },
+      ],
+    },
     minimumTopupLeads:{
       type: Number,
     }

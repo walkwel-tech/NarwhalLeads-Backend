@@ -37,6 +37,7 @@ import { User } from "../Models/User";
 import { UserLeadsDetails } from "../Models/UserLeadsDetails";
 import fs from "fs"
 import {APP_ENV} from "../../utils/Enums/serverModes.enum";
+import { paymentFailedWebhook } from "../../utils/webhookUrls/paymentFailedWebhook";
 
 interface paymentParams {
   fixedAmount: number;
