@@ -79,6 +79,10 @@ import {
 } from "../Inputs/GetClients.input";
 import { countryCurrency } from "../../utils/constantFiles/currencyConstants";
 import { updateReport } from "../AutoUpdateTasks/ReportingStatusUpdate";
+import { createContact } from "../../utils/sendgrid/createContactSendgrid";
+import { updateUserSendgridJobIds } from "../../utils/sendgrid/updateSendgridJobIds";
+import { SENDGRID_STATUS_PERCENTAGE } from "../../utils/constantFiles/sendgridStatusPercentage";
+import { checkAccess } from "../Middlewares/serverAccess";
 
 const ObjectId = mongoose.Types.ObjectId;
 
@@ -162,6 +166,16 @@ export class UsersControllers {
         };
 
         const userData = await User.create(dataToSave);
+        if (checkAccess()) {
+
+        const sendgridResponse = await createContact(userData.email, {
+          signUpStatus: SENDGRID_STATUS_PERCENTAGE.USER_SIGNUP_PERCENTAGE,
+          businessIndustry: SENDGRID_STATUS_PERCENTAGE.BUSINESS_INDUSTRY
+        })          
+        const jobId = sendgridResponse?.body?.job_id;
+        await updateUserSendgridJobIds(userData.id, jobId);
+      }
+
         return res.json({
           data: {
             user: {
@@ -750,7 +764,6 @@ export class UsersControllers {
       };
       res.json(data);
     } catch (err) {
-      console.log(err, ">>>>>");
       return res
         .status(500)
         .json({ error: { message: "Something went wrong.", err } });

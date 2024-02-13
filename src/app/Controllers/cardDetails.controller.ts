@@ -94,7 +94,10 @@ import {
   stripeCurrency,
 } from "../../utils/constantFiles/currencyConstants";
 import { flattenPostalCodes } from "../../utils/Functions/flattenPostcodes";
-import { PostCode, UserLeadsDetailsInterface } from "../../types/LeadDetailsInterface";
+import {
+  PostCode,
+  UserLeadsDetailsInterface,
+} from "../../types/LeadDetailsInterface";
 import { POSTCODE_TYPE } from "../../utils/Enums/postcode.enum";
 import { CURRENCY_SIGN } from "../../utils/constantFiles/email.templateIDs";
 import { CURRENCY } from "../../utils/Enums/currency.enum";
@@ -104,6 +107,11 @@ import { generatePdfAsync } from "../../utils/Functions/generatePdfAsync";
 import { userStatus } from "../Inputs/GetClients.input";
 import { freeCreditsTagsEnum } from "../../utils/Enums/freeCreditsTagsEnum";
 import { FreeCreditsConfig } from "../Models/FreeCreditsConfig";
+import { createContact } from "../../utils/sendgrid/createContactSendgrid";
+import { BuisnessIndustries } from "../Models/BuisnessIndustries";
+import { updateUserSendgridJobIds } from "../../utils/sendgrid/updateSendgridJobIds";
+import { SENDGRID_STATUS_PERCENTAGE } from "../../utils/constantFiles/sendgridStatusPercentage";
+import { checkAccess } from "../Middlewares/serverAccess";
 
 const ObjectId = mongoose.Types.ObjectId;
 
@@ -204,16 +212,16 @@ export class CardDetailsControllers {
           .map((item: any) => item.postalCode)
           .flat();
 
-          const currencyObj = countryCurrency.find(
-            ({ country, value }) =>
-              country === user?.country && value === user?.currency
-          );
-  
-          const originalDailyLimit = leadData?.daily ?? 0;
-  
-          const fiftyPercentVariance = Math.round(
-            originalDailyLimit + 0.5 * originalDailyLimit
-          );
+        const currencyObj = countryCurrency.find(
+          ({ country, value }) =>
+            country === user?.country && value === user?.currency
+        );
+
+        const originalDailyLimit = leadData?.daily ?? 0;
+
+        const fiftyPercentVariance = Math.round(
+          originalDailyLimit + 0.5 * originalDailyLimit
+        );
 
         const message = {
           firstName: user?.firstName,
@@ -238,7 +246,7 @@ export class CardDetailsControllers {
           leadCost: user?.leadCost,
           currencyCode: currencyObj?.symbol,
           mobilePrefixCode: user?.mobilePrefixCode,
-          dailyCap: fiftyPercentVariance
+          dailyCap: fiftyPercentVariance,
         };
         let subscribers: string[] = [`${process.env.ADMIN_EMAIL}`];
         const data = await User.find({ role: RolesEnum.SUBSCRIBER });
@@ -1133,7 +1141,10 @@ export class CardDetailsControllers {
       if (userId) {
         if (type == STRIPE_PAYMENT_STATUS.FAILED) {
           const business = user.business;
-          await User.findByIdAndUpdate(userId._id, {pendingTransaction: "", retriedTransactionCount: 0})
+          await User.findByIdAndUpdate(userId._id, {
+            pendingTransaction: "",
+            retriedTransactionCount: 0,
+          });
 
           const cards = await CardDetails.findOne({
             userId: userId?._id,
@@ -1160,8 +1171,15 @@ export class CardDetailsControllers {
             message.isIncVat = false;
           }
           // after payment fail reset user
-          const content = "We have recently identified a payment failure of user"
-          await paymentFailedWebhook(userId, id, business?.businessName as string, content, business?.businessIndustry as string );
+          const content =
+            "We have recently identified a payment failure of user";
+          await paymentFailedWebhook(
+            userId,
+            id,
+            business?.businessName as string,
+            content,
+            business?.businessIndustry as string
+          );
 
           sendEmailForPaymentFailure(userId?.email, message);
           let dataToSaveInTransaction: Partial<TransactionInterface> = {
@@ -1213,7 +1231,10 @@ export class CardDetailsControllers {
             invoiceId: "",
             paymentSessionId: data.object.id,
             cardId: card?._id,
-            creditsLeft: (userId?.credits || 0) + (params.freeCredits || 0)+originalAmount,
+            creditsLeft:
+              (userId?.credits || 0) +
+              (params.freeCredits || 0) +
+              originalAmount,
             paymentMethod: data?.object?.payment_method,
             paymentType: "",
             isCredited: true,
@@ -1247,9 +1268,10 @@ export class CardDetailsControllers {
                 cmsUpdateBuyerWebhook(userId?.id, cardDetails?.id);
                 let userDetails = await userData(userId?.id, cardDetails?.id);
 
-
                 if (userDetails?.type === POSTCODE_TYPE.RADIUS) {
-                  userDetails.area= (userDetails.postCodeList as PostCode[])?.map(({postcode}) => postcode)
+                  userDetails.area = (
+                    userDetails.postCodeList as PostCode[]
+                  )?.map(({ postcode }) => postcode);
                 } else {
                   userDetails.area = flattenPostalCodes(
                     userDetails?.postCodeTargettingList
@@ -1265,7 +1287,11 @@ export class CardDetailsControllers {
               const transaction = await Transaction.create(
                 commonDataSaveInTransaction
               );
-              await User.findByIdAndUpdate(userId._id, {pendingTransaction: "", retriedTransactionCount: 0, clientReported: userStatus.ACTIVE});
+              await User.findByIdAndUpdate(userId._id, {
+                pendingTransaction: "",
+                retriedTransactionCount: 0,
+                clientReported: userStatus.ACTIVE,
+              });
               (commonDataSaveInTransaction.status = PAYMENT_STATUS.CAPTURED),
                 (commonDataSaveInTransaction.amount =
                   amount / 100 - originalAmount),
@@ -1291,7 +1317,7 @@ export class CardDetailsControllers {
               );
               let message = {
                 firstName: userId?.firstName,
-                amount: amount? (amount/100):amount,
+                amount: amount ? amount / 100 : amount,
                 cardHolderName: `${userId?.firstName} ${userId?.lastName}`,
                 cardNumberEnd: cardDetails?.cardNumber,
                 credits: userId?.credits,
@@ -1325,9 +1351,18 @@ export class CardDetailsControllers {
                 };
                 // Call the new function here and send the params it requires.
 
-                const generatedPdf = await generatePdfAsync(userId, transaction, paramPdf, transactionForVat, invoice, originalAmount, freeCredits, data.object?.id)
+                const generatedPdf = await generatePdfAsync(
+                  userId,
+                  transaction,
+                  paramPdf,
+                  transactionForVat,
+                  invoice,
+                  originalAmount,
+                  freeCredits,
+                  data.object?.id
+                );
 
-                invoice = generatedPdf
+                invoice = generatedPdf;
               }
 
               if (params.freeCredits) {
@@ -1645,16 +1680,16 @@ export class CardDetailsControllers {
             dataToSave.isDefault = true;
           }
           const card = await CardDetails.create(dataToSave);
-         const credits = await cardAddBonusCheck(user?.id);
+          const credits = await cardAddBonusCheck(user?.id);
 
           await Transaction.create({
             userId: user?._id,
             title: transactionTitle.CARD_ADDED,
             cardId: card._id,
-            status :PAYMENT_STATUS.CAPTURED,
-            amount: 0
-
+            status: PAYMENT_STATUS.CAPTURED,
+            amount: 0,
           });
+
           await User.findByIdAndUpdate(
             user?._id,
             {
@@ -1685,11 +1720,9 @@ export class CardDetailsControllers {
             fixedAmount: 0,
           };
 
-
-
           if (credits) {
             // params.freeCredits = credits
-            params.fixedAmount = credits
+            params.fixedAmount = credits;
 
             let transactionData = {
               userId: user?.id,
@@ -1700,6 +1733,24 @@ export class CardDetailsControllers {
               creditsLeft: (user?.credits || 0) + (params.freeCredits || 0),
               paymentMethod: details?.payment_method,
             };
+            if (checkAccess()) {
+              const businessIndustryId = user?.businessIndustryId ?? "";
+
+              const industry = await BuisnessIndustries.findById(
+                businessIndustryId
+              );
+
+              const industryName = industry ? industry.industry : "";
+
+              const sendgridResponse = await createContact(user.email, {
+                signUpStatus:
+                  SENDGRID_STATUS_PERCENTAGE.CARD_DETAILS_PERCENTAGE || "",
+                businessIndustry: industryName,
+              });
+              const jobId = sendgridResponse?.body?.job_id;
+
+              await updateUserSendgridJobIds(user.id, jobId);
+            }
 
             addCreditsToBuyer(params)
               .then(async (res) => {
@@ -1810,8 +1861,8 @@ async function cardAddBonusCheck(userId: Types.ObjectId): Promise<number> {
     userId,
     title: transactionTitle.CARD_ADDED,
   });
-  if(transacation){
-    return 0
+  if (transacation) {
+    return 0;
   }
 
   const freeCreditsConfig = await FreeCreditsConfig.findOne({

@@ -269,6 +269,13 @@ const UserSchema = new Schema(
     avgConversionRate: {
       type: Number,
     },
+    minimumTopupLeads: {
+      type: Number,
+    },
+    sendgridJobIds: {
+        type: [String],
+        default: [],
+      },   
   },
   { timestamps: true }
 );

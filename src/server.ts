@@ -15,7 +15,7 @@ import {
   BusinessDetailsRoutes,
   userLeadsDetailsRoutes,
   invitedUserRoutes,
-  BusinessIndustriesRoutes,
+  BusinessIndustriesRoutes, supplierBadgeRoutes,
   // guestRoutes
 } from "./routes";
 
@@ -37,6 +37,7 @@ import locationRoutes from "./routes/location.routes";
 import dashboardRoutes from "./routes/dashboard.routes";
 import adsRoutes from "./routes/ads.routes";
 import postCodeAnalyticsRoutes from  "./routes/postCodeAnalytics.routes"
+import validationConfigRoutes from "./routes/validationConfig.routes";
 
 const swaggerDocument = require("../swagger.json"); // Replace with the path to your actual Swagger document
 const swaggerUi = require("swagger-ui-express");
@@ -114,6 +115,8 @@ export class Server {
     this.app.use("/api/v1/dashboard", Auth, dashboardRoutes);
     this.app.use("/api/v1/ads",Auth, adsRoutes);
     this.app.use("/api/v1/postal-dash", Auth, postCodeAnalyticsRoutes)
+    this.app.use('/api/v1/supplier-badges', supplierBadgeRoutes)
+    this.app.use("/api/v1/validationConfigs", Auth,validationConfigRoutes)
     
 
     this.app.post(

@@ -53,6 +53,10 @@ import { Transaction } from "../Models/Transaction";
 import { PAYMENT_STATUS } from "../../utils/Enums/payment.status";
 import { BuisnessIndustries } from "../Models/BuisnessIndustries";
 import { BuisnessIndustriesInterface } from "../../types/BuisnessIndustriesInterface";
+import { createContact } from "../../utils/sendgrid/createContactSendgrid";
+import { updateUserSendgridJobIds } from "../../utils/sendgrid/updateSendgridJobIds";
+import { SENDGRID_STATUS_PERCENTAGE } from "../../utils/constantFiles/sendgridStatusPercentage";
+import { checkAccess } from "../Middlewares/serverAccess";
 class AuthController {
   static register = async (req: Request, res: Response): Promise<any> => {
     const input = req.body;
@@ -208,7 +212,16 @@ class AuthController {
             }
           }
 
-          await User.create(dataToSave);
+          const userData = await User.create(dataToSave);
+          if (checkAccess()) {
+            const sendgridResponse = await createContact(registerInput.email, {
+              signUpStatus: SENDGRID_STATUS_PERCENTAGE.USER_SIGNUP_PERCENTAGE,
+              businessIndustry: SENDGRID_STATUS_PERCENTAGE.BUSINESS_INDUSTRY,
+            });
+            const jobId = sendgridResponse?.body?.job_id;
+
+            await updateUserSendgridJobIds(userData.id, jobId);
+          }
           if (input.code) {
             const checkCode: freeCreditsLinkInterface =
               (await FreeCreditsLink.findOne({
@@ -784,17 +797,17 @@ class AuthController {
           exists.businessIndustryId
         )) as BuisnessIndustriesInterface;
         exists.avgConversionRate = businessIndustryObj?.avgConversionRate;
-      
+        exists.minimumTopupLeads = businessIndustryObj?.minimumTopupLeads;
       }
       const transaction = await Transaction.findOne({
         userId: user.id,
         isCredited: true,
         status: PAYMENT_STATUS.CAPTURED,
-        amount: {$gt: 0}
+        amount: { $gt: 0 },
       });
-      exists.hasEverTopped = false
+      exists.hasEverTopped = false;
       if (transaction) {
-        exists.hasEverTopped = true
+        exists.hasEverTopped = true;
       }
       if (exists) {
         return res.json({
