@@ -3,7 +3,7 @@ import { SupplierBadgesStatus } from "../../../../utils/Enums/SupplierBadgesStat
 import { SupplierLink } from "../../../Models/SupplierLink";
 import { UserInterface } from "../../../../types/UserInterface";
 
-export const getMyBadgeDetail = async (req: Request, res: Response) => {
+export const getMyBadgeDetail = async (req: Request, res: Response):Promise<any> => {
   try {
     const user = req.user as UserInterface;
 
