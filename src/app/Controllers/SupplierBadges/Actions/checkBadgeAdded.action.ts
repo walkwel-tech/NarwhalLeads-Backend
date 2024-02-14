@@ -113,7 +113,9 @@ export const checkBadgeAddedAction = async (req: Request, res: Response) => {
     });
   } catch (err) {
     return res.status(500).json({
-      error: { message: err?.message ?? "Something went wrong.", err },
+      // error: { message: err?.message ?? "Something went wrong.", err },
+      // @todo after puppeter fix use above one
+      error: { message: "We are looking into it.", err },
     });
   }
 };

@@ -82,7 +82,6 @@ import { updateReport } from "../AutoUpdateTasks/ReportingStatusUpdate";
 import { createContact } from "../../utils/sendgrid/createContactSendgrid";
 import { updateUserSendgridJobIds } from "../../utils/sendgrid/updateSendgridJobIds";
 import { SENDGRID_STATUS_PERCENTAGE } from "../../utils/constantFiles/sendgridStatusPercentage";
-import { checkAccess } from "../Middlewares/serverAccess";
 
 const ObjectId = mongoose.Types.ObjectId;
 
@@ -166,7 +165,7 @@ export class UsersControllers {
         };
 
         const userData = await User.create(dataToSave);
-        if (checkAccess()) {
+        if (process.env.SENDGRID_API_KEY) {
 
         const sendgridResponse = await createContact(userData.email, {
           signUpStatus: SENDGRID_STATUS_PERCENTAGE.USER_SIGNUP_PERCENTAGE,

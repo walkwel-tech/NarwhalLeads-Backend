@@ -111,7 +111,6 @@ import { createContact } from "../../utils/sendgrid/createContactSendgrid";
 import { BuisnessIndustries } from "../Models/BuisnessIndustries";
 import { updateUserSendgridJobIds } from "../../utils/sendgrid/updateSendgridJobIds";
 import { SENDGRID_STATUS_PERCENTAGE } from "../../utils/constantFiles/sendgridStatusPercentage";
-import { checkAccess } from "../Middlewares/serverAccess";
 
 const ObjectId = mongoose.Types.ObjectId;
 
@@ -1720,7 +1719,11 @@ export class CardDetailsControllers {
             fixedAmount: 0,
           };
 
-          if (credits) {
+
+          // adding check of promolink
+          const freeCreditsDoc = await FreeCreditsLink.findById(user.promoLinkId)
+
+          if (credits && freeCreditsDoc?.giveCreditOnAddCard) {
             // params.freeCredits = credits
             params.fixedAmount = credits;
 
@@ -1733,7 +1736,7 @@ export class CardDetailsControllers {
               creditsLeft: (user?.credits || 0) + (params.freeCredits || 0),
               paymentMethod: details?.payment_method,
             };
-            if (checkAccess()) {
+            if (process.env.SENDGRID_API_KEY) {
               const businessIndustryId = user?.businessIndustryId ?? "";
 
               const industry = await BuisnessIndustries.findById(
@@ -1757,6 +1760,7 @@ export class CardDetailsControllers {
                 transactionData.status = PAYMENT_STATUS.CAPTURED;
                 transactionData.title = transactionTitle.FREE_LEADS_ADDED;
                 transactionData.isCredited = true;
+                fullySignupWithCredits(user.id, card.id, process.env.FIRST_CARD_WEBHOOK_URL)
 
                 await Transaction.create(transactionData);
               })

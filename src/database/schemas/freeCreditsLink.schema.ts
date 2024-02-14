@@ -65,6 +65,10 @@ const FreeCreditsLinkSchema = new Schema(
       type: Types.ObjectId,
       ref: "BuisnessIndustries",
     },
+    giveCreditOnAddCard: {
+      type: Boolean,
+      default: false
+    }
   },
   { timestamps: true }
 );

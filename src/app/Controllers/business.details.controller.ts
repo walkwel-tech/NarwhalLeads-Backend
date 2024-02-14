@@ -55,7 +55,6 @@ import { countryCurrency } from "../../utils/constantFiles/currencyConstants";
 import { createContact } from "../../utils/sendgrid/createContactSendgrid";
 import { updateUserSendgridJobIds } from "../../utils/sendgrid/updateSendgridJobIds";
 import { SENDGRID_STATUS_PERCENTAGE } from "../../utils/constantFiles/sendgridStatusPercentage";
-import { checkAccess } from "../Middlewares/serverAccess";
 
 const ObjectId = mongoose.Types.ObjectId;
 
@@ -185,8 +184,8 @@ export class BusinessDetailsController {
       });
       const user: UserInterface =
         (await User.findById(input.userId)) ?? ({} as UserInterface);
-      if (checkAccess()) {
-        const sendgridResponse = await createContact(userEmail, {
+        if (process.env.SENDGRID_API_KEY) {
+          const sendgridResponse = await createContact(userEmail, {
           signUpStatus:
             SENDGRID_STATUS_PERCENTAGE.BUSINESS_DETAILS_PERCENTAGE || "",
           businessIndustry: Business?.businessIndustry,
