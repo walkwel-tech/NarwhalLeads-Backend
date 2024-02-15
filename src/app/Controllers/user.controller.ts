@@ -2,6 +2,7 @@ import { genSaltSync, hashSync } from "bcryptjs";
 import { validate } from "class-validator";
 import { Request, Response } from "express";
 import mongoose, { PipelineStage, Types } from "mongoose";
+import {clientTablePreference} from "../../utils/constantFiles/clientTablePreferenceAdmin";
 import {MODULE, PERMISSIONS} from "../../utils/Enums/permissions.enum";
 import {userHasAccess} from "../../utils/userHasAccess";
 import { RolesEnum } from "../../types/RolesEnum";
@@ -890,7 +891,7 @@ export class UsersControllers {
 
       const filteredDataArray: DataObject[] = filterAndTransformData(
         //@ts-ignore
-        pref?.columns,
+        pref?.columns ?? clientTablePreference,
         convertArray(result)
       );
       const arr = filteredDataArray;
@@ -2674,9 +2675,11 @@ export class UsersControllers {
   };
   static clientsStatsV2 = async (_req: any, res: Response) => {
     try {
+      const user = _req.user as UserInterface;
       const stats: PipelineStage[] = await User.aggregate([
         {
           $match: {
+            ...(user.role === RolesEnum.ACCOUNT_MANAGER ? {accountManager: user.id} : {}),
             role: {
               $nin: [
                 RolesEnum.ADMIN,
