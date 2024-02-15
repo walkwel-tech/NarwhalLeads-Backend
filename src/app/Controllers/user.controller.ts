@@ -2,6 +2,8 @@ import { genSaltSync, hashSync } from "bcryptjs";
 import { validate } from "class-validator";
 import { Request, Response } from "express";
 import mongoose, { PipelineStage, Types } from "mongoose";
+import {MODULE, PERMISSIONS} from "../../utils/Enums/permissions.enum";
+import {userHasAccess} from "../../utils/userHasAccess";
 import { RolesEnum } from "../../types/RolesEnum";
 import { ValidationErrorResponse } from "../../types/ValidationErrorResponse";
 import { paymentMethodEnum } from "../../utils/Enums/payment.method.enum";
@@ -170,7 +172,7 @@ export class UsersControllers {
         const sendgridResponse = await createContact(userData.email, {
           signUpStatus: SENDGRID_STATUS_PERCENTAGE.USER_SIGNUP_PERCENTAGE,
           businessIndustry: SENDGRID_STATUS_PERCENTAGE.BUSINESS_INDUSTRY
-        })          
+        })
         const jobId = sendgridResponse?.body?.job_id;
         await updateUserSendgridJobIds(userData.id, jobId);
       }
@@ -590,7 +592,7 @@ export class UsersControllers {
             : {}),
         },
       },
-      
+
       ...(clientStatus == userStatus.PENDING
         ? [
             {
@@ -626,6 +628,7 @@ export class UsersControllers {
 
   static indexV2 = async (req: Request, res: Response): Promise<any> => {
     try {
+      const user = req.user as UserInterface
       const {
         onBoardingPercentage,
         sortingOrder,
@@ -644,7 +647,10 @@ export class UsersControllers {
         ? (sortingOrder as string)
         : sort.DESC;
       bodyValidator.onBoardingPercentage = onBoardingPercentage as string;
-      bodyValidator.accountManagerId = accountManagerId as string;
+      bodyValidator.accountManagerId =
+        user.role === RolesEnum.ACCOUNT_MANAGER
+          ? user.id
+          : (accountManagerId as string);
       bodyValidator.businessDetailId = businessDetailId as string;
       bodyValidator.industryId = industryId as string;
       bodyValidator.search = search as string;
@@ -1215,7 +1221,8 @@ export class UsersControllers {
         });
       }
       let secondaryLeadsAnticipating: number;
-      if (input.secondaryLeads) {
+      let canUpdateClient = await userHasAccess(user, [{ module: MODULE.CLIENTS, permission: PERMISSIONS.UPDATE }]);
+      if (input.secondaryLeads && canUpdateClient) {
         secondaryLeadsAnticipating =
           input.secondaryLeads * input.secondaryLeadCost;
         let dataSave = {
@@ -1306,8 +1313,8 @@ export class UsersControllers {
           userExist &&
           // @ts-ignore
           userExist.id !== req?.user?.id &&
-          userExist.role !== RolesEnum.SUPER_ADMIN && 
-          !userExist?.isDeleted 
+          userExist.role !== RolesEnum.SUPER_ADMIN &&
+          !userExist?.isDeleted
         ) {
           return res.status(400).json({
             error: {
@@ -2503,7 +2510,7 @@ export class UsersControllers {
         if(amount < 0){
           (dataToSave.isCredited = false);
           (dataToSave.isDebited = true);
-          
+
         }else{
 
           (dataToSave.isCredited = true);
