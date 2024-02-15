@@ -781,6 +781,7 @@ export class UsersControllers {
     res: Response
   ): Promise<any> => {
     try {
+      const user = req.user as UserInterface
       const {
         onBoardingPercentage,
         sortingOrder,
@@ -797,6 +798,10 @@ export class UsersControllers {
       bodyValidator.sortingOrder = sortingOrder
         ? (sortingOrder as string)
         : sort.DESC;
+      bodyValidator.accountManagerId =
+          user.role === RolesEnum.ACCOUNT_MANAGER
+              ? user.id
+              : (accountManagerId as string);
       bodyValidator.onBoardingPercentage = onBoardingPercentage as string;
       bodyValidator.accountManagerId = accountManagerId as string;
       bodyValidator.businessDetailId = businessDetailId as string;
