@@ -2684,7 +2684,7 @@ export class UsersControllers {
       const stats: PipelineStage[] = await User.aggregate([
         {
           $match: {
-            ...(user.role === RolesEnum.ACCOUNT_MANAGER ? {accountManager: user.id} : {}),
+            ...(user.role === RolesEnum.ACCOUNT_MANAGER ? {accountManager: new Types.ObjectId(user.id)} : {}),
             role: {
               $nin: [
                 RolesEnum.ADMIN,
