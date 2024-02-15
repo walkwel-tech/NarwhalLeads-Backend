@@ -803,7 +803,6 @@ export class UsersControllers {
               ? user.id
               : (accountManagerId as string);
       bodyValidator.onBoardingPercentage = onBoardingPercentage as string;
-      bodyValidator.accountManagerId = accountManagerId as string;
       bodyValidator.businessDetailId = businessDetailId as string;
       bodyValidator.industryId = industryId as string;
       bodyValidator.search = search as string;
