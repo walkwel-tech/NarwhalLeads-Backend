@@ -1744,7 +1744,7 @@ export class CardDetailsControllers {
 
           if (credits || freeCreditsDoc?.giveCreditOnAddCard) {
             // params.freeCredits = credits
-            params.fixedAmount = credits ?? freeCreditsDoc?.firstCardBonusCredit ;
+            params.fixedAmount = freeCreditsDoc?.giveCreditOnAddCard ?  freeCreditsDoc?.firstCardBonusCredit as number : credits;
 
             let transactionData = {
               userId: user?.id,
