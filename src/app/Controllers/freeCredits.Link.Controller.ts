@@ -29,7 +29,8 @@ export class freeCreditsLinkController {
         accountManager: input.accountManager,
         isCommission: input?.isCommission,
         businessIndustryId: input?.businessIndustryId,
-        giveCreditOnAddCard: input?.giveCreditOnAddCard
+        giveCreditOnAddCard: input?.giveCreditOnAddCard,
+        firstCardBonusCredit: input?.firstCardBonusCredit
       };
       if (input.code) {
         dataToSave.code = input.code;
@@ -147,6 +148,7 @@ export class freeCreditsLinkController {
             isCommission: 1,
             accountManager: 1,
             giveCreditOnAddCard: 1,
+            firstCardBonusCredit: 1,
             __v: 1,
             businessIndustryId: 1,
             users: {
@@ -207,7 +209,8 @@ export class freeCreditsLinkController {
           accountManager: "",
           businessIndustryId: item?.businessIndustryId[0]?.industry,
           isCommission: item?.isCommission,
-          giveCreditOnAddCard: item?.giveCreditOnAddCard
+          giveCreditOnAddCard: item?.giveCreditOnAddCard,
+          firstCardBonusCredit: item?.firstCardBonusCredit
         };
         if (item.accountManager.length > 0) {
           dataToShow.accountManager = `${
