@@ -93,7 +93,7 @@ export class LeadsController {
       }
 
       if(user.isDeleted || !user.isActive){
-        res
+        return res
           .status(400)
           .json({ error: { message: "User is deleted or inactive" } })
       }
@@ -567,7 +567,7 @@ export class LeadsController {
           "businessName businessIndustry"
         );
         let reqBody = {
-          leadId: lead.leads?.leadId,
+          lead_id: lead.leads?.leadId,
           // industry: business?.businessIndustry,
           industry: business?.businessIndustry === "Windows & Doors" ? "Windows" :business?.businessIndustry, // as -676 task
           client: business?.businessName,
@@ -575,6 +575,7 @@ export class LeadsController {
           quantity: 1,
           date: new Date(),
           reason: lead.invalidLeadReason,
+          cpl: parseFloat(leadUser?.leadCost)
         };
         leadReportAcceptedWebhook(leadUser, reqBody)
           .then(() => {

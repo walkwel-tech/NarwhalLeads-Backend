@@ -6,7 +6,8 @@ import { saveEventLogs } from "../Functions/saveLogs";
 import { UserInterface } from "../../types/UserInterface";
 const POST = "post";
 interface leadReportAcceptedWebhookData {
-  leadId: string;
+  lead_id: string;
+  cpl: number
   industry: string | undefined;
   client: string | undefined;
   supplier: string | number;
