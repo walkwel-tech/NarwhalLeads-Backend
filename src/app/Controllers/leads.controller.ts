@@ -93,7 +93,7 @@ export class LeadsController {
       }
 
       if(user.isDeleted || !user.isActive){
-        res
+        return res
           .status(400)
           .json({ error: { message: "User is deleted or inactive" } })
       }
