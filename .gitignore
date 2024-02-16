@@ -1,6 +1,6 @@
 node_modules
-logs
 .env
+logs
 .idea
 public/category-data
 public/profile-image
@@ -12,3 +12,4 @@ example.live
 .github/.DS_Store
 public/.DS_Store
 src/.DS_Store
+/pm2-logs/
