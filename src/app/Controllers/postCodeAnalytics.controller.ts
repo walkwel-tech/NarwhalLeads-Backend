@@ -4,6 +4,7 @@ import { Types } from "mongoose";
 import { PostcodeAnalyticsValidator } from "../Inputs/postcodeAnalytics.input";
 import { validate } from "class-validator";
 import * as fs from "fs";
+import { UserInterface } from "../../types/UserInterface";
 interface UserDetails {
   userId: Types.ObjectId;
   credits: number;
@@ -153,13 +154,18 @@ export class PostCodeAnalyticsController {
         postalCode: entry.postalCode,
         activeClients: entry.users.filter(
           (user: { credits: number }) => user.credits > 0
-        ).length,
+        )?.map((user: Partial<UserDetails>) => {
+          return user?.userId
+        }),
         inactiveClients: entry.users.filter(
           (user: { credits: number }) => user.credits <= 0
-        ).length,
+        )?.map((user: Partial<UserDetails>) => {
+          return user?.userId
+        }),
       }));
       return res.json({
         data,
+        // userLeadDetails,
         meta: userLeadDetails[0]?.metaData[0]
       });
     } catch (error) {
