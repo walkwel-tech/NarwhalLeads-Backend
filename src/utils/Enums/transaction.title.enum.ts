@@ -9,5 +9,6 @@ export const transactionTitle = {
   SESSION_CREATED: "session created",
   MANUAL_ADJUSTMENT: "Manual Adjustment",
   CARD_ADDED: "Card Added",
+  BADGE_CREDITS: "Supplier badge bonus Credits",
   SECONDARY_CREDITS_MANUAL_ADJUSTMENT: "Secondary Credits Manual Adjustment",
 };

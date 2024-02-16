@@ -44,6 +44,10 @@ import { arraysAreEqual } from "../../utils/Functions/postCodeMatch";
 import { calculateVariance } from "../../utils/Functions/calculateVariance";
 import { countryCurrency } from "../../utils/constantFiles/currencyConstants";
 import logger from "../../utils/winstonLogger/logger";
+import { createContact } from "../../utils/sendgrid/createContactSendgrid";
+import { BuisnessIndustries } from "../Models/BuisnessIndustries";
+import { updateUserSendgridJobIds } from "../../utils/sendgrid/updateSendgridJobIds";
+import { SENDGRID_STATUS_PERCENTAGE } from "../../utils/constantFiles/sendgridStatusPercentage";
 
 export class UserLeadsController {
   static create = async (req: Request, res: Response) => {
@@ -141,6 +145,22 @@ export class UserLeadsController {
     };
     try {
       const details = await UserLeadsDetails.create(dataToSave);
+
+      if (process.env.SENDGRID_API_KEY) {
+        const businessIndustryId = user?.businessIndustryId ?? "";
+
+        const industry = await BuisnessIndustries.findById(businessIndustryId);
+
+        const industryName = industry ? industry.industry : "";
+        const sendgridResponse = await createContact(user.email, {
+          signUpStatus:
+            SENDGRID_STATUS_PERCENTAGE.LEAD_DETAILS_PERCENTAGE || "",
+          businessIndustry: industryName,
+        });
+        const jobId = sendgridResponse?.body?.job_id;
+
+        await updateUserSendgridJobIds(user.id, jobId);
+      }
       let dataToUpdate = {
         userLeadsDetailsId: details._id,
         onBoardingPercentage: ONBOARDING_PERCENTAGE.LEAD_DETAILS,
@@ -554,7 +574,7 @@ export class UserLeadsController {
               "event webhook for postcode updates hits successfully.",
               paramsToSend
             );
-            logger.info('Webhook processed successfully', {paramsToSend});
+            logger.info("Webhook processed successfully", { paramsToSend });
           })
           .catch((err) => {
             console.log(
@@ -562,10 +582,11 @@ export class UserLeadsController {
               "error while triggering postcode updates webhooks failed",
               paramsToSend
             );
-            logger.error('Error in API response', {error: JSON.stringify(err), paramsToSend });
-
+            logger.error("Error in API response", {
+              error: JSON.stringify(err),
+              paramsToSend,
+            });
           });
-
       }
       if (data) {
         // const updatedDetails = await UserLeadsDetails.findById(id);
@@ -599,7 +620,6 @@ export class UserLeadsController {
           originalDailyLimit + 0.5 * originalDailyLimit
         );
 
-
         // let formattedPostCodes = updatedDetails?.postCodeTargettingList
         //   .map((item: any) => item.postalCode)
         //   .flat();
@@ -628,7 +648,7 @@ export class UserLeadsController {
           leadCost: userData?.leadCost,
           currencyCode: currencyObj?.symbol,
           mobilePrefixCode: userData?.mobilePrefixCode,
-          dailyCap: fiftyPercentVariance
+          dailyCap: fiftyPercentVariance,
         };
         sendEmailForUpdatedDetails(message);
         if (input.criteria) {

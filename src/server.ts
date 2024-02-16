@@ -15,7 +15,7 @@ import {
   BusinessDetailsRoutes,
   userLeadsDetailsRoutes,
   invitedUserRoutes,
-  BusinessIndustriesRoutes,
+  BusinessIndustriesRoutes, supplierBadgeRoutes,
   // guestRoutes
 } from "./routes";
 
@@ -115,6 +115,7 @@ export class Server {
     this.app.use("/api/v1/dashboard", Auth, dashboardRoutes);
     this.app.use("/api/v1/ads",Auth, adsRoutes);
     this.app.use("/api/v1/postal-dash", Auth, postCodeAnalyticsRoutes)
+    this.app.use('/api/v1/supplier-badges', supplierBadgeRoutes)
     this.app.use("/api/v1/validationConfigs", Auth,validationConfigRoutes)
     
 

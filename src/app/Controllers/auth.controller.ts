@@ -53,6 +53,9 @@ import { Transaction } from "../Models/Transaction";
 import { PAYMENT_STATUS } from "../../utils/Enums/payment.status";
 import { BuisnessIndustries } from "../Models/BuisnessIndustries";
 import { BuisnessIndustriesInterface } from "../../types/BuisnessIndustriesInterface";
+import { createContact } from "../../utils/sendgrid/createContactSendgrid";
+import { updateUserSendgridJobIds } from "../../utils/sendgrid/updateSendgridJobIds";
+import { SENDGRID_STATUS_PERCENTAGE } from "../../utils/constantFiles/sendgridStatusPercentage";
 class AuthController {
   static register = async (req: Request, res: Response): Promise<any> => {
     const input = req.body;
@@ -208,7 +211,16 @@ class AuthController {
             }
           }
 
-          await User.create(dataToSave);
+          const userData = await User.create(dataToSave);
+          if (process.env.SENDGRID_API_KEY) {
+            const sendgridResponse = await createContact(registerInput.email, {
+              signUpStatus: SENDGRID_STATUS_PERCENTAGE.USER_SIGNUP_PERCENTAGE,
+              businessIndustry: SENDGRID_STATUS_PERCENTAGE.BUSINESS_INDUSTRY,
+            });
+            const jobId = sendgridResponse?.body?.job_id;
+
+            await updateUserSendgridJobIds(userData.id, jobId);
+          }
           if (input.code) {
             const checkCode: freeCreditsLinkInterface =
               (await FreeCreditsLink.findOne({
