@@ -16,6 +16,13 @@ import { Permissions } from "../Models/Permission";
 import { PlanPackages } from "../Models/PlanPackages";
 import { FreeCreditsConfig } from "../Models/FreeCreditsConfig";
 import { FirstCardBonusInterface } from "../../types/FirstCardBonusInterface";
+import { BusinessDetails } from "../Models/BusinessDetails";
+import { AccessTokenInterface } from "../../types/AccessTokenInterface";
+import {
+  createContactOnXero,
+  refreshToken,
+} from "../../utils/XeroApiIntegration/createContact";
+import { AccessToken } from "../Models/AccessToken";
 
 interface QueryParams {
   userId: string;
@@ -305,24 +312,26 @@ export class AdminSettingsController {
     try {
       const data = await FreeCreditsConfig.aggregate([
         {
-            $replaceRoot: {
-                newRoot: {
-                    $arrayToObject: [
-                        [{
-                            k: "$tag",
-                            v: {
-                                enabled: "$enabled",
-                                amount: "$amount"
-                            }
-                        }]
-                    ]
-                }
-            }
+          $replaceRoot: {
+            newRoot: {
+              $arrayToObject: [
+                [
+                  {
+                    k: "$tag",
+                    v: {
+                      enabled: "$enabled",
+                      amount: "$amount",
+                    },
+                  },
+                ],
+              ],
+            },
+          },
         },
-    ]);
- 
-    const result = Object.assign({}, ...data);
-   
+      ]);
+
+      const result = Object.assign({}, ...data);
+
       return res.json({ data: result });
     } catch (error) {
       return res
@@ -330,23 +339,123 @@ export class AdminSettingsController {
         .json({ error: { message: "Something went wrong" } });
     }
   };
- 
+
   static updateFreeCreditsConfig = async (req: Request, res: Response) => {
-    try{
-      const { enabled, amount, tags } = req.body as FirstCardBonusInterface ;
+    try {
+      const { enabled, amount, tags } = req.body as FirstCardBonusInterface;
       // console.log(firstCardBonus, ">>>" , req.body)
-      let options = {upsert: true, new: true, setDefaultsOnInsert: true};
-      await FreeCreditsConfig.findOneAndUpdate({tag: "firstCardBonus"},  {enabled, amount, tags}, options);
- 
+      let options = { upsert: true, new: true, setDefaultsOnInsert: true };
+      await FreeCreditsConfig.findOneAndUpdate(
+        { tag: "firstCardBonus" },
+        { enabled, amount, tags },
+        options
+      );
+
       return res
-      .status(200)
-      .json({ message: "Site config updated successfully." });
- 
+        .status(200)
+        .json({ message: "Site config updated successfully." });
     } catch (error) {
-      console.log(error, ">>>>>>> error")
+      console.log(error, ">>>>>>> error");
       return res
         .status(500)
         .json({ error: { message: "Something went wrong" } });
     }
-  }
+  };
+
+  static isXeroCustomer = async (req: Request, res: Response) => {
+    const userId = req.params.id;
+
+    try {
+      const user = await User.findById(userId);
+      const business = await BusinessDetails.findById(user?.businessDetailsId);
+
+      if (!business) {
+        throw new Error("Business Not Found for the user");
+      }
+      const paramsToCreateContact = {
+        name: user?.firstName + " " + user?.lastName,
+        firstName: user?.firstName,
+        lastName: user?.lastName,
+        emailAddress: user?.email,
+        clientStatus: user?.clientStatus,
+        currency:user?.country,
+        country:user?.country,
+        addressLine1: business?.businessName,
+        addressLine2: business?.address1 + " " + business?.address2,
+        city: business?.businessCity,
+        postalCode: business?.businessPostCode,
+        businessName: business?.businessName,       
+      };
+      
+      if (user && user.isXeroCustomer && user.xeroContactId !== null) {
+        return res.status(200).json(user);
+      } else {
+        return res.status(200).json(paramsToCreateContact);
+      }
+    } catch (error) {
+      console.error("Error checking Xero customer:", error);
+      return res.status(500).json({ message: "Internal Server Error" });
+    }
+  };
+
+
+  static createCustomerOnXero = async (req: Request, res: Response) => {
+    try {
+      const userId = req.params.id;
+      const user = await User.findById(userId);
+
+      if (!user) {
+        return res.status(404).json({ message: "User Not Found" });
+      }
+
+      const business = await BusinessDetails.findById(user?.businessDetailsId);
+
+      if (!business) {
+        throw new Error("Business Not Found for the user");
+      }
+
+      const paramsToCreateContact = {
+        name: user.firstName + " " + user.lastName,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        emailAddress: user.email,
+        addressLine1: business?.businessName,
+        addressLine2: business?.address1 + " " + business?.address2,
+        city: business?.businessCity,
+        postalCode: business?.businessPostCode,
+        businessName: business?.businessName,
+      };
+
+      const token: AccessTokenInterface =
+        (await AccessToken.findOne()) || ({} as AccessTokenInterface);
+
+      let response: any;
+
+      try {
+        response = await createContactOnXero(paramsToCreateContact, token.access_token);
+      } catch (error) {
+        const refreshedToken = await refreshToken();
+        if (typeof refreshedToken === 'string') {
+          response = await createContactOnXero(paramsToCreateContact, refreshedToken);
+        } else {
+          throw new Error("Refreshed token is not a valid string");
+        }
+      }
+
+      await User.findOneAndUpdate(
+        { email: user.email },
+        {
+          xeroContactId: response.data.Contacts[0].ContactID,
+          isXeroCustomer: true,
+        },
+        { new: true }
+      );
+
+      console.log("success in creating contact", new Date(), "Today's Date");
+      return res.status(200).json({ message: "Contact created successfully" });
+    } catch (error) {
+      console.error("Error creating customer on Xero:", error);
+      return res.status(500).json({ message: "Internal Server Error" });
+    }
+  };
 }

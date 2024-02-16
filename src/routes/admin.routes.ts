@@ -12,6 +12,8 @@ adminSettings.post(
   OnlyAdmins,
   AdminSettingsController.createPermissions
 );
+adminSettings.post("/createXeroCustomer/:id",OnlyAdmins, AdminSettingsController.createCustomerOnXero)
+adminSettings.get("/isXeroCustomer/:id",OnlyAdmins, AdminSettingsController.isXeroCustomer);
 adminSettings.patch("/", OnlyAdmins, AdminSettingsController.update);
 adminSettings.get("/", OnlyAdmins, AdminSettingsController.show);
 adminSettings.get("/notifications", AdminSettingsController.notifications);
