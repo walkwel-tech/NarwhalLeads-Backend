@@ -376,7 +376,7 @@ export class AdminSettingsController {
         name: user?.firstName + " " + user?.lastName,
         firstName: user?.firstName,
         lastName: user?.lastName,
-        emailAddress: user?.email,
+        email: user?.email,
         clientStatus: user?.clientStatus,
         currency:user?.country,
         country:user?.country,
