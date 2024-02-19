@@ -384,11 +384,13 @@ export class AdminSettingsController {
         addressLine2: business?.address1 + " " + business?.address2,
         city: business?.businessCity,
         postalCode: business?.businessPostCode,
-        businessName: business?.businessName,       
+        businessName: business?.businessName,
+        xeroContactId:null       
       };
       
       if (user && user.isXeroCustomer && user.xeroContactId !== null) {
-        return res.status(200).json(user);
+        const userWithBusinessName = { ...user.toJSON(), businessName: business.businessName };
+        return res.status(200).json(userWithBusinessName);
       } else {
         return res.status(200).json(paramsToCreateContact);
       }
@@ -418,7 +420,7 @@ export class AdminSettingsController {
         name: user.firstName + " " + user.lastName,
         firstName: user.firstName,
         lastName: user.lastName,
-        emailAddress: user.email,
+        email: user.email,
         addressLine1: business?.businessName,
         addressLine2: business?.address1 + " " + business?.address2,
         city: business?.businessCity,
