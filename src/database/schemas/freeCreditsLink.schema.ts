@@ -68,6 +68,10 @@ const FreeCreditsLinkSchema = new Schema(
     giveCreditOnAddCard: {
       type: Boolean,
       default: false
+    },
+    firstCardBonusCredit: {
+      type: Number,
+      default: 0
     }
   },
   { timestamps: true }

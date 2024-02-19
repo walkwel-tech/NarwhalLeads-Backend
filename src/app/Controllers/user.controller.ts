@@ -1272,11 +1272,11 @@ export class UsersControllers {
               userId: checkUser?.id,
               transactionId: transaction.id,
               price: secondaryLeadsAnticipating,
-              invoiceId: res.data.Invoices[0].InvoiceID,
+              invoiceId: res.data?.Invoices[0].InvoiceID,
             };
             await Invoice.create(dataToSaveInInvoice);
             await Transaction.findByIdAndUpdate(transaction.id, {
-              invoiceId: res.data.Invoices[0].InvoiceID,
+              invoiceId: res.data?.Invoices[0].InvoiceID,
             });
 
             console.log("pdf generated");
@@ -1296,11 +1296,11 @@ export class UsersControllers {
                   userId: checkUser?.id,
                   transactionId: transaction.id,
                   price: secondaryLeadsAnticipating,
-                  invoiceId: res.data.Invoices[0].InvoiceID,
+                  invoiceId: res.data?.Invoices[0].InvoiceID,
                 };
                 await Invoice.create(dataToSaveInInvoice);
                 await Transaction.findByIdAndUpdate(transaction.id, {
-                  invoiceId: res.data.Invoices[0].InvoiceID,
+                  invoiceId: res.data?.Invoices[0].InvoiceID,
                 });
 
                 console.log("pdf generated");
@@ -1765,11 +1765,11 @@ export class UsersControllers {
                     userId: checkUser?.id,
                     transactionId: transaction.id,
                     price: input.credits,
-                    invoiceId: res.data.Invoices[0].InvoiceID,
+                    invoiceId: res.data?.Invoices[0].InvoiceID,
                   };
                   await Invoice.create(dataToSaveInInvoice);
                   await Transaction.findByIdAndUpdate(transaction.id, {
-                    invoiceId: res.data.Invoices[0].InvoiceID,
+                    invoiceId: res.data?.Invoices[0].InvoiceID,
                   });
 
                   console.log("pdf generated", new Date(), "Today's Date");
@@ -1789,11 +1789,11 @@ export class UsersControllers {
                         userId: checkUser?.id,
                         transactionId: transaction.id,
                         price: input.credits,
-                        invoiceId: res.data.Invoices[0].InvoiceID,
+                        invoiceId: res.data?.Invoices[0].InvoiceID,
                       };
                       await Invoice.create(dataToSaveInInvoice);
                       await Transaction.findByIdAndUpdate(transaction.id, {
-                        invoiceId: res.data.Invoices[0].InvoiceID,
+                        invoiceId: res.data?.Invoices[0].InvoiceID,
                       });
 
                       console.log("pdf generated", new Date(), "Today's Date");
@@ -2538,11 +2538,11 @@ export class UsersControllers {
                 userId: user?.id,
                 transactionId: transaction.id,
                 price: credits,
-                invoiceId: res.data.Invoices[0].InvoiceID,
+                invoiceId: res.data?.Invoices[0].InvoiceID,
               };
               await Invoice.create(dataToSaveInInvoice);
               await Transaction.findByIdAndUpdate(transaction.id, {
-                invoiceId: res.data.Invoices[0].InvoiceID,
+                invoiceId: res.data?.Invoices[0].InvoiceID,
               });
 
               console.log("pdf generated", new Date(), "Today's Date");
@@ -2563,11 +2563,11 @@ export class UsersControllers {
                     userId: user?.id,
                     transactionId: transaction.id,
                     price: credits,
-                    invoiceId: res.data.Invoices[0].InvoiceID,
+                    invoiceId: res.data?.Invoices[0].InvoiceID,
                   };
                   await Invoice.create(dataToSaveInInvoice);
                   await Transaction.findByIdAndUpdate(transaction.id, {
-                    invoiceId: res.data.Invoices[0].InvoiceID,
+                    invoiceId: res.data?.Invoices[0].InvoiceID,
                   });
 
                   console.log("pdf generated", new Date(), "Today's Date");
@@ -2626,48 +2626,6 @@ export class UsersControllers {
           data: { message: "Credits Adjusted" },
         });
       }
-    } catch (err) {
-      return res.status(500).json({
-        error: {
-          message: "something went wrong",
-          err,
-        },
-      });
-    }
-  };
-
-  static clientsStat = async (_req: any, res: Response) => {
-    try {
-      let dataToFindActive: Record<
-        string,
-        string | Types.ObjectId | string[] | boolean | RoleFilter
-      > = {
-        role: { $in: [RolesEnum.USER, RolesEnum.NON_BILLABLE] },
-        isActive: true,
-        isDeleted: false,
-        isArchived: false,
-      };
-      let dataToFindPaused: Record<
-        string,
-        string | Types.ObjectId | string[] | boolean | RoleFilter
-      > = {
-        role: { $in: [RolesEnum.USER, RolesEnum.NON_BILLABLE] },
-        isActive: false,
-        isDeleted: false,
-        isArchived: false,
-      };
-      if (_req.user.role === RolesEnum.ACCOUNT_MANAGER) {
-        dataToFindActive.accountManager = _req.user._id;
-        dataToFindPaused.accountManager = _req.user._id;
-      }
-      const active = await User.find(dataToFindActive).count();
-      const paused = await User.find(dataToFindPaused).count();
-
-      const dataToShow = {
-        activeClients: active,
-        pausedClients: paused,
-      };
-      return res.json({ data: dataToShow });
     } catch (err) {
       return res.status(500).json({
         error: {
@@ -2748,6 +2706,49 @@ export class UsersControllers {
       });
     }
   };
+
+  static clientsStat = async (_req: any, res: Response) => {
+    try {
+      let dataToFindActive: Record<
+        string,
+        string | Types.ObjectId | string[] | boolean | RoleFilter
+      > = {
+        role: { $in: [RolesEnum.USER, RolesEnum.NON_BILLABLE] },
+        isActive: true,
+        isDeleted: false,
+        isArchived: false,
+      };
+      let dataToFindPaused: Record<
+        string,
+        string | Types.ObjectId | string[] | boolean | RoleFilter
+      > = {
+        role: { $in: [RolesEnum.USER, RolesEnum.NON_BILLABLE] },
+        isActive: false,
+        isDeleted: false,
+        isArchived: false,
+      };
+      if (_req.user.role === RolesEnum.ACCOUNT_MANAGER) {
+        dataToFindActive.accountManager = _req.user._id;
+        dataToFindPaused.accountManager = _req.user._id;
+      }
+      const active = await User.find(dataToFindActive).count();
+      const paused = await User.find(dataToFindPaused).count();
+
+      const dataToShow = {
+        activeClients: active,
+        pausedClients: paused,
+      };
+      return res.json({ data: dataToShow });
+    } catch (err) {
+      return res.status(500).json({
+        error: {
+          message: "something went wrong",
+          err,
+        },
+      });
+    }
+  };
+  
 
   static sendTestLeadData = async (req: any, res: Response) => {
     try {
