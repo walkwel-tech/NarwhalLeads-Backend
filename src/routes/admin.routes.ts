@@ -13,7 +13,7 @@ adminSettings.post(
   AdminSettingsController.createPermissions
 );
 adminSettings.post("/xero/contact/:id",OnlyAdmins, AdminSettingsController.createCustomerOnXero)
-adminSettings.get("/isXero/contact/:id",OnlyAdmins, AdminSettingsController.isXeroCustomer);
+adminSettings.get("/xero/contact/:id",OnlyAdmins, AdminSettingsController.isXeroCustomer);
 adminSettings.patch("/", OnlyAdmins, AdminSettingsController.update);
 adminSettings.get("/", OnlyAdmins, AdminSettingsController.show);
 adminSettings.get("/notifications", AdminSettingsController.notifications);
