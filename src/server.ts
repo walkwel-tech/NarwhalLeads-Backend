@@ -116,6 +116,7 @@ export class Server {
     this.app.use("/api/v1/ads",Auth, adsRoutes);
     this.app.use("/api/v1/postal-dash", Auth, postCodeAnalyticsRoutes)
     this.app.use('/api/v1/supplier-badges', supplierBadgeRoutes)
+    this.app.use('/api/v1/admin-settings/', Auth, AdminSettingsController)
     this.app.use("/api/v1/validationConfigs", Auth,validationConfigRoutes)
     
 
