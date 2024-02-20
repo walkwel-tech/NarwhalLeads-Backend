@@ -1,6 +1,7 @@
 import * as fs from "fs"
 import { FileEnum } from "../types/FileEnum";
-// @ts-ignore
+import logger from "./winstonLogger/logger";
+
 import path from "path";
 export function DeleteFile(filePath: String): Boolean {
     try {
@@ -11,7 +12,7 @@ export function DeleteFile(filePath: String): Boolean {
             return true;
         }
     } catch (err) {
-        console.error(err);
+        logger.error('Error:', err, new Date, "Today's Date");
         return false;
     }
 }

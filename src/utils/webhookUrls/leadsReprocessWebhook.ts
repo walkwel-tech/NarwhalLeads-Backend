@@ -1,5 +1,6 @@
 import axios from "axios";
 import { checkAccess } from "../../app/Middlewares/serverAccess";
+import logger from "../winstonLogger/logger";
 
 const POST = "post";
 
@@ -17,7 +18,7 @@ export const leadReprocessWebhook = async (leadData: Object) => {
     if (checkAccess()) {
       axios(config)
         .then(async (response) => {
-          console.log(
+          logger.info(
             "Lead Process webhook hits successfully",
             response.data,
             new Date(),
@@ -25,7 +26,7 @@ export const leadReprocessWebhook = async (leadData: Object) => {
           );
         })
         .catch((err) => {
-          console.log(
+          logger.error(
             "Lead Process webhook hits error",
             err.response?.data,
             new Date(),
@@ -33,7 +34,7 @@ export const leadReprocessWebhook = async (leadData: Object) => {
           );
         });
     } else {
-      console.log(
+      logger.info(
         "No Access for hitting Lead Process webhook to this " +
           process.env.APP_ENV,
         new Date(),

@@ -1,5 +1,6 @@
 import mongoose from "mongoose";
 import { ValidationConfig } from "../../app/Models/validationConfig";
+import logger from "../../utils/winstonLogger/logger"
 
 require("dotenv").config();
 
@@ -16,7 +17,7 @@ export const addValidationConfigRecord = async () => {
     const existingRecord = await ValidationConfig.findOne({ key: "minimum_topUp_leadCount" });
 
     if (existingRecord) {
-      console.log("Record already exists:", existingRecord);
+      logger.info("Record already exists:", existingRecord, new Date(), "Today's Date");
       return;
     }
 
@@ -29,11 +30,11 @@ export const addValidationConfigRecord = async () => {
 
     const newRecord = await ValidationConfig.create(newRecordValues);
 
-    console.log("New record added:", newRecord);
+    logger.info("New record added:", newRecord, new Date(), "Today's Date");
   } catch (error) {
-    console.error("Error adding new record:", error);
+    logger.error("Error adding new record:", error, new Date(), "Today's Date");
   } finally {
     mongoose.connection.close();
-    console.log("MongoDB connection closed");
+    logger.info("MongoDB connection closed", new Date(), "Today's Date");
   }
 };

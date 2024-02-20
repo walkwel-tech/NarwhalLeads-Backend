@@ -2,6 +2,7 @@ import axios from "axios";
 import { EVENT_TITLE, EVENT_TYPE } from "../constantFiles/events";
 import { saveEventLogs } from "../Functions/saveLogs";
 import { UserInterface } from "../../types/UserInterface";
+import logger from "../winstonLogger/logger";
 const POST = "post";
 export const sendLeadDataToZap = (
   url: string,
@@ -19,7 +20,7 @@ export const sendLeadDataToZap = (
     };
     axios(config)
       .then(async (response) => {
-        console.log(
+        logger.info(
           "lead zap webhook hits successfully",
           new Date(),
           "Today's Date",
@@ -36,7 +37,7 @@ export const sendLeadDataToZap = (
         resolve(response);
       })
       .catch((err) => {
-        console.log(err.response?.data, new Date(), "Today's Date", user._id);
+        logger.error(err.response?.data, new Date(), "Today's Date", user._id);
         let params = {
           userId: user?._id,
           eventType: EVENT_TYPE.WEBHOOK,

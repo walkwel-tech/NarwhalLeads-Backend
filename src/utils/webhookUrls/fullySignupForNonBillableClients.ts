@@ -1,5 +1,6 @@
 import axios from "axios";
 import { checkAccess } from "../../app/Middlewares/serverAccess";
+import logger from "../winstonLogger/logger";
 
 const POST = "post";
 
@@ -17,7 +18,7 @@ export const fullySignupForNonBillableClients = async (details: Object) => {
     if (checkAccess()) {
       axios(config)
         .then(async (response) => {
-          console.log(
+          logger.info(
             "fullySignupForNonBillableClients webhook hits successfully",
             response.data,
             new Date(),
@@ -25,7 +26,7 @@ export const fullySignupForNonBillableClients = async (details: Object) => {
           );
         })
         .catch((err) => {
-          console.log(
+          logger.error(
             "fullySignupForNonBillableClients webhook hits error",
             err.response?.data,
             new Date(),
@@ -33,7 +34,7 @@ export const fullySignupForNonBillableClients = async (details: Object) => {
           );
         });
     } else {
-      console.log(
+      logger.info(
         "No Access for hitting business submission webhook to this " +
           process.env.APP_ENV,
         new Date(),

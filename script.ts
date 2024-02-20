@@ -1,6 +1,6 @@
 import mongoose, { Types } from "mongoose";
-
 import { BuisnessIndustries } from "./src/app/Models/BuisnessIndustries";
+import logger from "./src/utils/winstonLogger/logger";
 
 require("dotenv").config();
 
@@ -22,9 +22,9 @@ const updateUserPermission = async () => {
       { new: true }
     );
 
-    console.log("updated successfully.", result, ">>>>>", business);
+    logger.info("updated successfully.", result, ">>>>>", business);
   } catch (error) {
-    console.error("Error updating permissions:", error);
+    logger.error("Error updating permissions:", error);
   }
 };
 updateUserPermission();

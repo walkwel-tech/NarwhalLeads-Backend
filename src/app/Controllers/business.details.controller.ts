@@ -55,6 +55,7 @@ import { countryCurrency } from "../../utils/constantFiles/currencyConstants";
 import { createContact } from "../../utils/sendgrid/createContactSendgrid";
 import { updateUserSendgridJobIds } from "../../utils/sendgrid/updateSendgridJobIds";
 import { SENDGRID_STATUS_PERCENTAGE } from "../../utils/constantFiles/sendgridStatusPercentage";
+import logger from "../../utils/winstonLogger/logger";
 
 const ObjectId = mongoose.Types.ObjectId;
 
@@ -236,7 +237,7 @@ export class BusinessDetailsController {
             },
             { new: true }
           );
-          console.log(
+          logger.info(
             "success in creating contact",
             new Date(),
             "Today's Date"
@@ -245,7 +246,7 @@ export class BusinessDetailsController {
         .catch((err) => {
           refreshToken()
             .then(async (res: any) => {
-              console.log(
+              logger.info(
                 "Token updated while creating customer!!!",
                 new Date(),
                 "Today's Date"
@@ -262,14 +263,15 @@ export class BusinessDetailsController {
                     },
                     { new: true }
                   );
-                  console.log(
+                  logger.info(
                     "success in creating contact",
                     new Date(),
                     "Today's Date"
                   );
                 })
                 .catch((error) => {
-                  console.log(
+                  logger.info(
+                    error,
                     "error in creating customer after token updation.",
                     new Date(),
                     "Today's Date"
@@ -277,7 +279,7 @@ export class BusinessDetailsController {
                 });
             })
             .catch((err) => {
-              console.log(
+              logger.error(
                 "error in creating contact on xero",
                 err.response.data,
                 new Date(),
@@ -342,10 +344,11 @@ export class BusinessDetailsController {
       if (!paramsObj) {
         createCustomersOnRyftAndLeadByte(params)
           .then(() => {
-            console.log("Customer created!!!!", new Date(), "Today's Date");
+            logger.info("Customer created!!!!", new Date(), "Today's Date");
           })
           .catch((err) => {
-            console.log(
+            logger.error(
+              err,
               "error while creating customer",
               new Date(),
               "Today's Date"
@@ -391,7 +394,7 @@ export class BusinessDetailsController {
         };
         await eventsWebhook(reqBody)
           .then(() =>
-            console.log(
+            logger.info(
               "event webhook for updating business phone number hits successfully.",
               reqBody,
               new Date(),
@@ -399,7 +402,7 @@ export class BusinessDetailsController {
             )
           )
           .catch((err) =>
-            console.log(
+            logger.error(
               err,
               "error while triggering business phone number webhooks failed",
               reqBody,
@@ -672,7 +675,7 @@ export class BusinessDetailsController {
         });
       }
     } catch (error) {
-      console.log(error, ">>>> error")
+      logger.error("Error while updating business details", error, new Date(), "Today's Date");
       return res
         .status(500)
         .json({ error: { message: "Something went wrong.", error } });
@@ -874,10 +877,11 @@ export class BusinessDetailsController {
       if (!paramsObj) {
         createCustomerOnLeadByte(params)
           .then(() => {
-            console.log("Customer created!!!!", new Date(), "Today's Date");
+            logger.info("Customer created!!!!", new Date(), "Today's Date");
           })
-          .catch((ERR) => {
-            console.log(
+          .catch((err) => {
+            logger.error(
+              err,
               "error while creating customer",
               new Date(),
               "Today's Date"

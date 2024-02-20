@@ -53,6 +53,7 @@ import { EVENT_TITLE } from "../../utils/constantFiles/events";
 import { flattenPostalCodes } from "../../utils/Functions/flattenPostcodes";
 import { POSTCODE_TYPE } from "../../utils/Enums/postcode.enum";
 import { ONBOARDING_PERCENTAGE } from "../../utils/constantFiles/OnBoarding.keys";
+import logger from "../../utils/winstonLogger/logger";
 
 const ObjectId = mongoose.Types.ObjectId;
 
@@ -129,7 +130,7 @@ export class LeadsController {
 
         await eventsWebhook(paramsToSend)
           .then(() =>
-            console.log(
+            logger.info(
               "event webhook for zero credits hits successfully..",
               paramsToSend,
               new Date(),
@@ -137,7 +138,7 @@ export class LeadsController {
             )
           )
           .catch((err) =>
-            console.log(
+            logger.error(
               err,
               "error while triggering zero credits webhooks failed",
               paramsToSend,
@@ -305,16 +306,20 @@ export class LeadsController {
 
         await eventsWebhook(paramsToSend)
           .then(() =>
-            console.log(
+            logger.info(
               "event webhook for zero credits hits successfully.",
-              paramsToSend
+              paramsToSend, 
+              new Date(), 
+              "Today's Date"
             )
           )
           .catch((err) =>
-            console.log(
+            logger.error(
               err,
               "error while triggering zero credits webhooks failed",
-              paramsToSend
+              paramsToSend,
+              new Date(), 
+              "Today's Date"
             )
           );
       }
@@ -333,7 +338,11 @@ export class LeadsController {
               name: user?.firstName + " " + user?.lastName,
             });
           } else {
-            console.log("Email already send.");
+            logger.info(
+              "Email already send.", 
+              new Date(), 
+              "Today's Date"
+            );
           }
         }
         if (leftCredits <= 0) {
@@ -342,7 +351,11 @@ export class LeadsController {
             credits: user.credits,
           });
         } else {
-          console.log("Email already send.", new Date(), "Today's Date");
+          logger.info(
+            "Email already send.", 
+            new Date(), 
+            "Today's Date"
+          );
         }
       }
 
@@ -404,7 +417,12 @@ export class LeadsController {
 
       return res.json({ data: leadsSave });
     } catch (error) {
-      console.log("rrrr", error);
+      logger.error(
+        "Error while creating leads.", 
+        error, 
+        new Date(), 
+        "Today's Date"
+      );
       return res
         .status(500)
         .json({ error: { message: "Something went wrong" } });
@@ -579,7 +597,7 @@ export class LeadsController {
         };
         leadReportAcceptedWebhook(leadUser, reqBody)
           .then(() => {
-            console.log(
+            logger.info(
               "lead Report accepted Webhook webhook hits successfully",
               new Date(),
               "Today's Date"
@@ -591,24 +609,36 @@ export class LeadsController {
                 .then((res) => {
                   leadReportAcceptedWebhook(leadUser, reqBody)
                     .then(() => {
-                      console.log(
+                      logger.info(
                         "lead Report accepted Webhook webhook hits successfully",
                         new Date(),
                         "Today's Date"
                       );
                     })
                     .catch((err) =>
-                      console.error(
+                      logger.error(
                         "error in hitting webhook for report accepted",
-                        err
+                        err,
+                        new Date(),
+                        "Today's Date"
                       )
                     );
                 })
                 .catch((err) => {
-                  console.error(err, "login error");
+                  logger.error(
+                    "login error", 
+                    err, 
+                    new Date(), 
+                    "Today's Date"
+                  );
                 });
             } else {
-              console.error("body not passed properly", err);
+              logger.error(
+                "body not passed properly", 
+                err, 
+                new Date(), 
+                "Today's Date"
+              );
             }
           });
 
@@ -636,7 +666,7 @@ export class LeadsController {
             return res.json({ data: leadsUpdate });
           })
           .catch(async (err) => {
-            console.log(
+            logger.info(
               "error while adding credits",
               err,
               new Date(),
@@ -1189,7 +1219,12 @@ export class LeadsController {
             // item.columns = industry?.columns ? industry.columns: [];
           })
           .catch((error: any) => {
-            console.log("ERRORR: ", error, new Date(), "Today's Date");
+            logger.error(
+              "ERROR: ", 
+              error, 
+              new Date(), 
+              "Today's Date"
+            );
           });
         // Use explicit Promise construction
         return new Promise((resolve, reject) => {
@@ -1228,7 +1263,12 @@ export class LeadsController {
           });
         })
         .catch((error) => {
-          console.error(error);
+          logger.error(
+            "Error:", 
+            error, 
+            new Date(), 
+            "Today's Date"
+          );
         });
     } catch (err) {
       return res.status(500).json({
@@ -1494,10 +1534,20 @@ export class LeadsController {
           });
         })
         .catch((error) => {
-          console.error(error);
+          logger.error(
+            "Error:", 
+            error, 
+            new Date(), 
+            "Today's Date"
+          );
         });
     } catch (err) {
-      console.log(err, ">>>> err")
+      logger.error(
+        "Error while showing reported leads", 
+        err, 
+        new Date(), 
+        "Today's Date"
+      );
       return res.status(500).json({
         error: {
           message: "something went wrong",
@@ -1737,7 +1787,12 @@ export class LeadsController {
           });
         })
         .catch((error) => {
-          console.error(error);
+          logger.error(
+            "Error:", 
+            error, 
+            new Date(), 
+            "Today's Date"
+          );
         });
     } catch (err) {
       return res.status(500).json({
@@ -1962,7 +2017,12 @@ export class LeadsController {
               resolve(item); // Resolve the promise with the modified item
             })
             .catch((error) => {
-              console.log("err", error, new Date(), "Today's Date");
+              logger.error(
+                "Error:", 
+                error, 
+                new Date(), 
+                "Today's Date"
+              );
               // item.leads.businessName = "Deleted";
               // item.leads.businessIndustry = "Deleted";
               reject(error); // Reject the promise if there's an error
@@ -1987,7 +2047,12 @@ export class LeadsController {
           });
         })
         .catch((error) => {
-          console.error(error);
+          logger.error(
+            "Error:", 
+            error, 
+            new Date(), 
+            "Today's Date"
+          );
         });
       // })
       // .catch((error) => {
@@ -2118,7 +2183,12 @@ export class LeadsController {
             });
           });
           apiResponse.on("error", function (error: any) {
-            console.error(error);
+            logger.error(
+              "Error:", 
+              error, 
+              new Date(), 
+              "Today's Date"
+            );
           });
         }
       );
@@ -2742,7 +2812,7 @@ export class LeadsController {
           },
         },
       ]);
-      console.log(pref[0]?.columns, ">>>>> pref")
+      logger.info(pref[0]?.columns, ">>>>> pref", new Date(), "Today's Date")
       const filteredDataArray: DataObject[] = filterAndTransformData(
         //@ts-ignore
         [...pref[0]?.columns, {isVisible: true, displayName: "Client Notes", originalName: "clientNotes"}],

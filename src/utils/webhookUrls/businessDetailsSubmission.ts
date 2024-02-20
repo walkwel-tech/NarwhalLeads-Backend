@@ -3,6 +3,7 @@ import { checkAccess } from "../../app/Middlewares/serverAccess";
 import { saveEventLogs } from "../Functions/saveLogs";
 import { User } from "../../app/Models/User";
 import { EVENT_TITLE, EVENT_TYPE } from "../constantFiles/events";
+import logger from "../winstonLogger/logger";
 const POST = "post";
 export const businessDetailsSubmission = (data: any) => {
   data.APP_ENV = process.env.APP_ENV;
@@ -19,7 +20,7 @@ export const businessDetailsSubmission = (data: any) => {
     if (checkAccess()) {
       axios(config)
         .then(async (response) => {
-          console.log(
+          logger.info(
             "business data webhook hits successfully",
             response.data,
             new Date(),
@@ -37,7 +38,7 @@ export const businessDetailsSubmission = (data: any) => {
           saveEventLogs(params);
         })
         .catch((err) => {
-          console.log(
+          logger.error(
             "business data webhook hits error",
             err.response?.data,
             new Date(),
@@ -45,7 +46,7 @@ export const businessDetailsSubmission = (data: any) => {
           );
         });
     } else {
-      console.log(
+      logger.info(
         "No Access for hitting business submission webhook to this " +
           process.env.APP_ENV,
         new Date(),

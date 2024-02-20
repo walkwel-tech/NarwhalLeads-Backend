@@ -1,6 +1,7 @@
 import axios from "axios";
 import { User } from "../../app/Models/User";
 import { CardDetails } from "../../app/Models/CardDetails";
+import logger from "../winstonLogger/logger";
 
 const POST = "post";
 export const cmsUpdateBuyerWebhook = async (userId: String, cardId: String) => {
@@ -18,7 +19,7 @@ export const cmsUpdateBuyerWebhook = async (userId: String, cardId: String) => {
     };
     axios(config)
       .then(async (response) => {
-        console.log(
+        logger.info(
           "cms update buyer webhook hits successfully",
           response.data,
           new Date(),
@@ -26,7 +27,7 @@ export const cmsUpdateBuyerWebhook = async (userId: String, cardId: String) => {
         );
       })
       .catch((err) => {
-        console.log(
+        logger.error(
           "cms update buyer webhook hits error",
           err.response?.data,
           new Date(),

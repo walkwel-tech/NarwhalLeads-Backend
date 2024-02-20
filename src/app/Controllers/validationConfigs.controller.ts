@@ -2,6 +2,7 @@ import { Request, Response } from "express";
 import { ValidationConfig } from "../Models/validationConfig";
 import { ValidationConfigInput } from "../Inputs/validationConfig.input";
 import { validate } from "class-validator";
+import logger from "../../utils/winstonLogger/logger";
 
 export class ValidationConfigController {
   static getValidation = async (req: Request, res: Response) => {
@@ -49,7 +50,12 @@ export class ValidationConfigController {
 
       return res.status(200).json(validationConfig);
     } catch (error) {
-      console.error("Error updating validation config:", error);
+      logger.error(
+        "Error getting validation config:", 
+        error, 
+        new Date(), 
+        "Today's Date"
+      );
       return res.status(500).json({ message: "Internal server error" });
     }
   };

@@ -3,6 +3,7 @@ import { checkAccess } from "../../app/Middlewares/serverAccess";
 import { User } from "../../app/Models/User";
 import { CardDetails } from "../../app/Models/CardDetails";
 import { calculateVariance } from "../Functions/calculateVariance";
+import logger from "../winstonLogger/logger";
 const POST = "post";
 export const fullySignupWithCredits = async (
   userId: String,
@@ -23,7 +24,7 @@ export const fullySignupWithCredits = async (
     if (checkAccess()) {
       axios(config)
         .then(async (response) => {
-          console.log(
+          logger.info(
             "fullySignupWithCredits webhook hits successfully",
             response.data,
             new Date(),
@@ -31,7 +32,7 @@ export const fullySignupWithCredits = async (
           );
         })
         .catch((err) => {
-          console.log(
+          logger.error(
             "fullySignupWithCredits webhook hits error",
             err.response?.data,
             new Date(),
@@ -39,7 +40,7 @@ export const fullySignupWithCredits = async (
           );
         });
     } else {
-      console.log(
+      logger.info(
         "No Access for hitting fullySignupWithCredits webhook to this " +
           process.env.APP_ENV,
         new Date(),

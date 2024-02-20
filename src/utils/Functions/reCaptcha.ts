@@ -1,4 +1,5 @@
 import axios from "axios";
+import logger from "../winstonLogger/logger";
 
 const POST = "post";
 export const reCaptchaValidation = (response: string) => {
@@ -21,7 +22,7 @@ export const reCaptchaValidation = (response: string) => {
         resolve(response.data.success);
       })
       .catch((error) => {
-        console.error("ReCaptcha validation error:", error.message);
+        logger.error("ReCaptcha validation error:", error.message, new Date(), "Today's Date");
         reject(error);
       });
   });

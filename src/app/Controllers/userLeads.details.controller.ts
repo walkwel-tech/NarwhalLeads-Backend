@@ -229,14 +229,15 @@ export class UserLeadsController {
         };
         addCreditsToBuyer(params)
           .then((_res) => {
-            console.log(
+            logger.info(
               "free credits added with signup code",
               new Date(),
               "Today's Date"
             );
           })
           .catch((error) => {
-            console.log(
+            logger.error(
+              error,              
               "error during adding free credits with signup code",
               new Date(),
               "Today's Date"
@@ -427,16 +428,20 @@ export class UserLeadsController {
         }
         await eventsWebhook(paramsToSend)
           .then(() =>
-            console.log(
+            logger.info(
               "event webhook for postcode updates hits successfully.",
-              paramsToSend
+              paramsToSend, 
+              new Date(), 
+              "Today's Date"
             )
           )
           .catch((err) =>
-            console.error(
+            logger.error(
               err,
               "error while triggering postcode updates webhooks failed",
-              paramsToSend
+              paramsToSend, 
+              new Date(), 
+              "Today's Date"
             )
           );
       }
@@ -458,16 +463,20 @@ export class UserLeadsController {
         };
         await eventsWebhook(paramsToSend)
           .then(() =>
-            console.log(
+            logger.info(
               "event webhook for radius updates hits successfully.",
-              paramsToSend
+              paramsToSend, 
+              new Date(),
+              "Today's Date"
             )
           )
           .catch((err) =>
-            console.error(
+            logger.error(
               err,
               "error while triggering radius updates webhooks failed",
-              paramsToSend
+              paramsToSend, 
+              new Date(), 
+              "Today's Date"
             )
           );
       }
@@ -519,16 +528,20 @@ export class UserLeadsController {
         }
         await eventsWebhook(paramsToSend)
           .then(() =>
-            console.log(
+            logger.info(
               "event webhook for postcode updates hits successfully.",
-              paramsToSend
+              paramsToSend, 
+              new Date(), 
+              "Today's Date"
             )
           )
           .catch((err) =>
-            console.log(
+            logger.error(
               err,
               "error while triggering postcode updates webhooks failed",
-              paramsToSend
+              paramsToSend, 
+              new Date(), 
+              "Today's Date"
             )
           );
       }

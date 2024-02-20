@@ -7,6 +7,7 @@ import { LOGS_STATUS } from "../Enums/logs.status.enum";
 import { PORTAL } from "../Enums/portal.enum";
 import { saveLogs } from "../Functions/saveLogs";
 import { REGISTRATION_IDS } from "../constantFiles/errorConstants";
+import logger from "../winstonLogger/logger";
 // let FormData = require("form-data");
 
 const POST = "post";
@@ -49,7 +50,7 @@ export const createCustomerOnLeadByte = (params: CreateCustomerInput) => {
           resolve(response);
         })
         .catch(async (err) => {
-          console.log("lead byte error", err, new Date(), "Today's Date");
+          logger.error("lead byte error", err, new Date(), "Today's Date");
           const logsData = {
             userId: params.userId,
             registrationId: REGISTRATION_IDS.NO_REGISTRATION_IDS,

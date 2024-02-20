@@ -1,5 +1,6 @@
 import { checkAccess } from "../../app/Middlewares/serverAccess";
 import { CODE } from "../constantFiles/smsNotification.contants";
+import logger from "../winstonLogger/logger";
 
 // and set the environment variables. See http://twil.io/secure
 export const notify = (send_to: String, lead: Record<string, string>) => {
@@ -28,13 +29,13 @@ export const notify = (send_to: String, lead: Record<string, string>) => {
         to: to,
       })
       .then(async (message: any) => {
-        console.log("sms sent successfully", new Date(), "Today's Date");
+        logger.info("sms sent successfully", new Date(), "Today's Date");
       })
       .catch(async (err: any) => {
-        console.log("error while sending SMS", err, new Date(), "Today's Date");
+        logger.error("error while sending SMS", err, new Date(), "Today's Date");
       });
   } else {
-    console.log(
+    logger.info(
       "No Access for SMS sending to this " + process.env.APP_ENV,
       new Date(),
       "Today's Date"

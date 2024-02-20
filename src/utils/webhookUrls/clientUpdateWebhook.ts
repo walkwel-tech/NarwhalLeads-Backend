@@ -1,5 +1,6 @@
 import axios from "axios";
 import { checkAccess } from "../../app/Middlewares/serverAccess";
+import logger from "../winstonLogger/logger";
 
 const POST = "post";
 
@@ -25,7 +26,7 @@ export const clientUpdateWebhookUrl = async (data: updateUserDetailsData) => {
     if (checkAccess()) {
       axios(config)
         .then(async (response) => {
-          console.log(
+          logger.info(
             "Client Update WebhookUrl webhook hits successfully",
             response.data,
             new Date(),
@@ -34,7 +35,7 @@ export const clientUpdateWebhookUrl = async (data: updateUserDetailsData) => {
           resolve(response.data);
         })
         .catch((err) => {
-          console.log(
+          logger.error(
             "error while triggering client update webhook url",
             data,
             err.response?.data,
@@ -44,7 +45,7 @@ export const clientUpdateWebhookUrl = async (data: updateUserDetailsData) => {
           reject(err.response?.data);
         });
     } else {
-      console.log(
+      logger.info(
         "No Access for hitting client update webhook to this " +
           process.env.APP_ENV,
         new Date(),

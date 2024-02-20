@@ -8,6 +8,7 @@ import { ClientTablePreference } from "../Models/ClientTablePrefrence";
 import { BusinessDetails } from "../Models/BusinessDetails";
 import { Leads } from "../Models/Leads";
 import { Permissions } from "../Models/Permission";
+import logger from "../../utils/winstonLogger/logger";
 
 export class GuestController {
   static setLeadPreferenceAccordingToIndustryInDB = async (
@@ -44,7 +45,7 @@ export class GuestController {
           return data;
         })
       );
-      console.log(
+      logger.info(
         "Updated and saved documents:",
         updatedDocuments,
         new Date(),
@@ -86,7 +87,7 @@ export class GuestController {
           return data;
         })
       );
-      console.log(
+      logger.info(
         "Updated and saved documents:",
         updatedDocuments,
         new Date(),
@@ -128,7 +129,7 @@ export class GuestController {
           return data;
         })
       );
-      console.log(
+      logger.info(
         "Updated and saved documents:",
         updatedDocuments,
         new Date(),
@@ -194,7 +195,7 @@ export class GuestController {
         return column.originalName === name;
       });
       if (!result) {
-        console.error("Document not found with _id: " + documentId);
+        logger.error("Document not found with _id: " + documentId, new Date(), "Today's Date");
         return;
       }
       // if(result.columns)
@@ -219,7 +220,7 @@ export class GuestController {
           }
         );
       } else {
-        console.log("already exist", new Date(), "Today's Date");
+        logger.info("already exist", new Date(), "Today's Date");
       }
     });
     res.send({ data: "successfully inserted" });
@@ -237,7 +238,7 @@ export class GuestController {
         return column.originalName === name;
       });
       if (!result) {
-        console.error("Document not found with _id: " + documentId);
+        logger.error("Document not found with _id: " + documentId, new Date(), "Today's Date");
         return;
       }
       // if(result.columns)
@@ -262,7 +263,7 @@ export class GuestController {
           }
         );
       } else {
-        console.log("already exist", new Date(), "Today's Date");
+        logger.info("already exist", new Date(), "Today's Date");
       }
     });
     res.send({ data: "successfully inserted" });

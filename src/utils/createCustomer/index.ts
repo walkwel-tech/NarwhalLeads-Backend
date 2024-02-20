@@ -1,5 +1,6 @@
 import { CreateCustomerInput } from "../../app/Inputs/createCustomerOnRyft&Lead.inputs";
 import { createCustomerOnLeadByte } from "./createOnLeadByte";
+import logger from "../winstonLogger/logger";
 // import { createCustomerOnRyft } from "./createOnRyft";
 export const createCustomersOnRyftAndLeadByte = (
   params: CreateCustomerInput
@@ -11,6 +12,6 @@ export const createCustomersOnRyftAndLeadByte = (
   return Promise.all(allPromises)
     .then((res) => {})
     .catch(async (err) => {
-      console.log("error", err.response?.data, new Date(), "Today's Date");
+      logger.error("error", err.response?.data, new Date(), "Today's Date");
     });
 };

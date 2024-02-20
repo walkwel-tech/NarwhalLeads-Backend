@@ -85,6 +85,7 @@ import { updateReport } from "../AutoUpdateTasks/ReportingStatusUpdate";
 import { createContact } from "../../utils/sendgrid/createContactSendgrid";
 import { updateUserSendgridJobIds } from "../../utils/sendgrid/updateSendgridJobIds";
 import { SENDGRID_STATUS_PERCENTAGE } from "../../utils/constantFiles/sendgridStatusPercentage";
+import logger from "../../utils/winstonLogger/logger";
 
 const ObjectId = mongoose.Types.ObjectId;
 
@@ -903,7 +904,12 @@ export class UsersControllers {
         data: arr,
       });
     } catch (err) {
-      console.log(err, ">>>>>");
+      logger.error(
+        "Error while showing all clients for admin export file", 
+        err, 
+        new Date(), 
+        "Today's Date"
+      );
       return res
         .status(500)
         .json({ error: { message: "Something went wrong.", err } });
@@ -1257,7 +1263,12 @@ export class UsersControllers {
         };
         // if (user?.credits < credits) {
         let transaction = await Transaction.create(dataToSave);
-        console.log("transaction", transaction);
+        logger.info(
+          "transaction", 
+          transaction, 
+          new Date(), 
+          "Today's Date"
+        );
         const paramPdf: generatePDFParams = {
           ContactID: checkUser?.xeroContactId,
           desc: transactionTitle.CREDITS_ADDED,
@@ -1279,7 +1290,11 @@ export class UsersControllers {
               invoiceId: res.data?.Invoices[0].InvoiceID,
             });
 
-            console.log("pdf generated");
+            logger.info(
+              "pdf generated", 
+              new Date(), 
+              "Today's Date"
+            );
           })
           .catch(async (err) => {
             refreshToken().then(async (res) => {
@@ -1303,7 +1318,11 @@ export class UsersControllers {
                   invoiceId: res.data?.Invoices[0].InvoiceID,
                 });
 
-                console.log("pdf generated");
+                logger.info(
+                  "pdf generated", 
+                  new Date(), 
+                  "Today's Date"
+                );
               });
             });
           });
@@ -1428,16 +1447,20 @@ export class UsersControllers {
         };
         await eventsWebhook(reqBody)
           .then(() =>
-            console.log(
+            logger.info(
               "event webhook for updating business phone number hits successfully.",
-              reqBody
+              reqBody, 
+              new Date(), 
+              "Today's Date"
             )
           )
           .catch((err) =>
-            console.log(
+            logger.error(
               err,
               "error while triggering business phone number webhooks failed",
-              reqBody
+              reqBody,
+              new Date(), 
+              "Today's Date"
             )
           );
       }
@@ -1589,16 +1612,20 @@ export class UsersControllers {
           }
           await eventsWebhook(paramsToSend)
             .then(() =>
-              console.log(
+              logger.info(
                 "event webhook for postcode updates hits successfully.",
-                paramsToSend
+                paramsToSend, 
+                new Date(), 
+                "Today's Date"
               )
             )
             .catch((err) =>
-              console.log(
+              logger.error(
                 err,
                 "error while triggering postcode updates webhooks failed",
-                paramsToSend
+                paramsToSend,
+                new Date(), 
+                "Today's Date"
               )
             );
         }
@@ -1701,16 +1728,20 @@ export class UsersControllers {
 
           await eventsWebhook(paramsToSend)
             .then(() =>
-              console.log(
+              logger.info(
                 "event webhook for postcode updates hits successfully.",
-                paramsToSend
+                paramsToSend, 
+                new Date(), 
+                "Today's Date"
               )
             )
             .catch((err) =>
-              console.log(
+              logger.error(
                 err,
                 "error while triggering postcode updates webhooks failed",
-                paramsToSend
+                paramsToSend, 
+                new Date(), 
+                "Today's Date"
               )
             );
         }
@@ -1733,7 +1764,7 @@ export class UsersControllers {
         createSessionUnScheduledPayment(params)
           .then(async (_res: any) => {
             if (!checkUser.xeroContactId) {
-              console.log(
+              logger.info(
                 "xeroContact ID not found. Failed to generate pdf.",
                 new Date(),
                 "Today's Date"
@@ -1772,7 +1803,11 @@ export class UsersControllers {
                     invoiceId: res.data?.Invoices[0].InvoiceID,
                   });
 
-                  console.log("pdf generated", new Date(), "Today's Date");
+                  logger.info(
+                    "pdf generated", 
+                    new Date(), 
+                    "Today's Date"
+                  );
                 })
                 .catch(async (err) => {
                   refreshToken().then(async (res) => {
@@ -1796,13 +1831,17 @@ export class UsersControllers {
                         invoiceId: res.data?.Invoices[0].InvoiceID,
                       });
 
-                      console.log("pdf generated", new Date(), "Today's Date");
+                      logger.info(
+                        "pdf generated", 
+                        new Date(), 
+                        "Today's Date"
+                      );                    
                     });
                   });
                 });
             }
 
-            console.log(
+            logger.info(
               "payment success!!!!!!!!!!!!!",
               new Date(),
               "Today's Date"
@@ -1831,7 +1870,12 @@ export class UsersControllers {
               creditsLeft: checkUser?.credits,
             };
             await Transaction.create(dataToSave);
-            console.log("error in payment Api", err);
+            logger.error(
+              "error in payment Api", 
+              err, 
+              new Date(), 
+              "Today's Date"
+            );
           });
       } else {
         const user = await User.findByIdAndUpdate(
@@ -2028,10 +2072,9 @@ export class UsersControllers {
       });
       await CardDetails.deleteMany({ userId: userExist?.id });
 
-      //@ts-ignore
-      deleteCustomerOnRyft(user?.ryftClientId)
-        .then(() => console.log("deleted customer"))
-        .catch(() => console.log("error while deleting customer on ryft"));
+      deleteCustomerOnRyft(user?.ryftClientId as string)
+        .then(() => logger.info("deleted customer", new Date(), "Today's Date"))
+        .catch((err) => logger.error("error while deleting customer on ryft", err, new Date(), "Today's Date"))
 
       if (!user) {
         return res
@@ -2206,7 +2249,7 @@ export class UsersControllers {
         item.businessDetailsId = businessDetailsId;
       });
 
-      console.log(query.results, ">>>>>");
+      logger.info(query.results, ">>>>>", new Date(), "Today's Date");
       const pref: ClientTablePreferenceInterface | null =
         await ClientTablePreference.findOne({ userId: _req.user.id });
       const filteredDataArray: DataObject[] = filterAndTransformData(
@@ -2545,7 +2588,11 @@ export class UsersControllers {
                 invoiceId: res.data?.Invoices[0].InvoiceID,
               });
 
-              console.log("pdf generated", new Date(), "Today's Date");
+              logger.info(
+                "pdf generated", 
+                new Date(),
+                "Today's Date"
+              );
             })
             .catch(async (err) => {
               refreshToken().then(async (res) => {
@@ -2570,7 +2617,11 @@ export class UsersControllers {
                     invoiceId: res.data?.Invoices[0].InvoiceID,
                   });
 
-                  console.log("pdf generated", new Date(), "Today's Date");
+                  logger.info(
+                    "pdf generated", 
+                    new Date(), 
+                    "Today's Date"
+                  );
                 });
               });
             });
@@ -2603,7 +2654,7 @@ export class UsersControllers {
           }
           await eventsWebhook(paramsToSend)
             .then(() =>
-              console.log(
+              logger.info(
                 "event webhook for add credits hits successfully.",
                 paramsToSend,
                 new Date(),
@@ -2613,7 +2664,8 @@ export class UsersControllers {
               )
             )
             .catch((err) =>
-              console.log(
+              logger.error(
+                err,                
                 "error while triggering webhooks for add credits failed",
                 paramsToSend,
                 new Date(),
@@ -2841,7 +2893,12 @@ export class UsersControllers {
         }
       }
     } catch (error) {
-      console.error("Error in Auto charge:", error.response);
+      logger.error(
+        "Error in Auto charge:", 
+        error.response, 
+        new Date(), 
+        "Today's Date"
+      );
     }
   };
 

@@ -1,5 +1,6 @@
 import { SiteConfig } from "../../app/Models/SiteConfig";
 import { ROUND_TABLE_MANAGER } from "../constantFiles/siteConfig";
+import logger from "../winstonLogger/logger";
 
 export const getAccountManagerForRoundManager = async () => {
   try {
@@ -20,7 +21,7 @@ export const getAccountManagerForRoundManager = async () => {
 
     return id;
   } catch (err) {
-    console.error(err);
+    logger.error("Error:", err, new Date(), "Today's Date");
   }
   return;
 };

@@ -1,6 +1,7 @@
 import axios from "axios";
 import { LeadCenterCredential } from "../../app/Models/LeadCenterCredential";
 import { LeadCenterCredentialInterface } from "../../types/LeadCenterCredentialsInterface";
+import logger from "../winstonLogger/logger";
 
 export const getLeadCenterToken = () => {
   let loginConfig = {
@@ -30,8 +31,8 @@ export const getLeadCenterToken = () => {
         resolve(response.data);
       })
       .catch((err) => {
+        logger.error('Error:', err, new Date(), "Today's Date");
         reject(err.response);
-        console.error(err);
       });
   });
 };

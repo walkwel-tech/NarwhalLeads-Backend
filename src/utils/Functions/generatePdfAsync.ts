@@ -12,6 +12,7 @@ import {
     refreshToken,
 } from "../../utils/XeroApiIntegration/createContact";
 import { transactionTitle } from "../../utils/Enums/transaction.title.enum";
+import logger from "../winstonLogger/logger";
 
 export const generatePdfAsync = (userId: UserInterface, transaction: TransactionInterface, paramPdf: generatePDFParams, transactionForVat: TransactionInterface, invoice: InvoiceInterface, originalAmount: number, freeCredits: number, id: string): Promise<InvoiceInterface> => {
     return new Promise((resolve, reject) => {
@@ -33,7 +34,7 @@ export const generatePdfAsync = (userId: UserInterface, transaction: Transaction
                     invoiceId: res.Invoices[0].InvoiceID,
                 });
 
-                console.log("pdf generated", new Date(), "Today's Date");
+                logger.info("pdf generated", new Date(), "Today's Date");
 
                 resolve(invoice)
             })
@@ -64,16 +65,16 @@ export const generatePdfAsync = (userId: UserInterface, transaction: Transaction
 
                         resolve(invoice)
 
-                        console.log(
+                        logger.info(
                             "pdf generated",
                             new Date(),
                             "Today's Date"
                         );
                     }).catch((err) => {
-                        console.error("Error while generating pdf.", JSON.stringify(err), new Date())
+                        logger.error("Error while generating pdf.", JSON.stringify(err), new Date(), "Today's Date")
                     });
                 }).catch((err) => {
-                    console.error("Error in retreiving refresh token", JSON.stringify(err), new Date())
+                    logger.error("Error in retreiving refresh token", JSON.stringify(err), new Date(), "Today's Date")
                 });
             });
     })

@@ -7,6 +7,7 @@ import { PipelineStage, Types } from "mongoose";
 import { commission } from "../../utils/Enums/commission.enum";
 import { TimePeriod } from "../Inputs/TimePeriod.input";
 import { QueryParams } from "../Inputs/QueryParams.input";
+import logger from "../../utils/winstonLogger/logger";
 const LIMIT = 10;
 const comissionPercentage = 0.5;
 
@@ -477,7 +478,7 @@ export class DashboardController {
         return res.json({ data });
       }
     } catch (err) {
-      console.log(err, ">>>>>>>>")
+      logger.error("Error while showing commissions", err, new Date(), "Today's Date");
       return res
         .status(500)
         .json({ error: { message: "Something went wrong.", err } });

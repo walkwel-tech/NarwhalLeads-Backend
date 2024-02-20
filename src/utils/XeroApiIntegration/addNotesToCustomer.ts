@@ -1,4 +1,6 @@
 import axios from "axios";
+import logger from "../winstonLogger/logger";
+
 const POST = "post";
 export const createNotesOnXero = (
   paramsToCreateContact: any,
@@ -32,7 +34,7 @@ export const createNotesOnXero = (
         resolve(data);
       })
       .catch(async (err) => {
-        console.log(
+        logger.error(
           "Xero Error while adding notes",
           err.response.data.Elements,
           new Date(),

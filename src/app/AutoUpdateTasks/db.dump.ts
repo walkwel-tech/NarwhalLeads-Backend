@@ -1,5 +1,6 @@
 import * as cron from "node-cron"
 const { exec } = require("child_process");
+import logger from "../../utils/winstonLogger/logger";
 
 export const db_dump = () => {
     cron.schedule("0 0 * * *", async () => {
@@ -17,9 +18,9 @@ export const db_dump = () => {
   // Execute the command
   exec(command, (error: any, stdout: any, stderr: any) => {
     if (error) {
-      console.error("Error:", error);
+      logger.error("Error:", error, new Date(), "Today's Date");
     } else {
-      console.log("Backup completed successfully");
+      logger.info("Backup completed successfully", new Date(), "Today's Date");
     }
   });
 })

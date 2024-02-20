@@ -56,6 +56,8 @@ import { BuisnessIndustriesInterface } from "../../types/BuisnessIndustriesInter
 import { createContact } from "../../utils/sendgrid/createContactSendgrid";
 import { updateUserSendgridJobIds } from "../../utils/sendgrid/updateSendgridJobIds";
 import { SENDGRID_STATUS_PERCENTAGE } from "../../utils/constantFiles/sendgridStatusPercentage";
+import logger from "../../utils/winstonLogger/logger";
+
 class AuthController {
   static register = async (req: Request, res: Response): Promise<any> => {
     const input = req.body;
@@ -594,7 +596,7 @@ class AuthController {
         name: user.firstName,
         password: text,
       };
-      console.log("forget password", text, new Date(), "Today's Date");
+      logger.info("forget password", text, new Date(), "Today's Date");
       sendEmailForgetPassword(input.email, message);
       await ForgetPassword.create({
         userId: user.id,
@@ -655,7 +657,7 @@ class AuthController {
         "utf8",
         (err: any, data: any) => {
           if (err) {
-            console.error(err);
+            logger.error("Error:", err, new Date(), "Today's Date")
             return;
           }
           data = JSON.parse(data);
@@ -664,7 +666,7 @@ class AuthController {
             "utf8",
             (err: any, ukData: any) => {
               if (err) {
-                console.error(err);
+                logger.error("Error:", err, new Date(), "Today's Date");
                 return;
               }
               ukData = JSON.parse(ukData);
@@ -720,7 +722,7 @@ class AuthController {
         "utf8",
         (err: any, data: any) => {
           if (err) {
-            console.error(err);
+            logger.error("Error:", err, new Date(), "Today's Date");
             return;
           }
           data = JSON.parse(data);
@@ -730,7 +732,7 @@ class AuthController {
             "utf8",
             (err: any, irelandData: any) => {
               if (err) {
-                console.error(err);
+                logger.error("Error:", err, new Date(), "Today's Date");
                 return;
               }
               irelandData = JSON.parse(irelandData);
@@ -945,10 +947,11 @@ class AuthController {
         };
         createCustomersOnRyftAndLeadByte(params)
           .then(() => {
-            console.log("Customer created!!!!", new Date(), "Today's Date");
+            logger.info("Customer created!!!!", new Date(), "Today's Date");
           })
-          .catch((ERR) => {
-            console.log(
+          .catch((err) => {
+            logger.error(
+              err,
               "error while creating customer",
               new Date(),
               "Today's Date"

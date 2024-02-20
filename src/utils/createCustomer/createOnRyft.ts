@@ -5,6 +5,7 @@ import { LOGS_STATUS } from "../Enums/logs.status.enum";
 import { PORTAL } from "../Enums/portal.enum";
 import { saveLogs } from "../Functions/saveLogs";
 import { REGISTRATION_IDS } from "../constantFiles/errorConstants";
+import logger from "../winstonLogger/logger";
 const POST = "post";
 
 export const createCustomerOnRyft = (params: Record<string, any>) => {
@@ -37,7 +38,7 @@ export const createCustomerOnRyft = (params: Record<string, any>) => {
         resolve(response);
       })
       .catch(async (err) => {
-        console.log("ryft error", err.response?.data);
+        logger.error("ryft error", err.response?.data, new Date(), "Today's Date");
         const logsData = {
           userId: params.userId,
           registrationId: REGISTRATION_IDS.NO_REGISTRATION_IDS,

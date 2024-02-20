@@ -13,6 +13,7 @@ import {
   // CARD_DETAILS,
   LEAD_DETAILS,
 } from "../../utils/constantFiles/signupFields";
+import logger from "../../utils/winstonLogger/logger";
 
 const LIMIT = 10;
 export class nonBillableUsersController {
@@ -43,7 +44,7 @@ export class nonBillableUsersController {
       } else {
         const salt = genSaltSync(10);
         const text = randomString(8, true);
-        console.log("🚀 PASSWORD --->", text, new Date(), "Today's Date");
+        logger.info("🚀 PASSWORD --->", text, new Date(), "Today's Date");
         const credentials = {
           email: input.email,
           password: text,

@@ -23,6 +23,7 @@ import {
   refreshToken,
 } from "../../utils/XeroApiIntegration/createContact";
 import { AccessToken } from "../Models/AccessToken";
+import logger from "../../utils/winstonLogger/logger";
 
 interface QueryParams {
   userId: string;
@@ -355,7 +356,7 @@ export class AdminSettingsController {
         .status(200)
         .json({ message: "Site config updated successfully." });
     } catch (error) {
-      console.log(error, ">>>>>>> error");
+      logger.error('Error while updating freeCreditsConfig', error, new Date(), "Today's Date");
       return res
         .status(500)
         .json({ error: { message: "Something went wrong" } });

@@ -1,5 +1,6 @@
 import axios from "axios";
 import { checkAccess } from "../../app/Middlewares/serverAccess";
+import logger from "../winstonLogger/logger";
 
 const POST = "post";
 
@@ -17,7 +18,7 @@ export const activityLogsWebhookUrl = async (data: any) => {
     if (checkAccess()) {
       axios(config)
         .then(async (response) => {
-          console.log(
+          logger.info(
             "activityLogsWebhookUrl webhook hits successfully",
             response.data,
             new Date(),
@@ -25,7 +26,7 @@ export const activityLogsWebhookUrl = async (data: any) => {
           );
         })
         .catch((err) => {
-          console.log(
+          logger.error(
             "activityLogsWebhookUrl webhook hits error",
             err.response?.data,
             new Date(),
@@ -33,7 +34,7 @@ export const activityLogsWebhookUrl = async (data: any) => {
           );
         });
     } else {
-      console.log(
+      logger.info(
         "No Access for hitting activity logs webhook to this " +
           process.env.APP_ENV,
         new Date(),

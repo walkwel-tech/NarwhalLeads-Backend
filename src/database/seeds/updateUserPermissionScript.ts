@@ -1,6 +1,7 @@
 import mongoose from "mongoose";
 import { UserSchema } from "../schemas/UserSchema";
 import { PermissionSchema } from "../schemas/permissionsSchema";
+import logger from "../../utils/winstonLogger/logger"
 
 require("dotenv").config();
 
@@ -27,12 +28,12 @@ export const updatePermissionsForUsers = async () => {
 
     await Promise.all(updateOperations);
 
-    console.log("Permissions updated successfully.");
+    logger.info("Permissions updated successfully.", new Date(), "Today's Date");
   } catch (error) {
-    console.error("Error updating permissions:", error);
+    logger.error("Error updating permissions:", error, new Date(), "Today's Date");
   } finally {
     mongoose.connection.close();
-    console.log("MongoDB connection closed");
+    logger.info("MongoDB connection closed", new Date(), "Today's Date");
   }
 };
 
