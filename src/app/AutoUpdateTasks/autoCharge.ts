@@ -520,8 +520,13 @@ export const topUpUserForPaymentMethod = async (
     currency: user?.currency,
   };
 
-  const success: any = await chargeUserOnStripe(params);
-  return success;
+  try {
+    const success: any = await chargeUserOnStripe(params);
+    return success;
+  } catch (error) {
+    console.error("ERROR WHILE CHARGING USER ON STRIPE", new Date())
+    logger.error("ERROR WHILE CHARGING USER ON STRIPE", error);
+  }
 };
 
 function getElementsNotInSubset(X: any[], Y: any[]): any[] {
