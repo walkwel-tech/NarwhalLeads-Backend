@@ -37,6 +37,7 @@ import { User } from "../Models/User";
 import { UserLeadsDetails } from "../Models/UserLeadsDetails";
 import fs from "fs"
 import {APP_ENV} from "../../utils/Enums/serverModes.enum";
+import logger from "../../utils/winstonLogger/logger";
 // import { paymentFailedWebhook } from "../../utils/webhookUrls/paymentFailedWebhook";
 
 interface paymentParams {
@@ -519,8 +520,13 @@ export const topUpUserForPaymentMethod = async (
     currency: user?.currency,
   };
 
-  const success: any = await chargeUserOnStripe(params);
-  return success;
+  try {
+    const success: any = await chargeUserOnStripe(params);
+    return success;
+  } catch (error) {
+    console.error("ERROR WHILE CHARGING USER ON STRIPE", new Date())
+    logger.error("ERROR WHILE CHARGING USER ON STRIPE", error);
+  }
 };
 
 function getElementsNotInSubset(X: any[], Y: any[]): any[] {
