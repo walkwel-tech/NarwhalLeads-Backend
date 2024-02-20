@@ -4,7 +4,6 @@ import { Types } from "mongoose";
 import { PostcodeAnalyticsValidator } from "../Inputs/postcodeAnalytics.input";
 import { validate } from "class-validator";
 import * as fs from "fs";
-import { UserInterface } from "../../types/UserInterface";
 interface UserDetails {
   userId: Types.ObjectId;
   credits: number;
@@ -31,8 +30,7 @@ export class PostCodeAnalyticsController {
       paginationInput.perPage = req.body.perPage;
       paginationInput.page = req.body.page;
       paginationInput.industry = req.body.industry;
-      paginationInput.search = req.body.search as string || '';
-
+      paginationInput.search = (req.body.search as string) || "";
 
       const errors = await validate(paginationInput);
 
@@ -46,117 +44,123 @@ export class PostCodeAnalyticsController {
       const skip = (page - 1) * perPage;
 
       const businessIndustryIds: string[] = paginationInput.industry || [];
-      const search: string = paginationInput.search || '';
+      const search: string = paginationInput.search || "";
 
-
-      const userLeadDetails: AggregationResult[] = await UserLeadsDetails.aggregate([
-     
-        {
-          $lookup: {
-            from: "users",
-            localField: "userId",
-            foreignField: "_id",
-            as: "userDetails",
-          },
-        },
-
-        ...(businessIndustryIds.length > 0
-          ? [
-              {
-                $addFields: {
-                  userDetail: {
-                    $arrayElemAt: ["$userDetails", 0],  
-                  },
-                },
-              },
-              {
-                $match: {
-                  "userDetail.businessIndustryId": {
-                    $in: businessIndustryIds.map(
-                      (id) => new Types.ObjectId(id)
-                    ),
-                  },
-                },
-              },
-            ]
-          : []),
-        {
-          $unwind: "$postCodeTargettingList",
-        },
-        {
-          $unwind: "$postCodeTargettingList.postalCode",
-        },
-        {
-          $group: {
-            _id: {
-              postalCode: "$postCodeTargettingList.postalCode",
-              userId: "$userId",
-              businessIndustryId: "$userDetails.businessIndustryId",
-            },
-            credits: { $max: "$userDetails.credits" },
-          },
-        },
-        {
-          $group: {
-            _id: "$_id.postalCode",
-            userSet: {
-              $addToSet: {
-                userId: "$_id.userId",
-                credits: "$credits",
-                businessIndustryId: "$_id.businessIndustryId",
-              },
+      const userLeadDetails: AggregationResult[] =
+        await UserLeadsDetails.aggregate([
+          {
+            $lookup: {
+              from: "users",
+              localField: "userId",
+              foreignField: "_id",
+              as: "userDetails",
             },
           },
-        },
-        {
-          $project: {
-            postalCode: "$_id",
-            users: "$userSet",
-            _id: 0,
-          },
-        },
-        {
-          $match: {
-            postalCode: { $exists: true },
-            users: {
-              $elemMatch: { userId: { $exists: true }, credits: { $gt: 0 } },
-            },
-            "users.userId": { $exists: true },
-            ...(businessIndustryIds.length > 0 ? { "users.businessIndustryId": { $in: businessIndustryIds.map((id) => new Types.ObjectId(id)) } } : {}),
-          },
-        },
-        {
-          $match: {
-            postalCode: { $regex: search, $options: "i" },
-          },
-        },
-         {
-          $facet: {
-            metaData: [
-              { $count: "total" },
-              { $addFields: { page, perPage: perPage } },
-              {
-                $addFields: {
-                  pageCount: {
-                    $ceil: {
-                      $divide: ["$total", perPage],
+
+          ...(businessIndustryIds.length > 0
+            ? [
+                {
+                  $addFields: {
+                    userDetail: {
+                      $arrayElemAt: ["$userDetails", 0],
                     },
                   },
                 },
-              },
-            ],
-            data: [{ $skip: skip }, { $limit: perPage }],
+                {
+                  $match: {
+                    "userDetail.businessIndustryId": {
+                      $in: businessIndustryIds.map(
+                        (id) => new Types.ObjectId(id)
+                      ),
+                    },
+                  },
+                },
+              ]
+            : []),
+          {
+            $unwind: "$postCodeTargettingList",
           },
-        },
-        
-      ]);
-      const data = userLeadDetails[0]?.data.map((entry:any) => ({
+          {
+            $unwind: "$postCodeTargettingList.postalCode",
+          },
+          {
+            $group: {
+              _id: {
+                postalCode: "$postCodeTargettingList.postalCode",
+                userId: "$userId",
+                businessIndustryId: "$userDetails.businessIndustryId",
+              },
+              credits: { $max: "$userDetails.credits" },
+            },
+          },
+          {
+            $group: {
+              _id: "$_id.postalCode",
+              userSet: {
+                $addToSet: {
+                  userId: "$_id.userId",
+                  credits: "$credits",
+                  businessIndustryId: "$_id.businessIndustryId",
+                },
+              },
+            },
+          },
+          {
+            $project: {
+              postalCode: "$_id",
+              users: "$userSet",
+              _id: 0,
+            },
+          },
+          {
+            $match: {
+              postalCode: { $exists: true },
+              users: {
+                $elemMatch: { userId: { $exists: true }, credits: { $gt: 0 } },
+              },
+              "users.userId": { $exists: true },
+              ...(businessIndustryIds.length > 0
+                ? {
+                    "users.businessIndustryId": {
+                      $in: businessIndustryIds.map(
+                        (id) => new Types.ObjectId(id)
+                      ),
+                    },
+                  }
+                : {}),
+            },
+          },
+          {
+            $match: {
+              postalCode: { $regex: search, $options: "i" },
+            },
+          },
+          {
+            $facet: {
+              metaData: [
+                { $count: "total" },
+                { $addFields: { page, perPage: perPage } },
+                {
+                  $addFields: {
+                    pageCount: {
+                      $ceil: {
+                        $divide: ["$total", perPage],
+                      },
+                    },
+                  },
+                },
+              ],
+              data: [{ $skip: skip }, { $limit: perPage }],
+            },
+          },
+        ]);
+      const data = userLeadDetails[0]?.data.map((entry: any) => ({
         postalCode: entry.postalCode,
-        activeClients: entry.users.filter(
-          (user: { credits: number }) => user.credits > 0
-        )?.map((user: Partial<UserDetails>) => {
-          return user?.userId
-        }),
+        activeClients: entry.users
+          .filter((user: { credits: number }) => user.credits > 0)
+          ?.map((user: Partial<UserDetails>) => {
+            return user?.userId;
+          }),
         // inactiveClients: entry.users.filter(
         //   (user: { credits: number }) => user.credits <= 0
         // )?.map((user: Partial<UserDetails>) => {
@@ -166,7 +170,7 @@ export class PostCodeAnalyticsController {
       return res.json({
         data,
         // userLeadDetails,
-        meta: userLeadDetails[0]?.metaData[0]
+        meta: userLeadDetails[0]?.metaData[0],
       });
     } catch (error) {
       return res
@@ -186,101 +190,107 @@ export class PostCodeAnalyticsController {
       }
       const businessIndustryIds: string[] = paginationInput.industry || [];
 
-     
-    const userLeadDetails: AggregationResult[] = await UserLeadsDetails.aggregate([
-      {
-        $lookup: {
-          from: "users",
-          localField: "userId",
-          foreignField: "_id",
-          as: "userDetails",
-        },
-      },
+      const userLeadDetails: AggregationResult[] =
+        await UserLeadsDetails.aggregate([
+          {
+            $lookup: {
+              from: "users",
+              localField: "userId",
+              foreignField: "_id",
+              as: "userDetails",
+            },
+          },
 
-      ...(businessIndustryIds.length > 0
-        ? [
-            {
-              $addFields: {
-                userDetail: {
-                  $arrayElemAt: ["$userDetails", 0],  
+          ...(businessIndustryIds.length > 0
+            ? [
+                {
+                  $addFields: {
+                    userDetail: {
+                      $arrayElemAt: ["$userDetails", 0],
+                    },
+                  },
+                },
+                {
+                  $match: {
+                    "userDetail.businessIndustryId": {
+                      $in: businessIndustryIds.map(
+                        (id) => new Types.ObjectId(id)
+                      ),
+                    },
+                  },
+                },
+              ]
+            : []),
+          {
+            $unwind: "$postCodeTargettingList",
+          },
+          {
+            $unwind: "$postCodeTargettingList.postalCode",
+          },
+          {
+            $group: {
+              _id: {
+                postalCode: "$postCodeTargettingList.postalCode",
+                userId: "$userId",
+                businessIndustryId: "$userDetails.businessIndustryId",
+              },
+              credits: { $max: "$userDetails.credits" },
+            },
+          },
+          {
+            $group: {
+              _id: "$_id.postalCode",
+              userSet: {
+                $addToSet: {
+                  userId: "$_id.userId",
+                  credits: "$credits",
+                  businessIndustryId: "$_id.businessIndustryId",
                 },
               },
             },
-            {
-              $match: {
-                "userDetail.businessIndustryId": {
-                  $in: businessIndustryIds.map(
-                    (id) => new Types.ObjectId(id)
-                  ),
-                },
+          },
+          {
+            $project: {
+              postalCode: "$_id",
+              users: "$userSet",
+              _id: 0,
+            },
+          },
+          {
+            $match: {
+              postalCode: { $exists: true },
+              users: {
+                $elemMatch: { userId: { $exists: true }, credits: { $gt: 0 } },
               },
-            },
-          ]
-        : []),
-      {
-        $unwind: "$postCodeTargettingList",
-      },
-      {
-        $unwind: "$postCodeTargettingList.postalCode",
-      },
-      {
-        $group: {
-          _id: {
-            postalCode: "$postCodeTargettingList.postalCode",
-            userId: "$userId",
-            businessIndustryId: "$userDetails.businessIndustryId",
-          },
-          credits: { $max: "$userDetails.credits" },
-        },
-      },
-      {
-        $group: {
-          _id: "$_id.postalCode",
-          userSet: {
-            $addToSet: {
-              userId: "$_id.userId",
-              credits: "$credits",
-              businessIndustryId: "$_id.businessIndustryId",
+              "users.userId": { $exists: true },
+              ...(businessIndustryIds.length > 0
+                ? {
+                    "users.businessIndustryId": {
+                      $in: businessIndustryIds.map(
+                        (id) => new Types.ObjectId(id)
+                      ),
+                    },
+                  }
+                : {}),
             },
           },
-        },
-      },
-      {
-        $project: {
-          postalCode: "$_id",
-          users: "$userSet",
-          _id: 0,
-        },
-      },
-      {
-        $match: {
-          postalCode: { $exists: true },
-          users: {
-            $elemMatch: { userId: { $exists: true }, credits: { $gt: 0 } },
-          },
-          "users.userId": { $exists: true },
-          ...(businessIndustryIds.length > 0 ? { "users.businessIndustryId": { $in: businessIndustryIds.map((id) => new Types.ObjectId(id)) } } : {}),
-        },
-      },
+        ]);
 
-      
-    ]);
+      const jsonData = userLeadDetails.map((entry: any) => ({
+        postalCode: entry.postalCode,
+        activeClients: entry.users.filter(
+          (user: { credits: number }) => user.credits > 0
+        ).length,
+        inactiveClients: entry.users.filter(
+          (user: { credits: number }) => user.credits <= 0
+        ).length,
+      }));
 
-    const jsonData = userLeadDetails.map((entry: any) => ({
-      postalCode: entry.postalCode,
-      activeClients: entry.users.filter(
-        (user: { credits: number }) => user.credits > 0
-      ).length,
-      inactiveClients: entry.users.filter(
-        (user: { credits: number }) => user.credits <= 0
-      ).length,
-    }));
-    
-    const jsonFilePath = "postal_dash_export.json";
-    
-    fs.writeFileSync(jsonFilePath, JSON.stringify(jsonData, null, 2));
-    
-    return res.download(jsonFilePath);
+      const jsonFilePath = "postal_dash_export.json";
+
+      fs.writeFileSync(jsonFilePath, JSON.stringify(jsonData, null, 2));
+
+      return res.download(jsonFilePath);
     } catch (error) {
       return res
         .status(500)
