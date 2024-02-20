@@ -27,6 +27,7 @@ export class freeCreditsLinkController {
         useCounts: 0,
         name: input.name,
         accountManager: input.accountManager,
+        discount: input.discount || 0,
         isCommission: input?.isCommission,
         businessIndustryId: input?.businessIndustryId,
         giveCreditOnAddCard: input?.giveCreditOnAddCard,

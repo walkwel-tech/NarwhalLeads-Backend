@@ -14,6 +14,10 @@ const FreeCreditsLinkSchema = new Schema(
       type: Number,
       required: true,
     },
+    discount: {
+      type: Number,
+      required: false,
+    },
     useCounts: {
       type: Number,
     },
