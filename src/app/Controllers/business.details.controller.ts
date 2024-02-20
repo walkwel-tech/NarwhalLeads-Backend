@@ -167,16 +167,13 @@ export class BusinessDetailsController {
         dataToSave.businessLogo = `${FileEnum.PROFILEIMAGE}${req?.file.filename}`;
       }
       const userData = await BusinessDetails.create(dataToSave);
-   
-    
-
       const industry: BuisnessIndustriesInterface =
         (await BuisnessIndustries.findOne({
           industry: input?.businessIndustry,
         })) ?? ({} as BuisnessIndustriesInterface);
 
-        const isUser = await User.findOne(input.userId);
-        const promoLink = await FreeCreditsLink.findOne(isUser?.promoLinkId)
+        const isUser = await User.findById(input.userId);
+        const promoLink = await FreeCreditsLink.findById(isUser?.promoLinkId)
         let updatedLeadCost = industry?.leadCost;
 
         if (promoLink && promoLink.discount && promoLink.discount !== 0) {
