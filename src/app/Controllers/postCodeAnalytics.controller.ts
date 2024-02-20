@@ -157,11 +157,11 @@ export class PostCodeAnalyticsController {
         )?.map((user: Partial<UserDetails>) => {
           return user?.userId
         }),
-        inactiveClients: entry.users.filter(
-          (user: { credits: number }) => user.credits <= 0
-        )?.map((user: Partial<UserDetails>) => {
-          return user?.userId
-        }),
+        // inactiveClients: entry.users.filter(
+        //   (user: { credits: number }) => user.credits <= 0
+        // )?.map((user: Partial<UserDetails>) => {
+        //   return user?.userId
+        // }),
       }));
       return res.json({
         data,
