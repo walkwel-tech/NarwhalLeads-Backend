@@ -2538,11 +2538,11 @@ export class UsersControllers {
                 userId: user?.id,
                 transactionId: transaction.id,
                 price: credits,
-                invoiceId: res.data?.Invoices[0].InvoiceID,
+                invoiceId: res?.Invoices[0].InvoiceID,
               };
               await Invoice.create(dataToSaveInInvoice);
               await Transaction.findByIdAndUpdate(transaction.id, {
-                invoiceId: res.data?.Invoices[0].InvoiceID,
+                invoiceId: res?.Invoices[0].InvoiceID,
               });
 
               console.log("pdf generated", new Date(), "Today's Date");
@@ -2748,7 +2748,7 @@ export class UsersControllers {
       });
     }
   };
-  
+
 
   static sendTestLeadData = async (req: any, res: Response) => {
     try {
