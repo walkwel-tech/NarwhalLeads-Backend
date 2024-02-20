@@ -38,6 +38,7 @@ import dashboardRoutes from "./routes/dashboard.routes";
 import adsRoutes from "./routes/ads.routes";
 import postCodeAnalyticsRoutes from  "./routes/postCodeAnalytics.routes"
 import validationConfigRoutes from "./routes/validationConfig.routes";
+import adminSettingsRoutes from "./routes/adminSettings.routes";
 
 const swaggerDocument = require("../swagger.json"); // Replace with the path to your actual Swagger document
 const swaggerUi = require("swagger-ui-express");
@@ -98,7 +99,7 @@ export class Server {
     this.app.use("/api/v1/cardDetails", CardDetailsRoutes);
     // need to add middleware here for security of only admin or only user login can update themself.
     this.app.use("/api/v1/user", Auth, UserRoutes);
-    this.app.use("/api/v1/adminSettings", AdminSettingsRoutes);
+    // this.app.use("/api/v1/adminSettings", AdminSettingsRoutes);
     this.app.use("/api/v1/leads", LeadsRoutes);
     this.app.use("/api/v1/transactions", Auth, TransactionsRoutes);
     this.app.use("/api/v1/userLeadsDetails", Auth, userLeadsDetailsRoutes);
@@ -116,7 +117,7 @@ export class Server {
     this.app.use("/api/v1/ads",Auth, adsRoutes);
     this.app.use("/api/v1/postal-dash", Auth, postCodeAnalyticsRoutes)
     this.app.use('/api/v1/supplier-badges', supplierBadgeRoutes)
-    this.app.use('/api/v1/admin-settings/', Auth, AdminSettingsController)
+    this.app.use('/api/v1/adminSettings', Auth, adminSettingsRoutes)
     this.app.use("/api/v1/validationConfigs", Auth,validationConfigRoutes)
     
 
