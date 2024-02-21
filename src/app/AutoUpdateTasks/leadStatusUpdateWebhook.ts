@@ -1,6 +1,7 @@
 import { leadDetailsSubmission } from "../../utils/webhookUrls/leadDetailsSubmission";
 import { Leads } from "../Models/Leads";
 import * as cron from "node-cron";
+import logger from "../../utils/winstonLogger/logger";
 
 export function autoWebhookURLHitLeadSubmission() {
   // Schedule a job to send batched updates at the top of each hour
@@ -29,14 +30,13 @@ export async function sendBatchedUpdates(): Promise<any> {
     return updatesToBeSent.map((data) => {
       return leadDetailsSubmission(data)
         .then((response) => {
-          console.log(
+          logger.info(
             "Batched updates sent successfully.",
-            new Date(),
-            "Today's Date"
+            { response }
           );
         })
         .catch((error) => {
-          console.error("Error sending batched updates:", error);
+          logger.error("Error sending batched updates:", error);
         });
     });
   }

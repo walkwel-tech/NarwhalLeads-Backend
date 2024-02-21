@@ -1,3 +1,4 @@
+import {AxiosResponse} from "axios";
 import {
     generatePDF,
     generatePDFParams,
@@ -12,28 +13,29 @@ import {
     refreshToken,
 } from "../../utils/XeroApiIntegration/createContact";
 import { transactionTitle } from "../../utils/Enums/transaction.title.enum";
+import logger from "../winstonLogger/logger";
 
 export const generatePdfAsync = (userId: UserInterface, transaction: TransactionInterface, paramPdf: generatePDFParams, transactionForVat: TransactionInterface, invoice: InvoiceInterface, originalAmount: number, freeCredits: number, id: string): Promise<InvoiceInterface> => {
     return new Promise((resolve, reject) => {
         generatePDF(paramPdf)
-            .then(async (res: XeroResponseInterface) => {
+            .then(async (res: AxiosResponse<XeroResponseInterface>) => {
                 const dataToSaveInInvoice: Partial<InvoiceInterface> = {
                     userId: userId?.id,
                     transactionId: transaction.id,
                     price: userId?.credits,
-                    invoiceId: res.Invoices[0].InvoiceID
+                    invoiceId: res.data.Invoices[0].InvoiceID
                 };
                 invoice = await Invoice.create(dataToSaveInInvoice);
 
                 await Transaction.findByIdAndUpdate(transaction.id, {
-                    invoiceId: res.Invoices[0].InvoiceID,
+                    invoiceId: res.data.Invoices[0].InvoiceID,
                 });
 
                 await Transaction.findByIdAndUpdate(transactionForVat.id, {
-                    invoiceId: res.Invoices[0].InvoiceID,
+                    invoiceId: res.data.Invoices[0].InvoiceID,
                 });
 
-                console.log("pdf generated", new Date(), "Today's Date");
+                logger.info("pdf generated", { res });
 
                 resolve(invoice)
             })
@@ -48,32 +50,31 @@ export const generatePdfAsync = (userId: UserInterface, transaction: Transaction
                         isManualAdjustment: false,
                     };
 
-                    generatePDF(paramPdf).then(async (res: XeroResponseInterface) => {
+                    generatePDF(paramPdf).then(async (res: AxiosResponse<XeroResponseInterface>) => {
                         const dataToSaveInInvoice: Partial<InvoiceInterface> = {
                             userId: userId?.id,
                             transactionId: transaction.id,
                             price: userId?.credits,
-                            invoiceId: res.Invoices[0].InvoiceID,
+                            invoiceId: res.data.Invoices[0].InvoiceID,
                         };
 
                         invoice = await Invoice.create(dataToSaveInInvoice);
 
                         await Transaction.findByIdAndUpdate(transaction.id, {
-                            invoiceId: res.Invoices[0].InvoiceID,
+                            invoiceId: res.data.Invoices[0].InvoiceID,
                         });
 
                         resolve(invoice)
 
-                        console.log(
+                        logger.info(
                             "pdf generated",
-                            new Date(),
-                            "Today's Date"
+                            { res }
                         );
                     }).catch((err) => {
-                        console.error("Error while generating pdf.", JSON.stringify(err), new Date())
+                        logger.error("Error while generating pdf.", err)
                     });
                 }).catch((err) => {
-                    console.error("Error in retreiving refresh token", JSON.stringify(err), new Date())
+                    logger.error("Error in retreiving refresh token", err)
                 });
             });
     })

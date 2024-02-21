@@ -7,6 +7,7 @@ import axios, { AxiosResponse } from "axios";
 import { ACCOUNT_CODE } from "../constantFiles/accountCode.xero";
 import { XeroResponseInterface } from "../../types/XeroResponseInterface";
 import { XeroInvoiceRequestInterface } from "../../types/XeroInvoiceRequestInterface";
+import logger from "../winstonLogger/logger";
 
 export interface generatePDFParams {
   ContactID: string;
@@ -16,7 +17,7 @@ export interface generatePDFParams {
   sessionId: string;
   isManualAdjustment: boolean;
 }
-export const generatePDF = (param: generatePDFParams): Promise<XeroResponseInterface> => {
+export const generatePDF = (param: generatePDFParams): Promise<AxiosResponse<XeroResponseInterface>> => {
   return new Promise(async (resolve, reject) => {
     const industry: any = await User.findOne({
       xeroContactId: param.ContactID,
@@ -111,25 +112,21 @@ export const generatePDF = (param: generatePDFParams): Promise<XeroResponseInter
     if (checkAccess()) {
       axios(config)
         .then(function (response: AxiosResponse<XeroResponseInterface>) {
-          console.log(
+          logger.info(
             "data while getting response of invoices",
-            response.data,
-            new Date(),
-            "Today's Date"
+            { response }
           );
 
-          resolve(response.data);
+          resolve(response);
         })
         .catch(function (error) {
-          console.log(error.response?.data, new Date(), "Today's Date");
+          logger.error("Error", error);
 
           reject(error);
         });
     } else {
-      console.log(
-        "No Access for generating PDF to this " + process.env.APP_ENV,
-        new Date(),
-        "Today's Date"
+      logger.info(
+        `No Access for generating PDF to this ${process.env.APP_ENV}`
       );
     }
   });
