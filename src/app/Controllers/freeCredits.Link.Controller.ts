@@ -7,11 +7,14 @@ import { LINK_FILTERS } from "../../utils/Enums/promoLink.enum";
 import { RolesEnum } from "../../types/RolesEnum";
 import { randomString } from "../../utils/Functions/randomString";
 import { Types } from "mongoose";
+import logger from "../../utils/winstonLogger/logger";
+
 type Filter = {
   isDisabled: Boolean;
   isDeleted: Boolean;
   accountManager?: Types.ObjectId;
 };
+
 export class freeCreditsLinkController {
   static create = async (req: Request, res: Response): Promise<any> => {
     try {
@@ -60,7 +63,7 @@ export class freeCreditsLinkController {
           .json({ error: { message: "Top-up amount is required" } });
       }
     } catch (error) {
-      console.log(error, new Date(), "Today's Date");
+      logger.error('Error:', error);
       res
         .status(500)
         .json({ error: { message: "something Went wrong.", error } });

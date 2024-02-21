@@ -1,6 +1,7 @@
 import axios from "axios";
 import { checkAccess } from "../../app/Middlewares/serverAccess";
 import { LeadCenterCredential } from "../../app/Models/LeadCenterCredential";
+import logger from "../winstonLogger/logger";
 const POST = "post";
 
 export const leadReportWebhook = (data: any) => {
@@ -19,19 +20,16 @@ export const leadReportWebhook = (data: any) => {
     if (checkAccess()) {
       axios(config)
         .then(async (response) => {
-          console.log(
-            "lead Report accepted Webhook webhook hits successfully",
-            new Date(),
-            "Today's Date"
+          logger.info(
+            "lead Report accepted Webhook webhook hits successfully", 
+            { response }
           );
           resolve(response.data);
         })
         .catch((err) => {
-          console.log(
+          logger.error(
             "lead Report accepted Webhook webhook hits error",
-            err,
-            new Date(),
-            "Today's Date"
+            err
           );
 
           reject(err.response);

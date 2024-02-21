@@ -1,15 +1,16 @@
 import { addValidationConfigRecord } from './validationConfigScript';
 import { updatePermissionsForUsers } from './updateUserPermissionScript';
+import logger from '../../utils/winstonLogger/logger';
 
 async function seed() {
-  console.log('Seeding database...');
+  logger.info('Seeding database...');
   await addValidationConfigRecord();
   await updatePermissionsForUsers();
-  console.log('Database seeding complete.');
+  logger.info('Database seeding complete.');
 }
 
 seed().catch(err => {
-  console.error('Error seeding database:', err);
+  logger.error('Error seeding database:', err);
   process.exit(1);
 });
 

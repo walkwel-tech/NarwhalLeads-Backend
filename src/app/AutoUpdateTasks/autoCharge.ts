@@ -66,15 +66,15 @@ export const autoChargePayment = async () => {
   }
   
   cron.schedule(cronExpression, async () => {
-    console.log("AutoCharge: CRON Start..", new Date());
+    logger.info("AutoCharge: CRON Start..");
     try {
       const usersToCharge = await getUsersWithAutoChargeEnabled();
 
       fs.writeFile(`./logs/autocharge/autochargeuser-${new Date().getTime()}.json`, JSON.stringify(usersToCharge), (err) => {
         if (err) {
-          console.error("Error writing file:", err);
+          logger.error("Error writing file:", err);
         } else {
-          console.log("JSON data has been saved to");
+          logger.info("JSON data has been saved");
         }
       });
 
@@ -82,7 +82,7 @@ export const autoChargePayment = async () => {
         usersToCharge.map(async (user) => {
 
           return new Promise(async (resolve, reject) => {
-            console.log("Charging User :", user.email, new Date());
+            logger.info(`Charging User: ${user.email}`);
             const dataToSave = {
               userId: user.id,
               title: AUTO_UPDATED_TASKS.AUTO_CHARGE,
@@ -96,7 +96,7 @@ export const autoChargePayment = async () => {
               await topUpUserForPaymentMethod(user, paymentMethod);
               resolve("success");
             } else {
-              console.error(`Payment method not found for user ${user.email}`);
+              logger.error(`Payment method not found for user ${user.email}`);
               await AutoUpdatedTasksLogs.findByIdAndUpdate(logs.id, {
                 notes: "payment method not found",
                 statusCode: 400,
@@ -106,21 +106,21 @@ export const autoChargePayment = async () => {
           });
         })
       ).then((res) => {
-          console.log("AutoCharge: CRON Ended Successfully ", new Date(), ` charged ${res.length} users`);
+          logger.info(`AutoCharge: CRON Ended Successfully charged ${res.length} users`);
         }).catch((err) => {
-          console.log("AutoCharge: CRON Ended with Errors ", new Date(), ` charged ${err.length} users`);
+          logger.info(`AutoCharge: CRON Ended with Errors charged ${err.length} users`);
         }).finally(() => {
-          console.log("AutoCharge: CRON Ended finally", new Date());
+          logger.info("AutoCharge: CRON Ended finally");
         });
     } catch (error) {
-      console.error("Error in CRON job:", error);
+      logger.error("Error in CRON job:", error);
     }
   });
 };
 
 export const weeklyPayment = async () => {
   cron.schedule("00 09 * * MON", async () => {
-    console.log("Monday 9am Cron Job started.");
+    logger.info("Monday 9am Cron Job started.");
     // cron.schedule("* * * * *",  async() => {
 
     const user = await User.find({
@@ -129,7 +129,7 @@ export const weeklyPayment = async () => {
     });
     let leadcpl: number;
     if (!user || user?.length == 0) {
-      console.log("no user found to make payment");
+      logger.info("no user found to make payment");
     } else {
       user.map(async (user) => {
         return new Promise(async (resolve, reject) => {
@@ -153,7 +153,7 @@ export const weeklyPayment = async () => {
               },
             });
             if (leads.length == 0) {
-              console.log("no leads found in past week to make payment");
+              logger.info("no leads found in past week to make payment");
             } else {
               const leadsDetails = await UserLeadsDetails.findOne({
                 userId: user.id,
@@ -229,7 +229,7 @@ export const weeklyPayment = async () => {
                               invoiceId: res?.data.Invoices[0].InvoiceID,
                             };
                           await Invoice.create(dataToSaveInInvoice);
-                          console.log("pdf generated");
+                          logger.info("pdf generated", { res });
                         })
                         .catch((error) => {
                           refreshToken().then((res) => {
@@ -250,7 +250,7 @@ export const weeklyPayment = async () => {
                                   invoiceId: res.data.Invoices[0].InvoiceID,
                                 };
                               await Invoice.create(dataToSaveInInvoice);
-                              console.log("pdf generated");
+                              logger.info("pdf generated", { res });
                             });
                           });
                         });
@@ -265,12 +265,12 @@ export const weeklyPayment = async () => {
                         status: "error",
                       };
                       await Transaction.create(dataToSave);
-                      console.log("Error while adding credits");
+                      logger.error("Error while adding credits", err);
                     });
-                  console.log("payment success!!!!!!!!!!!!!");
+                  logger.info("payment success!!!!!!!!!!!!!");
                 })
                 .catch(async (err) => {
-                  console.log("error in payment Api", err);
+                  logger.error("error in payment Api", err);
                 });
             }
             resolve("weekly payment successfull");
@@ -333,7 +333,7 @@ export const chargeUserOnStripe = async (params: IntentInterface) => {
   return new Promise((resolve, reject) => {
     createPaymentOnStripe(params, true)
       .then(async (_res: any) => {
-        console.log("payment initiated!", new Date(), {
+        logger.info("payment initiated!", {
           stripeUser: params.customer,
         });
         
@@ -398,7 +398,7 @@ export const chargeUserOnStripe = async (params: IntentInterface) => {
           }
           // const content = "We have recently identified a payment which require 3DS action of user"
           // await paymentFailedWebhook(user, user.id, business?.businessName as string, content, business?.businessIndustry as string ).then((res) => {
-          //   console.log(res, "PAYMENT FAILED WEBHOOK RESPONSE", new Date())
+          //   logger.info(res, "PAYMENT FAILED WEBHOOK RESPONSE", new Date())
           // }).catch((err) => {
           //   console.error(err, "PAYMENT FAILED WEBHOOK ERROR", new Date())
           // });
@@ -408,7 +408,7 @@ export const chargeUserOnStripe = async (params: IntentInterface) => {
         resolve(_res);
       })
       .catch(async (err) => {
-        console.log(`error in payment Api ${new Date()}`, JSON.stringify(err.response.data));
+        logger.info(`error in payment Api ${new Date()}`, err);
         // FUTURE: FIX CRON JOB SCHEDULING and Instead use other methods
         const shouldRetryOtherMethods = false;
         if (shouldRetryOtherMethods) {
@@ -487,7 +487,7 @@ export const handleFailedChargeOnStripe = async (
       };
       return await chargeUserOnStripe(params);
     } else {
-      console.log(`No Valid Cards email should be sent now to ${user.email}`, new Date());
+      logger.info(`No Valid Cards email should be sent now to ${user.email}`);
       return false;
     }
   });
@@ -524,7 +524,6 @@ export const topUpUserForPaymentMethod = async (
     const success: any = await chargeUserOnStripe(params);
     return success;
   } catch (error) {
-    console.error("ERROR WHILE CHARGING USER ON STRIPE", new Date())
     logger.error("ERROR WHILE CHARGING USER ON STRIPE", error);
   }
 };

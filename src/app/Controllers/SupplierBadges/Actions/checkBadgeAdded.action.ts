@@ -96,7 +96,7 @@ export const checkBadgeAddedAction = async (req: Request, res: Response) => {
           fixedAmount: amount,
         })
           .then((res) => {
-            logger.info("Add credits to buyer success", res);
+            logger.info("Add credits to buyer success", { res });
           })
           .catch((err) => {
             logger.error("Error in adding credits to buyer", err);

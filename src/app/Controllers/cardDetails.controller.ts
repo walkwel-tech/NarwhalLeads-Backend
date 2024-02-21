@@ -111,6 +111,7 @@ import { createContact } from "../../utils/sendgrid/createContactSendgrid";
 import { BuisnessIndustries } from "../Models/BuisnessIndustries";
 import { updateUserSendgridJobIds } from "../../utils/sendgrid/updateSendgridJobIds";
 import { SENDGRID_STATUS_PERCENTAGE } from "../../utils/constantFiles/sendgridStatusPercentage";
+import logger from "../../utils/winstonLogger/logger";
 
 const ObjectId = mongoose.Types.ObjectId;
 
@@ -602,9 +603,9 @@ export class CardDetailsControllers {
           params.paymentMethodId = paymentMethodsExists?.paymentMethod;
           createSessionUnScheduledPayment(params)
             .then(async (_res: any) => {
-              console.log("payment initiated!");
+              logger.info("payment initiated!", { _res });
               if (!user?.xeroContactId) {
-                console.log(
+                logger.info(
                   "xeroContact ID not found. Failed to generate pdf."
                 );
               }
@@ -638,11 +639,9 @@ export class CardDetailsControllers {
               });
             })
             .catch(async (err) => {
-              console.log(
+              logger.error(
                 "error in payment Api",
-                err.response.data,
-                new Date(),
-                "Today's Date"
+                err
               );
               //fixme: store error transacation in db also
               return res.status(400).json({
@@ -692,12 +691,10 @@ export class CardDetailsControllers {
         };
         createPaymentOnStripe(params, false)
           .then(async (_res: any) => {
-            console.log("payment initiated!", new Date(), "Today's Date");
+            logger.info("payment initiated!", _res);
             if (!user?.xeroContactId) {
-              console.log(
-                "xeroContact ID not found. Failed to generate pdf.",
-                new Date(),
-                "Today's Date"
+              logger.info(
+                "xeroContact ID not found. Failed to generate pdf."
               );
             }
             let response: PaymentResponse = {
@@ -714,11 +711,9 @@ export class CardDetailsControllers {
             });
           })
           .catch(async (err) => {
-            console.log(
+            logger.error(
               "error in payment Api",
-              err.response.data,
-              new Date(),
-              "Today's Date"
+              err
             );
             //fixme: store error transacation in db also
             return res.status(400).json({
@@ -1030,7 +1025,7 @@ export class CardDetailsControllers {
                       invoiceId: res.data.Invoices[0].InvoiceID,
                     });
 
-                    console.log("pdf generated", new Date(), "Today's Date");
+                    logger.info("pdf generated", { res });
                   })
                   .catch(async (err) => {
                     refreshToken().then(async (res) => {
@@ -1054,10 +1049,9 @@ export class CardDetailsControllers {
                           invoiceId: res.data.Invoices[0].InvoiceID,
                         });
 
-                        console.log(
+                        logger.info(
                           "pdf generated",
-                          new Date(),
-                          "Today's Date"
+                          { res }
                         );
                       });
                     });
@@ -1082,11 +1076,9 @@ export class CardDetailsControllers {
               }
             })
             .catch((error) => {
-              console.log(
+              logger.error(
                 "error in webhook",
-                error,
-                new Date(),
-                "Today's Date"
+                error
               );
             });
         } else if (input.eventType == "PaymentSession.approved") {
@@ -1411,29 +1403,22 @@ export class CardDetailsControllers {
 
               await eventsWebhook(paramsToSend)
                 .then(() =>
-                  console.log(
+                  logger.info(
                     "event webhook for add credits hits successfully.",
-                    paramsToSend,
-                    new Date(),
-                    "Today's Date"
+                    { paramsToSend }
                   )
                 )
                 .catch((err) =>
-                  console.log(
-                    err,
+                  logger.error(
                     "error while triggering add credits webhooks failed",
-                    paramsToSend,
-                    new Date(),
-                    "Today's Date"
+                    err
                   )
                 );
             })
             .catch((error) => {
-              console.log(
+              logger.error(
                 "error in webhook",
-                error,
-                new Date(),
-                "Today's Date"
+                error
               );
             });
         }
@@ -1767,11 +1752,9 @@ export class CardDetailsControllers {
                 await Transaction.create(transactionData);
               })
               .catch((error) => {
-                console.log(
+                logger.error(
                   "error in webhook",
-                  error,
-                  new Date(),
-                  "Today's Date"
+                  error
                 );
               });
           }
