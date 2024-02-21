@@ -84,7 +84,7 @@ export const eventsWebhook = (data: any) => {
           reject(err);
         });
     } else {
-      logger.info("Access denied!!", new Date(), "Today's Date");
+      logger.info("Access denied!!");
       resolve("Access denied!!");
     }
   });

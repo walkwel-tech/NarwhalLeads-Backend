@@ -47,9 +47,7 @@ export class GuestController {
       );
       logger.info(
         "Updated and saved documents:",
-        updatedDocuments,
-        new Date(),
-        "Today's Date"
+        { updatedDocuments }
       );
       updatedDocuments.map(async (i) => {
         await BuisnessIndustries.findByIdAndUpdate(i.id, {
@@ -89,9 +87,7 @@ export class GuestController {
       );
       logger.info(
         "Updated and saved documents:",
-        updatedDocuments,
-        new Date(),
-        "Today's Date"
+        { updatedDocuments }
       );
       await Promise.all(
         updatedDocuments.map(async (i) => {
@@ -131,9 +127,7 @@ export class GuestController {
       );
       logger.info(
         "Updated and saved documents:",
-        updatedDocuments,
-        new Date(),
-        "Today's Date"
+        { updatedDocuments }
       );
       updatedDocuments.map(async (i) => {
         await ClientTablePreference.findByIdAndUpdate(i.id, {
@@ -195,7 +189,7 @@ export class GuestController {
         return column.originalName === name;
       });
       if (!result) {
-        logger.error("Document not found with _id: " + documentId, new Date(), "Today's Date");
+        logger.error(`Document not found with _id: ${documentId}`);
         return;
       }
       // if(result.columns)
@@ -220,7 +214,7 @@ export class GuestController {
           }
         );
       } else {
-        logger.info("already exist", new Date(), "Today's Date");
+        logger.info("already exist", { nameExists });
       }
     });
     res.send({ data: "successfully inserted" });
@@ -238,7 +232,7 @@ export class GuestController {
         return column.originalName === name;
       });
       if (!result) {
-        logger.error("Document not found with _id: " + documentId, new Date(), "Today's Date");
+        logger.error(`Document not found with _id: ${documentId}`);
         return;
       }
       // if(result.columns)
@@ -263,7 +257,7 @@ export class GuestController {
           }
         );
       } else {
-        logger.info("already exist", new Date(), "Today's Date");
+        logger.info("already exist", { nameExists });
       }
     });
     res.send({ data: "successfully inserted" });

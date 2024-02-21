@@ -17,7 +17,7 @@ export const addValidationConfigRecord = async () => {
     const existingRecord = await ValidationConfig.findOne({ key: "minimum_topUp_leadCount" });
 
     if (existingRecord) {
-      logger.info("Record already exists:", existingRecord, new Date(), "Today's Date");
+      logger.info("Record already exists:", { existingRecord });
       return;
     }
 
@@ -30,11 +30,11 @@ export const addValidationConfigRecord = async () => {
 
     const newRecord = await ValidationConfig.create(newRecordValues);
 
-    logger.info("New record added:", newRecord, new Date(), "Today's Date");
+    logger.info("New record added:", { newRecord });
   } catch (error) {
-    logger.error("Error adding new record:", error, new Date(), "Today's Date");
+    logger.error("Error adding new record:", error);
   } finally {
     mongoose.connection.close();
-    logger.info("MongoDB connection closed", new Date(), "Today's Date");
+    ("MongoDB connection closed");
   }
 };

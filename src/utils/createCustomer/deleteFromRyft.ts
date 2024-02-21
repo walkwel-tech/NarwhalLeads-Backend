@@ -14,11 +14,11 @@ export const deleteCustomerOnRyft = (id: string) => {
     };
     axios(config)
       .then(async (response) => {
-        logger.info("customer deleted on RYFT", new Date(), "Today's Date");
+        logger.info("customer deleted on RYFT", { response });
         resolve(response);
       })
       .catch((err) => {
-        logger.error("ryft error", err.response?.data, new Date(), "Today's Date");
+        logger.error("ryft error", err);
 
         reject(err.response?.data);
       });

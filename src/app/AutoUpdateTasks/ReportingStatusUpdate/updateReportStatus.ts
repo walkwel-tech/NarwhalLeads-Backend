@@ -8,7 +8,7 @@ export const updateReportStatus = () => {
     try{
         await updateReport(100)
     } catch (err){
-        logger.error("Client status update cron hits successfully", new Date(), "Today's Date")
+        logger.error("Client status update cron hits successfully")
     }
   });
 };

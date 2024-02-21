@@ -30,9 +30,7 @@ export class UserServiceController {
     } catch (error) {
       logger.error(
         "Error processing country codes:", 
-        error.message, 
-        new Date(), 
-        "Today's Date"
+        error
       );
       res.status(500).json({ error: "Internal Server Error" });
     }

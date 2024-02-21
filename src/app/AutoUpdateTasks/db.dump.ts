@@ -18,9 +18,9 @@ export const db_dump = () => {
   // Execute the command
   exec(command, (error: any, stdout: any, stderr: any) => {
     if (error) {
-      logger.error("Error:", error, new Date(), "Today's Date");
+      logger.error("Error:", error);
     } else {
-      logger.info("Backup completed successfully", new Date(), "Today's Date");
+      logger.info("Backup completed successfully");
     }
   });
 })

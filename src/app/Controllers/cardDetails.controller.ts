@@ -603,10 +603,10 @@ export class CardDetailsControllers {
           params.paymentMethodId = paymentMethodsExists?.paymentMethod;
           createSessionUnScheduledPayment(params)
             .then(async (_res: any) => {
-              logger.info("payment initiated!", new Date(), "Today's Date");
+              logger.info("payment initiated!", { _res });
               if (!user?.xeroContactId) {
                 logger.info(
-                  "xeroContact ID not found. Failed to generate pdf.", new Date(), "Today's Date"
+                  "xeroContact ID not found. Failed to generate pdf."
                 );
               }
               let response: PaymentResponse = {
@@ -641,9 +641,7 @@ export class CardDetailsControllers {
             .catch(async (err) => {
               logger.error(
                 "error in payment Api",
-                err.response.data,
-                new Date(),
-                "Today's Date"
+                err
               );
               //fixme: store error transacation in db also
               return res.status(400).json({
@@ -693,12 +691,10 @@ export class CardDetailsControllers {
         };
         createPaymentOnStripe(params, false)
           .then(async (_res: any) => {
-            logger.info("payment initiated!", new Date(), "Today's Date");
+            logger.info("payment initiated!", _res);
             if (!user?.xeroContactId) {
               logger.info(
-                "xeroContact ID not found. Failed to generate pdf.",
-                new Date(),
-                "Today's Date"
+                "xeroContact ID not found. Failed to generate pdf."
               );
             }
             let response: PaymentResponse = {
@@ -717,9 +713,7 @@ export class CardDetailsControllers {
           .catch(async (err) => {
             logger.error(
               "error in payment Api",
-              err.response.data,
-              new Date(),
-              "Today's Date"
+              err
             );
             //fixme: store error transacation in db also
             return res.status(400).json({
@@ -1031,7 +1025,7 @@ export class CardDetailsControllers {
                       invoiceId: res.data.Invoices[0].InvoiceID,
                     });
 
-                    logger.info("pdf generated", new Date(), "Today's Date");
+                    logger.info("pdf generated", { res });
                   })
                   .catch(async (err) => {
                     refreshToken().then(async (res) => {
@@ -1057,8 +1051,7 @@ export class CardDetailsControllers {
 
                         logger.info(
                           "pdf generated",
-                          new Date(),
-                          "Today's Date"
+                          { res }
                         );
                       });
                     });
@@ -1085,9 +1078,7 @@ export class CardDetailsControllers {
             .catch((error) => {
               logger.error(
                 "error in webhook",
-                error,
-                new Date(),
-                "Today's Date"
+                error
               );
             });
         } else if (input.eventType == "PaymentSession.approved") {
@@ -1414,27 +1405,20 @@ export class CardDetailsControllers {
                 .then(() =>
                   logger.info(
                     "event webhook for add credits hits successfully.",
-                    paramsToSend,
-                    new Date(),
-                    "Today's Date"
+                    { paramsToSend }
                   )
                 )
                 .catch((err) =>
                   logger.error(
-                    err,
                     "error while triggering add credits webhooks failed",
-                    paramsToSend,
-                    new Date(),
-                    "Today's Date"
+                    err
                   )
                 );
             })
             .catch((error) => {
               logger.error(
                 "error in webhook",
-                error,
-                new Date(),
-                "Today's Date"
+                error
               );
             });
         }
@@ -1770,9 +1754,7 @@ export class CardDetailsControllers {
               .catch((error) => {
                 logger.error(
                   "error in webhook",
-                  error,
-                  new Date(),
-                  "Today's Date"
+                  error
                 );
               });
           }

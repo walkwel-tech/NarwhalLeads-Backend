@@ -44,7 +44,7 @@ export class nonBillableUsersController {
       } else {
         const salt = genSaltSync(10);
         const text = randomString(8, true);
-        logger.info("🚀 PASSWORD --->", text, new Date(), "Today's Date");
+        logger.info("🚀 PASSWORD --->", { text });
         const credentials = {
           email: input.email,
           password: text,

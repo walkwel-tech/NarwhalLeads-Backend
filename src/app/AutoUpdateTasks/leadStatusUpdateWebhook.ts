@@ -32,12 +32,11 @@ export async function sendBatchedUpdates(): Promise<any> {
         .then((response) => {
           logger.info(
             "Batched updates sent successfully.",
-            new Date(),
-            "Today's Date"
+            { response }
           );
         })
         .catch((error) => {
-          logger.error("Error sending batched updates:", error, new Date(), "Today's Date");
+          logger.error("Error sending batched updates:", error);
         });
     });
   }

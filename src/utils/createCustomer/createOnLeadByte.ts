@@ -50,7 +50,7 @@ export const createCustomerOnLeadByte = (params: CreateCustomerInput) => {
           resolve(response);
         })
         .catch(async (err) => {
-          logger.error("lead byte error", err, new Date(), "Today's Date");
+          logger.error("lead byte error", err);
           const logsData = {
             userId: params.userId,
             registrationId: REGISTRATION_IDS.NO_REGISTRATION_IDS,

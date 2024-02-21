@@ -28,12 +28,12 @@ export const updatePermissionsForUsers = async () => {
 
     await Promise.all(updateOperations);
 
-    logger.info("Permissions updated successfully.", new Date(), "Today's Date");
+    logger.info("Permissions updated successfully.");
   } catch (error) {
-    logger.error("Error updating permissions:", error, new Date(), "Today's Date");
+    logger.error("Error updating permissions:", error);
   } finally {
     mongoose.connection.close();
-    logger.info("MongoDB connection closed", new Date(), "Today's Date");
+    logger.info("MongoDB connection closed");
   }
 };
 

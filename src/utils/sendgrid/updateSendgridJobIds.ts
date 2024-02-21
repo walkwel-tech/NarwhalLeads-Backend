@@ -6,7 +6,7 @@ async function updateUserSendgridJobIds(userId: ObjectId, jobId: string) {
   try {
     await User.findByIdAndUpdate(userId, { $push: { sendgridJobIds: jobId } });
   } catch (error) {
-    logger.error("Error updating user sendgridJobIds:", error, new Date(), "Today's Date");
+    logger.error("Error updating user sendgridJobIds:", error);
   }
 }
 

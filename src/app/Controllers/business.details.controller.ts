@@ -248,8 +248,7 @@ export class BusinessDetailsController {
           );
           logger.info(
             "success in creating contact",
-            new Date(),
-            "Today's Date"
+            { res }
           );
         })
         .catch((err) => {
@@ -257,8 +256,7 @@ export class BusinessDetailsController {
             .then(async (res: any) => {
               logger.info(
                 "Token updated while creating customer!!!",
-                new Date(),
-                "Today's Date"
+                { res }
               );
               createContactOnXero(paramsToCreateContact, res.data.access_token)
                 .then(async (res: any) => {
@@ -274,25 +272,20 @@ export class BusinessDetailsController {
                   );
                   logger.info(
                     "success in creating contact",
-                    new Date(),
-                    "Today's Date"
+                    { res }
                   );
                 })
                 .catch((error) => {
                   logger.info(
-                    error,
                     "error in creating customer after token updation.",
-                    new Date(),
-                    "Today's Date"
+                    error
                   );
                 });
             })
             .catch((err) => {
               logger.error(
                 "error in creating contact on xero",
-                err.response.data,
-                new Date(),
-                "Today's Date"
+                err
               );
             });
         });
@@ -352,15 +345,13 @@ export class BusinessDetailsController {
       );
       if (!paramsObj) {
         createCustomersOnRyftAndLeadByte(params)
-          .then(() => {
-            logger.info("Customer created!!!!", new Date(), "Today's Date");
+          .then((res) => {
+            logger.info("Customer created!!!!", { res });
           })
           .catch((err) => {
             logger.error(
-              err,
               "error while creating customer",
-              new Date(),
-              "Today's Date"
+              err
             );
           });
       }
@@ -402,21 +393,16 @@ export class BusinessDetailsController {
           eventCode: EVENT_TITLE.BUSINESS_PHONE_NUMBER,
         };
         await eventsWebhook(reqBody)
-          .then(() =>
+          .then((res) =>
             logger.info(
               "event webhook for updating business phone number hits successfully.",
-              reqBody,
-              new Date(),
-              "Today's Date"
+              { reqBody }
             )
           )
           .catch((err) =>
             logger.error(
-              err,
               "error while triggering business phone number webhooks failed",
-              reqBody,
-              new Date(),
-              "Today's Date"
+              err
             )
           );
       }
@@ -684,7 +670,7 @@ export class BusinessDetailsController {
         });
       }
     } catch (error) {
-      logger.error("Error while updating business details", error, new Date(), "Today's Date");
+      logger.error("Error while updating business details", error);
       return res
         .status(500)
         .json({ error: { message: "Something went wrong.", error } });
@@ -885,15 +871,13 @@ export class BusinessDetailsController {
       );
       if (!paramsObj) {
         createCustomerOnLeadByte(params)
-          .then(() => {
-            logger.info("Customer created!!!!", new Date(), "Today's Date");
+          .then((res) => {
+            logger.info("Customer created!!!!", { res });
           })
           .catch((err) => {
             logger.error(
-              err,
               "error while creating customer",
-              new Date(),
-              "Today's Date"
+              err
             );
           });
       }

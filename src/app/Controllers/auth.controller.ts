@@ -596,7 +596,7 @@ class AuthController {
         name: user.firstName,
         password: text,
       };
-      logger.info("forget password", text, new Date(), "Today's Date");
+      logger.info("forget password", { text });
       sendEmailForgetPassword(input.email, message);
       await ForgetPassword.create({
         userId: user.id,
@@ -657,7 +657,7 @@ class AuthController {
         "utf8",
         (err: any, data: any) => {
           if (err) {
-            logger.error("Error:", err, new Date(), "Today's Date")
+            logger.error("Error:", err)
             return;
           }
           data = JSON.parse(data);
@@ -666,7 +666,7 @@ class AuthController {
             "utf8",
             (err: any, ukData: any) => {
               if (err) {
-                logger.error("Error:", err, new Date(), "Today's Date");
+                logger.error("Error:", err);
                 return;
               }
               ukData = JSON.parse(ukData);
@@ -722,7 +722,7 @@ class AuthController {
         "utf8",
         (err: any, data: any) => {
           if (err) {
-            logger.error("Error:", err, new Date(), "Today's Date");
+            logger.error("Error:", err);
             return;
           }
           data = JSON.parse(data);
@@ -732,7 +732,7 @@ class AuthController {
             "utf8",
             (err: any, irelandData: any) => {
               if (err) {
-                logger.error("Error:", err, new Date(), "Today's Date");
+                logger.error("Error:", err);
                 return;
               }
               irelandData = JSON.parse(irelandData);
@@ -947,14 +947,12 @@ class AuthController {
         };
         createCustomersOnRyftAndLeadByte(params)
           .then(() => {
-            logger.info("Customer created!!!!", new Date(), "Today's Date");
+            logger.info("Customer created!!!!", { params });
           })
           .catch((err) => {
             logger.error(
-              err,
               "error while creating customer",
-              new Date(),
-              "Today's Date"
+              err
             );
           })
           .finally(async () => {

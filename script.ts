@@ -22,7 +22,7 @@ const updateUserPermission = async () => {
       { new: true }
     );
 
-    logger.info("updated successfully.", result, ">>>>>", business);
+    logger.info("updated successfully.", { result, business });
   } catch (error) {
     logger.error("Error updating permissions:", error);
   }

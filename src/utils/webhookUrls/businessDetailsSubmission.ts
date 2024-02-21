@@ -22,9 +22,7 @@ export const businessDetailsSubmission = (data: any) => {
         .then(async (response) => {
           logger.info(
             "business data webhook hits successfully",
-            response.data,
-            new Date(),
-            "Today's Date"
+            { response }
           );
           const user = await User.findOne({ email: data.email });
           //fixme:
@@ -40,18 +38,11 @@ export const businessDetailsSubmission = (data: any) => {
         .catch((err) => {
           logger.error(
             "business data webhook hits error",
-            err.response?.data,
-            new Date(),
-            "Today's Date"
+            err
           );
         });
     } else {
-      logger.info(
-        "No Access for hitting business submission webhook to this " +
-          process.env.APP_ENV,
-        new Date(),
-        "Today's Date"
-      );
+      logger.info(`No Access for hitting business submission webhook to this ${process.env.APP_ENV}`);
     }
   });
 };

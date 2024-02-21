@@ -906,9 +906,7 @@ export class UsersControllers {
     } catch (err) {
       logger.error(
         "Error while showing all clients for admin export file", 
-        err, 
-        new Date(), 
-        "Today's Date"
+        err
       );
       return res
         .status(500)
@@ -1265,9 +1263,7 @@ export class UsersControllers {
         let transaction = await Transaction.create(dataToSave);
         logger.info(
           "transaction", 
-          transaction, 
-          new Date(), 
-          "Today's Date"
+          { transaction }
         );
         const paramPdf: generatePDFParams = {
           ContactID: checkUser?.xeroContactId,
@@ -1291,9 +1287,8 @@ export class UsersControllers {
             });
 
             logger.info(
-              "pdf generated", 
-              new Date(), 
-              "Today's Date"
+              "pdf generated",
+              { res }
             );
           })
           .catch(async (err) => {
@@ -1320,8 +1315,7 @@ export class UsersControllers {
 
                 logger.info(
                   "pdf generated", 
-                  new Date(), 
-                  "Today's Date"
+                  { res }
                 );
               });
             });
@@ -1446,21 +1440,16 @@ export class UsersControllers {
           eventCode: EVENT_TITLE.BUSINESS_PHONE_NUMBER,
         };
         await eventsWebhook(reqBody)
-          .then(() =>
+          .then((res) =>
             logger.info(
               "event webhook for updating business phone number hits successfully.",
-              reqBody, 
-              new Date(), 
-              "Today's Date"
+              { reqBody }
             )
           )
           .catch((err) =>
             logger.error(
-              err,
               "error while triggering business phone number webhooks failed",
-              reqBody,
-              new Date(), 
-              "Today's Date"
+              err
             )
           );
       }
@@ -1611,21 +1600,16 @@ export class UsersControllers {
             );
           }
           await eventsWebhook(paramsToSend)
-            .then(() =>
+            .then((res) =>
               logger.info(
                 "event webhook for postcode updates hits successfully.",
-                paramsToSend, 
-                new Date(), 
-                "Today's Date"
+                { paramsToSend }
               )
             )
             .catch((err) =>
               logger.error(
-                err,
                 "error while triggering postcode updates webhooks failed",
-                paramsToSend,
-                new Date(), 
-                "Today's Date"
+                err
               )
             );
         }
@@ -1730,18 +1714,13 @@ export class UsersControllers {
             .then(() =>
               logger.info(
                 "event webhook for postcode updates hits successfully.",
-                paramsToSend, 
-                new Date(), 
-                "Today's Date"
+                { paramsToSend }
               )
             )
             .catch((err) =>
               logger.error(
-                err,
                 "error while triggering postcode updates webhooks failed",
-                paramsToSend, 
-                new Date(), 
-                "Today's Date"
+                err
               )
             );
         }
@@ -1766,8 +1745,7 @@ export class UsersControllers {
             if (!checkUser.xeroContactId) {
               logger.info(
                 "xeroContact ID not found. Failed to generate pdf.",
-                new Date(),
-                "Today's Date"
+                { _res }
               );
             }
             const dataToSave: any = {
@@ -1805,8 +1783,7 @@ export class UsersControllers {
 
                   logger.info(
                     "pdf generated", 
-                    new Date(), 
-                    "Today's Date"
+                    { res }
                   );
                 })
                 .catch(async (err) => {
@@ -1833,8 +1810,7 @@ export class UsersControllers {
 
                       logger.info(
                         "pdf generated", 
-                        new Date(), 
-                        "Today's Date"
+                        { res }
                       );                    
                     });
                   });
@@ -1843,8 +1819,7 @@ export class UsersControllers {
 
             logger.info(
               "payment success!!!!!!!!!!!!!",
-              new Date(),
-              "Today's Date"
+              { _res }
             );
 
             await User.findByIdAndUpdate(
@@ -1872,9 +1847,7 @@ export class UsersControllers {
             await Transaction.create(dataToSave);
             logger.error(
               "error in payment Api", 
-              err, 
-              new Date(), 
-              "Today's Date"
+              err
             );
           });
       } else {
@@ -2073,8 +2046,8 @@ export class UsersControllers {
       await CardDetails.deleteMany({ userId: userExist?.id });
 
       deleteCustomerOnRyft(user?.ryftClientId as string)
-        .then(() => logger.info("deleted customer", new Date(), "Today's Date"))
-        .catch((err) => logger.error("error while deleting customer on ryft", err, new Date(), "Today's Date"))
+        .then((res) => logger.info("deleted customer", { res }))
+        .catch((err) => logger.error("error while deleting customer on ryft", err))
 
       if (!user) {
         return res
@@ -2249,7 +2222,6 @@ export class UsersControllers {
         item.businessDetailsId = businessDetailsId;
       });
 
-      logger.info(query.results, ">>>>>", new Date(), "Today's Date");
       const pref: ClientTablePreferenceInterface | null =
         await ClientTablePreference.findOne({ userId: _req.user.id });
       const filteredDataArray: DataObject[] = filterAndTransformData(
@@ -2590,8 +2562,7 @@ export class UsersControllers {
 
               logger.info(
                 "pdf generated", 
-                new Date(),
-                "Today's Date"
+                { res }
               );
             })
             .catch(async (err) => {
@@ -2619,8 +2590,7 @@ export class UsersControllers {
 
                   logger.info(
                     "pdf generated", 
-                    new Date(), 
-                    "Today's Date"
+                    { res }
                   );
                 });
               });
@@ -2656,20 +2626,13 @@ export class UsersControllers {
             .then(() =>
               logger.info(
                 "event webhook for add credits hits successfully.",
-                paramsToSend,
-                new Date(),
-                "Today's Date",
-                user._id,
-                "user's id"
+                { paramsToSend }
               )
             )
             .catch((err) =>
               logger.error(
-                err,                
                 "error while triggering webhooks for add credits failed",
-                paramsToSend,
-                new Date(),
-                "Today's Date"
+                err    
               )
             );
         });
@@ -2895,9 +2858,7 @@ export class UsersControllers {
     } catch (error) {
       logger.error(
         "Error in Auto charge:", 
-        error.response, 
-        new Date(), 
-        "Today's Date"
+        error
       );
     }
   };

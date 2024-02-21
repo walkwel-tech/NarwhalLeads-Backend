@@ -261,10 +261,10 @@ export class AdsController {
       if (req.file) {
         fs.unlink(process.cwd() + "/public" + adCheck.image, (err) => {
           if (err) {
-            logger.error("Error deleting previous image:", err, new Date(), "Today's Date");
+            logger.error("Error deleting previous image:", err);
           }
 
-          logger.info("Previous image deleted successfully.", new Date(), "Today's Date");
+          logger.info("Previous image deleted successfully.");
         });
       }
 
@@ -332,7 +332,7 @@ export class AdsController {
         return res.status(400).json({ error: "buisness industry not found" });
       }
       const currentDateUTC = new Date();
-      logger.info("Current Date UTC:", currentDateUTC.toISOString());
+      logger.info(`Current Date UTC: ${currentDateUTC.toISOString()}`);
       const ads = await Ad.aggregate([
         {
           $match: {

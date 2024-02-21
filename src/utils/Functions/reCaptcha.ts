@@ -22,7 +22,7 @@ export const reCaptchaValidation = (response: string) => {
         resolve(response.data.success);
       })
       .catch((error) => {
-        logger.error("ReCaptcha validation error:", error.message, new Date(), "Today's Date");
+        logger.error("ReCaptcha validation error:", error);
         reject(error);
       });
   });

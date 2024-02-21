@@ -31,7 +31,7 @@ export const getLeadCenterToken = () => {
         resolve(response.data);
       })
       .catch((err) => {
-        logger.error('Error:', err, new Date(), "Today's Date");
+        logger.error('Error:', err);
         reject(err.response);
       });
   });

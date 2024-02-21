@@ -54,15 +54,13 @@ export const createContactOnXero = (
           email: paramsToCreateContact.emailAddress,
         };
         createNotesOnXero(params, token)
-          .then(() =>
-            logger.info("notes added on xero", new Date(), "Today's Date")
+          .then((res) =>
+            logger.info("notes added on xero", { res })
           )
           .catch((err) =>
             logger.error(
-              err,
               "error while adding notes on xero.",
-              new Date(),
-              "Today's Date"
+              err
             )
           );
         const logsData = {
@@ -77,9 +75,7 @@ export const createContactOnXero = (
       .catch(async (err) => {
         logger.error(
           "Xero Error",
-          err?.response?.data,
-          new Date(),
-          "Today's Date"
+          err
         );
         const logsData = {
           userId: user?.id,
@@ -148,7 +144,7 @@ export const refreshTokenOld = () => {
     };
     axios(config)
       .then(async (data) => {
-        logger.info("token updated", new Date(), "Today's Date");
+        logger.info("token updated", { data });
         await AccessToken.updateMany(
           {},
           {
@@ -162,7 +158,7 @@ export const refreshTokenOld = () => {
         resolve(data);
       })
       .catch((err) => {
-        logger.error("error", err.response?.data, new Date(), "Today's Date");
+        logger.error("error", err);
         // reject(err)
       });
   });

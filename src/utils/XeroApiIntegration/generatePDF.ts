@@ -114,23 +114,19 @@ export const generatePDF = (param: generatePDFParams): Promise<XeroResponseInter
         .then(function (response: AxiosResponse<XeroResponseInterface>) {
           logger.info(
             "data while getting response of invoices",
-            response.data,
-            new Date(),
-            "Today's Date"
+            { response }
           );
 
           resolve(response.data);
         })
         .catch(function (error) {
-          logger.error(error.response?.data, new Date(), "Today's Date");
+          logger.error("Error", error);
 
           reject(error);
         });
     } else {
       logger.info(
-        "No Access for generating PDF to this " + process.env.APP_ENV,
-        new Date(),
-        "Today's Date"
+        `No Access for generating PDF to this ${process.env.APP_ENV}`
       );
     }
   });

@@ -32,12 +32,12 @@ export const createCustomField = async (
 
     const response = await axios.post(sendgridRequestUrl, data, config);
     logger.info(
-      `Custom field '${fieldName}' created with status code: ${response.status}`, new Date(), "Today's Date"
+      `Custom field '${fieldName}' created with status code: ${response.status}`, { response }
     );
 
     return { statusCode: response.status, body: response.data };
   } catch (error) {
-    logger.error('Error:', error, new Date(), "Today's Date");
+    logger.error('Error:', error);
     return { error: error };
   }
 };
@@ -48,8 +48,8 @@ export const createCustomField = async (
 
     await createCustomField("businessIndustry", "Text");
 
-    logger.info("Custom fields created successfully!", new Date(), "Today's Date");
+    logger.info("Custom fields created successfully!");
   } catch (error) {
-    logger.error("Error creating custom fields:", error, new Date(),"Today's Date");
+    logger.error("Error creating custom fields:", error);
   }
 })();

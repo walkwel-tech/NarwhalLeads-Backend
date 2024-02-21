@@ -22,8 +22,6 @@ export const sendLeadDataToZap = (
       .then(async (response) => {
         logger.info(
           "lead zap webhook hits successfully",
-          new Date(),
-          "Today's Date",
           user._id
         );
         let params = {
@@ -37,7 +35,7 @@ export const sendLeadDataToZap = (
         resolve(response);
       })
       .catch((err) => {
-        logger.error(err.response?.data, new Date(), "Today's Date", user._id);
+        logger.error("Error", err);
         let params = {
           userId: user?._id,
           eventType: EVENT_TYPE.WEBHOOK,

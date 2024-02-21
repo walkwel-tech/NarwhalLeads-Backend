@@ -12,7 +12,7 @@ export function DeleteFile(filePath: String): Boolean {
             return true;
         }
     } catch (err) {
-        logger.error('Error:', err, new Date, "Today's Date");
+        logger.error('Error:', err);
         return false;
     }
 }

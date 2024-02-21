@@ -77,7 +77,7 @@ export async function processUsers(userId: Types.ObjectId) {
     { new: true }
   );
   logger.info(
-    `Updated reportingStatus for user ${userId}, ${new Date()}`,
-    JSON.stringify(updatedUsers)
+    `Updated reportingStatus for user ${userId}`,
+    { updatedUsers }
   );
 }

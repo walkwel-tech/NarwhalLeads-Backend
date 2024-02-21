@@ -28,28 +28,20 @@ export const clientUpdateWebhookUrl = async (data: updateUserDetailsData) => {
         .then(async (response) => {
           logger.info(
             "Client Update WebhookUrl webhook hits successfully",
-            response.data,
-            new Date(),
-            "Today's Date"
+            { response }
           );
           resolve(response.data);
         })
         .catch((err) => {
           logger.error(
             "error while triggering client update webhook url",
-            data,
-            err.response?.data,
-            new Date(),
-            "Today's Date"
+            err
           );
           reject(err.response?.data);
         });
     } else {
       logger.info(
-        "No Access for hitting client update webhook to this " +
-          process.env.APP_ENV,
-        new Date(),
-        "Today's Date"
+        `No Access for hitting client update webhook to this ${process.env.APP_ENV}`
       );
     }
   });

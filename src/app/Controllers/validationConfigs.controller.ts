@@ -52,9 +52,7 @@ export class ValidationConfigController {
     } catch (error) {
       logger.error(
         "Error getting validation config:", 
-        error, 
-        new Date(), 
-        "Today's Date"
+        error
       );
       return res.status(500).json({ message: "Internal server error" });
     }

@@ -10,7 +10,7 @@ async function seed() {
 }
 
 seed().catch(err => {
-  logger.error('Error seeding database:', err, new Date(), "Today's Date");
+  logger.error('Error seeding database:', err);
   process.exit(1);
 });
 

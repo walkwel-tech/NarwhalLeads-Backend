@@ -20,25 +20,18 @@ export const fullySignupForNonBillableClients = async (details: Object) => {
         .then(async (response) => {
           logger.info(
             "fullySignupForNonBillableClients webhook hits successfully",
-            response.data,
-            new Date(),
-            "Today's Date"
+            { response }
           );
         })
         .catch((err) => {
           logger.error(
             "fullySignupForNonBillableClients webhook hits error",
-            err.response?.data,
-            new Date(),
-            "Today's Date"
+            err
           );
         });
     } else {
       logger.info(
-        "No Access for hitting business submission webhook to this " +
-          process.env.APP_ENV,
-        new Date(),
-        "Today's Date"
+        `No Access for hitting business submission webhook to this ${process.env.APP_ENV}`
       );
     }
   });

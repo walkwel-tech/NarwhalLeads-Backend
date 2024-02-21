@@ -21,7 +21,7 @@ export const getAccountManagerForRoundManager = async () => {
 
     return id;
   } catch (err) {
-    logger.error("Error:", err, new Date(), "Today's Date");
+    logger.error("Error:", err);
   }
   return;
 };

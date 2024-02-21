@@ -63,7 +63,7 @@ export class freeCreditsLinkController {
           .json({ error: { message: "Top-up amount is required" } });
       }
     } catch (error) {
-      logger.error(error, new Date(), "Today's Date");
+      logger.error('Error:', error);
       res
         .status(500)
         .json({ error: { message: "something Went wrong.", error } });

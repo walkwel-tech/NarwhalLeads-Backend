@@ -478,7 +478,7 @@ export class DashboardController {
         return res.json({ data });
       }
     } catch (err) {
-      logger.error("Error while showing commissions", err, new Date(), "Today's Date");
+      logger.error("Error while showing commissions", err);
       return res
         .status(500)
         .json({ error: { message: "Something went wrong.", err } });

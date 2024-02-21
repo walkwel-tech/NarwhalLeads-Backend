@@ -15,7 +15,7 @@ const { channel, webhook } = configureSlackWebhooks();
 export const slackWebhook = async ({firstName, lastName, phoneNumber, id}: UserInterface, intentId: string) => {
     return new Promise(async (resolve, reject) => {
         if (!channel || !webhook) {
-            logger.error('Error: Slack webhook is not configured.', new Date(), "Today's Date");
+            logger.error('Error: Slack webhook is not configured.');
             reject('Error: Slack webhook is not configured.');
         }
 
@@ -28,10 +28,10 @@ export const slackWebhook = async ({firstName, lastName, phoneNumber, id}: UserI
                     User ID: ${id}
                     Intent ID: ${intentId} `
         }).then((response) => {
-            logger.info('Slack webhook triggered @', new Date(), JSON.stringify(response));
+            logger.info('Slack webhook triggered @', { response });
             resolve(response);
         }).catch((err) => {
-            logger.error('There was an error triggering Slack Webhook @', new Date(), JSON.stringify(err));
+            logger.error('There was an error triggering Slack Webhook @', err);
             reject(err);
         })
     });

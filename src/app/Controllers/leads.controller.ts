@@ -132,18 +132,13 @@ export class LeadsController {
           .then(() =>
             logger.info(
               "event webhook for zero credits hits successfully..",
-              paramsToSend,
-              new Date(),
-              "Today's Date"
+              { paramsToSend }
             )
           )
           .catch((err) =>
             logger.error(
-              err,
               "error while triggering zero credits webhooks failed",
-              paramsToSend,
-              new Date(),
-              "Today's Date"
+              err
             )
           );
       }
@@ -308,18 +303,13 @@ export class LeadsController {
           .then(() =>
             logger.info(
               "event webhook for zero credits hits successfully.",
-              paramsToSend, 
-              new Date(), 
-              "Today's Date"
+              { paramsToSend }
             )
           )
           .catch((err) =>
             logger.error(
-              err,
               "error while triggering zero credits webhooks failed",
-              paramsToSend,
-              new Date(), 
-              "Today's Date"
+              err
             )
           );
       }
@@ -339,9 +329,7 @@ export class LeadsController {
             });
           } else {
             logger.info(
-              "Email already send.", 
-              new Date(), 
-              "Today's Date"
+              "Email already sent."
             );
           }
         }
@@ -352,9 +340,7 @@ export class LeadsController {
           });
         } else {
           logger.info(
-            "Email already send.", 
-            new Date(), 
-            "Today's Date"
+            "Email already sent."
           );
         }
       }
@@ -419,9 +405,7 @@ export class LeadsController {
     } catch (error) {
       logger.error(
         "Error while creating leads.", 
-        error, 
-        new Date(), 
-        "Today's Date"
+        error
       );
       return res
         .status(500)
@@ -596,11 +580,10 @@ export class LeadsController {
           cpl: parseFloat(leadUser?.leadCost)
         };
         leadReportAcceptedWebhook(leadUser, reqBody)
-          .then(() => {
+          .then((res) => {
             logger.info(
               "lead Report accepted Webhook webhook hits successfully",
-              new Date(),
-              "Today's Date"
+              { res }
             );
           })
           .catch((err) => {
@@ -608,36 +591,29 @@ export class LeadsController {
               getLeadCenterToken()
                 .then((res) => {
                   leadReportAcceptedWebhook(leadUser, reqBody)
-                    .then(() => {
+                    .then((res) => {
                       logger.info(
                         "lead Report accepted Webhook webhook hits successfully",
-                        new Date(),
-                        "Today's Date"
+                        { res }
                       );
                     })
                     .catch((err) =>
                       logger.error(
                         "error in hitting webhook for report accepted",
-                        err,
-                        new Date(),
-                        "Today's Date"
+                        err
                       )
                     );
                 })
                 .catch((err) => {
                   logger.error(
                     "login error", 
-                    err, 
-                    new Date(), 
-                    "Today's Date"
+                    err
                   );
                 });
             } else {
               logger.error(
                 "body not passed properly", 
-                err, 
-                new Date(), 
-                "Today's Date"
+                err
               );
             }
           });
@@ -668,9 +644,7 @@ export class LeadsController {
           .catch(async (err) => {
             logger.info(
               "error while adding credits",
-              err,
-              new Date(),
-              "Today's Date"
+              err
             );
             const dataToSave: any = {
               userId: user?.id,
@@ -1221,9 +1195,7 @@ export class LeadsController {
           .catch((error: any) => {
             logger.error(
               "ERROR: ", 
-              error, 
-              new Date(), 
-              "Today's Date"
+              error
             );
           });
         // Use explicit Promise construction
@@ -1265,9 +1237,7 @@ export class LeadsController {
         .catch((error) => {
           logger.error(
             "Error:", 
-            error, 
-            new Date(), 
-            "Today's Date"
+            error
           );
         });
     } catch (err) {
@@ -1536,17 +1506,13 @@ export class LeadsController {
         .catch((error) => {
           logger.error(
             "Error:", 
-            error, 
-            new Date(), 
-            "Today's Date"
+            error
           );
         });
     } catch (err) {
       logger.error(
         "Error while showing reported leads", 
-        err, 
-        new Date(), 
-        "Today's Date"
+        err
       );
       return res.status(500).json({
         error: {
@@ -1789,9 +1755,7 @@ export class LeadsController {
         .catch((error) => {
           logger.error(
             "Error:", 
-            error, 
-            new Date(), 
-            "Today's Date"
+            error
           );
         });
     } catch (err) {
@@ -2019,9 +1983,7 @@ export class LeadsController {
             .catch((error) => {
               logger.error(
                 "Error:", 
-                error, 
-                new Date(), 
-                "Today's Date"
+                error
               );
               // item.leads.businessName = "Deleted";
               // item.leads.businessIndustry = "Deleted";
@@ -2049,9 +2011,7 @@ export class LeadsController {
         .catch((error) => {
           logger.error(
             "Error:", 
-            error, 
-            new Date(), 
-            "Today's Date"
+            error
           );
         });
       // })
@@ -2185,9 +2145,7 @@ export class LeadsController {
           apiResponse.on("error", function (error: any) {
             logger.error(
               "Error:", 
-              error, 
-              new Date(), 
-              "Today's Date"
+              error
             );
           });
         }
@@ -2812,7 +2770,7 @@ export class LeadsController {
           },
         },
       ]);
-      logger.info(pref[0]?.columns, ">>>>> pref", new Date(), "Today's Date")
+      logger.info("pref", pref[0]?.columns)
       const filteredDataArray: DataObject[] = filterAndTransformData(
         //@ts-ignore
         [...pref[0]?.columns, {isVisible: true, displayName: "Client Notes", originalName: "clientNotes"}],

@@ -38,8 +38,7 @@ export const leadReportAcceptedWebhook = (
         .then(async (response) => {
           logger.info(
             "lead Report accepted Webhook webhook hits successfully",
-            new Date(),
-            "Today's Date"
+            { response }
           );
           const params = {
             userId: user?._id,
@@ -54,9 +53,7 @@ export const leadReportAcceptedWebhook = (
         .catch((err) => {
           logger.error(
             "lead Report accepted Webhook webhook hits error",
-            err.response,
-            new Date(),
-            "Today's Date"
+            err
           );
           let params = {
             userId: user?._id,

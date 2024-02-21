@@ -19,7 +19,7 @@ export const paymentFailedWebhook = async (
 ) => {
   return new Promise(async (resolve, reject) => {
     if (!webhookURL) {
-      logger.error("Error: Webhook is not configured.", new Date(), "Today's Date");
+      logger.error("Error: Webhook is not configured.");
       reject("Error: Webhook is not configured.");
     }
 
@@ -53,14 +53,13 @@ export const paymentFailedWebhook = async (
 
     axios(config)
       .then((response) => {
-        logger.info("Payment failed webhook triggered @", new Date(), response);
+        logger.info("Payment failed webhook triggered @", response);
         resolve(response);
       })
       .catch((err) => {
         logger.error(
           "There was an error triggering payment failed Webhook @",
-          new Date(),
-          JSON.stringify(err.message)
+          err
         );
         reject(err);
       });

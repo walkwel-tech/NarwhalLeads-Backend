@@ -21,18 +21,15 @@ export const leadReportWebhook = (data: any) => {
       axios(config)
         .then(async (response) => {
           logger.info(
-            "lead Report accepted Webhook webhook hits successfully",
-            new Date(),
-            "Today's Date"
+            "lead Report accepted Webhook webhook hits successfully", 
+            { response }
           );
           resolve(response.data);
         })
         .catch((err) => {
           logger.error(
             "lead Report accepted Webhook webhook hits error",
-            err,
-            new Date(),
-            "Today's Date"
+            err
           );
 
           reject(err.response);

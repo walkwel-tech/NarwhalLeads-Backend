@@ -34,7 +34,7 @@ export const generatePdfAsync = (userId: UserInterface, transaction: Transaction
                     invoiceId: res.Invoices[0].InvoiceID,
                 });
 
-                logger.info("pdf generated", new Date(), "Today's Date");
+                logger.info("pdf generated", { res });
 
                 resolve(invoice)
             })
@@ -67,14 +67,13 @@ export const generatePdfAsync = (userId: UserInterface, transaction: Transaction
 
                         logger.info(
                             "pdf generated",
-                            new Date(),
-                            "Today's Date"
+                            { res }
                         );
                     }).catch((err) => {
-                        logger.error("Error while generating pdf.", JSON.stringify(err), new Date(), "Today's Date")
+                        logger.error("Error while generating pdf.", err)
                     });
                 }).catch((err) => {
-                    logger.error("Error in retreiving refresh token", JSON.stringify(err), new Date(), "Today's Date")
+                    logger.error("Error in retreiving refresh token", err)
                 });
             });
     })

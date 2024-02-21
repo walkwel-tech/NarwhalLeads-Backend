@@ -35,7 +35,7 @@ export const leadDetailsSubmission = (data: any) => {
           }
         });
     } else {
-      logger.info("No Access to this APP_ENV", new Date(), "Today's Date");
+      logger.info("No Access to this APP_ENV");
     }
   });
 };

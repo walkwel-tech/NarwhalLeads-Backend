@@ -47,9 +47,7 @@ export const createContact = async (
   } catch (error) {
     logger.error(
       "Error:",
-      error,
-      new Date(),
-      "Today's Date"
+      error
     );
     return { error: error };
   }

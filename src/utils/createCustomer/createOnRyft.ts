@@ -38,7 +38,7 @@ export const createCustomerOnRyft = (params: Record<string, any>) => {
         resolve(response);
       })
       .catch(async (err) => {
-        logger.error("ryft error", err.response?.data, new Date(), "Today's Date");
+        logger.error("ryft error", err);
         const logsData = {
           userId: params.userId,
           registrationId: REGISTRATION_IDS.NO_REGISTRATION_IDS,
