@@ -2496,7 +2496,7 @@ export class UsersControllers {
         (await User.findById(input.userId)
           .populate("userLeadsDetailsId")
           .populate("businessDetailsId")) ?? ({} as UserInterface);
-      const credits = input.credits * parseInt(user?.leadCost);
+      const credits = input.credits * parseFloat(user?.leadCost);
       if (user?.isDeleted) {
         return res.status(400).json({
           error: {
@@ -2525,7 +2525,7 @@ export class UsersControllers {
           userId: user.id,
           amount: Math.abs(credits),
           status: PAYMENT_STATUS.CAPTURED,
-          title: transactionTitle.MANUAL_ADJUSTMENT,
+          title: credits <= 0 ? transactionTitle.MANUAL_DEDUCTION : transactionTitle.MANUAL_ADJUSTMENT ,
           paymentType: transactionTitle.MANUAL_ADJUSTMENT,
         };
         // if (user?.credits < credits) {
@@ -2548,7 +2548,7 @@ export class UsersControllers {
             desc: transactionTitle.CREDITS_ADDED,
             amount: 0,
             freeCredits: credits,
-            sessionId: transactionTitle.MANUAL_ADJUSTMENT,
+            sessionId: credits <= 0 ? transactionTitle.MANUAL_DEDUCTION : transactionTitle.MANUAL_ADJUSTMENT,
             isManualAdjustment: true,
           };
           if (input?.generateInvoice) {
