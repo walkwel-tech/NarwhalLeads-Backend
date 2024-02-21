@@ -119,7 +119,6 @@ export class Server {
     this.app.use('/api/v1/adminSettings', Auth, adminSettingsRoutes)
     this.app.use("/api/v1/validationConfigs", Auth,validationConfigRoutes)
     
-
     this.app.post(
       "/api/v1/notification-webhook",
       (req: Request, res: Response) => {
@@ -132,7 +131,6 @@ export class Server {
 
     this.app.get("*", (req: Request, res: Response) => {
       res.sendFile(path.join(__dirname, "../build", "index.html"));
-      // res.status(200).json({message: `App running on version ${version}`});
     });
   }
 
