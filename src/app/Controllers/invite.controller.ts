@@ -11,6 +11,7 @@ import { User } from "../Models/User";
 import { ClientTablePreference } from "../Models/ClientTablePrefrence";
 import { UserInterface } from "../../types/UserInterface";
 import { Permissions } from "../Models/Permission";
+import logger from "../../utils/winstonLogger/logger";
 
 const LIMIT = 10;
 export class invitedUsersController {
@@ -55,7 +56,7 @@ export class invitedUsersController {
       } else {
         const salt = genSaltSync(10);
         const text = randomString(8, true);
-        console.log("🚀 PASSWORD --->", text, new Date(), "Today's Date");
+        logger.info("🚀 PASSWORD --->", { text });
         const credentials = {
           email: input.email,
           password: text,
@@ -345,7 +346,7 @@ export class invitedUsersController {
             password: text,
           };
           const hashPassword = hashSync(text, salt);
-          console.log("password", text, new Date(), "Today's Date");
+          logger.info("password", { text });
           input.password = hashPassword;
           sendEmailToInvitedAdmin(input.email, dataToSend);
           const permission = await Permissions.findOne({
@@ -404,7 +405,7 @@ export class invitedUsersController {
             password: text,
           };
           const hashPassword = hashSync(text, salt);
-          console.log("password", text, new Date(), "Today's Date");
+          logger.info("password", { text });
           input.password = hashPassword;
           sendEmailToInvitedAccountManager(input.email, dataToSend);
           const permission = await Permissions.findOne({
@@ -468,7 +469,7 @@ export class invitedUsersController {
               password: text,
             };
             const hashPassword = hashSync(text, salt);
-            console.log("password", text, new Date(), "Today's Date");
+            logger.info("password", { text });
             input.password = hashPassword;
             sendEmailToInvitedAdmin(input.email, dataToSend);
             const permission = await Permissions.findOne({

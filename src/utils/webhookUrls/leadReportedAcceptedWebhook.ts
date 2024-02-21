@@ -4,6 +4,7 @@ import { LeadCenterCredential } from "../../app/Models/LeadCenterCredential";
 import { EVENT_TITLE, EVENT_TYPE } from "../constantFiles/events";
 import { saveEventLogs } from "../Functions/saveLogs";
 import { UserInterface } from "../../types/UserInterface";
+import logger from "../winstonLogger/logger";
 const POST = "post";
 interface leadReportAcceptedWebhookData {
   lead_id: string;
@@ -35,10 +36,9 @@ export const leadReportAcceptedWebhook = (
     if (checkAccess()) {
       axios(config)
         .then(async (response) => {
-          console.log(
+          logger.info(
             "lead Report accepted Webhook webhook hits successfully",
-            new Date(),
-            "Today's Date"
+            { response }
           );
           const params = {
             userId: user?._id,
@@ -51,11 +51,9 @@ export const leadReportAcceptedWebhook = (
           resolve(response.data);
         })
         .catch((err) => {
-          console.log(
+          logger.error(
             "lead Report accepted Webhook webhook hits error",
-            err.response,
-            new Date(),
-            "Today's Date"
+            err
           );
           let params = {
             userId: user?._id,

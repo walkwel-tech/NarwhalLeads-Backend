@@ -1,6 +1,7 @@
 import { Types } from "mongoose";
 import { User } from "../../Models/User";
 import { userStatus } from "../../Inputs/GetClients.input";
+import logger from "../../../utils/winstonLogger/logger";
 
 const daysAgo = (day: number) =>
   new Date(Date.now() - day * 24 * 60 * 60 * 1000);
@@ -75,8 +76,5 @@ export async function processUsers(userId: Types.ObjectId) {
     { $set: { clientStatus: user[0].clientStatus } },
     { new: true }
   );
-  console.log(
-    `Updated reportingStatus for user ${userId}, ${new Date()}`,
-    JSON.stringify(updatedUsers)
-  );
+  logger.debug(`Updated reportingStatus for user ${userId}`, { updatedUsers });
 }

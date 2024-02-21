@@ -1,5 +1,6 @@
 import * as cron from "node-cron";
 import { updateSupplierBatch } from "./processBatch";
+import logger from "../../../utils/winstonLogger/logger";
 // import { updateReport } from ".";
 
 export const checkSupplierWebsite = () => {
@@ -8,7 +9,7 @@ export const checkSupplierWebsite = () => {
     try {
       await updateSupplierBatch(100);
     } catch (err) {
-      console.error("Client status update cron hits successfully", new Date());
+      logger.error("Client status update cron hits successfully", err);
     }
   });
 };

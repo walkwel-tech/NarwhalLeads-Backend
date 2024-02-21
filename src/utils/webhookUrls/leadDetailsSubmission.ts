@@ -2,6 +2,7 @@ import axios from "axios";
 import { Leads } from "../../app/Models/Leads";
 import { handleFailedWebhookURLHitLeadSubmissionOver12Hours } from "../../app/AutoUpdateTasks/leadStatusUpdateWebhook";
 import { checkAccess } from "../../app/Middlewares/serverAccess";
+import logger from "../winstonLogger/logger";
 const POST = "post";
 export const leadDetailsSubmission = (data: any) => {
   return new Promise((resolve, reject) => {
@@ -34,7 +35,7 @@ export const leadDetailsSubmission = (data: any) => {
           }
         });
     } else {
-      console.log("No Access to this APP_ENV", new Date(), "Today's Date");
+      logger.info("No Access to this APP_ENV");
     }
   });
 };

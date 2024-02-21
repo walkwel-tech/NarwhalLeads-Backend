@@ -1,11 +1,11 @@
 import { ActivityLogsInterface } from "../../types/ActivityLogInterface";
-
 import { UserInterface } from "../../types/UserInterface";
 import { activityLogsWebhookUrl } from "../../utils/webhookUrls/activityLogsWebhook";
 import { ActivityLogs } from "../Models/ActivityLogs";
 import { BusinessDetails } from "../Models/BusinessDetails";
 import { User } from "../Models/User";
 import * as cron from "node-cron";
+import logger from "../../utils/winstonLogger/logger";
 
 export const activityLogs = async () => {
   cron.schedule("*/10 * * * *", async () => {
@@ -40,10 +40,8 @@ export const activityLogs = async () => {
       const data = transformData(userData);
       await activityLogsWebhookUrl(data);
     } else {
-      console.log(
-        "No Data Found for 10 minutes activity logs",
-        new Date(),
-        "Today's Date"
+      logger.info(
+        "No Data Found for 10 minutes activity logs"
       );
     }
   });
