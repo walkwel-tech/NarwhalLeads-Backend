@@ -10,7 +10,6 @@ import {
   UserRoutes,
   ProfileRoutes,
   CardDetailsRoutes,
-  AdminSettingsRoutes,
   LeadsRoutes,
   BusinessDetailsRoutes,
   userLeadsDetailsRoutes,
