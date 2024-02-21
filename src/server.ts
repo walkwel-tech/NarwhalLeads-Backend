@@ -38,6 +38,7 @@ import dashboardRoutes from "./routes/dashboard.routes";
 import adsRoutes from "./routes/ads.routes";
 import postCodeAnalyticsRoutes from  "./routes/postCodeAnalytics.routes"
 import validationConfigRoutes from "./routes/validationConfig.routes";
+import freeCreditsLinkContentRoutes from "./routes/freeCreditsLinkContent.routes";
 
 const swaggerDocument = require("../swagger.json"); // Replace with the path to your actual Swagger document
 const swaggerUi = require("swagger-ui-express");
@@ -117,8 +118,8 @@ export class Server {
     this.app.use("/api/v1/postal-dash", Auth, postCodeAnalyticsRoutes)
     this.app.use('/api/v1/supplier-badges', supplierBadgeRoutes)
     this.app.use("/api/v1/validationConfigs", Auth,validationConfigRoutes)
+    this.app.use("/api/v1/freeCreditsLink-content", freeCreditsLinkContentRoutes)
     
-
     this.app.post(
       "/api/v1/notification-webhook",
       (req: Request, res: Response) => {
