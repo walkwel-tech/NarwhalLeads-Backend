@@ -55,7 +55,6 @@ import { countryCurrency } from "../../utils/constantFiles/currencyConstants";
 import { createContact } from "../../utils/sendgrid/createContactSendgrid";
 import { updateUserSendgridJobIds } from "../../utils/sendgrid/updateSendgridJobIds";
 import { SENDGRID_STATUS_PERCENTAGE } from "../../utils/constantFiles/sendgridStatusPercentage";
-import { checkAccess } from "../Middlewares/serverAccess";
 
 const ObjectId = mongoose.Types.ObjectId;
 
@@ -168,14 +167,23 @@ export class BusinessDetailsController {
         dataToSave.businessLogo = `${FileEnum.PROFILEIMAGE}${req?.file.filename}`;
       }
       const userData = await BusinessDetails.create(dataToSave);
-
       const industry: BuisnessIndustriesInterface =
         (await BuisnessIndustries.findOne({
           industry: input?.businessIndustry,
         })) ?? ({} as BuisnessIndustriesInterface);
+
+        const isUser = await User.findById(input.userId);
+        const promoLink = await FreeCreditsLink.findById(isUser?.promoLinkId)
+        let updatedLeadCost = industry?.leadCost;
+
+        if (promoLink && promoLink.discount && promoLink.discount !== 0) {
+          const discount: number = promoLink.discount;
+          const discountedAmount = (discount / 100) * (industry?.leadCost);
+          updatedLeadCost -= discountedAmount;
+        }
       await User.findByIdAndUpdate(input.userId, {
         businessDetailsId: new ObjectId(userData._id),
-        leadCost: industry?.leadCost,
+        leadCost: updatedLeadCost,
         businessIndustryId: industry?.id,
         currency: industry.associatedCurrency,
         country: industry.country,
@@ -185,8 +193,8 @@ export class BusinessDetailsController {
       });
       const user: UserInterface =
         (await User.findById(input.userId)) ?? ({} as UserInterface);
-      if (checkAccess()) {
-        const sendgridResponse = await createContact(userEmail, {
+        if (process.env.SENDGRID_API_KEY) {
+          const sendgridResponse = await createContact(userEmail, {
           signUpStatus:
             SENDGRID_STATUS_PERCENTAGE.BUSINESS_DETAILS_PERCENTAGE || "",
           businessIndustry: Business?.businessIndustry,

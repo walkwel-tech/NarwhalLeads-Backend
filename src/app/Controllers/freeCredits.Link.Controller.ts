@@ -27,8 +27,11 @@ export class freeCreditsLinkController {
         useCounts: 0,
         name: input.name,
         accountManager: input.accountManager,
+        discount: input.discount || 0,
         isCommission: input?.isCommission,
         businessIndustryId: input?.businessIndustryId,
+        giveCreditOnAddCard: input?.giveCreditOnAddCard,
+        firstCardBonusCredit: input?.firstCardBonusCredit
       };
       if (input.code) {
         dataToSave.code = input.code;
@@ -140,11 +143,14 @@ export class freeCreditsLinkController {
             isUsed: 1,
             usedAt: 1,
             topUpAmount: 1,
+            discount: 1,
             createdAt: 1,
             updatedAt: 1,
             isDeleted: 1,
             isCommission: 1,
             accountManager: 1,
+            giveCreditOnAddCard: 1,
+            firstCardBonusCredit: 1,
             __v: 1,
             businessIndustryId: 1,
             users: {
@@ -194,6 +200,7 @@ export class freeCreditsLinkController {
           useCounts: item.useCounts,
           maxUseCounts: item.maxUseCounts,
           isDisabled: item.isDisabled,
+          discount: item.discount,
           isUsed: item.isUsed,
           usedAt: item.usedAt,
           topUpAmount: item.topUpAmount,
@@ -205,6 +212,8 @@ export class freeCreditsLinkController {
           accountManager: "",
           businessIndustryId: item?.businessIndustryId[0]?.industry,
           isCommission: item?.isCommission,
+          giveCreditOnAddCard: item?.giveCreditOnAddCard,
+          firstCardBonusCredit: item?.firstCardBonusCredit
         };
         if (item.accountManager.length > 0) {
           dataToShow.accountManager = `${

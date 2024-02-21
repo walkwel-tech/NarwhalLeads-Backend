@@ -111,7 +111,6 @@ import { createContact } from "../../utils/sendgrid/createContactSendgrid";
 import { BuisnessIndustries } from "../Models/BuisnessIndustries";
 import { updateUserSendgridJobIds } from "../../utils/sendgrid/updateSendgridJobIds";
 import { SENDGRID_STATUS_PERCENTAGE } from "../../utils/constantFiles/sendgridStatusPercentage";
-import { checkAccess } from "../Middlewares/serverAccess";
 
 const ObjectId = mongoose.Types.ObjectId;
 
@@ -1317,7 +1316,7 @@ export class CardDetailsControllers {
               );
               let message = {
                 firstName: userId?.firstName,
-                amount: amount ? amount / 100 : amount,
+                amount: amount? (amount/100):amount,
                 cardHolderName: `${userId?.firstName} ${userId?.lastName}`,
                 cardNumberEnd: cardDetails?.cardNumber,
                 credits: userId?.credits,
@@ -1652,6 +1651,7 @@ export class CardDetailsControllers {
           (await User.findOne({
             stripeClientId: details.customer,
           })) ?? ({} as UserInterface);
+
         const cards = await CardDetails.findOne({
           userId: user?._id,
           isDeleted: false,
@@ -1720,9 +1720,31 @@ export class CardDetailsControllers {
             fixedAmount: 0,
           };
 
-          if (credits) {
+          // adding check of promolink
+          const freeCreditsDoc = await FreeCreditsLink.findById(user.promoLinkId)
+
+          if (process.env.SENDGRID_API_KEY) {
+            const businessIndustryId = user?.businessIndustryId ?? "";
+
+            const industry = await BuisnessIndustries.findById(
+              businessIndustryId
+            );
+
+            const industryName = industry ? industry.industry : "";
+
+            const sendgridResponse = await createContact(user.email, {
+              signUpStatus:
+                SENDGRID_STATUS_PERCENTAGE.CARD_DETAILS_PERCENTAGE || "",
+              businessIndustry: industryName,
+            });
+            const jobId = sendgridResponse?.body?.job_id;
+
+            await updateUserSendgridJobIds(user.id, jobId);
+          }
+
+          if (credits || freeCreditsDoc?.giveCreditOnAddCard) {
             // params.freeCredits = credits
-            params.fixedAmount = credits;
+            params.fixedAmount = freeCreditsDoc?.giveCreditOnAddCard ?  freeCreditsDoc?.firstCardBonusCredit as number : credits;
 
             let transactionData = {
               userId: user?.id,
@@ -1730,33 +1752,17 @@ export class CardDetailsControllers {
               title: "",
               cardId: cards?._id,
               isCredited: true,
-              creditsLeft: (user?.credits || 0) + (params.freeCredits || 0),
+              creditsLeft: (user?.credits || 0) + (params.fixedAmount || 0),
               paymentMethod: details?.payment_method,
             };
-            if (checkAccess()) {
-              const businessIndustryId = user?.businessIndustryId ?? "";
-
-              const industry = await BuisnessIndustries.findById(
-                businessIndustryId
-              );
-
-              const industryName = industry ? industry.industry : "";
-
-              const sendgridResponse = await createContact(user.email, {
-                signUpStatus:
-                  SENDGRID_STATUS_PERCENTAGE.CARD_DETAILS_PERCENTAGE || "",
-                businessIndustry: industryName,
-              });
-              const jobId = sendgridResponse?.body?.job_id;
-
-              await updateUserSendgridJobIds(user.id, jobId);
-            }
+           
 
             addCreditsToBuyer(params)
               .then(async (res) => {
                 transactionData.status = PAYMENT_STATUS.CAPTURED;
                 transactionData.title = transactionTitle.FREE_LEADS_ADDED;
                 transactionData.isCredited = true;
+                fullySignupWithCredits(user.id, card.id, process.env.FIRST_CARD_WEBHOOK_URL)
 
                 await Transaction.create(transactionData);
               })
@@ -1882,7 +1888,7 @@ async function cardAddBonusCheck(userId: Types.ObjectId): Promise<number> {
   ) {
     const leadCost: string = userData.leadCost;
     leads = freeCreditsConfig.amount;
-    freeCredits = leads * parseInt(leadCost);
+        freeCredits = leads * parseInt(leadCost);
 
     return freeCredits;
   }

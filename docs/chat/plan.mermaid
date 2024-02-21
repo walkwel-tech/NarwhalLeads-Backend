@@ -1,0 +1,32 @@
+gantt
+    dateFormat DD/MM/YY
+    title Chat Module
+    excludes weekends
+    axisFormat %b %d
+    tickInterval 7day
+    weekday monday
+    todayMarker off
+
+
+    section Auth Server
+        Core Server : authCore, 22/02/24, 27/02/24
+        Dashboard Migration: authDashboardMigration, 27/02/24, 29/02/24
+        Website Migration: authWebsiteMigration, 27/02/24, 01/03/24
+        Dashboard Integration: authDashboardIntegration, 01/03/24, 05/03/24
+        Website Integration: authWebsiteIntegration, 01/03/24, 05/03/24
+
+    section Progressive Web App
+        Dashboard PWA: pwaDashboard, 27/02/24, 29/02/24
+        Website PWA: pwaWebsite, 27/02/24, 29/02/24
+
+
+    section Notification Server
+        Notification Core: notificationCore, 27/02/24, 29/02/24
+        Notification Dashboard: notificationDashboard, 01/03/24, 05/03/24
+        Notification Website: notificationWebsite, 01/03/24, 05/03/24
+
+    section Chat Server
+        Chat Core: chatCore, 27/02/24, 02/03/24
+        Chat Dashboard: chatDashboard, 01/03/24, 07/03/24
+        Chat Website: chatWebsite, 01/03/24, 07/03/24
+        Media: chatMediaServer, 05/03/24, 08/03/24

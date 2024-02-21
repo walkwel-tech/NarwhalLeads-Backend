@@ -275,7 +275,7 @@ const UserSchema = new Schema(
     sendgridJobIds: {
         type: [String],
         default: [],
-      },   
+      },
   },
   { timestamps: true }
 );

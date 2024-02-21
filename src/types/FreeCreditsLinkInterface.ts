@@ -19,4 +19,7 @@ export interface freeCreditsLinkInterface extends Document {
   deletedAt: Date;
   accountManager: Types.ObjectId;
   businessIndustryId: Types.ObjectId;
+  giveCreditOnAddCard: String,
+  firstCardBonusCredit: Number
+  discount: number
 }

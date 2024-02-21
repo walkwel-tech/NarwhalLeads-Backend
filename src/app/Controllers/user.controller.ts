@@ -2,6 +2,9 @@ import { genSaltSync, hashSync } from "bcryptjs";
 import { validate } from "class-validator";
 import { Request, Response } from "express";
 import mongoose, { PipelineStage, Types } from "mongoose";
+import {clientTablePreference} from "../../utils/constantFiles/clientTablePreferenceAdmin";
+import {MODULE, PERMISSIONS} from "../../utils/Enums/permissions.enum";
+import {userHasAccess} from "../../utils/userHasAccess";
 import { RolesEnum } from "../../types/RolesEnum";
 import { ValidationErrorResponse } from "../../types/ValidationErrorResponse";
 import { paymentMethodEnum } from "../../utils/Enums/payment.method.enum";
@@ -82,7 +85,6 @@ import { updateReport } from "../AutoUpdateTasks/ReportingStatusUpdate";
 import { createContact } from "../../utils/sendgrid/createContactSendgrid";
 import { updateUserSendgridJobIds } from "../../utils/sendgrid/updateSendgridJobIds";
 import { SENDGRID_STATUS_PERCENTAGE } from "../../utils/constantFiles/sendgridStatusPercentage";
-import { checkAccess } from "../Middlewares/serverAccess";
 
 const ObjectId = mongoose.Types.ObjectId;
 
@@ -166,12 +168,12 @@ export class UsersControllers {
         };
 
         const userData = await User.create(dataToSave);
-        if (checkAccess()) {
+        if (process.env.SENDGRID_API_KEY) {
 
         const sendgridResponse = await createContact(userData.email, {
           signUpStatus: SENDGRID_STATUS_PERCENTAGE.USER_SIGNUP_PERCENTAGE,
           businessIndustry: SENDGRID_STATUS_PERCENTAGE.BUSINESS_INDUSTRY
-        })          
+        })
         const jobId = sendgridResponse?.body?.job_id;
         await updateUserSendgridJobIds(userData.id, jobId);
       }
@@ -591,7 +593,7 @@ export class UsersControllers {
             : {}),
         },
       },
-      
+
       ...(clientStatus == userStatus.PENDING
         ? [
             {
@@ -627,6 +629,7 @@ export class UsersControllers {
 
   static indexV2 = async (req: Request, res: Response): Promise<any> => {
     try {
+      const user = req.user as UserInterface
       const {
         onBoardingPercentage,
         sortingOrder,
@@ -645,7 +648,10 @@ export class UsersControllers {
         ? (sortingOrder as string)
         : sort.DESC;
       bodyValidator.onBoardingPercentage = onBoardingPercentage as string;
-      bodyValidator.accountManagerId = accountManagerId as string;
+      bodyValidator.accountManagerId =
+        user.role === RolesEnum.ACCOUNT_MANAGER
+          ? user.id
+          : (accountManagerId as string);
       bodyValidator.businessDetailId = businessDetailId as string;
       bodyValidator.industryId = industryId as string;
       bodyValidator.search = search as string;
@@ -775,6 +781,7 @@ export class UsersControllers {
     res: Response
   ): Promise<any> => {
     try {
+      const user = req.user as UserInterface
       const {
         onBoardingPercentage,
         sortingOrder,
@@ -791,8 +798,11 @@ export class UsersControllers {
       bodyValidator.sortingOrder = sortingOrder
         ? (sortingOrder as string)
         : sort.DESC;
+      bodyValidator.accountManagerId =
+          user.role === RolesEnum.ACCOUNT_MANAGER
+              ? user.id
+              : (accountManagerId as string);
       bodyValidator.onBoardingPercentage = onBoardingPercentage as string;
-      bodyValidator.accountManagerId = accountManagerId as string;
       bodyValidator.businessDetailId = businessDetailId as string;
       bodyValidator.industryId = industryId as string;
       bodyValidator.search = search as string;
@@ -885,7 +895,7 @@ export class UsersControllers {
 
       const filteredDataArray: DataObject[] = filterAndTransformData(
         //@ts-ignore
-        pref?.columns,
+        pref?.columns ?? clientTablePreference,
         convertArray(result)
       );
       const arr = filteredDataArray;
@@ -1216,7 +1226,8 @@ export class UsersControllers {
         });
       }
       let secondaryLeadsAnticipating: number;
-      if (input.secondaryLeads) {
+      let canUpdateClient = await userHasAccess(user, [{ module: MODULE.CLIENTS, permission: PERMISSIONS.UPDATE }]);
+      if (input.secondaryLeads && canUpdateClient) {
         secondaryLeadsAnticipating =
           input.secondaryLeads * input.secondaryLeadCost;
         let dataSave = {
@@ -1261,11 +1272,11 @@ export class UsersControllers {
               userId: checkUser?.id,
               transactionId: transaction.id,
               price: secondaryLeadsAnticipating,
-              invoiceId: res.data.Invoices[0].InvoiceID,
+              invoiceId: res.data?.Invoices[0].InvoiceID,
             };
             await Invoice.create(dataToSaveInInvoice);
             await Transaction.findByIdAndUpdate(transaction.id, {
-              invoiceId: res.data.Invoices[0].InvoiceID,
+              invoiceId: res.data?.Invoices[0].InvoiceID,
             });
 
             console.log("pdf generated");
@@ -1285,11 +1296,11 @@ export class UsersControllers {
                   userId: checkUser?.id,
                   transactionId: transaction.id,
                   price: secondaryLeadsAnticipating,
-                  invoiceId: res.data.Invoices[0].InvoiceID,
+                  invoiceId: res.data?.Invoices[0].InvoiceID,
                 };
                 await Invoice.create(dataToSaveInInvoice);
                 await Transaction.findByIdAndUpdate(transaction.id, {
-                  invoiceId: res.data.Invoices[0].InvoiceID,
+                  invoiceId: res.data?.Invoices[0].InvoiceID,
                 });
 
                 console.log("pdf generated");
@@ -1307,8 +1318,8 @@ export class UsersControllers {
           userExist &&
           // @ts-ignore
           userExist.id !== req?.user?.id &&
-          userExist.role !== RolesEnum.SUPER_ADMIN && 
-          !userExist?.isDeleted 
+          userExist.role !== RolesEnum.SUPER_ADMIN &&
+          !userExist?.isDeleted
         ) {
           return res.status(400).json({
             error: {
@@ -1754,11 +1765,11 @@ export class UsersControllers {
                     userId: checkUser?.id,
                     transactionId: transaction.id,
                     price: input.credits,
-                    invoiceId: res.data.Invoices[0].InvoiceID,
+                    invoiceId: res.data?.Invoices[0].InvoiceID,
                   };
                   await Invoice.create(dataToSaveInInvoice);
                   await Transaction.findByIdAndUpdate(transaction.id, {
-                    invoiceId: res.data.Invoices[0].InvoiceID,
+                    invoiceId: res.data?.Invoices[0].InvoiceID,
                   });
 
                   console.log("pdf generated", new Date(), "Today's Date");
@@ -1778,11 +1789,11 @@ export class UsersControllers {
                         userId: checkUser?.id,
                         transactionId: transaction.id,
                         price: input.credits,
-                        invoiceId: res.data.Invoices[0].InvoiceID,
+                        invoiceId: res.data?.Invoices[0].InvoiceID,
                       };
                       await Invoice.create(dataToSaveInInvoice);
                       await Transaction.findByIdAndUpdate(transaction.id, {
-                        invoiceId: res.data.Invoices[0].InvoiceID,
+                        invoiceId: res.data?.Invoices[0].InvoiceID,
                       });
 
                       console.log("pdf generated", new Date(), "Today's Date");
@@ -2504,7 +2515,7 @@ export class UsersControllers {
         if(amount < 0){
           (dataToSave.isCredited = false);
           (dataToSave.isDebited = true);
-          
+
         }else{
 
           (dataToSave.isCredited = true);
@@ -2527,11 +2538,11 @@ export class UsersControllers {
                 userId: user?.id,
                 transactionId: transaction.id,
                 price: credits,
-                invoiceId: res.data.Invoices[0].InvoiceID,
+                invoiceId: res?.Invoices[0].InvoiceID,
               };
               await Invoice.create(dataToSaveInInvoice);
               await Transaction.findByIdAndUpdate(transaction.id, {
-                invoiceId: res.data.Invoices[0].InvoiceID,
+                invoiceId: res?.Invoices[0].InvoiceID,
               });
 
               console.log("pdf generated", new Date(), "Today's Date");
@@ -2552,11 +2563,11 @@ export class UsersControllers {
                     userId: user?.id,
                     transactionId: transaction.id,
                     price: credits,
-                    invoiceId: res.data.Invoices[0].InvoiceID,
+                    invoiceId: res.data?.Invoices[0].InvoiceID,
                   };
                   await Invoice.create(dataToSaveInInvoice);
                   await Transaction.findByIdAndUpdate(transaction.id, {
-                    invoiceId: res.data.Invoices[0].InvoiceID,
+                    invoiceId: res.data?.Invoices[0].InvoiceID,
                   });
 
                   console.log("pdf generated", new Date(), "Today's Date");
@@ -2624,53 +2635,13 @@ export class UsersControllers {
       });
     }
   };
-
-  static clientsStat = async (_req: any, res: Response) => {
-    try {
-      let dataToFindActive: Record<
-        string,
-        string | Types.ObjectId | string[] | boolean | RoleFilter
-      > = {
-        role: { $in: [RolesEnum.USER, RolesEnum.NON_BILLABLE] },
-        isActive: true,
-        isDeleted: false,
-        isArchived: false,
-      };
-      let dataToFindPaused: Record<
-        string,
-        string | Types.ObjectId | string[] | boolean | RoleFilter
-      > = {
-        role: { $in: [RolesEnum.USER, RolesEnum.NON_BILLABLE] },
-        isActive: false,
-        isDeleted: false,
-        isArchived: false,
-      };
-      if (_req.user.role === RolesEnum.ACCOUNT_MANAGER) {
-        dataToFindActive.accountManager = _req.user._id;
-        dataToFindPaused.accountManager = _req.user._id;
-      }
-      const active = await User.find(dataToFindActive).count();
-      const paused = await User.find(dataToFindPaused).count();
-
-      const dataToShow = {
-        activeClients: active,
-        pausedClients: paused,
-      };
-      return res.json({ data: dataToShow });
-    } catch (err) {
-      return res.status(500).json({
-        error: {
-          message: "something went wrong",
-          err,
-        },
-      });
-    }
-  };
   static clientsStatsV2 = async (_req: any, res: Response) => {
     try {
+      const user = _req.user as UserInterface;
       const stats: PipelineStage[] = await User.aggregate([
         {
           $match: {
+            ...(user.role === RolesEnum.ACCOUNT_MANAGER ? {accountManager: new Types.ObjectId(user.id)} : {}),
             role: {
               $nin: [
                 RolesEnum.ADMIN,
@@ -2735,6 +2706,49 @@ export class UsersControllers {
       });
     }
   };
+
+  static clientsStat = async (_req: any, res: Response) => {
+    try {
+      let dataToFindActive: Record<
+        string,
+        string | Types.ObjectId | string[] | boolean | RoleFilter
+      > = {
+        role: { $in: [RolesEnum.USER, RolesEnum.NON_BILLABLE] },
+        isActive: true,
+        isDeleted: false,
+        isArchived: false,
+      };
+      let dataToFindPaused: Record<
+        string,
+        string | Types.ObjectId | string[] | boolean | RoleFilter
+      > = {
+        role: { $in: [RolesEnum.USER, RolesEnum.NON_BILLABLE] },
+        isActive: false,
+        isDeleted: false,
+        isArchived: false,
+      };
+      if (_req.user.role === RolesEnum.ACCOUNT_MANAGER) {
+        dataToFindActive.accountManager = _req.user._id;
+        dataToFindPaused.accountManager = _req.user._id;
+      }
+      const active = await User.find(dataToFindActive).count();
+      const paused = await User.find(dataToFindPaused).count();
+
+      const dataToShow = {
+        activeClients: active,
+        pausedClients: paused,
+      };
+      return res.json({ data: dataToShow });
+    } catch (err) {
+      return res.status(500).json({
+        error: {
+          message: "something went wrong",
+          err,
+        },
+      });
+    }
+  };
+
 
   static sendTestLeadData = async (req: any, res: Response) => {
     try {

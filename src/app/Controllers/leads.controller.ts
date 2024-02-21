@@ -91,6 +91,13 @@ export class LeadsController {
       if (!user?.isLeadReceived) {
         await User.findByIdAndUpdate(user.id, { isLeadReceived: true });
       }
+
+      if(user.isDeleted || !user.isActive){
+        return res
+          .status(400)
+          .json({ error: { message: "User is deleted or inactive" } })
+      }
+
       const originalDailyLimit = user.userLeadsDetailsId?.daily;
 
       const fiftyPercentVariance = Math.round(
@@ -141,10 +148,10 @@ export class LeadsController {
       }
 
       if (
-        ( ((user?.credits <=0) &&
+        ( ((user?.credits <=0 || user.credits<user.leadCost) &&
           user?.secondaryCredits == 0 &&
-          user?.role == RolesEnum.USER &&
-          user?.isCreditsAndBillingEnabled == true) && user.credits<user.leadCost)
+          // user?.role == RolesEnum.USER &&
+          user?.isCreditsAndBillingEnabled == true) )
       ) {
         return res
           .status(400)
@@ -560,7 +567,7 @@ export class LeadsController {
           "businessName businessIndustry"
         );
         let reqBody = {
-          leadId: lead.leads?.leadId,
+          lead_id: lead.leads?.leadId,
           // industry: business?.businessIndustry,
           industry: business?.businessIndustry === "Windows & Doors" ? "Windows" :business?.businessIndustry, // as -676 task
           client: business?.businessName,
@@ -568,6 +575,7 @@ export class LeadsController {
           quantity: 1,
           date: new Date(),
           reason: lead.invalidLeadReason,
+          cpl: parseFloat(leadUser?.leadCost)
         };
         leadReportAcceptedWebhook(leadUser, reqBody)
           .then(() => {

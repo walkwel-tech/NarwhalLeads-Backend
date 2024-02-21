@@ -48,7 +48,6 @@ import { createContact } from "../../utils/sendgrid/createContactSendgrid";
 import { BuisnessIndustries } from "../Models/BuisnessIndustries";
 import { updateUserSendgridJobIds } from "../../utils/sendgrid/updateSendgridJobIds";
 import { SENDGRID_STATUS_PERCENTAGE } from "../../utils/constantFiles/sendgridStatusPercentage";
-import { checkAccess } from "../Middlewares/serverAccess";
 
 export class UserLeadsController {
   static create = async (req: Request, res: Response) => {
@@ -147,7 +146,7 @@ export class UserLeadsController {
     try {
       const details = await UserLeadsDetails.create(dataToSave);
 
-      if (checkAccess()) {
+      if (process.env.SENDGRID_API_KEY) {
         const businessIndustryId = user?.businessIndustryId ?? "";
 
         const industry = await BuisnessIndustries.findById(businessIndustryId);

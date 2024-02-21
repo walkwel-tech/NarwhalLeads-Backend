@@ -14,6 +14,10 @@ const FreeCreditsLinkSchema = new Schema(
       type: Number,
       required: true,
     },
+    discount: {
+      type: Number,
+      required: false,
+    },
     useCounts: {
       type: Number,
     },
@@ -65,6 +69,14 @@ const FreeCreditsLinkSchema = new Schema(
       type: Types.ObjectId,
       ref: "BuisnessIndustries",
     },
+    giveCreditOnAddCard: {
+      type: Boolean,
+      default: false
+    },
+    firstCardBonusCredit: {
+      type: Number,
+      default: 0
+    }
   },
   { timestamps: true }
 );
