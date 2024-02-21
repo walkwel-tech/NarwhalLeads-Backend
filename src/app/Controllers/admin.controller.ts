@@ -90,15 +90,15 @@ export class AdminSettingsController {
   };
 
   static delete = async (req: Request, res: Response) => {
-    try {
-      await AdminSettings.deleteOne();
+      try {
+        await AdminSettings.deleteOne();
 
-      return res.json({ data: { message: "Data deleted successfully" } });
-    } catch (error) {
-      return res
-        .status(500)
-        .json({ error: { message: "Something went wrong." } });
-    }
+        return res.json({ data: { message: "Data deleted successfully" } });
+      } catch (error) {
+        return res
+          .status(500)
+          .json({ error: { message: "Something went wrong." } });
+      }
   };
 
   static showFaqs = async (req: Request, res: Response) => {
@@ -400,7 +400,6 @@ export class AdminSettingsController {
       return res.status(500).json({ message: "Internal Server Error" });
     }
   };
-
 
   static createCustomerOnXero = async (req: Request, res: Response) => {
     try {

@@ -9,7 +9,6 @@ import { UserInterface } from "../../types/UserInterface";
 import { CreateAdBodyValidator } from "../Inputs/CreateAdBodyValidator.input";
 import { UpdateAdBodyValidator } from "../Inputs/UpdateAdBodyValidator.input";
 import { QueryParams } from "../Inputs/QueryParamsAd.input";
-import logger from "../../utils/winstonLogger/logger";
 const LIMIT = 10;
 const LIMIT_ADD = 4;
 
@@ -261,10 +260,10 @@ export class AdsController {
       if (req.file) {
         fs.unlink(process.cwd() + "/public" + adCheck.image, (err) => {
           if (err) {
-            logger.error("Error deleting previous image:", err);
+            console.error("Error deleting previous image:", err);
           }
 
-          logger.info("Previous image deleted successfully.");
+          console.log("Previous image deleted successfully.");
         });
       }
 
@@ -332,7 +331,7 @@ export class AdsController {
         return res.status(400).json({ error: "buisness industry not found" });
       }
       const currentDateUTC = new Date();
-      logger.info(`Current Date UTC: ${currentDateUTC.toISOString()}`);
+      console.log("Current Date UTC:", currentDateUTC.toISOString());
       const ads = await Ad.aggregate([
         {
           $match: {

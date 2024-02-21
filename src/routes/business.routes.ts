@@ -1,7 +1,6 @@
 import { Router } from "express";
 import multer from "multer";
 
-import { BusinessDetailsController } from "../app/Controllers/business.details.controller";
 import { Auth } from "../app/Middlewares";
 import { storeFile } from "../app/Middlewares/fileUpload";
 
@@ -9,6 +8,7 @@ import { FileEnum } from "../types/FileEnum";
 import { fileMaxSize } from "../utils/constantFiles/fileMaxSize";
 import { checkPermissions } from "../app/Middlewares/roleBasedAuthentication";
 import { MODULE, PERMISSIONS } from "../utils/Enums/permissions.enum";
+import { BusinessDetailsController } from "../app/Controllers/Business";
 // import path from "path";
 // const fs=require("fs")
 //@ts-ignore
@@ -37,7 +37,7 @@ businessDetails.post(
     { module: MODULE.PROFILE, permission: PERMISSIONS.CREATE },
   ]),
   fileSizeLimitErrorHandler,
-  BusinessDetailsController.nonBillableBusinessDetails
+  BusinessDetailsController.nonBillableBusiness
 );
 businessDetails.post(
   "/:id",
@@ -47,7 +47,7 @@ businessDetails.post(
     { module: MODULE.PROFILE, permission: PERMISSIONS.UPDATE },
   ]),
   fileSizeLimitErrorHandler,
-  BusinessDetailsController.updateBusinessDetails
+  BusinessDetailsController.updateBusiness
 );
 businessDetails.patch(
   "/:id",
@@ -57,7 +57,7 @@ businessDetails.patch(
     { module: MODULE.PROFILE, permission: PERMISSIONS.UPDATE },
   ]),
   fileSizeLimitErrorHandler,
-  BusinessDetailsController.updateBusinessDetails
+  BusinessDetailsController.updateBusiness
 );
 businessDetails.delete(
   "/:id",
@@ -65,7 +65,7 @@ businessDetails.delete(
   checkPermissions([
     { module: MODULE.PROFILE, permission: PERMISSIONS.DELETE },
   ]),
-  BusinessDetailsController.delete
+  BusinessDetailsController.deleteBusiness
 );
 businessDetails.post(
   "/",
@@ -75,19 +75,19 @@ businessDetails.post(
   checkPermissions([
     { module: MODULE.PROFILE, permission: PERMISSIONS.CREATE },
   ]),
-  BusinessDetailsController.create
+  BusinessDetailsController.createBusiness
 );
 businessDetails.get(
   "/",
   Auth,
   checkPermissions([{ module: MODULE.PROFILE, permission: PERMISSIONS.READ }]),
-  BusinessDetailsController.show
+  BusinessDetailsController.getBusiness
 );
 businessDetails.get(
   "/:id",
   Auth,
   checkPermissions([{ module: MODULE.PROFILE, permission: PERMISSIONS.READ }]),
-  BusinessDetailsController.showById
+  BusinessDetailsController.getBusinessById
 );
 
 export default businessDetails;
