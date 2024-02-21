@@ -170,13 +170,13 @@ export class UsersControllers {
         const userData = await User.create(dataToSave);
         if (process.env.SENDGRID_API_KEY) {
 
-        const sendgridResponse = await createContact(userData.email, {
-          signUpStatus: SENDGRID_STATUS_PERCENTAGE.USER_SIGNUP_PERCENTAGE,
-          businessIndustry: SENDGRID_STATUS_PERCENTAGE.BUSINESS_INDUSTRY
-        })
-        const jobId = sendgridResponse?.body?.job_id;
-        await updateUserSendgridJobIds(userData.id, jobId);
-      }
+          const sendgridResponse = await createContact(userData.email, {
+            signUpStatus: SENDGRID_STATUS_PERCENTAGE.USER_SIGNUP_PERCENTAGE,
+            businessIndustry: SENDGRID_STATUS_PERCENTAGE.BUSINESS_INDUSTRY
+          })
+          const jobId = sendgridResponse?.body?.job_id;
+          await updateUserSendgridJobIds(userData.id, jobId);
+        }
 
         return res.json({
           data: {
@@ -799,9 +799,9 @@ export class UsersControllers {
         ? (sortingOrder as string)
         : sort.DESC;
       bodyValidator.accountManagerId =
-          user.role === RolesEnum.ACCOUNT_MANAGER
-              ? user.id
-              : (accountManagerId as string);
+        user.role === RolesEnum.ACCOUNT_MANAGER
+          ? user.id
+          : (accountManagerId as string);
       bodyValidator.onBoardingPercentage = onBoardingPercentage as string;
       bodyValidator.businessDetailId = businessDetailId as string;
       bodyValidator.industryId = industryId as string;
@@ -1266,47 +1266,49 @@ export class UsersControllers {
           sessionId: transactionTitle.SECONDARY_CREDITS_MANUAL_ADJUSTMENT,
           isManualAdjustment: false,
         };
-        generatePDF(paramPdf)
-          .then(async (res: any) => {
-            const dataToSaveInInvoice: Partial<InvoiceInterface> = {
-              userId: checkUser?.id,
-              transactionId: transaction.id,
-              price: secondaryLeadsAnticipating,
-              invoiceId: res.data?.Invoices[0].InvoiceID,
-            };
-            await Invoice.create(dataToSaveInInvoice);
-            await Transaction.findByIdAndUpdate(transaction.id, {
-              invoiceId: res.data?.Invoices[0].InvoiceID,
-            });
-
-            console.log("pdf generated");
-          })
-          .catch(async (err) => {
-            refreshToken().then(async (res) => {
-              const paramPdf: generatePDFParams = {
-                ContactID: checkUser?.xeroContactId,
-                desc: transactionTitle.CREDITS_ADDED,
-                amount: secondaryLeadsAnticipating,
-                freeCredits: 0,
-                sessionId: transactionTitle.SECONDARY_CREDITS_MANUAL_ADJUSTMENT,
-                isManualAdjustment: false,
+        if (input.generateInvoice) {
+          generatePDF(paramPdf)
+            .then(async (res: any) => {
+              const dataToSaveInInvoice: Partial<InvoiceInterface> = {
+                userId: checkUser?.id,
+                transactionId: transaction.id,
+                price: secondaryLeadsAnticipating,
+                invoiceId: res.data?.Invoices[0].InvoiceID,
               };
-              generatePDF(paramPdf).then(async (res: any) => {
-                const dataToSaveInInvoice: Partial<InvoiceInterface> = {
-                  userId: checkUser?.id,
-                  transactionId: transaction.id,
-                  price: secondaryLeadsAnticipating,
-                  invoiceId: res.data?.Invoices[0].InvoiceID,
-                };
-                await Invoice.create(dataToSaveInInvoice);
-                await Transaction.findByIdAndUpdate(transaction.id, {
-                  invoiceId: res.data?.Invoices[0].InvoiceID,
-                });
+              await Invoice.create(dataToSaveInInvoice);
+              await Transaction.findByIdAndUpdate(transaction.id, {
+                invoiceId: res.data?.Invoices[0].InvoiceID,
+              });
 
-                console.log("pdf generated");
+              console.log("pdf generated");
+            })
+            .catch(async (err) => {
+              refreshToken().then(async (res) => {
+                const paramPdf: generatePDFParams = {
+                  ContactID: checkUser?.xeroContactId,
+                  desc: transactionTitle.CREDITS_ADDED,
+                  amount: secondaryLeadsAnticipating,
+                  freeCredits: 0,
+                  sessionId: transactionTitle.SECONDARY_CREDITS_MANUAL_ADJUSTMENT,
+                  isManualAdjustment: false,
+                };
+                generatePDF(paramPdf).then(async (res: any) => {
+                  const dataToSaveInInvoice: Partial<InvoiceInterface> = {
+                    userId: checkUser?.id,
+                    transactionId: transaction.id,
+                    price: secondaryLeadsAnticipating,
+                    invoiceId: res.data?.Invoices[0].InvoiceID,
+                  };
+                  await Invoice.create(dataToSaveInInvoice);
+                  await Transaction.findByIdAndUpdate(transaction.id, {
+                    invoiceId: res.data?.Invoices[0].InvoiceID,
+                  });
+
+                  console.log("pdf generated");
+                });
               });
             });
-          });
+        }
       }
 
       if (input.smsPhoneNumber) {
@@ -1865,13 +1867,13 @@ export class UsersControllers {
         //   .flat();
         let formattedPostCodes ;
         if (leadData && leadData.type === POSTCODE_TYPE.RADIUS) {
-            (formattedPostCodes = leadData.postCodeList?.map(({postcode}) => {
-              return postcode
-            }));
+          (formattedPostCodes = leadData.postCodeList?.map(({postcode}) => {
+            return postcode
+          }));
         } else {
           formattedPostCodes = leadData?.postCodeTargettingList
-          .map((item: any) => item.postalCode)
-          .flat();
+            .map((item: any) => item.postalCode)
+            .flat();
         }
         const userAfterMod = await User.findById(
           id,
@@ -2532,48 +2534,51 @@ export class UsersControllers {
             sessionId: transactionTitle.MANUAL_ADJUSTMENT,
             isManualAdjustment: true,
           };
-          generatePDF(paramPdf)
-            .then(async (res: any) => {
-              const dataToSaveInInvoice: Partial<InvoiceInterface> = {
-                userId: user?.id,
-                transactionId: transaction.id,
-                price: credits,
-                invoiceId: res?.Invoices[0].InvoiceID,
-              };
-              await Invoice.create(dataToSaveInInvoice);
-              await Transaction.findByIdAndUpdate(transaction.id, {
-                invoiceId: res?.Invoices[0].InvoiceID,
-              });
-
-              console.log("pdf generated", new Date(), "Today's Date");
-            })
-            .catch(async (err) => {
-              refreshToken().then(async (res) => {
-                const paramPdf: generatePDFParams = {
-                  ContactID: user?.xeroContactId,
-
-                  desc: transactionTitle.CREDITS_ADDED,
-                  amount: 0,
-                  freeCredits: credits,
-                  sessionId: transactionTitle.MANUAL_ADJUSTMENT,
-                  isManualAdjustment: true,
+          if (input?.generateInvoice) {
+            generatePDF(paramPdf)
+              .then(async (res: any) => {
+                const dataToSaveInInvoice: Partial<InvoiceInterface> = {
+                  userId: user?.id,
+                  transactionId: transaction.id,
+                  price: credits,
+                  invoiceId: res.data?.Invoices[0].InvoiceID,
                 };
-                generatePDF(paramPdf).then(async (res: any) => {
-                  const dataToSaveInInvoice: Partial<InvoiceInterface> = {
-                    userId: user?.id,
-                    transactionId: transaction.id,
-                    price: credits,
-                    invoiceId: res.data?.Invoices[0].InvoiceID,
-                  };
-                  await Invoice.create(dataToSaveInInvoice);
-                  await Transaction.findByIdAndUpdate(transaction.id, {
-                    invoiceId: res.data?.Invoices[0].InvoiceID,
-                  });
+                await Invoice.create(dataToSaveInInvoice);
+                await Transaction.findByIdAndUpdate(transaction.id, {
+                  invoiceId: res.data?.Invoices[0].InvoiceID,
+                });
 
-                  console.log("pdf generated", new Date(), "Today's Date");
+                console.log("pdf generated", new Date(), "Today's Date");
+              })
+              .catch(async (err) => {
+                refreshToken().then(async (res) => {
+                  const paramPdf: generatePDFParams = {
+                    ContactID: user?.xeroContactId,
+
+                    desc: transactionTitle.CREDITS_ADDED,
+                    amount: 0,
+                    freeCredits: credits,
+                    sessionId: transactionTitle.MANUAL_ADJUSTMENT,
+                    isManualAdjustment: true,
+                  };
+                  generatePDF(paramPdf).then(async (res: any) => {
+                    const dataToSaveInInvoice: Partial<InvoiceInterface> = {
+                      userId: user?.id,
+                      transactionId: transaction.id,
+                      price: credits,
+                      invoiceId: res.data?.Invoices[0].InvoiceID,
+                    };
+                    await Invoice.create(dataToSaveInInvoice);
+                    await Transaction.findByIdAndUpdate(transaction.id, {
+                      invoiceId: res.data?.Invoices[0].InvoiceID,
+                    });
+
+                    console.log("pdf generated", new Date(), "Today's Date");
+                  });
                 });
               });
-            });
+          }
+
           const userBusiness: BusinessDetailsInterface | null =
             isBusinessObject(user?.businessDetailsId)
               ? user?.businessDetailsId
