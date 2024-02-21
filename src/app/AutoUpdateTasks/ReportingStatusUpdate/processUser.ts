@@ -76,8 +76,5 @@ export async function processUsers(userId: Types.ObjectId) {
     { $set: { clientStatus: user[0].clientStatus } },
     { new: true }
   );
-  logger.info(
-    `Updated reportingStatus for user ${userId}`,
-    { updatedUsers }
-  );
+  logger.debug(`Updated reportingStatus for user ${userId}`, { updatedUsers });
 }

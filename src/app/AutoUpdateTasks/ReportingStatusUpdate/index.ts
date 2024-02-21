@@ -8,8 +8,8 @@ export async function updateReport(batchSize: number) {
     const totalUsers = await User.countDocuments();
     const totalPages = Math.ceil(totalUsers / batchSize);
 
-    mainQueue.on('active', () => logger.info("Q Active"))
-    mainQueue.on('idle', () => logger.info("Q Empty"))
+    mainQueue.on('active', () => logger.debug("Q Active"))
+    mainQueue.on('idle', () => logger.debug("Q Empty"))
 
     for (let page = 0; page < totalPages; page++) {
         const startIndex = page * batchSize;
