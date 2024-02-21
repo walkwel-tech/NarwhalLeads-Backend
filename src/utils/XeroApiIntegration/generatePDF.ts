@@ -16,7 +16,7 @@ export interface generatePDFParams {
   sessionId: string;
   isManualAdjustment: boolean;
 }
-export const generatePDF = (param: generatePDFParams): Promise<XeroResponseInterface> => {
+export const generatePDF = (param: generatePDFParams): Promise<AxiosResponse<XeroResponseInterface>> => {
   return new Promise(async (resolve, reject) => {
     const industry: any = await User.findOne({
       xeroContactId: param.ContactID,
@@ -118,7 +118,7 @@ export const generatePDF = (param: generatePDFParams): Promise<XeroResponseInter
             "Today's Date"
           );
 
-          resolve(response.data);
+          resolve(response);
         })
         .catch(function (error) {
           console.log(error.response?.data, new Date(), "Today's Date");
