@@ -23,6 +23,7 @@ import {
   refreshToken,
 } from "../../utils/XeroApiIntegration/createContact";
 import { AccessToken } from "../Models/AccessToken";
+import logger from "../../utils/winstonLogger/logger";
 
 interface QueryParams {
   userId: string;
@@ -89,15 +90,15 @@ export class AdminSettingsController {
   };
 
   static delete = async (req: Request, res: Response) => {
-    try {
-      await AdminSettings.deleteOne();
+      try {
+        await AdminSettings.deleteOne();
 
-      return res.json({ data: { message: "Data deleted successfully" } });
-    } catch (error) {
-      return res
-        .status(500)
-        .json({ error: { message: "Something went wrong." } });
-    }
+        return res.json({ data: { message: "Data deleted successfully" } });
+      } catch (error) {
+        return res
+          .status(500)
+          .json({ error: { message: "Something went wrong." } });
+      }
   };
 
   static showFaqs = async (req: Request, res: Response) => {
@@ -355,7 +356,7 @@ export class AdminSettingsController {
         .status(200)
         .json({ message: "Site config updated successfully." });
     } catch (error) {
-      console.log(error, ">>>>>>> error");
+      logger.error('Error while updating freeCreditsConfig', error);
       return res
         .status(500)
         .json({ error: { message: "Something went wrong" } });
@@ -399,7 +400,6 @@ export class AdminSettingsController {
       return res.status(500).json({ message: "Internal Server Error" });
     }
   };
-
 
   static createCustomerOnXero = async (req: Request, res: Response) => {
     try {
@@ -453,10 +453,10 @@ export class AdminSettingsController {
         { new: true }
       );
 
-      console.log("success in creating contact", new Date(), "Today's Date");
+      logger.info("success in creating contact");
       return res.status(200).json({ message: "Contact created successfully" });
     } catch (error) {
-      console.error("Error creating customer on Xero:", error);
+      logger.error("Error creating customer on Xero:", error);
       return res.status(500).json({ message: "Internal Server Error" });
     }
   };

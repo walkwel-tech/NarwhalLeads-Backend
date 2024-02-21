@@ -1,5 +1,6 @@
 import * as cron from "node-cron";
 import { updateReport } from ".";
+import logger from "../../../utils/winstonLogger/logger";
 
 export const updateReportStatus = () => {
   let cronExpression = "0 * * * *";
@@ -7,7 +8,7 @@ export const updateReportStatus = () => {
     try{
         await updateReport(100)
     } catch (err){
-        console.error("Client status update cron hits successfully", new Date())
+        logger.error("Client status update cron hits successfully")
     }
   });
 };

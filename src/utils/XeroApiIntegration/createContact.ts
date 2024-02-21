@@ -9,6 +9,7 @@ import { LOGS_STATUS } from "../Enums/logs.status.enum";
 import { PORTAL } from "../Enums/portal.enum";
 import { saveLogs } from "../Functions/saveLogs";
 import { REGISTRATION_IDS } from "../constantFiles/errorConstants";
+import logger from "../winstonLogger/logger";
 
 const POST = "post";
 export const createContactOnXero = (
@@ -53,14 +54,13 @@ export const createContactOnXero = (
           email: paramsToCreateContact.emailAddress,
         };
         createNotesOnXero(params, token)
-          .then(() =>
-            console.log("notes added on xero", new Date(), "Today's Date")
+          .then((res) =>
+            logger.info("notes added on xero", { res })
           )
           .catch((err) =>
-            console.log(
+            logger.error(
               "error while adding notes on xero.",
-              new Date(),
-              "Today's Date"
+              err
             )
           );
         const logsData = {
@@ -73,11 +73,9 @@ export const createContactOnXero = (
         resolve(data);
       })
       .catch(async (err) => {
-        console.log(
+        logger.error(
           "Xero Error",
-          err?.response?.data,
-          new Date(),
-          "Today's Date"
+          err
         );
         const logsData = {
           userId: user?.id,
@@ -146,7 +144,7 @@ export const refreshTokenOld = () => {
     };
     axios(config)
       .then(async (data) => {
-        console.log("token updated", new Date(), "Today's Date");
+        logger.info("token updated", { data });
         await AccessToken.updateMany(
           {},
           {
@@ -160,7 +158,7 @@ export const refreshTokenOld = () => {
         resolve(data);
       })
       .catch((err) => {
-        console.log("error", err.response?.data, new Date(), "Today's Date");
+        logger.error("error", err);
         // reject(err)
       });
   });

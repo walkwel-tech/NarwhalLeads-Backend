@@ -1,4 +1,5 @@
 import axios from "axios";
+import logger from "../winstonLogger/logger";
 
 if (
   !process.env.SENDGRID_API_KEY ||
@@ -44,8 +45,9 @@ export const createContact = async (
 
     return { statusCode: response.status, body: response.data };
   } catch (error) {
-    console.error(
-      error,
+    logger.error(
+      "Error:",
+      error
     );
     return { error: error };
   }

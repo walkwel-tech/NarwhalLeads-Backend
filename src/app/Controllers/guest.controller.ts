@@ -8,6 +8,7 @@ import { ClientTablePreference } from "../Models/ClientTablePrefrence";
 import { BusinessDetails } from "../Models/BusinessDetails";
 import { Leads } from "../Models/Leads";
 import { Permissions } from "../Models/Permission";
+import logger from "../../utils/winstonLogger/logger";
 
 export class GuestController {
   static setLeadPreferenceAccordingToIndustryInDB = async (
@@ -44,11 +45,9 @@ export class GuestController {
           return data;
         })
       );
-      console.log(
+      logger.info(
         "Updated and saved documents:",
-        updatedDocuments,
-        new Date(),
-        "Today's Date"
+        { updatedDocuments }
       );
       updatedDocuments.map(async (i) => {
         await BuisnessIndustries.findByIdAndUpdate(i.id, {
@@ -86,11 +85,9 @@ export class GuestController {
           return data;
         })
       );
-      console.log(
+      logger.info(
         "Updated and saved documents:",
-        updatedDocuments,
-        new Date(),
-        "Today's Date"
+        { updatedDocuments }
       );
       await Promise.all(
         updatedDocuments.map(async (i) => {
@@ -128,11 +125,9 @@ export class GuestController {
           return data;
         })
       );
-      console.log(
+      logger.info(
         "Updated and saved documents:",
-        updatedDocuments,
-        new Date(),
-        "Today's Date"
+        { updatedDocuments }
       );
       updatedDocuments.map(async (i) => {
         await ClientTablePreference.findByIdAndUpdate(i.id, {
@@ -194,7 +189,7 @@ export class GuestController {
         return column.originalName === name;
       });
       if (!result) {
-        console.error("Document not found with _id: " + documentId);
+        logger.error(`Document not found with _id: ${documentId}`);
         return;
       }
       // if(result.columns)
@@ -219,7 +214,7 @@ export class GuestController {
           }
         );
       } else {
-        console.log("already exist", new Date(), "Today's Date");
+        logger.info("already exist", { nameExists });
       }
     });
     res.send({ data: "successfully inserted" });
@@ -237,7 +232,7 @@ export class GuestController {
         return column.originalName === name;
       });
       if (!result) {
-        console.error("Document not found with _id: " + documentId);
+        logger.error(`Document not found with _id: ${documentId}`);
         return;
       }
       // if(result.columns)
@@ -262,7 +257,7 @@ export class GuestController {
           }
         );
       } else {
-        console.log("already exist", new Date(), "Today's Date");
+        logger.info("already exist", { nameExists });
       }
     });
     res.send({ data: "successfully inserted" });

@@ -1,5 +1,6 @@
 import { Router } from "express";
-import { AdsController } from "../app/Controllers/ads.controller";
+// import { AdsController } from "../app/Controllers/ads.controller";
+import { AdsController } from "../app/Controllers/Ads";
 import multer from "multer";
 import { FileEnum } from "../types/FileEnum";
 import { fileMaxSize } from "../utils/constantFiles/fileMaxSize";

@@ -1,7 +1,9 @@
+import {AxiosResponse} from "axios";
 import { genSaltSync, hashSync } from "bcryptjs";
 import { validate } from "class-validator";
 import { Request, Response } from "express";
 import mongoose, { PipelineStage, Types } from "mongoose";
+import {XeroResponseInterface} from "../../types/XeroResponseInterface";
 import {clientTablePreference} from "../../utils/constantFiles/clientTablePreferenceAdmin";
 import {MODULE, PERMISSIONS} from "../../utils/Enums/permissions.enum";
 import {userHasAccess} from "../../utils/userHasAccess";
@@ -85,6 +87,7 @@ import { updateReport } from "../AutoUpdateTasks/ReportingStatusUpdate";
 import { createContact } from "../../utils/sendgrid/createContactSendgrid";
 import { updateUserSendgridJobIds } from "../../utils/sendgrid/updateSendgridJobIds";
 import { SENDGRID_STATUS_PERCENTAGE } from "../../utils/constantFiles/sendgridStatusPercentage";
+import logger from "../../utils/winstonLogger/logger";
 
 const ObjectId = mongoose.Types.ObjectId;
 
@@ -170,13 +173,13 @@ export class UsersControllers {
         const userData = await User.create(dataToSave);
         if (process.env.SENDGRID_API_KEY) {
 
-        const sendgridResponse = await createContact(userData.email, {
-          signUpStatus: SENDGRID_STATUS_PERCENTAGE.USER_SIGNUP_PERCENTAGE,
-          businessIndustry: SENDGRID_STATUS_PERCENTAGE.BUSINESS_INDUSTRY
-        })
-        const jobId = sendgridResponse?.body?.job_id;
-        await updateUserSendgridJobIds(userData.id, jobId);
-      }
+          const sendgridResponse = await createContact(userData.email, {
+            signUpStatus: SENDGRID_STATUS_PERCENTAGE.USER_SIGNUP_PERCENTAGE,
+            businessIndustry: SENDGRID_STATUS_PERCENTAGE.BUSINESS_INDUSTRY
+          })
+          const jobId = sendgridResponse?.body?.job_id;
+          await updateUserSendgridJobIds(userData.id, jobId);
+        }
 
         return res.json({
           data: {
@@ -799,9 +802,9 @@ export class UsersControllers {
         ? (sortingOrder as string)
         : sort.DESC;
       bodyValidator.accountManagerId =
-          user.role === RolesEnum.ACCOUNT_MANAGER
-              ? user.id
-              : (accountManagerId as string);
+        user.role === RolesEnum.ACCOUNT_MANAGER
+          ? user.id
+          : (accountManagerId as string);
       bodyValidator.onBoardingPercentage = onBoardingPercentage as string;
       bodyValidator.businessDetailId = businessDetailId as string;
       bodyValidator.industryId = industryId as string;
@@ -903,7 +906,10 @@ export class UsersControllers {
         data: arr,
       });
     } catch (err) {
-      console.log(err, ">>>>>");
+      logger.error(
+        "Error while showing all clients for admin export file",
+        err
+      );
       return res
         .status(500)
         .json({ error: { message: "Something went wrong.", err } });
@@ -1257,7 +1263,10 @@ export class UsersControllers {
         };
         // if (user?.credits < credits) {
         let transaction = await Transaction.create(dataToSave);
-        console.log("transaction", transaction);
+        logger.info(
+          "transaction",
+          { transaction }
+        );
         const paramPdf: generatePDFParams = {
           ContactID: checkUser?.xeroContactId,
           desc: transactionTitle.CREDITS_ADDED,
@@ -1266,47 +1275,55 @@ export class UsersControllers {
           sessionId: transactionTitle.SECONDARY_CREDITS_MANUAL_ADJUSTMENT,
           isManualAdjustment: false,
         };
-        generatePDF(paramPdf)
-          .then(async (res: any) => {
-            const dataToSaveInInvoice: Partial<InvoiceInterface> = {
-              userId: checkUser?.id,
-              transactionId: transaction.id,
-              price: secondaryLeadsAnticipating,
-              invoiceId: res.data?.Invoices[0].InvoiceID,
-            };
-            await Invoice.create(dataToSaveInInvoice);
-            await Transaction.findByIdAndUpdate(transaction.id, {
-              invoiceId: res.data?.Invoices[0].InvoiceID,
-            });
-
-            console.log("pdf generated");
-          })
-          .catch(async (err) => {
-            refreshToken().then(async (res) => {
-              const paramPdf: generatePDFParams = {
-                ContactID: checkUser?.xeroContactId,
-                desc: transactionTitle.CREDITS_ADDED,
-                amount: secondaryLeadsAnticipating,
-                freeCredits: 0,
-                sessionId: transactionTitle.SECONDARY_CREDITS_MANUAL_ADJUSTMENT,
-                isManualAdjustment: false,
+        if (input.generateInvoice) {
+          generatePDF(paramPdf)
+            .then(async (res: AxiosResponse<XeroResponseInterface>) => {
+              const dataToSaveInInvoice: Partial<InvoiceInterface> = {
+                userId: checkUser?.id,
+                transactionId: transaction.id,
+                price: secondaryLeadsAnticipating,
+                invoiceId: res.data?.Invoices[0].InvoiceID,
               };
-              generatePDF(paramPdf).then(async (res: any) => {
-                const dataToSaveInInvoice: Partial<InvoiceInterface> = {
-                  userId: checkUser?.id,
-                  transactionId: transaction.id,
-                  price: secondaryLeadsAnticipating,
-                  invoiceId: res.data?.Invoices[0].InvoiceID,
-                };
-                await Invoice.create(dataToSaveInInvoice);
-                await Transaction.findByIdAndUpdate(transaction.id, {
-                  invoiceId: res.data?.Invoices[0].InvoiceID,
-                });
+              await Invoice.create(dataToSaveInInvoice);
+              await Transaction.findByIdAndUpdate(transaction.id, {
+                invoiceId: res.data?.Invoices[0].InvoiceID,
+              });
 
-                console.log("pdf generated");
+            logger.info(
+              "pdf generated",
+              { res }
+            );
+            })
+            .catch(async (err) => {
+              refreshToken().then(async (res) => {
+                const paramPdf: generatePDFParams = {
+                  ContactID: checkUser?.xeroContactId,
+                  desc: transactionTitle.CREDITS_ADDED,
+                  amount: secondaryLeadsAnticipating,
+                  freeCredits: 0,
+                  sessionId: transactionTitle.SECONDARY_CREDITS_MANUAL_ADJUSTMENT,
+                  isManualAdjustment: false,
+                };
+                generatePDF(paramPdf).then(async (res: AxiosResponse<XeroResponseInterface>) => {
+                  const dataToSaveInInvoice: Partial<InvoiceInterface> = {
+                    userId: checkUser?.id,
+                    transactionId: transaction.id,
+                    price: secondaryLeadsAnticipating,
+                    invoiceId: res.data?.Invoices[0].InvoiceID,
+                  };
+                  await Invoice.create(dataToSaveInInvoice);
+                  await Transaction.findByIdAndUpdate(transaction.id, {
+                    invoiceId: res.data?.Invoices[0].InvoiceID,
+                  });
+
+                logger.info(
+                  "pdf generated",
+                  { res }
+                );
+                });
               });
             });
-          });
+        }
       }
 
       if (input.smsPhoneNumber) {
@@ -1427,17 +1444,16 @@ export class UsersControllers {
           eventCode: EVENT_TITLE.BUSINESS_PHONE_NUMBER,
         };
         await eventsWebhook(reqBody)
-          .then(() =>
-            console.log(
+          .then((res) =>
+            logger.info(
               "event webhook for updating business phone number hits successfully.",
-              reqBody
+              { reqBody }
             )
           )
           .catch((err) =>
-            console.log(
-              err,
+            logger.error(
               "error while triggering business phone number webhooks failed",
-              reqBody
+              err
             )
           );
       }
@@ -1588,17 +1604,16 @@ export class UsersControllers {
             );
           }
           await eventsWebhook(paramsToSend)
-            .then(() =>
-              console.log(
+            .then((res) =>
+              logger.info(
                 "event webhook for postcode updates hits successfully.",
-                paramsToSend
+                { paramsToSend }
               )
             )
             .catch((err) =>
-              console.log(
-                err,
+              logger.error(
                 "error while triggering postcode updates webhooks failed",
-                paramsToSend
+                err
               )
             );
         }
@@ -1701,16 +1716,15 @@ export class UsersControllers {
 
           await eventsWebhook(paramsToSend)
             .then(() =>
-              console.log(
+              logger.info(
                 "event webhook for postcode updates hits successfully.",
-                paramsToSend
+                { paramsToSend }
               )
             )
             .catch((err) =>
-              console.log(
-                err,
+              logger.error(
                 "error while triggering postcode updates webhooks failed",
-                paramsToSend
+                err
               )
             );
         }
@@ -1733,10 +1747,9 @@ export class UsersControllers {
         createSessionUnScheduledPayment(params)
           .then(async (_res: any) => {
             if (!checkUser.xeroContactId) {
-              console.log(
+              logger.info(
                 "xeroContact ID not found. Failed to generate pdf.",
-                new Date(),
-                "Today's Date"
+                { _res }
               );
             }
             const dataToSave: any = {
@@ -1760,7 +1773,7 @@ export class UsersControllers {
                 isManualAdjustment: false,
               };
               generatePDF(paramPdf)
-                .then(async (res: any) => {
+                .then(async (res: AxiosResponse<XeroResponseInterface>) => {
                   const dataToSaveInInvoice: any = {
                     userId: checkUser?.id,
                     transactionId: transaction.id,
@@ -1772,7 +1785,10 @@ export class UsersControllers {
                     invoiceId: res.data?.Invoices[0].InvoiceID,
                   });
 
-                  console.log("pdf generated", new Date(), "Today's Date");
+                  logger.info(
+                    "pdf generated",
+                    { res }
+                  );
                 })
                 .catch(async (err) => {
                   refreshToken().then(async (res) => {
@@ -1784,7 +1800,7 @@ export class UsersControllers {
                       sessionId: _res.data.id,
                       isManualAdjustment: false,
                     };
-                    generatePDF(paramPdf).then(async (res: any) => {
+                    generatePDF(paramPdf).then(async (res: AxiosResponse<XeroResponseInterface>) => {
                       const dataToSaveInInvoice: any = {
                         userId: checkUser?.id,
                         transactionId: transaction.id,
@@ -1796,16 +1812,18 @@ export class UsersControllers {
                         invoiceId: res.data?.Invoices[0].InvoiceID,
                       });
 
-                      console.log("pdf generated", new Date(), "Today's Date");
+                      logger.info(
+                        "pdf generated",
+                        { res }
+                      );
                     });
                   });
                 });
             }
 
-            console.log(
+            logger.info(
               "payment success!!!!!!!!!!!!!",
-              new Date(),
-              "Today's Date"
+              { _res }
             );
 
             await User.findByIdAndUpdate(
@@ -1831,7 +1849,10 @@ export class UsersControllers {
               creditsLeft: checkUser?.credits,
             };
             await Transaction.create(dataToSave);
-            console.log("error in payment Api", err);
+            logger.error(
+              "error in payment Api",
+              err
+            );
           });
       } else {
         const user = await User.findByIdAndUpdate(
@@ -1865,13 +1886,13 @@ export class UsersControllers {
         //   .flat();
         let formattedPostCodes ;
         if (leadData && leadData.type === POSTCODE_TYPE.RADIUS) {
-            (formattedPostCodes = leadData.postCodeList?.map(({postcode}) => {
-              return postcode
-            }));
+          (formattedPostCodes = leadData.postCodeList?.map(({postcode}) => {
+            return postcode
+          }));
         } else {
           formattedPostCodes = leadData?.postCodeTargettingList
-          .map((item: any) => item.postalCode)
-          .flat();
+            .map((item: any) => item.postalCode)
+            .flat();
         }
         const userAfterMod = await User.findById(
           id,
@@ -2028,10 +2049,9 @@ export class UsersControllers {
       });
       await CardDetails.deleteMany({ userId: userExist?.id });
 
-      //@ts-ignore
-      deleteCustomerOnRyft(user?.ryftClientId)
-        .then(() => console.log("deleted customer"))
-        .catch(() => console.log("error while deleting customer on ryft"));
+      deleteCustomerOnRyft(user?.ryftClientId as string)
+        .then((res) => logger.info("deleted customer", { res }))
+        .catch((err) => logger.error("error while deleting customer on ryft", err))
 
       if (!user) {
         return res
@@ -2206,7 +2226,6 @@ export class UsersControllers {
         item.businessDetailsId = businessDetailsId;
       });
 
-      console.log(query.results, ">>>>>");
       const pref: ClientTablePreferenceInterface | null =
         await ClientTablePreference.findOne({ userId: _req.user.id });
       const filteredDataArray: DataObject[] = filterAndTransformData(
@@ -2532,48 +2551,57 @@ export class UsersControllers {
             sessionId: transactionTitle.MANUAL_ADJUSTMENT,
             isManualAdjustment: true,
           };
-          generatePDF(paramPdf)
-            .then(async (res: any) => {
-              const dataToSaveInInvoice: Partial<InvoiceInterface> = {
-                userId: user?.id,
-                transactionId: transaction.id,
-                price: credits,
-                invoiceId: res?.Invoices[0].InvoiceID,
-              };
-              await Invoice.create(dataToSaveInInvoice);
-              await Transaction.findByIdAndUpdate(transaction.id, {
-                invoiceId: res?.Invoices[0].InvoiceID,
-              });
-
-              console.log("pdf generated", new Date(), "Today's Date");
-            })
-            .catch(async (err) => {
-              refreshToken().then(async (res) => {
-                const paramPdf: generatePDFParams = {
-                  ContactID: user?.xeroContactId,
-
-                  desc: transactionTitle.CREDITS_ADDED,
-                  amount: 0,
-                  freeCredits: credits,
-                  sessionId: transactionTitle.MANUAL_ADJUSTMENT,
-                  isManualAdjustment: true,
+          if (input?.generateInvoice) {
+            generatePDF(paramPdf)
+              .then(async (res: AxiosResponse<XeroResponseInterface>) => {
+                const dataToSaveInInvoice: Partial<InvoiceInterface> = {
+                  userId: user?.id,
+                  transactionId: transaction.id,
+                  price: credits,
+                  invoiceId: res.data?.Invoices[0].InvoiceID,
                 };
-                generatePDF(paramPdf).then(async (res: any) => {
-                  const dataToSaveInInvoice: Partial<InvoiceInterface> = {
-                    userId: user?.id,
-                    transactionId: transaction.id,
-                    price: credits,
-                    invoiceId: res.data?.Invoices[0].InvoiceID,
-                  };
-                  await Invoice.create(dataToSaveInInvoice);
-                  await Transaction.findByIdAndUpdate(transaction.id, {
-                    invoiceId: res.data?.Invoices[0].InvoiceID,
-                  });
+                await Invoice.create(dataToSaveInInvoice);
+                await Transaction.findByIdAndUpdate(transaction.id, {
+                  invoiceId: res.data?.Invoices[0].InvoiceID,
+                });
 
-                  console.log("pdf generated", new Date(), "Today's Date");
+              logger.info(
+                "pdf generated",
+                { res }
+              );
+              })
+              .catch(async (err) => {
+                refreshToken().then(async (res) => {
+                  const paramPdf: generatePDFParams = {
+                    ContactID: user?.xeroContactId,
+
+                    desc: transactionTitle.CREDITS_ADDED,
+                    amount: 0,
+                    freeCredits: credits,
+                    sessionId: transactionTitle.MANUAL_ADJUSTMENT,
+                    isManualAdjustment: true,
+                  };
+                  generatePDF(paramPdf).then(async (res: AxiosResponse<XeroResponseInterface>) => {
+                    const dataToSaveInInvoice: Partial<InvoiceInterface> = {
+                      userId: user?.id,
+                      transactionId: transaction.id,
+                      price: credits,
+                      invoiceId: res.data?.Invoices[0].InvoiceID,
+                    };
+                    await Invoice.create(dataToSaveInInvoice);
+                    await Transaction.findByIdAndUpdate(transaction.id, {
+                      invoiceId: res.data?.Invoices[0].InvoiceID,
+                    });
+
+                  logger.info(
+                    "pdf generated",
+                    { res }
+                  );
+                  });
                 });
               });
-            });
+          }
+
           const userBusiness: BusinessDetailsInterface | null =
             isBusinessObject(user?.businessDetailsId)
               ? user?.businessDetailsId
@@ -2603,21 +2631,15 @@ export class UsersControllers {
           }
           await eventsWebhook(paramsToSend)
             .then(() =>
-              console.log(
+              logger.info(
                 "event webhook for add credits hits successfully.",
-                paramsToSend,
-                new Date(),
-                "Today's Date",
-                user._id,
-                "user's id"
+                { paramsToSend }
               )
             )
             .catch((err) =>
-              console.log(
+              logger.error(
                 "error while triggering webhooks for add credits failed",
-                paramsToSend,
-                new Date(),
-                "Today's Date"
+                err
               )
             );
         });
@@ -2841,7 +2863,10 @@ export class UsersControllers {
         }
       }
     } catch (error) {
-      console.error("Error in Auto charge:", error.response);
+      logger.error(
+        "Error in Auto charge:",
+        error
+      );
     }
   };
 
