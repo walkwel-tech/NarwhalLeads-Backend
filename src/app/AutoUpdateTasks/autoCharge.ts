@@ -1,3 +1,4 @@
+import {AxiosResponse} from "axios";
 import moment from "moment-timezone";
 import { Types } from "mongoose";
 import * as cron from "node-cron";
@@ -19,6 +20,8 @@ import { createSessionUnScheduledPayment } from "../../utils/payment/createPayme
 import { createPaymentOnStripe } from "../../utils/payment/stripe/createPaymentToStripe";
 import { IntentInterface } from "../../utils/payment/stripe/paymentIntent";
 import { refreshToken } from "../../utils/XeroApiIntegration/createContact";
+import { XeroResponseInterface } from "../../types/XeroResponseInterface";
+
 import {
   generatePDF,
   generatePDFParams,
@@ -63,7 +66,7 @@ export const autoChargePayment = async () => {
   if(process.env.APP_ENV == APP_ENV.STAGING){
     cronExpression = "*/30 * * * *";
   }
-  
+
   cron.schedule(cronExpression, async () => {
     console.log("AutoCharge: CRON Start..", new Date());
     try {
@@ -219,7 +222,7 @@ export const weeklyPayment = async () => {
                         isManualAdjustment: false,
                       };
                       generatePDF(paramPdf)
-                        .then(async (res: any) => {
+                        .then(async (res: AxiosResponse<XeroResponseInterface>) => {
                           const dataToSaveInInvoice: Partial<InvoiceInterface> =
                             {
                               userId: user.id,
@@ -240,7 +243,7 @@ export const weeklyPayment = async () => {
                               sessionId: _res_.data?.id,
                               isManualAdjustment: false,
                             };
-                            generatePDF(paramPdf).then(async (res: any) => {
+                            generatePDF(paramPdf).then(async (res: AxiosResponse<XeroResponseInterface>) => {
                               const dataToSaveInInvoice: Partial<InvoiceInterface> =
                                 {
                                   userId: user.id,
@@ -284,8 +287,8 @@ export const weeklyPayment = async () => {
 
 export const getUsersWithAutoChargeEnabled = async (id?: Types.ObjectId) => {
   let dataToFind;
-  
-  
+
+
   if (!id) {
     dataToFind = {
       $expr: {
@@ -335,7 +338,7 @@ export const chargeUserOnStripe = async (params: IntentInterface) => {
         console.log("payment initiated!", new Date(), {
           stripeUser: params.customer,
         });
-        
+
         if (_res.status === PAYMENT_STATUS.REQUIRES_ACTION) {
 
 

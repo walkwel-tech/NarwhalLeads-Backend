@@ -1,7 +1,9 @@
+import {AxiosResponse} from "axios";
 import { genSaltSync, hashSync } from "bcryptjs";
 import { validate } from "class-validator";
 import { Request, Response } from "express";
 import mongoose, { PipelineStage, Types } from "mongoose";
+import {XeroResponseInterface} from "../../types/XeroResponseInterface";
 import {clientTablePreference} from "../../utils/constantFiles/clientTablePreferenceAdmin";
 import {MODULE, PERMISSIONS} from "../../utils/Enums/permissions.enum";
 import {userHasAccess} from "../../utils/userHasAccess";
@@ -1268,7 +1270,7 @@ export class UsersControllers {
         };
         if (input.generateInvoice) {
           generatePDF(paramPdf)
-            .then(async (res: any) => {
+            .then(async (res: AxiosResponse<XeroResponseInterface>) => {
               const dataToSaveInInvoice: Partial<InvoiceInterface> = {
                 userId: checkUser?.id,
                 transactionId: transaction.id,
@@ -1292,7 +1294,7 @@ export class UsersControllers {
                   sessionId: transactionTitle.SECONDARY_CREDITS_MANUAL_ADJUSTMENT,
                   isManualAdjustment: false,
                 };
-                generatePDF(paramPdf).then(async (res: any) => {
+                generatePDF(paramPdf).then(async (res: AxiosResponse<XeroResponseInterface>) => {
                   const dataToSaveInInvoice: Partial<InvoiceInterface> = {
                     userId: checkUser?.id,
                     transactionId: transaction.id,
@@ -1762,7 +1764,7 @@ export class UsersControllers {
                 isManualAdjustment: false,
               };
               generatePDF(paramPdf)
-                .then(async (res: any) => {
+                .then(async (res: AxiosResponse<XeroResponseInterface>) => {
                   const dataToSaveInInvoice: any = {
                     userId: checkUser?.id,
                     transactionId: transaction.id,
@@ -1786,7 +1788,7 @@ export class UsersControllers {
                       sessionId: _res.data.id,
                       isManualAdjustment: false,
                     };
-                    generatePDF(paramPdf).then(async (res: any) => {
+                    generatePDF(paramPdf).then(async (res: AxiosResponse<XeroResponseInterface>) => {
                       const dataToSaveInInvoice: any = {
                         userId: checkUser?.id,
                         transactionId: transaction.id,
@@ -2536,7 +2538,7 @@ export class UsersControllers {
           };
           if (input?.generateInvoice) {
             generatePDF(paramPdf)
-              .then(async (res: any) => {
+              .then(async (res: AxiosResponse<XeroResponseInterface>) => {
                 const dataToSaveInInvoice: Partial<InvoiceInterface> = {
                   userId: user?.id,
                   transactionId: transaction.id,
@@ -2561,7 +2563,7 @@ export class UsersControllers {
                     sessionId: transactionTitle.MANUAL_ADJUSTMENT,
                     isManualAdjustment: true,
                   };
-                  generatePDF(paramPdf).then(async (res: any) => {
+                  generatePDF(paramPdf).then(async (res: AxiosResponse<XeroResponseInterface>) => {
                     const dataToSaveInInvoice: Partial<InvoiceInterface> = {
                       userId: user?.id,
                       transactionId: transaction.id,

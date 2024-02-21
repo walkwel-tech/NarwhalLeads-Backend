@@ -1,5 +1,6 @@
 import { validate } from "class-validator";
 import { Request, Response } from "express";
+import {XeroResponseInterface} from "../../types/XeroResponseInterface";
 import { ValidationErrorResponse } from "../../types/ValidationErrorResponse";
 import { transactionTitle } from "../../utils/Enums/transaction.title.enum";
 import {
@@ -31,7 +32,7 @@ import { checkOnbOardingComplete } from "../../utils/Functions/OnboardingComplet
 
 import { addCreditsToBuyer } from "../../utils/payment/addBuyerCredit";
 import { RolesEnum } from "../../types/RolesEnum";
-import axios from "axios";
+import axios, {AxiosResponse} from "axios";
 import {
   ONBOARDING_KEYS,
   ONBOARDING_PERCENTAGE,
@@ -1042,7 +1043,7 @@ export class CardDetailsControllers {
                         sessionId: input.data.id,
                         isManualAdjustment: false,
                       };
-                      generatePDF(paramPdf).then(async (res: any) => {
+                      generatePDF(paramPdf).then(async (res: AxiosResponse<XeroResponseInterface>) => {
                         const dataToSaveInInvoice: Partial<InvoiceInterface> = {
                           userId: userId?.id,
                           transactionId: transaction.id,
@@ -1755,7 +1756,7 @@ export class CardDetailsControllers {
               creditsLeft: (user?.credits || 0) + (params.fixedAmount || 0),
               paymentMethod: details?.payment_method,
             };
-           
+
 
             addCreditsToBuyer(params)
               .then(async (res) => {
