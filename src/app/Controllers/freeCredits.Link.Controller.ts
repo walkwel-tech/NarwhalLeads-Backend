@@ -218,7 +218,7 @@ export class freeCreditsLinkController {
           lastName: user.lastName,
           role: user.role,
         }));
-        
+
         let promoLinkId = "";
         if (item.PromoLinkContentId.length > 0) {
           promoLinkId = item.PromoLinkContentId[0]._id;
@@ -243,7 +243,7 @@ export class freeCreditsLinkController {
           users: usersData,
           accountManagerId: accountManager,
           businessIndustry: businessIndustry,
-          PromoLinkContentId: promoLinkId,
+          promoLinkContentId: promoLinkId,
           accountManager: "",
           businessIndustryId: item?.businessIndustryId[0]?.industry,
           isCommission: item?.isCommission,
