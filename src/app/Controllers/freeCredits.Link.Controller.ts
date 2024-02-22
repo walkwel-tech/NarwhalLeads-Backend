@@ -34,7 +34,7 @@ export class freeCreditsLinkController {
         isCommission: input?.isCommission,
         businessIndustryId: input?.businessIndustryId,
         giveCreditOnAddCard: input?.giveCreditOnAddCard,
-        firstCardBonusCredit: input?.firstCardBonusCredit
+        firstCardBonusCredit: input?.firstCardBonusCredit,
       };
       if (input.code) {
         dataToSave.code = input.code;
@@ -63,7 +63,7 @@ export class freeCreditsLinkController {
           .json({ error: { message: "Top-up amount is required" } });
       }
     } catch (error) {
-      logger.error('Error:', error);
+      logger.error("Error:", error);
       res
         .status(500)
         .json({ error: { message: "something Went wrong.", error } });
@@ -154,6 +154,8 @@ export class freeCreditsLinkController {
             accountManager: 1,
             giveCreditOnAddCard: 1,
             firstCardBonusCredit: 1,
+            accountManagerId: "$accountManager",
+            businessIndustry: "$businessIndustryId",
             __v: 1,
             businessIndustryId: 1,
             users: {
@@ -196,6 +198,22 @@ export class freeCreditsLinkController {
             // Add other properties you need from the user object
           };
         });
+        const businessIndustry = item.businessIndustry.map(
+          (industry: any) => ({
+            _id: industry._id,
+            industry: industry.industry,
+          })
+        );
+
+        const accountManager = item.accountManagerId.map(
+          (user:any) => ({
+          _id: user._id,
+          firstName: user.firstName,
+          lastName:user.lastName,
+          role:user.role       
+        })
+        );
+
         let dataToShow = {
           _id: item._id,
           code: item.code,
@@ -212,11 +230,13 @@ export class freeCreditsLinkController {
           updatedAt: item.updatedAt,
           __v: item.__v,
           users: usersData,
+          accountManagerId: accountManager,
+          businessIndustry: businessIndustry,
           accountManager: "",
           businessIndustryId: item?.businessIndustryId[0]?.industry,
           isCommission: item?.isCommission,
           giveCreditOnAddCard: item?.giveCreditOnAddCard,
-          firstCardBonusCredit: item?.firstCardBonusCredit
+          firstCardBonusCredit: item?.firstCardBonusCredit,
         };
         if (item.accountManager.length > 0) {
           dataToShow.accountManager = `${
