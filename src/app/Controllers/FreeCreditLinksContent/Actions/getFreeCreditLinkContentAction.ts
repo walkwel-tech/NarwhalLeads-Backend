@@ -13,7 +13,7 @@ export const getFreeCreditLinkContent = async (req: Request, res: Response) => {
     }
 
     const freeCreditLinkContent = await FreeCreditsLinkContent.findOne({
-      freeCreditsLinkId: freeCreditsLink._id,
+      promolink: freeCreditsLink._id,
     });
     if (!freeCreditLinkContent) {
       return res
