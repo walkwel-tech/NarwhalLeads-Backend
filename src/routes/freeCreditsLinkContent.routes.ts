@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { Auth, OnlyAdmins } from "../app/Middlewares";
+import { OnlyAdmins } from "../app/Middlewares";
 import { FreeCreditsLinkContentController } from "../app/Controllers/FreeCreditLinksContent";
 
 const freeCreditsLinkContentRoutes: Router = Router();
@@ -12,7 +12,6 @@ freeCreditsLinkContentRoutes.post(
 
 freeCreditsLinkContentRoutes.get(
   "/:code",
-  Auth,
   FreeCreditsLinkContentController.get
 );
 

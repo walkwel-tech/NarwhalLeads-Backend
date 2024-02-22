@@ -238,6 +238,7 @@ export class freeCreditsLinkController {
           giveCreditOnAddCard: item?.giveCreditOnAddCard,
           firstCardBonusCredit: item?.firstCardBonusCredit,
         };
+        
         if (item.accountManager.length > 0) {
           dataToShow.accountManager = `${
             item.accountManager[0]?.firstName || ""
