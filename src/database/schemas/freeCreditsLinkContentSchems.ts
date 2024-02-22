@@ -1,9 +1,10 @@
-import { Schema } from "mongoose";
+import { Schema, Types } from "mongoose";
 
 const FreeCreditsLinkContentSchema = new Schema(
   {
     promolink: {
-      type: String,
+      type: Types.ObjectId,
+      ref: "FreeCreditsLink",
       required: true,
     },
     heroSection: {

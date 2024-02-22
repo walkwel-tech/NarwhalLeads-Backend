@@ -117,6 +117,14 @@ export class freeCreditsLinkController {
         },
         {
           $lookup: {
+            from: "freecreditslinkcontents",
+            localField: "_id",
+            foreignField: "promolink",
+            as: "PromoLinkContentId",
+          },
+        },
+        {
+          $lookup: {
             from: "businessdetails", // Replace with the actual name of your "BusinessDetails" collection
             localField: "usersData.businessDetailsId",
             foreignField: "_id",
@@ -154,6 +162,7 @@ export class freeCreditsLinkController {
             accountManager: 1,
             giveCreditOnAddCard: 1,
             firstCardBonusCredit: 1,
+            PromoLinkContentId: 1,
             accountManagerId: "$accountManager",
             businessIndustry: "$businessIndustryId",
             __v: 1,
@@ -198,21 +207,23 @@ export class freeCreditsLinkController {
             // Add other properties you need from the user object
           };
         });
-        const businessIndustry = item.businessIndustry.map(
-          (industry: any) => ({
-            _id: industry._id,
-            industry: industry.industry,
-          })
-        );
+        const businessIndustry = item.businessIndustry.map((industry: any) => ({
+          _id: industry._id,
+          industry: industry.industry,
+        }));
 
-        const accountManager = item.accountManagerId.map(
-          (user:any) => ({
+        const accountManager = item.accountManagerId.map((user: any) => ({
           _id: user._id,
           firstName: user.firstName,
-          lastName:user.lastName,
-          role:user.role       
-        })
-        );
+          lastName: user.lastName,
+          role: user.role,
+        }));
+        
+        let promoLinkId = "";
+        if (item.PromoLinkContentId.length > 0) {
+          promoLinkId = item.PromoLinkContentId[0]._id;
+        }
+       
 
         let dataToShow = {
           _id: item._id,
@@ -232,18 +243,20 @@ export class freeCreditsLinkController {
           users: usersData,
           accountManagerId: accountManager,
           businessIndustry: businessIndustry,
+          PromoLinkContentId: promoLinkId,
           accountManager: "",
           businessIndustryId: item?.businessIndustryId[0]?.industry,
           isCommission: item?.isCommission,
           giveCreditOnAddCard: item?.giveCreditOnAddCard,
           firstCardBonusCredit: item?.firstCardBonusCredit,
         };
-        
+
         if (item.accountManager.length > 0) {
           dataToShow.accountManager = `${
             item.accountManager[0]?.firstName || ""
           } ${item.accountManager[0]?.lastName || ""}`;
         }
+  
         return dataToShow;
       });
       return res.json({

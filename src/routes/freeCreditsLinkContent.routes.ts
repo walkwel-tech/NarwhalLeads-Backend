@@ -15,4 +15,10 @@ freeCreditsLinkContentRoutes.get(
   FreeCreditsLinkContentController.get
 );
 
+freeCreditsLinkContentRoutes.post(
+  "/:id",
+  OnlyAdmins,
+  FreeCreditsLinkContentController.update
+);
+
 export default freeCreditsLinkContentRoutes;
