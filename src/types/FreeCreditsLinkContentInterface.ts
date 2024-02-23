@@ -8,7 +8,7 @@ export interface FreeCreditsLinkContentInterface extends Document {
   leadShowCase: string,
   badgeTitle: string,
   badgeSubTitle: string,
-  badgeColour: string,
+  badgeColor: string,
   replacementPolicyHeader: string,  
   replacementPolicyText: string,  
   isDeleted: boolean,
