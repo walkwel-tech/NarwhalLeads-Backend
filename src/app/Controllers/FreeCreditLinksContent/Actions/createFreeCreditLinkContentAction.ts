@@ -19,8 +19,8 @@ export const createFreeCreditLinkContent = async (
       (reqBody.replacementPolicyText = input.replacementPolicyText),
       (reqBody.replacementPolicyHeader = input.replacementPolicyHeader),
       (reqBody.badgeTitle = input.badgeTitle);
-    reqBody.badgeSubTitle = input.badgeSubTitle;
-    reqBody.badgeColour = input.badgeColour;
+      reqBody.badgeSubTitle = input.badgeSubTitle;
+      reqBody.badgeColor = input.badgeColor;
 
     const validationErrors = await validate(reqBody);
     if (validationErrors.length > 0) {
@@ -37,7 +37,7 @@ export const createFreeCreditLinkContent = async (
       promolink: reqBody.promoLink,
       badgeTitle: reqBody.badgeTitle || "",
       badgeSubTitle: reqBody.badgeSubTitle || "",
-      badgeColour: reqBody.badgeColour || "",
+      badgeColor: reqBody.badgeColor || "",
       heroSection: reqBody.heroSection || "",
       qualityLeads: reqBody.qualityLeads || "",
       leadShowCase: reqBody.leadShowCase || "",

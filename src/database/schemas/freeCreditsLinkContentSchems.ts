@@ -27,7 +27,7 @@ const FreeCreditsLinkContentSchema = new Schema(
       type: String,
       required: false,
     },
-    badgeColour: {
+    badgeColor: {
       type: String,
       required: false,
     },
