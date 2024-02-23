@@ -19,7 +19,7 @@ export class FreeCreditLinkContentValidator {
 
   @IsOptional()
   @IsString()
-  badgeColour?: string;
+  badgeColor?: string;
 
   @IsOptional()
   @IsString()
