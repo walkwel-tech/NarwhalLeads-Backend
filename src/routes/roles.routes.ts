@@ -24,7 +24,6 @@ rolesRoutes.get("/:id",
     ]),
     RolesController.getRoleAndPermissions
 );
-
 rolesRoutes.post("/:id",
     checkPermissions([
         { module: MODULE.ROLE_PERMISSIONS, permission: PERMISSIONS.UPDATE },
