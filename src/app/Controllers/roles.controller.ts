@@ -38,6 +38,7 @@ export class RolesController {
             const reqBody = req.body;
             const createRole = new CreateRoleInput();
             createRole.role = reqBody?.role;
+            createRole.permissions = reqBody?.permissions;
 
             const validationErrors = await validate(createRole);
 
@@ -45,6 +46,14 @@ export class RolesController {
                 return res.status(400).json({
                     error: { message: "Invalid body", validationErrors },
                 });
+            }
+
+            let permission = await Permissions.find({ role: reqBody.role });
+
+            if (permission.length) {
+                return res
+                .status(400)
+                .json({ error: { message: "Role already exist" } });
             }
 
             const data = await Permissions.create(reqBody);
@@ -61,7 +70,7 @@ export class RolesController {
     static getRoleAndPermissions = async (req: Request, res: Response): Promise<Response> => {
         try {
             const { id } = req.params;
-            
+
             const permissions = await Permissions.findById(id);
 
             if(!permissions) return res.status(400).json({data: [], message: "Permissions not found."});
