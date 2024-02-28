@@ -51,7 +51,7 @@ export class SupplierBadgeController {
         return {
           ...badge.toObject(),
           imageUrl: imageUrl,
-          ...(badge?.blogTitle ? {blogTitle: badge.blogTitle.replace(/{{company}}/g, businessDetail?.businessName)} : {} ),
+          ...(badge?.contentTitle ? {blogTitle: badge.contentTitle.replace(/{{company}}/g, businessDetail?.businessName)} : {} ),
           codeSnippet: badge.codeSnippet
             .replace(/{{imageUrl}}/g, imageUrl)
             .replace(/{{industry}}/g, businessIndustry?.industry)
