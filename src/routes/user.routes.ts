@@ -1,7 +1,8 @@
 import { Router } from "express";
 import multer from "multer";
 
-import { UsersControllers } from "../app/Controllers/";
+// import { UsersControllers } from "../app/Controllers/";
+import { UsersControllersV2 as UsersControllers } from "../app/Controllers/Users";
 import { Auth, OnlyAdminOrUserLogin, OnlyAdmins } from "../app/Middlewares";
 import { storeFile } from "../app/Middlewares/fileUpload";
 
