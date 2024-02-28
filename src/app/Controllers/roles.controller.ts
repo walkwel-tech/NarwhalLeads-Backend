@@ -2,6 +2,7 @@ import { Request, Response } from "express";
 import { Permissions } from "../Models/Permission";
 import { validate } from "class-validator";
 import { CreateRoleInput } from "../Inputs/CreateRole.input";
+import { MODULE } from "../../utils/Enums/permissions.enum";
 
 export class RolesController {
     static getAllRolesAndPermissions = async (req: Request, res: Response): Promise<Response> => {
@@ -95,6 +96,22 @@ export class RolesController {
             if (!data) return res.status(400).json({ data: [], message: "Role not found." })
 
             return res.status(200).json({ data: data, message: "Role updated successfully." })
+
+        } catch (err) {
+            return res
+                .status(500)
+                .json({ error: { message: "Something went wrong.", err } });
+        }
+    }
+
+    static getModules = async (req: Request, res: Response) => {
+        try {
+            const modules = Object.values(MODULE).map(module => ({
+                module,
+                permission: []
+            }));
+            
+            return res.status(200).json({ data: modules, message: "Modules fetched successfully." });
 
         } catch (err) {
             return res

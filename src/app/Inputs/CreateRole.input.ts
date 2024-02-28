@@ -1,6 +1,7 @@
 import { IsArray, IsNotEmpty, IsString } from "class-validator";
 
 export class CreateRoleInput {
+    @IsNotEmpty()
     @IsString({ message: "role is required" })
     role: string;
 

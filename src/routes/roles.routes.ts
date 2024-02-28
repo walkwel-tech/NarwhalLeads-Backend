@@ -12,6 +12,12 @@ rolesRoutes.get("/",
     ]),
     RolesController.getAllRolesAndPermissions
 );
+rolesRoutes.get("/modules",
+    checkPermissions([
+        { module: MODULE.ROLE_PERMISSIONS, permission: PERMISSIONS.READ },
+    ]),
+    RolesController.getModules
+);
 rolesRoutes.post("/",
     checkPermissions([
         { module: MODULE.ROLE_PERMISSIONS, permission: PERMISSIONS.CREATE },
