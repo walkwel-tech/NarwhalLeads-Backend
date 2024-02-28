@@ -10,8 +10,6 @@ export const getBadgeAction = async (req: Request, res: Response) => {
     const { industrySlug, type } = req.params;
     const industry = await BuisnessIndustries.findOne({ _id: new Types.ObjectId(industrySlug) });
 
-    console.log("LK", industry, req.params);
-
     const badgeType = getBadgeTypeFromString(type);
 
     if (!industry) {
@@ -26,7 +24,6 @@ export const getBadgeAction = async (req: Request, res: Response) => {
       (badge) => badge.type === badgeType
     );
 
-    console.log(supplierBadge, ">>>>><", industry)
     if (supplierBadge) {
       const imageBuffer = await axios.get(supplierBadge.src, {
         responseType: "arraybuffer",
