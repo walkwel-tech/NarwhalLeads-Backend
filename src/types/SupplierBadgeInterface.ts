@@ -7,6 +7,7 @@ export interface SupplierBadgeInterface extends Document {
     codeSnippet: string;
     imageUrl: string;
     isActive: boolean;
+    contentTitle: string;
     order: number;
     _id: Types.ObjectId;
     createdAt: Date;
