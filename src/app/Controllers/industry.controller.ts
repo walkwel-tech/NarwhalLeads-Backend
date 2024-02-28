@@ -165,7 +165,7 @@ export class IndustryController {
             const discount = promolink.discount || 0;
             const discountedLeadCost = input.leadCost * (1 - discount / 100);
             return User.findByIdAndUpdate(user._id, {
-              leadCost: discountedLeadCost,
+              leadCost: +discountedLeadCost.toFixed(3),
             });
           }
         };
