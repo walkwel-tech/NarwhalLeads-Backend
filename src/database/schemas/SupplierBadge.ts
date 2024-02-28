@@ -7,6 +7,7 @@ const SupplierBadgeSchema = new Schema(
         codeSnippet: String,
         imageUrl: String,
         order: Number,
+        blogTitle: String,
         isActive: {
             type: Boolean,
             default: true

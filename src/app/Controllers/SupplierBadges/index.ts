@@ -10,7 +10,7 @@ import { checkBadgeAddedAction } from "./Actions/checkBadgeAdded.action";
 import { getBadgeAddedListAction } from "./Actions/getBadgeAddedList.action";
 import { getMyBadgeDetail } from "./Actions/getMyBadgeDetail.action";
 
-const defaultImagesForType = {
+export const defaultImagesForType = {
   badge: "https://spotdif.com/media/SpotDif_Partner_Badge.webp",
   banner: "https://spotdif.com/media/SpotDif_Partner_Banner.webp",
   post: "https://spotdif.com/media/SpotDif_Partner_Badge.webp",
@@ -51,6 +51,7 @@ export class SupplierBadgeController {
         return {
           ...badge.toObject(),
           imageUrl: imageUrl,
+          ...(badge?.blogTitle ? {blogTitle: badge.blogTitle.replace(/{{company}}/g, businessDetail?.businessName)} : {} ),
           codeSnippet: badge.codeSnippet
             .replace(/{{imageUrl}}/g, imageUrl)
             .replace(/{{industry}}/g, businessIndustry?.industry)
