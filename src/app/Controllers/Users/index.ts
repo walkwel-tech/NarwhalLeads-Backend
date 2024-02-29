@@ -5,7 +5,7 @@ import { getUsersV2Actions } from "./Actions/getUsersV2.action";
 import { showAllClientsForAdminExportFileV2Action } from "./Actions/showAllClientsForAdminExportFileV2.actions";
 import { showAction } from "./Actions/show.action";
 import { indexNameV2Action } from "./Actions/indexName.action";
-import { updateAction } from "./Actions/Update.action";
+import { updateAction } from "./Actions/update.action";
 import { destroyAction } from "./Actions/destroy.action";
 import { reOrderIndexAction } from "./Actions/reOrderIndex.action";
 import { invoicesActions } from "./Actions/invoices.action";

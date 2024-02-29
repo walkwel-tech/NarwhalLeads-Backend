@@ -1,4 +1,4 @@
-import {Request, Response} from "express"
+import { Response} from "express"
 import { UserInterface } from "../../../../types/UserInterface";
 import { sort } from "../../../../utils/Enums/sorting.enum";
 import { RolesEnum } from "../../../../types/RolesEnum";
