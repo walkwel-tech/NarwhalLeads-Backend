@@ -40,6 +40,7 @@ import postCodeAnalyticsRoutes from "./routes/postCodeAnalytics.routes";
 import validationConfigRoutes from "./routes/validationConfig.routes";
 import freeCreditsLinkContentRoutes from "./routes/freeCreditsLinkContent.routes";
 import adminSettingsRoutes from "./routes/adminSettings.routes";
+import rolesRoutes from "./routes/roles.routes";
 
 const swaggerDocument = require("../swagger.json"); // Replace with the path to your actual Swagger document
 const swaggerUi = require("swagger-ui-express");
@@ -112,6 +113,7 @@ export class Server {
     this.app.use("/api/v1/non-billable-users", Auth, nonBillablesUsers);
     this.app.use("/api/v1/guest", Auth, guestRoutes);
     this.app.use("/api/v1/permission", Auth, permissionRoutes);
+    this.app.use("/api/v1/roles", Auth, rolesRoutes);
     this.app.use("/api/v1/round-table-manager", Auth, siteconfigRoutes);
     this.app.use("/api/v1/get-postCodes", Auth, locationRoutes);
     this.app.use("/api/v1/dashboard", Auth, dashboardRoutes);
