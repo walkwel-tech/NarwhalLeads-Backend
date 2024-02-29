@@ -7,11 +7,14 @@ import { LINK_FILTERS } from "../../utils/Enums/promoLink.enum";
 import { RolesEnum } from "../../types/RolesEnum";
 import { randomString } from "../../utils/Functions/randomString";
 import { Types } from "mongoose";
+import logger from "../../utils/winstonLogger/logger";
+
 type Filter = {
   isDisabled: Boolean;
   isDeleted: Boolean;
   accountManager?: Types.ObjectId;
 };
+
 export class freeCreditsLinkController {
   static create = async (req: Request, res: Response): Promise<any> => {
     try {
@@ -27,10 +30,11 @@ export class freeCreditsLinkController {
         useCounts: 0,
         name: input.name,
         accountManager: input.accountManager,
+        discount: input.discount || 0,
         isCommission: input?.isCommission,
         businessIndustryId: input?.businessIndustryId,
         giveCreditOnAddCard: input?.giveCreditOnAddCard,
-        firstCardBonusCredit: input?.firstCardBonusCredit
+        firstCardBonusCredit: input?.firstCardBonusCredit,
       };
       if (input.code) {
         dataToSave.code = input.code;
@@ -59,7 +63,7 @@ export class freeCreditsLinkController {
           .json({ error: { message: "Top-up amount is required" } });
       }
     } catch (error) {
-      console.log(error, new Date(), "Today's Date");
+      logger.error("Error:", error);
       res
         .status(500)
         .json({ error: { message: "something Went wrong.", error } });
@@ -113,6 +117,14 @@ export class freeCreditsLinkController {
         },
         {
           $lookup: {
+            from: "freecreditslinkcontents",
+            localField: "_id",
+            foreignField: "promolink",
+            as: "PromoLinkContentId",
+          },
+        },
+        {
+          $lookup: {
             from: "businessdetails", // Replace with the actual name of your "BusinessDetails" collection
             localField: "usersData.businessDetailsId",
             foreignField: "_id",
@@ -142,6 +154,7 @@ export class freeCreditsLinkController {
             isUsed: 1,
             usedAt: 1,
             topUpAmount: 1,
+            discount: 1,
             createdAt: 1,
             updatedAt: 1,
             isDeleted: 1,
@@ -149,6 +162,9 @@ export class freeCreditsLinkController {
             accountManager: 1,
             giveCreditOnAddCard: 1,
             firstCardBonusCredit: 1,
+            PromoLinkContentId: 1,
+            accountManagerId: "$accountManager",
+            businessIndustry: "$businessIndustryId",
             __v: 1,
             businessIndustryId: 1,
             users: {
@@ -191,6 +207,24 @@ export class freeCreditsLinkController {
             // Add other properties you need from the user object
           };
         });
+        const businessIndustry = item.businessIndustry.map((industry: any) => ({
+          _id: industry._id,
+          industry: industry.industry,
+        }));
+
+        const accountManager = item.accountManagerId.map((user: any) => ({
+          _id: user._id,
+          firstName: user.firstName,
+          lastName: user.lastName,
+          role: user.role,
+        }));
+
+        let promoLinkId = "";
+        if (item.PromoLinkContentId.length > 0) {
+          promoLinkId = item.PromoLinkContentId[0]._id;
+        }
+       
+
         let dataToShow = {
           _id: item._id,
           code: item.code,
@@ -198,6 +232,7 @@ export class freeCreditsLinkController {
           useCounts: item.useCounts,
           maxUseCounts: item.maxUseCounts,
           isDisabled: item.isDisabled,
+          discount: item.discount,
           isUsed: item.isUsed,
           usedAt: item.usedAt,
           topUpAmount: item.topUpAmount,
@@ -206,17 +241,22 @@ export class freeCreditsLinkController {
           updatedAt: item.updatedAt,
           __v: item.__v,
           users: usersData,
+          accountManagerId: accountManager,
+          businessIndustry: businessIndustry,
+          promoLinkContentId: promoLinkId,
           accountManager: "",
           businessIndustryId: item?.businessIndustryId[0]?.industry,
           isCommission: item?.isCommission,
           giveCreditOnAddCard: item?.giveCreditOnAddCard,
-          firstCardBonusCredit: item?.firstCardBonusCredit
+          firstCardBonusCredit: item?.firstCardBonusCredit,
         };
+
         if (item.accountManager.length > 0) {
           dataToShow.accountManager = `${
             item.accountManager[0]?.firstName || ""
           } ${item.accountManager[0]?.lastName || ""}`;
         }
+  
         return dataToShow;
       });
       return res.json({

@@ -1,5 +1,6 @@
 import { Schema } from "mongoose";
 import { json } from "../../utils/constantFiles/businessIndustryJson";
+import { defaultImagesForType } from "../../app/Controllers/SupplierBadges";
 
 const BuisnessIndustriesSchema = new Schema(
   {
@@ -48,12 +49,20 @@ const BuisnessIndustriesSchema = new Schema(
             enum: ["badge", "banner", "post"],
             required: true,
           },
+          altText: {
+            type: String,
+          },
         },
       ],
+      default: [
+        { type: "badge", src: defaultImagesForType.badge, altText: "BADGE" },
+        { type: "banner", src: defaultImagesForType.banner, altText: "BANNER" },
+        { type: "post", src: defaultImagesForType.post, altText: "POST" },
+      ],
     },
-    minimumTopupLeads:{
+    minimumTopupLeads: {
       type: Number,
-    }
+    },
   },
   { timestamps: true }
 );

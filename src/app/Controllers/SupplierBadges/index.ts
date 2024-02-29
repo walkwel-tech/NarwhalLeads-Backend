@@ -9,8 +9,9 @@ import { getBadgeAction } from "./Actions/getBadge.action";
 import { checkBadgeAddedAction } from "./Actions/checkBadgeAdded.action";
 import { getBadgeAddedListAction } from "./Actions/getBadgeAddedList.action";
 import { getMyBadgeDetail } from "./Actions/getMyBadgeDetail.action";
+import { SupplierBadgeIndustryConfig } from "../../../types/SupplierBadgeIndustryConfig";
 
-const defaultImagesForType = {
+export const defaultImagesForType = {
   badge: "https://spotdif.com/media/SpotDif_Partner_Badge.webp",
   banner: "https://spotdif.com/media/SpotDif_Partner_Banner.webp",
   post: "https://spotdif.com/media/SpotDif_Partner_Badge.webp",
@@ -45,12 +46,15 @@ export class SupplierBadgeController {
 
     return res.status(200).json({
       badges: badges.map((badge) => {
-        const imageUrl = isDynamicImageEnabled
-          ? dynamicImageLinks[badge.type]
+        const imageUrl = isDynamicImageEnabled && !businessIndustry?.supplierBadges
+          ? dynamicImageLinks[badge.type] :    // dynamicImageLinks[badge.type]
+          isDynamicImageEnabled && businessIndustry?.supplierBadges ?
+          (businessIndustry?.supplierBadges?.find((supplierBadge) => supplierBadge?.type === badge.type) as SupplierBadgeIndustryConfig).src 
           : defaultImagesForType[badge.type];
         return {
           ...badge.toObject(),
           imageUrl: imageUrl,
+          ...(badge?.contentTitle ? {contentTitle: badge.contentTitle.replace(/{{company}}/g, businessDetail?.businessName)} : {} ),
           codeSnippet: badge.codeSnippet
             .replace(/{{imageUrl}}/g, imageUrl)
             .replace(/{{industry}}/g, businessIndustry?.industry)

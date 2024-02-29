@@ -5,6 +5,7 @@ import { saveEventLogs } from "../Functions/saveLogs";
 import { Types } from "mongoose";
 import { County } from "../Functions/flattenPostcodes";
 import { PostCode } from "../../types/LeadDetailsInterface";
+import logger from "../winstonLogger/logger";
 
 const POST = "post";
 
@@ -83,7 +84,7 @@ export const eventsWebhook = (data: any) => {
           reject(err);
         });
     } else {
-      console.log("Access denied!!", new Date(), "Today's Date");
+      logger.info("Access denied!!");
       resolve("Access denied!!");
     }
   });

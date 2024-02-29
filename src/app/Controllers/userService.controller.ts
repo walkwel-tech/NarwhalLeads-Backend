@@ -2,6 +2,7 @@ import { Request, Response } from "express";
 import { UserService } from "../Models/UserService";
 import { User } from "../Models/User";
 import { countries } from "../../utils/constantFiles/europianDialCode";
+import logger from "../../utils/winstonLogger/logger";
 
 export class UserServiceController {
   static create = async (req: Request, res: Response) => {
@@ -27,7 +28,10 @@ export class UserServiceController {
      
       res.json(countries);
     } catch (error) {
-      console.error("Error processing country codes:", error.message);
+      logger.error(
+        "Error processing country codes:", 
+        error
+      );
       res.status(500).json({ error: "Internal Server Error" });
     }
   };

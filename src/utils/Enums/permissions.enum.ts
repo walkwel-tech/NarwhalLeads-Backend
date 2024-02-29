@@ -29,6 +29,6 @@ export const MODULE = {
   REPORTED_LEADS: "reportedLeads",
   PARTNERS: "partners",
   FREE_CREDITS_CONFIG: "freeCreditsConfigs",
-  VALIDATION_CONFIG:"validationConfigs"
-  
+  VALIDATION_CONFIG:"validationConfigs",
+  ROLE_PERMISSIONS: "rolePermissions"
 };

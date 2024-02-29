@@ -3,11 +3,12 @@ import axios from "axios";
 import fs from "fs";
 import { getBadgeTypeFromString } from "../../../../types/AllowedBadgeTypes";
 import { BuisnessIndustries } from "../../../Models/BuisnessIndustries";
+import { Types } from "mongoose";
 
 export const getBadgeAction = async (req: Request, res: Response) => {
   try {
     const { industrySlug, type } = req.params;
-    const industry = await BuisnessIndustries.findOne({ slug: industrySlug });
+    const industry = await BuisnessIndustries.findOne({ _id: new Types.ObjectId(industrySlug) });
 
     const badgeType = getBadgeTypeFromString(type);
 

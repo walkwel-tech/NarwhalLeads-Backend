@@ -53,6 +53,7 @@ import { EVENT_TITLE } from "../../utils/constantFiles/events";
 import { flattenPostalCodes } from "../../utils/Functions/flattenPostcodes";
 import { POSTCODE_TYPE } from "../../utils/Enums/postcode.enum";
 import { ONBOARDING_PERCENTAGE } from "../../utils/constantFiles/OnBoarding.keys";
+import logger from "../../utils/winstonLogger/logger";
 
 const ObjectId = mongoose.Types.ObjectId;
 
@@ -129,20 +130,15 @@ export class LeadsController {
 
         await eventsWebhook(paramsToSend)
           .then(() =>
-            console.log(
+            logger.info(
               "event webhook for zero credits hits successfully..",
-              paramsToSend,
-              new Date(),
-              "Today's Date"
+              { paramsToSend }
             )
           )
           .catch((err) =>
-            console.log(
-              err,
+            logger.error(
               "error while triggering zero credits webhooks failed",
-              paramsToSend,
-              new Date(),
-              "Today's Date"
+              err
             )
           );
       }
@@ -305,16 +301,15 @@ export class LeadsController {
 
         await eventsWebhook(paramsToSend)
           .then(() =>
-            console.log(
+            logger.info(
               "event webhook for zero credits hits successfully.",
-              paramsToSend
+              { paramsToSend }
             )
           )
           .catch((err) =>
-            console.log(
-              err,
+            logger.error(
               "error while triggering zero credits webhooks failed",
-              paramsToSend
+              err
             )
           );
       }
@@ -333,7 +328,9 @@ export class LeadsController {
               name: user?.firstName + " " + user?.lastName,
             });
           } else {
-            console.log("Email already send.");
+            logger.info(
+              "Email already sent."
+            );
           }
         }
         if (leftCredits <= 0) {
@@ -342,7 +339,9 @@ export class LeadsController {
             credits: user.credits,
           });
         } else {
-          console.log("Email already send.", new Date(), "Today's Date");
+          logger.info(
+            "Email already sent."
+          );
         }
       }
 
@@ -404,7 +403,10 @@ export class LeadsController {
 
       return res.json({ data: leadsSave });
     } catch (error) {
-      console.log("rrrr", error);
+      logger.error(
+        "Error while creating leads.", 
+        error
+      );
       return res
         .status(500)
         .json({ error: { message: "Something went wrong" } });
@@ -578,11 +580,10 @@ export class LeadsController {
           cpl: parseFloat(leadUser?.leadCost)
         };
         leadReportAcceptedWebhook(leadUser, reqBody)
-          .then(() => {
-            console.log(
+          .then((res) => {
+            logger.info(
               "lead Report accepted Webhook webhook hits successfully",
-              new Date(),
-              "Today's Date"
+              { res }
             );
           })
           .catch((err) => {
@@ -590,25 +591,30 @@ export class LeadsController {
               getLeadCenterToken()
                 .then((res) => {
                   leadReportAcceptedWebhook(leadUser, reqBody)
-                    .then(() => {
-                      console.log(
+                    .then((res) => {
+                      logger.info(
                         "lead Report accepted Webhook webhook hits successfully",
-                        new Date(),
-                        "Today's Date"
+                        { res }
                       );
                     })
                     .catch((err) =>
-                      console.error(
+                      logger.error(
                         "error in hitting webhook for report accepted",
                         err
                       )
                     );
                 })
                 .catch((err) => {
-                  console.error(err, "login error");
+                  logger.error(
+                    "login error", 
+                    err
+                  );
                 });
             } else {
-              console.error("body not passed properly", err);
+              logger.error(
+                "body not passed properly", 
+                err
+              );
             }
           });
 
@@ -636,11 +642,9 @@ export class LeadsController {
             return res.json({ data: leadsUpdate });
           })
           .catch(async (err) => {
-            console.log(
+            logger.info(
               "error while adding credits",
-              err,
-              new Date(),
-              "Today's Date"
+              err
             );
             const dataToSave: any = {
               userId: user?.id,
@@ -1189,7 +1193,10 @@ export class LeadsController {
             // item.columns = industry?.columns ? industry.columns: [];
           })
           .catch((error: any) => {
-            console.log("ERRORR: ", error, new Date(), "Today's Date");
+            logger.error(
+              "ERROR: ", 
+              error
+            );
           });
         // Use explicit Promise construction
         return new Promise((resolve, reject) => {
@@ -1228,7 +1235,10 @@ export class LeadsController {
           });
         })
         .catch((error) => {
-          console.error(error);
+          logger.error(
+            "Error:", 
+            error
+          );
         });
     } catch (err) {
       return res.status(500).json({
@@ -1494,10 +1504,16 @@ export class LeadsController {
           });
         })
         .catch((error) => {
-          console.error(error);
+          logger.error(
+            "Error:", 
+            error
+          );
         });
     } catch (err) {
-      console.log(err, ">>>> err")
+      logger.error(
+        "Error while showing reported leads", 
+        err
+      );
       return res.status(500).json({
         error: {
           message: "something went wrong",
@@ -1737,7 +1753,10 @@ export class LeadsController {
           });
         })
         .catch((error) => {
-          console.error(error);
+          logger.error(
+            "Error:", 
+            error
+          );
         });
     } catch (err) {
       return res.status(500).json({
@@ -1962,7 +1981,10 @@ export class LeadsController {
               resolve(item); // Resolve the promise with the modified item
             })
             .catch((error) => {
-              console.log("err", error, new Date(), "Today's Date");
+              logger.error(
+                "Error:", 
+                error
+              );
               // item.leads.businessName = "Deleted";
               // item.leads.businessIndustry = "Deleted";
               reject(error); // Reject the promise if there's an error
@@ -1987,7 +2009,10 @@ export class LeadsController {
           });
         })
         .catch((error) => {
-          console.error(error);
+          logger.error(
+            "Error:", 
+            error
+          );
         });
       // })
       // .catch((error) => {
@@ -2118,7 +2143,10 @@ export class LeadsController {
             });
           });
           apiResponse.on("error", function (error: any) {
-            console.error(error);
+            logger.error(
+              "Error:", 
+              error
+            );
           });
         }
       );
@@ -2742,7 +2770,7 @@ export class LeadsController {
           },
         },
       ]);
-      console.log(pref[0]?.columns, ">>>>> pref")
+      logger.info("pref", pref[0]?.columns)
       const filteredDataArray: DataObject[] = filterAndTransformData(
         //@ts-ignore
         [...pref[0]?.columns, {isVisible: true, displayName: "Client Notes", originalName: "clientNotes"}],

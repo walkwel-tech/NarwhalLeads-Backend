@@ -7,7 +7,7 @@ const supplierBadgeRoutes: Router = Router();
 
 
 supplierBadgeRoutes.get("/", Auth, SupplierBadgeController.getBadges);
-supplierBadgeRoutes.get("/:type/:industry", SupplierBadgeController.getBadge);
+supplierBadgeRoutes.get("/:type/:industrySlug", SupplierBadgeController.getBadge);
 supplierBadgeRoutes.post("/check-badge", Auth, SupplierBadgeController.evaluateBadgeAdded);
 supplierBadgeRoutes.post("/badges-credits", Auth, SupplierBadgeController.badgeCreditsList)
 supplierBadgeRoutes.get("/my-badges", Auth, SupplierBadgeController.getMyBadge)

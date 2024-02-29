@@ -5,6 +5,7 @@ import { ValidationErrorResponse } from "../../types/ValidationErrorResponse";
 import { Permissions } from "../Models/Permission";
 import { PermissionInput } from "../Inputs/Permissions.input";
 import { PermissionInterface } from "../../types/PermissionsInterface";
+import { User } from "../Models/User";
 
 const LIMIT = 10;
 
@@ -173,4 +174,48 @@ export class PermissionController {
         .json({ error: { message: "Something went wrong.", err } });
     }
   };
+
+  static getUserPermissions = async (req: Request, res: Response): Promise<Response> => {
+    try{
+      const { id } = req.params;
+      
+      const user = await User.findById(id, { permissions: 1 });
+
+      if(!user) {
+        return res.status(400).json({data: [], message: "User doesn't exist."});
+      }
+      
+      if(user.permissions.length === 0) {
+        return res.status(400).json({data: [], message: "User permissions doesn't exist."});
+      }
+
+      return res.status(200).json({data: user, message: "Permissions fetched successfully."});
+
+    } catch (err) {
+      return res
+        .status(500)
+        .json({ error: { message: "Something went wrong.", err } });
+    }
+  };
+
+  static updateUserPermissions = async (req: Request, res: Response): Promise<Response> => {
+    try {
+      const { id } = req.params;
+      const { permissions } = req.body;
+
+      const user = await User.findByIdAndUpdate(id, {
+        permissions: permissions
+      }, { new: true });
+
+      if(!user) {
+        return res.status(400).json({ data: [], message: "User doesn't exist." });
+      }
+
+      return res.status(200).json({ data: user, message: "User updated successfully." });
+    } catch (err) {
+      return res
+        .status(500)
+        .json({ error: { message: "Something went wrong.", err } });
+    }
+  }
 }

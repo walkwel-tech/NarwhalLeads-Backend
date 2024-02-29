@@ -9,6 +9,7 @@ import {
 import { Notifications } from "../Models/Notifications";
 import { User } from "../Models/User";
 import { checkAccess } from "./serverAccess";
+import logger from "../../utils/winstonLogger/logger";
 // import { checkAccess } from "./serverAccess";
 
 const sgMail = require("@sendgrid/mail");
@@ -46,7 +47,7 @@ export function sendEmailForgetPassword(send_to: any, message: any) {
   sgMail
     .send(msg)
     .then(() => {
-      console.log("Email sent");
+      logger.info("Email sent");
       const params = {
         email: send_to,
         title: TEMPLATES_TITLE.FORGET_PASSWORD,
@@ -56,7 +57,7 @@ export function sendEmailForgetPassword(send_to: any, message: any) {
       saveNotifications(params);
     })
     .catch((error: any) => {
-      console.error(error.response.body);
+      logger.error("Error:", error);
       const params = {
         email: send_to,
         title: TEMPLATES_TITLE.FORGET_PASSWORD,
@@ -101,7 +102,7 @@ export function sendEmailForRegistration(send_to: any, message: any) {
   sgMail
     .send(msg)
     .then(() => {
-      console.log("Email sent");
+      logger.info("Email sent");
       const params = {
         email: send_to,
         title: TEMPLATES_TITLE.REGISTRATION,
@@ -111,7 +112,7 @@ export function sendEmailForRegistration(send_to: any, message: any) {
       saveNotifications(params);
     })
     .catch((error: any) => {
-      console.error(error);
+      logger.error('Error:', error);
       const params = {
         email: send_to,
         title: TEMPLATES_TITLE.REGISTRATION,
@@ -204,7 +205,7 @@ export async function sendEmailForNewRegistration(
   sgMail
     .send(msg)
     .then(() => {
-      console.log("Email sent");
+      logger.info("Email sent");
       // Subscriber.map((email) => {
       const params = {
         email: send_to,
@@ -216,7 +217,7 @@ export async function sendEmailForNewRegistration(
       // });
     })
     .catch((error: any) => {
-      console.error(error);
+      logger.error('Error:', error);
       //TODO:
       const params = {
         email: send_to,
@@ -265,7 +266,7 @@ export function sendEmailToInvitedUser(send_to: string, message: any) {
   sgMail
     .send(msg)
     .then(() => {
-      console.log("Email sent");
+      logger.info("Email sent");
       const params = {
         email: send_to,
         title: TEMPLATES_TITLE.INVITED_USER,
@@ -275,7 +276,7 @@ export function sendEmailToInvitedUser(send_to: string, message: any) {
       saveNotifications(params);
     })
     .catch((error: any) => {
-      console.error(error);
+      logger.error('Error:', error);
       const params = {
         email: send_to,
         title: TEMPLATES_TITLE.INVITED_USER,
@@ -328,7 +329,7 @@ export function sendEmailForNewLead(send_to: string, message: any) {
   sgMail
     .send(msg)
     .then(() => {
-      console.log("Email sent");
+      logger.info("Email sent");
       // send_to.map(async (emails) => {
       const params = {
         email: send_to,
@@ -340,7 +341,7 @@ export function sendEmailForNewLead(send_to: string, message: any) {
       // });
     })
     .catch((error: any) => {
-      console.error(error);
+      logger.error('Error:', error);
       const params = {
         email: send_to,
         title: TEMPLATES_TITLE.NEW_LEAD,
@@ -387,7 +388,7 @@ export function sendEmaiForTotalLead(send_to: string, message: any) {
   sgMail
     .send(msg)
     .then(() => {
-      console.log("Email sent");
+      logger.info("Email sent");
       const params = {
         email: send_to,
         title: TEMPLATES_TITLE.TOTAL_LEADS,
@@ -397,7 +398,7 @@ export function sendEmaiForTotalLead(send_to: string, message: any) {
       saveNotifications(params);
     })
     .catch((error: any) => {
-      console.error(error);
+      logger.error('Error:', error);
       const params = {
         email: send_to,
         title: TEMPLATES_TITLE.TOTAL_LEADS,
@@ -443,7 +444,7 @@ export function sendEmailForLeadStatusReject(send_to: string, message: any) {
   sgMail
     .send(msg)
     .then(() => {
-      console.log("Email sent");
+      logger.info("Email sent");
       const params = {
         email: send_to,
         title: TEMPLATES_TITLE.LEAD_STATUS_REJECT,
@@ -453,7 +454,7 @@ export function sendEmailForLeadStatusReject(send_to: string, message: any) {
       saveNotifications(params);
     })
     .catch((error: any) => {
-      console.error(error);
+      logger.error('Error:', error);
       const params = {
         email: send_to,
         title: TEMPLATES_TITLE.LEAD_STATUS_REJECT,
@@ -499,7 +500,7 @@ export function sendEmailForLeadStatusAccept(send_to: string, message: any) {
   sgMail
     .send(msg)
     .then(() => {
-      console.log("Email sent");
+      logger.info("Email sent");
       const params = {
         email: send_to,
         title: TEMPLATES_TITLE.LEAD_STATUS_ACCEPT,
@@ -509,7 +510,7 @@ export function sendEmailForLeadStatusAccept(send_to: string, message: any) {
       saveNotifications(params);
     })
     .catch((error: any) => {
-      console.error(error);
+      logger.error('Error:', error);
       const params = {
         email: send_to,
         title: TEMPLATES_TITLE.LEAD_STATUS_ACCEPT,
@@ -605,7 +606,7 @@ export function sendEmailForUpdatedDetails(message: any) {
     sgMail
       .send(msg)
       .then(() => {
-        console.log("Email sent");
+        logger.info("Email sent");
         const params = {
           email: process.env.ADMIN_EMAIL,
           title: TEMPLATES_TITLE.USER_UPDATE_DETAILS,
@@ -615,7 +616,7 @@ export function sendEmailForUpdatedDetails(message: any) {
         saveNotifications(params);
       })
       .catch((error: any) => {
-        console.error(error);
+        logger.error('Error:', error);
         const params = {
           email: process.env.ADMIN_EMAIL,
           title: TEMPLATES_TITLE.USER_UPDATE_DETAILS,
@@ -625,7 +626,7 @@ export function sendEmailForUpdatedDetails(message: any) {
         saveNotifications(params);
       });
   } else {
-    console.log("Emails access only on production");
+    logger.info("Emails access only on production");
   }
 }
 
@@ -668,7 +669,7 @@ export function sendEmailForPaymentSuccess(send_to: any, message: any) {
   sgMail
     .send(msg)
     .then(() => {
-      console.log("Email sent");
+      logger.info("Email sent");
       const params = {
         email: send_to,
         title: TEMPLATES_TITLE.PAYMENT_SUCCESS,
@@ -678,7 +679,7 @@ export function sendEmailForPaymentSuccess(send_to: any, message: any) {
       saveNotifications(params);
     })
     .catch((error: any) => {
-      console.error(error);
+      logger.error('Error:', error);
       const params = {
         email: send_to,
         title: TEMPLATES_TITLE.PAYMENT_SUCCESS,
@@ -731,7 +732,7 @@ export function sendEmailForPaymentFailure(send_to: any, message: any) {
   sgMail
     .send(msg)
     .then(() => {
-      console.log("Email sent");
+      logger.info("Email sent");
       const params = {
         email: send_to,
         title: TEMPLATES_TITLE.PAYMENT_FAIL,
@@ -741,7 +742,7 @@ export function sendEmailForPaymentFailure(send_to: any, message: any) {
       saveNotifications(params);
     })
     .catch((error: any) => {
-      console.error(error);
+      logger.error('Error:', error);
       const params = {
         email: send_to,
         title: TEMPLATES_TITLE.PAYMENT_FAIL,
@@ -818,7 +819,7 @@ export function sendEmailForFullySignupToAdmin(message: any) {
   sgMail
     .send(msg)
     .then(() => {
-      console.log("Email sent");
+      logger.info("Email sent");
       const params = {
         email: process.env.ADMIN_EMAIL,
         title: TEMPLATES_TITLE.PAYMENT_SUCCESS_TO_ADMIN,
@@ -828,7 +829,7 @@ export function sendEmailForFullySignupToAdmin(message: any) {
       saveNotifications(params);
     })
     .catch((error: any) => {
-      console.error(error);
+      logger.error('Error:', error);
       const params = {
         email: process.env.ADMIN_EMAIL,
         title: TEMPLATES_TITLE.PAYMENT_SUCCESS_TO_ADMIN,
@@ -875,7 +876,7 @@ export function sendEmailToInvitedAdmin(send_to: string, message: any) {
   sgMail
     .send(msg)
     .then(() => {
-      console.log("Email sent");
+      logger.info("Email sent");
       const params = {
         email: send_to,
         title: TEMPLATES_TITLE.INVITED_ADMIN,
@@ -885,7 +886,7 @@ export function sendEmailToInvitedAdmin(send_to: string, message: any) {
       saveNotifications(params);
     })
     .catch((error: any) => {
-      console.error(error);
+      logger.error('Error:', error);
       const params = {
         email: send_to,
         title: TEMPLATES_TITLE.INVITED_ADMIN,
@@ -935,7 +936,7 @@ export function sendEmailToInvitedAccountManager(
   sgMail
     .send(msg)
     .then(() => {
-      console.log("Email sent");
+      logger.info("Email sent");
       const params = {
         email: send_to,
         title: TEMPLATES_TITLE.INVITED_ACCOUNT_MANAGER,
@@ -945,7 +946,7 @@ export function sendEmailToInvitedAccountManager(
       saveNotifications(params);
     })
     .catch((error: any) => {
-      console.error(error);
+      logger.error('Error:', error);
       const params = {
         email: send_to,
         title: TEMPLATES_TITLE.INVITED_ACCOUNT_MANAGER,
@@ -992,7 +993,7 @@ export function sendEmailForBelow5LeadsPending(send_to: string, message: any) {
   sgMail
     .send(msg)
     .then(() => {
-      console.log("Email sent");
+      logger.info("Email sent");
       const params = {
         email: send_to,
         title: TEMPLATES_TITLE.BELOW_5_LEADS_PENDING,
@@ -1002,7 +1003,7 @@ export function sendEmailForBelow5LeadsPending(send_to: string, message: any) {
       saveNotifications(params);
     })
     .catch((error: any) => {
-      console.error(error);
+      logger.error('Error:', error);
       const params = {
         email: send_to,
         title: TEMPLATES_TITLE.BELOW_5_LEADS_PENDING,
@@ -1049,7 +1050,7 @@ export function sendEmailForOutOfFunds(send_to: string, message: any) {
   sgMail
     .send(msg)
     .then(() => {
-      console.log("Email sent");
+      logger.info("Email sent");
       const params = {
         email: send_to,
         title: TEMPLATES_TITLE.OUT_OF_FUNDS,
@@ -1059,7 +1060,7 @@ export function sendEmailForOutOfFunds(send_to: string, message: any) {
       saveNotifications(params);
     })
     .catch((error: any) => {
-      console.error(error);
+      logger.error('Error:', error);
       const params = {
         email: send_to,
         title: TEMPLATES_TITLE.OUT_OF_FUNDS,
@@ -1106,7 +1107,7 @@ export function sendEmailToRemindUser25PercentSignup(
     sgMail
       .send(msg)
       .then(() => {
-        console.log("Email sent");
+        logger.info("Email sent");
         // send_to.map(async (emails) => {
         const params = {
           email: send_to,
@@ -1118,7 +1119,7 @@ export function sendEmailToRemindUser25PercentSignup(
         // });
       })
       .catch((error: any) => {
-        console.error(error);
+        logger.error('Error:', error);
         const params = {
           email: send_to,
           title: TEMPLATES_TITLE.USER_25_PERCENT_SIGNUP,

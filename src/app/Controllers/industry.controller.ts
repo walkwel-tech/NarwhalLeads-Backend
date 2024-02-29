@@ -15,6 +15,7 @@ import mongoose from "mongoose";
 const LIMIT = 10;
 const ObjectId = mongoose.Types.ObjectId;
 import { countryCurrency } from "../../utils/constantFiles/currencyConstants";
+import { FreeCreditsLink } from "../Models/freeCreditsLink";
 
 export class IndustryController {
   static create = async (req: Request, res: Response) => {
@@ -146,8 +147,36 @@ export class IndustryController {
       updatedData?.columns.sort((a: any, b: any) => a.index - b.index);
 
       if (input.leadCost) {
+        const usersToUpdate = await User.find({
+          businessIndustryId: updatedData?.id,
+          promoLinkId: null,
+        });
+
+        const usersToUpdateWithDiscount = await User.find({
+          businessIndustryId: updatedData?.id,
+          promoLinkId: { $ne: null },
+        });
+
+        const updatePromoUsersWithDiscount = async (
+          user:UserInterface
+        ): Promise<any> => {
+          const promolink = await FreeCreditsLink.findById(user.promoLinkId);
+          if (promolink) {
+            const discount = promolink.discount || 0;
+            const discountedLeadCost = input.leadCost * (1 - discount / 100);
+            return User.findByIdAndUpdate(user._id, {
+              leadCost: +discountedLeadCost.toFixed(3),
+            });
+          }
+        };
+
+        const updateUserPromises = usersToUpdateWithDiscount.map(
+          updatePromoUsersWithDiscount
+        );
+
+        await Promise.all(updateUserPromises);
         await User.updateMany(
-          { businessIndustryId: updatedData?.id },
+          { _id: { $in: usersToUpdate.map((user) => user._id) } },
           { leadCost: input.leadCost }
         );
       }

@@ -21,4 +21,5 @@ export interface freeCreditsLinkInterface extends Document {
   businessIndustryId: Types.ObjectId;
   giveCreditOnAddCard: String,
   firstCardBonusCredit: Number
+  discount: number
 }

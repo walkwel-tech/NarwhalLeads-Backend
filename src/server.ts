@@ -10,12 +10,12 @@ import {
   UserRoutes,
   ProfileRoutes,
   CardDetailsRoutes,
-  AdminSettingsRoutes,
   LeadsRoutes,
   BusinessDetailsRoutes,
   userLeadsDetailsRoutes,
   invitedUserRoutes,
-  BusinessIndustriesRoutes, supplierBadgeRoutes,
+  BusinessIndustriesRoutes,
+  supplierBadgeRoutes,
   // guestRoutes
 } from "./routes";
 
@@ -36,8 +36,11 @@ import siteconfigRoutes from "./routes/siteConfig.routes";
 import locationRoutes from "./routes/location.routes";
 import dashboardRoutes from "./routes/dashboard.routes";
 import adsRoutes from "./routes/ads.routes";
-import postCodeAnalyticsRoutes from  "./routes/postCodeAnalytics.routes"
+import postCodeAnalyticsRoutes from "./routes/postCodeAnalytics.routes";
 import validationConfigRoutes from "./routes/validationConfig.routes";
+import freeCreditsLinkContentRoutes from "./routes/freeCreditsLinkContent.routes";
+import adminSettingsRoutes from "./routes/adminSettings.routes";
+import rolesRoutes from "./routes/roles.routes";
 
 const swaggerDocument = require("../swagger.json"); // Replace with the path to your actual Swagger document
 const swaggerUi = require("swagger-ui-express");
@@ -98,7 +101,7 @@ export class Server {
     this.app.use("/api/v1/cardDetails", CardDetailsRoutes);
     // need to add middleware here for security of only admin or only user login can update themself.
     this.app.use("/api/v1/user", Auth, UserRoutes);
-    this.app.use("/api/v1/adminSettings", AdminSettingsRoutes);
+    // this.app.use("/api/v1/adminSettings", AdminSettingsRoutes);
     this.app.use("/api/v1/leads", LeadsRoutes);
     this.app.use("/api/v1/transactions", Auth, TransactionsRoutes);
     this.app.use("/api/v1/userLeadsDetails", Auth, userLeadsDetailsRoutes);
@@ -110,14 +113,19 @@ export class Server {
     this.app.use("/api/v1/non-billable-users", Auth, nonBillablesUsers);
     this.app.use("/api/v1/guest", Auth, guestRoutes);
     this.app.use("/api/v1/permission", Auth, permissionRoutes);
+    this.app.use("/api/v1/roles", Auth, rolesRoutes);
     this.app.use("/api/v1/round-table-manager", Auth, siteconfigRoutes);
     this.app.use("/api/v1/get-postCodes", Auth, locationRoutes);
     this.app.use("/api/v1/dashboard", Auth, dashboardRoutes);
-    this.app.use("/api/v1/ads",Auth, adsRoutes);
-    this.app.use("/api/v1/postal-dash", Auth, postCodeAnalyticsRoutes)
-    this.app.use('/api/v1/supplier-badges', supplierBadgeRoutes)
-    this.app.use("/api/v1/validationConfigs", Auth,validationConfigRoutes)
-    
+    this.app.use("/api/v1/ads", Auth, adsRoutes);
+    this.app.use("/api/v1/postal-dash", Auth, postCodeAnalyticsRoutes);
+    this.app.use("/api/v1/supplier-badges", supplierBadgeRoutes);
+    this.app.use("/api/v1/adminSettings", Auth, adminSettingsRoutes);
+    this.app.use("/api/v1/validationConfigs", Auth, validationConfigRoutes);
+    this.app.use(
+      "/api/v1/freeCreditsLink-content",
+      freeCreditsLinkContentRoutes
+    );
 
     this.app.post(
       "/api/v1/notification-webhook",
@@ -131,7 +139,6 @@ export class Server {
 
     this.app.get("*", (req: Request, res: Response) => {
       res.sendFile(path.join(__dirname, "../build", "index.html"));
-      // res.status(200).json({message: `App running on version ${version}`});
     });
   }
 

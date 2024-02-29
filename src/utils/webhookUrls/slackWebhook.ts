@@ -1,5 +1,6 @@
 import { IncomingWebhook } from '@slack/webhook';
 import { UserInterface } from '../../types/UserInterface';
+import logger from '../winstonLogger/logger';
 
 function configureSlackWebhooks() {
     const webhookURL = process.env.SLACK_WEBHOOK_URL;
@@ -14,7 +15,7 @@ const { channel, webhook } = configureSlackWebhooks();
 export const slackWebhook = async ({firstName, lastName, phoneNumber, id}: UserInterface, intentId: string) => {
     return new Promise(async (resolve, reject) => {
         if (!channel || !webhook) {
-            console.error('Error: Slack webhook is not configured.', new Date());
+            logger.error('Error: Slack webhook is not configured.');
             reject('Error: Slack webhook is not configured.');
         }
 
@@ -27,10 +28,10 @@ export const slackWebhook = async ({firstName, lastName, phoneNumber, id}: UserI
                     User ID: ${id}
                     Intent ID: ${intentId} `
         }).then((response) => {
-            console.log('Slack webhook triggered @', new Date(), JSON.stringify(response));
+            logger.info('Slack webhook triggered @', { response });
             resolve(response);
         }).catch((err) => {
-            console.error('There was an error triggering Slack Webhook @', new Date(), JSON.stringify(err));
+            logger.error('There was an error triggering Slack Webhook @', err);
             reject(err);
         })
     });

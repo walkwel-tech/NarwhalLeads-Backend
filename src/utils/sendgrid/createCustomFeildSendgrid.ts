@@ -1,4 +1,6 @@
 import axios from "axios";
+import logger from "../../utils/winstonLogger/logger"
+
 require("dotenv").config();
 
 if (
@@ -29,13 +31,13 @@ export const createCustomField = async (
     };
 
     const response = await axios.post(sendgridRequestUrl, data, config);
-    console.log(
-      `Custom field '${fieldName}' created with status code: ${response.status}`
+    logger.info(
+      `Custom field '${fieldName}' created with status code: ${response.status}`, { response }
     );
 
     return { statusCode: response.status, body: response.data };
   } catch (error) {
-    console.error(error);
+    logger.error('Error:', error);
     return { error: error };
   }
 };
@@ -46,8 +48,8 @@ export const createCustomField = async (
 
     await createCustomField("businessIndustry", "Text");
 
-    console.log("Custom fields created successfully!");
+    logger.info("Custom fields created successfully!");
   } catch (error) {
-    console.error("Error creating custom fields:", error);
+    logger.error("Error creating custom fields:", error);
   }
 })();

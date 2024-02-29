@@ -1,5 +1,6 @@
 import axios from "axios";
 // import { CreateCustomerInput } from "../../app/Inputs/createCustomerOnRyft&Lead.inputs";
+import logger from "../winstonLogger/logger";
 const DELETE = "delete";
 
 export const deleteCustomerOnRyft = (id: string) => {
@@ -13,11 +14,11 @@ export const deleteCustomerOnRyft = (id: string) => {
     };
     axios(config)
       .then(async (response) => {
-        console.log("customer deleted on RYFT");
+        logger.info("customer deleted on RYFT", { response });
         resolve(response);
       })
       .catch((err) => {
-        console.log("ryft error", err.response?.data);
+        logger.error("ryft error", err);
 
         reject(err.response?.data);
       });
