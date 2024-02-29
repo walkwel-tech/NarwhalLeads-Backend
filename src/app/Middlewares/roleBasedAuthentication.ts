@@ -5,6 +5,7 @@ export const checkPermissions = (
     requiredPermissions: { module: string; permission: string }[]
 ) => {
     return async (req: Request, res: Response, next: NextFunction) => {
+
         const canAccess = await userHasAccess(req.user, requiredPermissions);
 
         if (canAccess) {
