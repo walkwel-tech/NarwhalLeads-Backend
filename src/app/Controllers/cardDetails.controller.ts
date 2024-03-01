@@ -1231,6 +1231,17 @@ export class CardDetailsControllers {
             paymentType: "",
             isCredited: true,
           };
+
+          const registeredTxn = await Transaction.find({
+            paymentSessionId: data.object.id,
+          });
+
+          if (registeredTxn.length > 0) {
+            logger.error("Transaction already registered", data.object);
+
+            return res.status(400).json({ data: { message: "Transaction already registered." } });
+          }
+
           addCreditsToBuyer(params)
             .then(async (res) => {
               userId =
@@ -1424,6 +1435,7 @@ export class CardDetailsControllers {
             });
         }
       }
+
       const dataToShow: webhookResponse = {
         message: "success",
         sessionId: data?.object?.id,
