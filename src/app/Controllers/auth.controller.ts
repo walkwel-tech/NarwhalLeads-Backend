@@ -57,6 +57,8 @@ import { createContact } from "../../utils/sendgrid/createContactSendgrid";
 import { updateUserSendgridJobIds } from "../../utils/sendgrid/updateSendgridJobIds";
 import { SENDGRID_STATUS_PERCENTAGE } from "../../utils/constantFiles/sendgridStatusPercentage";
 import logger from "../../utils/winstonLogger/logger";
+import { BuyerDetails } from "../Models/BuyerDetails";
+import { BuyerQuestionInput } from "../Inputs/BuyerDetails.input";
 
 class AuthController {
   static register = async (req: Request, res: Response): Promise<any> => {
@@ -657,7 +659,7 @@ class AuthController {
         "utf8",
         (err: any, data: any) => {
           if (err) {
-            logger.error("Error:", err)
+            logger.error("Error:", err);
             return;
           }
           data = JSON.parse(data);
@@ -811,9 +813,12 @@ class AuthController {
         exists.hasEverTopped = true;
       }
       if (exists) {
-        return res.json({
-          data: exists,
-        });
+
+        const buyerQuestions:any = await BuyerDetails.find({ clientId: user.id })
+        exists.buyerQuestions = buyerQuestions[0].buyerQuestions;
+        console.log("//////////////",exists.buyerQuestions )
+
+        return res.json({ data: exists });
       }
 
       return res.json({ data: "User not exists" });
@@ -950,10 +955,7 @@ class AuthController {
             logger.info("Customer created!!!!", { params });
           })
           .catch((err) => {
-            logger.error(
-              "error while creating customer",
-              err
-            );
+            logger.error("error while creating customer", err);
           })
           .finally(async () => {
             const data = await User.findById(user.id);

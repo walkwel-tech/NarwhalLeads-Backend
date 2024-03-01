@@ -76,7 +76,11 @@ const FreeCreditsLinkSchema = new Schema(
     firstCardBonusCredit: {
       type: Number,
       default: 0
-    }
+    },
+    isExpired : {
+      type: Boolean,
+      default: false
+    },
   },
   { timestamps: true }
 );

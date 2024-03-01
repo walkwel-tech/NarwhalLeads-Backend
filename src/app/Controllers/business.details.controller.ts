@@ -168,6 +168,7 @@ export class BusinessDetailsController {
         dataToSave.businessLogo = `${FileEnum.PROFILEIMAGE}${req?.file.filename}`;
       }
       const userData = await BusinessDetails.create(dataToSave);
+
       const industry: BuisnessIndustriesInterface =
         (await BuisnessIndustries.findOne({
           industry: input?.businessIndustry,
