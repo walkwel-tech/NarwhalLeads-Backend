@@ -133,7 +133,7 @@ export const create = async (req: Request, res: Response): Promise<any> => {
       businessCity: Business?.businessCity,
       businessPostCode: Business?.businessPostCode,
       businessMobilePrefixCode: Business?.businessMobilePrefixCode,
-      // businessOpeningHours: JSON.parse(input?.businessOpeningHours),
+      businessOpeningHours: JSON.parse(input?.businessOpeningHours),
     };
     if (req?.file) {
       dataToSave.businessLogo = `${FileEnum.PROFILEIMAGE}${req?.file.filename}`;
