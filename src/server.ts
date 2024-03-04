@@ -41,6 +41,7 @@ import validationConfigRoutes from "./routes/validationConfig.routes";
 import freeCreditsLinkContentRoutes from "./routes/freeCreditsLinkContent.routes";
 import adminSettingsRoutes from "./routes/adminSettings.routes";
 import rolesRoutes from "./routes/roles.routes";
+import dataSyncRoutes from "./routes/dataSync.routes";
 // import buyerDetailsRoutes from "./routes/buyerDetails.routes";
 
 const swaggerDocument = require("../swagger.json"); // Replace with the path to your actual Swagger document
@@ -122,6 +123,7 @@ export class Server {
     this.app.use("/api/v1/postal-dash", Auth, postCodeAnalyticsRoutes);
     this.app.use("/api/v1/supplier-badges", supplierBadgeRoutes);
     this.app.use("/api/v1/adminSettings", Auth, adminSettingsRoutes);
+    this.app.use("/api/v1/dataSync", dataSyncRoutes);
     this.app.use("/api/v1/validationConfigs", Auth, validationConfigRoutes);
     // this.app.use("/api/v1/buyerDetails" , Auth,buyerDetailsRoutes);
 

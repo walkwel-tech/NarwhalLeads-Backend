@@ -30,5 +30,6 @@ export const MODULE = {
   PARTNERS: "partners",
   FREE_CREDITS_CONFIG: "freeCreditsConfigs",
   VALIDATION_CONFIG:"validationConfigs",
-  ROLE_PERMISSIONS: "rolePermissions"
+  ROLE_PERMISSIONS: "rolePermissions",
+  SYSTEM_SYNC: "systemSync"
 };
