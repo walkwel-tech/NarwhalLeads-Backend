@@ -1,6 +1,11 @@
 import {Document} from "mongoose";
 import {SupplierBadgeIndustryConfig} from "../types/SupplierBadgeIndustryConfig";
 import {columnsObjects} from "../types/columnsInterface";
+interface BuyerQuestion {
+  title: string;
+  questionSlug: string;
+  answer?: string | null
+}
 
 export interface BuisnessIndustriesInterface extends Document {
   industry: string;
@@ -16,4 +21,6 @@ export interface BuisnessIndustriesInterface extends Document {
   // TODO: Add the following fields
   supplierBadges: SupplierBadgeIndustryConfig[];
   minimumTopupLeads: number;
+  buyerQuestions: BuyerQuestion[];
+
 }
