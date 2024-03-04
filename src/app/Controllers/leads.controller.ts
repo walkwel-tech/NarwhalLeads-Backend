@@ -404,7 +404,7 @@ export class LeadsController {
       return res.json({ data: leadsSave });
     } catch (error) {
       logger.error(
-        "Error while creating leads.", 
+        "Error while creating leads.",
         error
       );
       return res
@@ -569,7 +569,7 @@ export class LeadsController {
           "businessName businessIndustry"
         );
         let reqBody = {
-          lead_id: lead.leads?.leadId,
+          lead_id: lead.leads?.leadid,
           // industry: business?.businessIndustry,
           industry: business?.businessIndustry === "Windows & Doors" ? "Windows" :business?.businessIndustry, // as -676 task
           client: business?.businessName,
@@ -606,13 +606,13 @@ export class LeadsController {
                 })
                 .catch((err) => {
                   logger.error(
-                    "login error", 
+                    "login error",
                     err
                   );
                 });
             } else {
               logger.error(
-                "body not passed properly", 
+                "body not passed properly",
                 err
               );
             }
@@ -1194,7 +1194,7 @@ export class LeadsController {
           })
           .catch((error: any) => {
             logger.error(
-              "ERROR: ", 
+              "ERROR: ",
               error
             );
           });
@@ -1236,7 +1236,7 @@ export class LeadsController {
         })
         .catch((error) => {
           logger.error(
-            "Error:", 
+            "Error:",
             error
           );
         });
@@ -1360,7 +1360,7 @@ export class LeadsController {
               },
               {
                 $unwind: {
-                  path: "$accountManager", 
+                  path: "$accountManager",
                   "preserveNullAndEmptyArrays": true
                 }
               },
@@ -1505,13 +1505,13 @@ export class LeadsController {
         })
         .catch((error) => {
           logger.error(
-            "Error:", 
+            "Error:",
             error
           );
         });
     } catch (err) {
       logger.error(
-        "Error while showing reported leads", 
+        "Error while showing reported leads",
         err
       );
       return res.status(500).json({
@@ -1754,7 +1754,7 @@ export class LeadsController {
         })
         .catch((error) => {
           logger.error(
-            "Error:", 
+            "Error:",
             error
           );
         });
@@ -1982,7 +1982,7 @@ export class LeadsController {
             })
             .catch((error) => {
               logger.error(
-                "Error:", 
+                "Error:",
                 error
               );
               // item.leads.businessName = "Deleted";
@@ -2010,7 +2010,7 @@ export class LeadsController {
         })
         .catch((error) => {
           logger.error(
-            "Error:", 
+            "Error:",
             error
           );
         });
@@ -2144,7 +2144,7 @@ export class LeadsController {
           });
           apiResponse.on("error", function (error: any) {
             logger.error(
-              "Error:", 
+              "Error:",
               error
             );
           });
@@ -2589,7 +2589,7 @@ export class LeadsController {
           convertArray(query.results)
         );
       }
-      
+
       const resultArray = filteredDataArray.map((obj) => {
         const newObj: Record<string, string> = {};
         for (const key in obj) {
@@ -2689,8 +2689,8 @@ export class LeadsController {
         });
         dataToFind.bid = { $in: bids };
       }
-    
-      const batchSize = 1500; 
+
+      const batchSize = 1500;
       const totalDocuments = await Leads.countDocuments({...dataToFind});
       const totalPages = Math.ceil(totalDocuments / batchSize);
       let document = []
