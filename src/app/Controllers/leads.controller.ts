@@ -1,22 +1,40 @@
-import { Request, Response } from "express";
-import path from "path";
-import * as fs from "fs";
+import {Request, Response} from "express";
 import * as https from "follow-redirects";
+import * as fs from "fs";
+import mongoose, {Types} from "mongoose";
+import path from "path";
+import {DataObject} from "../../types/DataObject";
+import {WHITE_LIST_IP} from "../../local";
+import {columnsObjects} from "../../types/columnsInterface";
+import {FileEnum} from "../../types/FileEnum";
+// import { leadReprocessWebhookLeadCenter } from "../../utils/webhookUrls/leadsReprocessWebhook";
+import {LeadsInterface} from "../../types/LeadsInterface";
 // const https = require("follow-redirects").https;
 // import mongoose from "mongoose";
-import { RolesEnum } from "../../types/RolesEnum";
-import { leadsStatusEnums } from "../../utils/Enums/leads.status.enum";
-import { addCreditsToBuyer } from "../../utils/payment/addBuyerCredit";
-import { CardDetails } from "../Models/CardDetails";
-import { Leads } from "../Models/Leads";
-import { Transaction } from "../Models/Transaction";
-import { User } from "../Models/User";
-import { LeadTablePreference } from "../Models/LeadTablePreference";
-import { FileEnum } from "../../types/FileEnum";
-import { AccessToken } from "../Models/AccessToken";
-import { Invoice } from "../Models/Invoice";
-import { refreshToken } from "../../utils/XeroApiIntegration/createContact";
-import { DeleteFile } from "../../utils/removeFile";
+import {RolesEnum} from "../../types/RolesEnum";
+import {UserInterface} from "../../types/UserInterface";
+import {EVENT_TITLE} from "../../utils/constantFiles/events";
+import {ONBOARDING_PERCENTAGE} from "../../utils/constantFiles/OnBoarding.keys";
+import {PREMIUM_PROMOLINK} from "../../utils/constantFiles/spotDif.offers.promoLink";
+import {leadsAlertsEnums} from "../../utils/Enums/leads.Alerts.enum";
+import {leadsStatusEnums} from "../../utils/Enums/leads.status.enum";
+import {POSTCODE_TYPE} from "../../utils/Enums/postcode.enum";
+import {APP_ENV} from "../../utils/Enums/serverModes.enum";
+// import { preference } from "../../utils/constantFiles/leadPreferenecColumns";
+import {sort} from "../../utils/Enums/sorting.enum";
+import {transactionTitle} from "../../utils/Enums/transaction.title.enum";
+import {flattenPostalCodes} from "../../utils/Functions/flattenPostcodes";
+import {getLeadCenterToken} from "../../utils/Functions/getLeadCenterToken";
+import {notify} from "../../utils/notifications/leadNotificationToUser";
+import {addCreditsToBuyer} from "../../utils/payment/addBuyerCredit";
+import {prepareDataWithColumnPreferences} from "../../utils/prepareDataWithColumnPreferences";
+import {DeleteFile} from "../../utils/removeFile";
+
+import {eventsWebhook, PostcodeWebhookParams,} from "../../utils/webhookUrls/eventExpansionWebhook";
+import {leadReportAcceptedWebhook} from "../../utils/webhookUrls/leadReportedAcceptedWebhook";
+import {sendLeadDataToZap} from "../../utils/webhookUrls/sendDataZap";
+import logger from "../../utils/winstonLogger/logger";
+import {refreshToken} from "../../utils/XeroApiIntegration/createContact";
 import {
   sendEmailForBelow5LeadsPending,
   sendEmailForLeadStatusAccept,
@@ -24,44 +42,20 @@ import {
   sendEmailForNewLead,
   sendEmailForOutOfFunds,
 } from "../Middlewares/mail";
-import { transactionTitle } from "../../utils/Enums/transaction.title.enum";
-import { leadsAlertsEnums } from "../../utils/Enums/leads.Alerts.enum";
-// import { preference } from "../../utils/constantFiles/leadPreferenecColumns";
-import { sort } from "../../utils/Enums/sorting.enum";
-import { sendLeadDataToZap } from "../../utils/webhookUrls/sendDataZap";
-import { WHITE_LIST_IP } from "../../local";
-import { BuisnessIndustries } from "../Models/BuisnessIndustries";
-import { Column } from "../../types/ColumnsPreferenceInterface";
-import mongoose, { Types } from "mongoose";
-import { PREMIUM_PROMOLINK } from "../../utils/constantFiles/spotDif.offers.promoLink";
-import { Notifications } from "../Models/Notifications";
-import { BusinessDetails } from "../Models/BusinessDetails";
-import { notify } from "../../utils/notifications/leadNotificationToUser";
-import { APP_ENV } from "../../utils/Enums/serverModes.enum";
-import { UserInterface } from "../../types/UserInterface";
-// import { leadReprocessWebhookLeadCenter } from "../../utils/webhookUrls/leadsReprocessWebhook";
-import { LeadsInterface } from "../../types/LeadsInterface";
-import { columnsObjects } from "../../types/columnsInterface";
-import { leadReportAcceptedWebhook } from "../../utils/webhookUrls/leadReportedAcceptedWebhook";
-import { getLeadCenterToken } from "../../utils/Functions/getLeadCenterToken";
-
-import {
-  PostcodeWebhookParams,
-  eventsWebhook,
-} from "../../utils/webhookUrls/eventExpansionWebhook";
-import { EVENT_TITLE } from "../../utils/constantFiles/events";
-import { flattenPostalCodes } from "../../utils/Functions/flattenPostcodes";
-import { POSTCODE_TYPE } from "../../utils/Enums/postcode.enum";
-import { ONBOARDING_PERCENTAGE } from "../../utils/constantFiles/OnBoarding.keys";
-import logger from "../../utils/winstonLogger/logger";
+import {AccessToken} from "../Models/AccessToken";
+import {BuisnessIndustries} from "../Models/BuisnessIndustries";
+import {BusinessDetails} from "../Models/BusinessDetails";
+import {CardDetails} from "../Models/CardDetails";
+import {Invoice} from "../Models/Invoice";
+import {Leads} from "../Models/Leads";
+import {LeadTablePreference} from "../Models/LeadTablePreference";
+import {Notifications} from "../Models/Notifications";
+import {Transaction} from "../Models/Transaction";
+import {User} from "../Models/User";
 
 const ObjectId = mongoose.Types.ObjectId;
 
 const LIMIT = 10;
-
-interface DataObject {
-  [key: string]: any;
-}
 
 type BidFilter = {
   $in: string[];
@@ -404,7 +398,7 @@ export class LeadsController {
       return res.json({ data: leadsSave });
     } catch (error) {
       logger.error(
-        "Error while creating leads.", 
+        "Error while creating leads.",
         error
       );
       return res
@@ -606,13 +600,13 @@ export class LeadsController {
                 })
                 .catch((err) => {
                   logger.error(
-                    "login error", 
+                    "login error",
                     err
                   );
                 });
             } else {
               logger.error(
-                "body not passed properly", 
+                "body not passed properly",
                 err
               );
             }
@@ -1194,7 +1188,7 @@ export class LeadsController {
           })
           .catch((error: any) => {
             logger.error(
-              "ERROR: ", 
+              "ERROR: ",
               error
             );
           });
@@ -1236,7 +1230,7 @@ export class LeadsController {
         })
         .catch((error) => {
           logger.error(
-            "Error:", 
+            "Error:",
             error
           );
         });
@@ -1360,7 +1354,7 @@ export class LeadsController {
               },
               {
                 $unwind: {
-                  path: "$accountManager", 
+                  path: "$accountManager",
                   "preserveNullAndEmptyArrays": true
                 }
               },
@@ -1505,13 +1499,13 @@ export class LeadsController {
         })
         .catch((error) => {
           logger.error(
-            "Error:", 
+            "Error:",
             error
           );
         });
     } catch (err) {
       logger.error(
-        "Error while showing reported leads", 
+        "Error while showing reported leads",
         err
       );
       return res.status(500).json({
@@ -1754,7 +1748,7 @@ export class LeadsController {
         })
         .catch((error) => {
           logger.error(
-            "Error:", 
+            "Error:",
             error
           );
         });
@@ -1982,7 +1976,7 @@ export class LeadsController {
             })
             .catch((error) => {
               logger.error(
-                "Error:", 
+                "Error:",
                 error
               );
               // item.leads.businessName = "Deleted";
@@ -2010,7 +2004,7 @@ export class LeadsController {
         })
         .catch((error) => {
           logger.error(
-            "Error:", 
+            "Error:",
             error
           );
         });
@@ -2144,7 +2138,7 @@ export class LeadsController {
           });
           apiResponse.on("error", function (error: any) {
             logger.error(
-              "Error:", 
+              "Error:",
               error
             );
           });
@@ -2583,13 +2577,13 @@ export class LeadsController {
       if (!pref) {
         filteredDataArray = [{}];
       } else {
-        filteredDataArray = filterAndTransformData(
+        filteredDataArray = prepareDataWithColumnPreferences(
           //@ts-ignore
           [...pref?.columns, {isVisible: true, displayName: "Client Notes", originalName: "clientNotes"}],
           convertArray(query.results)
         );
       }
-      
+
       const resultArray = filteredDataArray.map((obj) => {
         const newObj: Record<string, string> = {};
         for (const key in obj) {
@@ -2689,11 +2683,11 @@ export class LeadsController {
         });
         dataToFind.bid = { $in: bids };
       }
-    
-      const batchSize = 1500; 
+
+      const batchSize = 1500;
       const totalDocuments = await Leads.countDocuments({...dataToFind});
       const totalPages = Math.ceil(totalDocuments / batchSize);
-      let document = []
+      let documents = []
       for (let page = 0; page < totalPages; page++) {
         const [query]: any = await Leads.aggregate([
           {
@@ -2734,7 +2728,7 @@ export class LeadsController {
             " " +
             item["clientName"][0]?.lastName;
         });
-        document.push(...query.results)
+        documents.push(...query.results)
       }
 
       const pref = await BuisnessIndustries.aggregate([
@@ -2771,10 +2765,10 @@ export class LeadsController {
         },
       ]);
       logger.info("pref", pref[0]?.columns)
-      const filteredDataArray: DataObject[] = filterAndTransformData(
+      const filteredDataArray: DataObject[] = prepareDataWithColumnPreferences(
         //@ts-ignore
         [...pref[0]?.columns, {isVisible: true, displayName: "Client Notes", originalName: "clientNotes"}],
-        convertArray(document)
+        convertArray(documents)
         // convertArray(query.results)
       );
       const resultArray = filteredDataArray.map((obj) => {
@@ -2909,22 +2903,5 @@ function convertArray(arr: any) {
       }
     });
     return newObj;
-  });
-}
-
-// Function to filter and transform the data
-function filterAndTransformData(
-  columns: Column[],
-  dataArray: DataObject[]
-): DataObject[] {
-  return dataArray.map((dataObj: DataObject) => {
-    const filteredData: DataObject = {};
-    columns.forEach((column: Column) => {
-      if (column.isVisible) {
-        filteredData[column.displayName || column.originalName] =
-          dataObj[column.originalName];
-      }
-    });
-    return filteredData;
   });
 }
