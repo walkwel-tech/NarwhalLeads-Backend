@@ -58,7 +58,7 @@ import { updateUserSendgridJobIds } from "../../utils/sendgrid/updateSendgridJob
 import { SENDGRID_STATUS_PERCENTAGE } from "../../utils/constantFiles/sendgridStatusPercentage";
 import logger from "../../utils/winstonLogger/logger";
 import { BuyerDetails } from "../Models/BuyerDetails";
-import { BuyerQuestionInput } from "../Inputs/BuyerDetails.input";
+import { BuyerDetailsInput } from "../Inputs/BuyerDetails.input";
 
 class AuthController {
   static register = async (req: Request, res: Response): Promise<any> => {
@@ -812,15 +812,38 @@ class AuthController {
       if (transaction) {
         exists.hasEverTopped = true;
       }
+
       if (exists) {
 
-        const buyerQuestions:any = await BuyerDetails.find({ clientId: user.id })
-        exists.buyerQuestions = buyerQuestions[0].buyerQuestions;
-        console.log("//////////////",exists.buyerQuestions )
+        const buyerQuestions: BuyerDetailsInput[] = await BuyerDetails.find({
+          clientId: user.id,
+        });
+        if (buyerQuestions && buyerQuestions.length > 0) {
+          exists.buyerQuestions = [];
+          for (const buyerDetail of buyerQuestions) {
+            exists.buyerQuestions.push(...buyerDetail.buyerQuestions);
+          }
 
+          if (exists.buyerQuestions.length > 0) {
+            for (const question of exists.buyerQuestions) {
+              const businessIndustry = await BuisnessIndustries.findOne({
+                "buyerQuestions.questionSlug": question.questionSlug,
+              });
+
+              if (businessIndustry) {
+                const matchedQuestion = businessIndustry.buyerQuestions.find(
+                  (q) => q.questionSlug === question.questionSlug
+                );
+                if (matchedQuestion) {
+                  question.title = matchedQuestion.title;
+                }
+              }
+            }
+          }
+
+        }
         return res.json({ data: exists });
       }
-
       return res.json({ data: "User not exists" });
     } catch (error) {
       return res

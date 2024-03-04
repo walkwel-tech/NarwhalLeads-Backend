@@ -2,9 +2,6 @@ import { Document, Types } from "mongoose";
 
 import { RolesEnum } from "./RolesEnum";
 import { BusinessDetailsInterface } from "./BusinessInterface";
-import { BuyerDetailsInput, BuyerQuestionInput } from "../app/Inputs/BuyerDetails.input";
-import { BuyerDetailsInterface } from "./BuyerDetailsInterface";
-
 export interface UserInterface extends Document {
   createdAt: any;
   _id: Types.ObjectId;
@@ -81,6 +78,7 @@ export interface UserInterface extends Document {
   hasEverTopped?: boolean,
   clientStatus?: string
   buyerQuestions? : Array<{
+    title: string;
     questionSlug: string;
     answer: string;
   }>;

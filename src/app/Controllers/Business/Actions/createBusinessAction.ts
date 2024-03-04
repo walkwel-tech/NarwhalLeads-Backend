@@ -50,7 +50,7 @@ export const create = async (req: Request, res: Response): Promise<any> => {
   Business.buyerQuestions = input.buyerQuestions;
 
   Business.businessMobilePrefixCode = input.businessMobilePrefixCode;
-  // Business.businessOpeningHours = JSON.parse(input?.businessOpeningHours);
+  Business.businessOpeningHours = JSON.parse(input?.businessOpeningHours);
   const errors = await validate(Business);
   const isBusinessNameExist = await BusinessDetails.find({
     businessName: input.businessName,
@@ -142,6 +142,7 @@ export const create = async (req: Request, res: Response): Promise<any> => {
     const buyerQuestions = await createBuyerQuestions(
       Business.buyerQuestions, input.userId
     );
+
     const industry: BuisnessIndustriesInterface =
       (await BuisnessIndustries.findOne({
         industry: input?.businessIndustry,
@@ -182,7 +183,6 @@ export const create = async (req: Request, res: Response): Promise<any> => {
       industry?.columns.length
     );
     industry?.columns.push(...additionalColumns);
-    console.log("/////////////////////??????????????/....................")
     await LeadTablePreference.create({
       userId: input.userId,
       columns: industry?.columns,
@@ -264,9 +264,9 @@ export const create = async (req: Request, res: Response): Promise<any> => {
             );
           });
       });
-    // if (input.accreditations) {
-    //   input.accreditations = JSON.parse(input.accreditations);
-    // }
+    if (input.accreditations) {
+      input.accreditations = JSON.parse(input.accreditations);
+    }
     if (input.accreditations == null || input.accreditations == "") {
       delete input.accreditations;
     }
