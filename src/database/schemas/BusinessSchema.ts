@@ -54,6 +54,9 @@ const BusinessDetailsSchema = new Schema(
       type: Array,
       required: false,
     },
+    buyerQuestions: {
+      type: [],
+    },
     isDeleted: {
       type: Boolean,
       default: false,

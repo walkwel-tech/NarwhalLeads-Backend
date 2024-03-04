@@ -22,4 +22,5 @@ export interface freeCreditsLinkInterface extends Document {
   giveCreditOnAddCard: String,
   firstCardBonusCredit: Number
   discount: number
+  isExpired: boolean
 }

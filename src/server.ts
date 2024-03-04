@@ -42,6 +42,7 @@ import freeCreditsLinkContentRoutes from "./routes/freeCreditsLinkContent.routes
 import adminSettingsRoutes from "./routes/adminSettings.routes";
 import rolesRoutes from "./routes/roles.routes";
 import dataSyncRoutes from "./routes/dataSync.routes";
+// import buyerDetailsRoutes from "./routes/buyerDetails.routes";
 
 const swaggerDocument = require("../swagger.json"); // Replace with the path to your actual Swagger document
 const swaggerUi = require("swagger-ui-express");
@@ -97,7 +98,7 @@ export class Server {
     this.app.use(express.static("public"));
 
     this.app.use("/api/v1/auth", AuthRoutes);
-    this.app.use("/api/v1/auth/business", Auth, BusinessDetailsRoutes);
+    this.app.use("/api/v1/auth/business",Auth, BusinessDetailsRoutes);
     this.app.use("/api/v1/profile", Auth, ProfileRoutes);
     this.app.use("/api/v1/cardDetails", CardDetailsRoutes);
     // need to add middleware here for security of only admin or only user login can update themself.
@@ -109,7 +110,7 @@ export class Server {
     this.app.use("/api/v1/invitedUsers", Auth, invitedUserRoutes);
     this.app.use("/api/v1/termsAndConditions", TermsAndConditionsRoutes);
     this.app.use("/api/v1/freeCredits", Auth, freeCreditsLinkRoutes);
-    this.app.use("/api/v1/businessIndustry", Auth, BusinessIndustriesRoutes);
+    this.app.use("/api/v1/businessIndustry",Auth,  BusinessIndustriesRoutes);
     this.app.use("/api/v1/service", serviceRoutes);
     this.app.use("/api/v1/non-billable-users", Auth, nonBillablesUsers);
     this.app.use("/api/v1/guest", Auth, guestRoutes);
@@ -124,6 +125,8 @@ export class Server {
     this.app.use("/api/v1/adminSettings", Auth, adminSettingsRoutes);
     this.app.use("/api/v1/dataSync", dataSyncRoutes);
     this.app.use("/api/v1/validationConfigs", Auth, validationConfigRoutes);
+    // this.app.use("/api/v1/buyerDetails" , Auth,buyerDetailsRoutes);
+
     this.app.use(
       "/api/v1/freeCreditsLink-content",
       freeCreditsLinkContentRoutes
