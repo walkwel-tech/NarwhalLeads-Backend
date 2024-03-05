@@ -1,5 +1,6 @@
 export const TEMPLATES_ID = {
   FORGET_PASSWORD: "d-2ee5ddf374f442efbb2b2c95e0d4a539",
+  ADMIN_LEADS: "d-758d447ce8914bf4a28c8b3f296684e7",
   AUTO_CHARGE: "d-7265bc9729b34fcb98cd0c081ddcb39f",
   AUTO_CHARGE_FAIL: "d-3bf15874bf854794b411dc470699bc6b",
   REGISTRATION: "d-6bdde3fdda1e43eaa72593b2f88f28e8",
@@ -24,6 +25,7 @@ export const TEMPLATES_ID = {
 
 export const TEMPLATES_TITLE = {
   FORGET_PASSWORD: "forgetPassword",
+  ADMIN_LEADS: "adminLeads",
   AUTO_CHARGE: "autoCharge",
   AUTO_CHARGE_FAIL: "autoChargeFail",
   REGISTRATION: "registration",
