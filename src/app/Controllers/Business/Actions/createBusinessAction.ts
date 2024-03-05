@@ -52,6 +52,7 @@ export const create = async (req: Request, res: Response): Promise<any> => {
   Business.businessMobilePrefixCode = input.businessMobilePrefixCode;
   Business.businessOpeningHours = JSON.parse(input?.businessOpeningHours);
   const errors = await validate(Business);
+  const filteredErrors = errors.filter(error => error.property !== 'buyerQuestions');
   const isBusinessNameExist = await BusinessDetails.find({
     businessName: input.businessName,
     isDeleted: false,
@@ -73,8 +74,8 @@ export const create = async (req: Request, res: Response): Promise<any> => {
   const { onBoarding }: any = user || {};
   let object = onBoarding || [];
   let array: any = [];
-  if (errors.length) {
-    const errorsInfo: ValidationErrorResponse[] = errors.map((error) => ({
+  if (filteredErrors.length) {
+    const errorsInfo: ValidationErrorResponse[] = filteredErrors.map((error) => ({
       property: error.property,
       constraints: error.constraints,
     }));
@@ -90,7 +91,8 @@ export const create = async (req: Request, res: Response): Promise<any> => {
       object = object.map((obj: any) =>
         obj.key === existLead.key ? existLead : obj
       );
-    } else {
+    } 
+    else {
       const mock = {
         key: ONBOARDING_KEYS.BUSINESS_DETAILS,
         pendingFields: array,
