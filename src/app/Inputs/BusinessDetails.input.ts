@@ -52,6 +52,12 @@ export class BusinessDetailsInput {
 
   businessPostCode: string;
 
+  
+  @IsArray({ message: "Buyer Questions must be an array." })
+  buyerQuestions: BuyerQuestionInput[];
+
+  
+
   // @IsNotEmpty()
   // @IsString({ message: "businessCountry is required." })
 
@@ -59,4 +65,15 @@ export class BusinessDetailsInput {
 
    
 
+}
+
+export class BuyerQuestionInput {
+  @IsString()
+  title: string;
+
+  @IsString({ message: "Question Slug should be valid." })
+  questionSlug: string;
+
+  @IsString({ message: "Answer should be a valid string." })
+  answer: string;
 }

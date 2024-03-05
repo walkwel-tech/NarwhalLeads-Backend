@@ -26,6 +26,7 @@ export class IndustryController {
     Industry.currencyCode = input.currencyCode;
     Industry.avgConversionRate = input.avgConversionRate;
     Industry.minimumTopupLeads = input.minimumTopupLeads;
+    Industry.buyerQuestions = input.buyerQuestions
 
     const errors = await validate(Industry);
 
@@ -55,6 +56,7 @@ export class IndustryController {
       country: currency.country,
       associatedCurrency: Industry.currencyCode,
       minimumTopupLeads: Industry.minimumTopupLeads,
+      buyerQuestions: Industry.buyerQuestions,
     };
 
     try {

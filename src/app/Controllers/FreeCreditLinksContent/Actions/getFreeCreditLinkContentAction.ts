@@ -5,7 +5,7 @@ export const getFreeCreditLinkContent = async (req: Request, res: Response) => {
   try {
     const code = req.params.code;
 
-    const freeCreditsLink = await FreeCreditsLink.findOne({ code: code });
+    const freeCreditsLink = await FreeCreditsLink.findOne({ code: code ,deletedAt:null});
     if (!freeCreditsLink) {
       return res
         .status(404)

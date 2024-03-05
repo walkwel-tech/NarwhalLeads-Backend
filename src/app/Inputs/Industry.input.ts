@@ -17,4 +17,12 @@ export class IndustryInput {
   @IsNumber()
   @IsOptional()
   minimumTopupLeads: number;
+
+  buyerQuestions: BuyerQuestionInput[];
+}
+export class BuyerQuestionInput {
+  @IsString()
+  title: string;
+
+  questionSlug: string;
 }

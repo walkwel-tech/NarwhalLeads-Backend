@@ -15,6 +15,11 @@ export interface BusinessDetailsInterface extends Document {
   businessCountry: string,
   businessPostCode: string, 
   businessOpeningHours: [],  
+  buyerQuestions? : Array<{
+    title: string;
+    questionSlug: string;
+    answer: string;
+  }>;
   isDeleted:  boolean,
   deletedAt:  Date,
 }
