@@ -812,7 +812,6 @@ class AuthController {
       if (transaction) {
         exists.hasEverTopped = true;
       }
-
       if (exists) {
 
         const buyerQuestions: BuyerDetailsInput[] = await BuyerDetails.find({
