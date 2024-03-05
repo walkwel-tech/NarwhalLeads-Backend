@@ -1,6 +1,6 @@
 {
   "name": "narwhal-leads",
-  "version": "1.4.17",
+  "version": "1.4.20",
   "description": "",
   "main": "index.js",
   "scripts": {
@@ -51,7 +51,7 @@
     "twilio": "^4.17.0",
     "winston": "^3.11.0",
     "winston-daily-rotate-file": "^4.7.1",
-    "xlsx": "^0.18.5"
+    "xlsx": "file:vendors/xlsx-0.19.2.tgz"
   },
   "devDependencies": {
     "@types/bcryptjs": "^2.4.2",
