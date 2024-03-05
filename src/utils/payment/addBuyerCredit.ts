@@ -3,6 +3,8 @@ import axios from "axios";
 import { User } from "../../app/Models/User";
 import { RolesEnum } from "../../types/RolesEnum";
 import { UserInterface } from "../../types/UserInterface";
+import { PATCH } from "../constantFiles/HttpMethods";
+import { cmsUpdateWebhook } from "../webhookUrls/cmsUpdateWebhook";
 
 export const addCreditsToBuyer = (params: any) => {
   return new Promise((resolve, reject) => {
@@ -32,9 +34,13 @@ export const addCreditsToBuyer = (params: any) => {
         } else {
           updatedCredits = buyerIdUser?.credits + parseInt(params?.fixedAmount || 0);
         }
-        await User.findByIdAndUpdate(buyerIdUser?.id, {
+        const updatedUser = await User.findByIdAndUpdate(buyerIdUser?.id, {
           credits: updatedCredits,
-        });
+        }, {new: true});
+
+        if(updatedUser?.credits && updatedUser?.leadCost && +updatedUser?.credits > +updatedUser?.leadCost){
+          cmsUpdateWebhook( `data/buyer?buyerId=${updatedUser?.buyerId}`, PATCH,{active: true} )
+        }
 
         await User.updateMany(
           { invitedById: buyerIdUser?.id },
