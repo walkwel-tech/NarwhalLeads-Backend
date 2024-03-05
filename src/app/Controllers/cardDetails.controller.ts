@@ -1233,7 +1233,9 @@ export class CardDetailsControllers {
           };
 
           const registeredTxn = await Transaction.find({
-            paymentSessionId: data.object.id,
+            status: PAYMENT_STATUS.CAPTURED,
+            title: transactionTitle.CREDITS_ADDED,
+            paymentSessionId: data.object.id
           });
 
           if (registeredTxn.length > 0) {
