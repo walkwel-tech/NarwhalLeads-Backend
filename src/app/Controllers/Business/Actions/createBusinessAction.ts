@@ -53,10 +53,6 @@ export const create = async (req: Request, res: Response): Promise<any> => {
   Business.businessOpeningHours = JSON.parse(input?.businessOpeningHours);
   const errors = await validate(Business);
   const filteredErrors = errors.filter(error => error.property !== 'buyerQuestions');
-
-  if (filteredErrors.length > 0) {
-    return res.status(400).json({ errors: filteredErrors });
-  }
   const isBusinessNameExist = await BusinessDetails.find({
     businessName: input.businessName,
     isDeleted: false,
