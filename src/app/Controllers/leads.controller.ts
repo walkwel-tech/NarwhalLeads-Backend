@@ -53,6 +53,9 @@ import {Notifications} from "../Models/Notifications";
 import {Transaction} from "../Models/Transaction";
 import {User} from "../Models/User";
 import { createLeadsCSVAdmin } from "./Leads/actions/createLeadsCSVAdmins";
+import { cmsUpdateWebhook } from "../../utils/webhookUrls/cmsUpdateWebhook";
+import { PATCH } from "../../utils/constantFiles/HttpMethods";
+
 
 const ObjectId = mongoose.Types.ObjectId;
 
@@ -124,6 +127,8 @@ export class LeadsController {
                     )[0].postalCode;
                 }
 
+                cmsUpdateWebhook(`data/buyer?buyerId=${user?.buyerId}`, PATCH, {active: false})
+                
                 await eventsWebhook(paramsToSend)
                     .then(() =>
                         logger.info(
