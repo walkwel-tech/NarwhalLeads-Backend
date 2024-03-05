@@ -1241,7 +1241,7 @@ export class CardDetailsControllers {
           if (registeredTxn.length > 0) {
             logger.error("Transaction already registered", data.object);
 
-            return res.status(400).json({ data: { message: "Transaction already registered." } });
+            return res.status(200).json({ data: { message: "Transaction already registered." } });
           }
 
           addCreditsToBuyer(params)
