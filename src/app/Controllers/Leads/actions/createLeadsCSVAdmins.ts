@@ -207,9 +207,9 @@ export const createLeadsCSVAdmin = async (
       }
       return newObj;
     });
-    // user.email
+
     const file = await exportToXlsx("Leads", resultArray);
-     sendEmailForLeads("walkwelrajan@gmail.com", {
+     sendEmailForLeads(user.email, {
       firstName: user.firstName,
       count: resultArray.length,
       file,
