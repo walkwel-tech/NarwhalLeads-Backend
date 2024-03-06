@@ -38,4 +38,8 @@ export class GetUsersQuery {
   @IsOptional()
   @IsNumber()
   perPage?: number;
+
+  @IsOptional()
+  @IsNumber()
+  onBoarding?: number
 }
