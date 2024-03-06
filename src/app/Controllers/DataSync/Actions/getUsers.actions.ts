@@ -18,6 +18,7 @@ export const getUsersActions = async (
     const queryValidator = new GetUsersQuery();
     queryValidator.page = req.query.page ? +req.query.page : 1;
     queryValidator.perPage = req.query.perPage ? +req.query.perPage : LIMIT;
+    queryValidator.onBoarding = req.query.onBoarding ? +req.query.onBoarding : 100;
     queryValidator.search = search as string;
     queryValidator.startTime = createdBtw
       ? (createdBtw as string)?.split(",")[0]
@@ -35,7 +36,7 @@ export const getUsersActions = async (
       });
     }
 
-    const { page, perPage, isDeleted, startTime, endTime } = queryValidator;
+    const { page, perPage, isDeleted, startTime, endTime, onBoarding } = queryValidator;
 
     let skip = 0,
       defaultPerPage = perPage ? perPage : LIMIT;
@@ -46,6 +47,7 @@ export const getUsersActions = async (
     const users = await User.aggregate([
       {
         $match: {
+          onBoardingPercentage: onBoarding, 
           role: { $in: [RolesEnum.USER, RolesEnum.NON_BILLABLE] },
           ...(isDeleted
             ? {
@@ -82,6 +84,44 @@ export const getUsersActions = async (
         },
       },
       {
+        $lookup: {
+          from: "userleadsdetails",
+          localField: "userLeadsDetailsId",
+          foreignField: "_id",
+          as: "userLeadDetail",
+        },
+      },
+      {
+        $addFields: {
+          userLeadDetail: {
+            $cond: {
+              if: { $eq: [{ $size: "$userLeadDetail" }, 0] }, // Check if array is empty
+              then: null, // If array is empty, set it to null
+              else: { $arrayElemAt: ["$userLeadDetail", 0] } // If array is not empty, get the first element
+            }
+          }
+        }
+      },
+      {
+        $lookup: {
+          from: "businessdetails", // Target collection
+          localField: "businessDetailsId",
+          foreignField: "_id",
+          as: "businessDetail",
+        },
+      },
+      {
+        $addFields: {
+          businessDetail: {
+            $cond: {
+              if: { $eq: [{ $size: "$businessDetail" }, 0] }, // Check if array is empty
+              then: null, // If array is empty, set it to null
+              else: { $arrayElemAt: ["$businessDetail", 0] } // If array is not empty, get the first element
+            }
+          }
+        }
+      },
+      {
         $project: {
           firstName: 1,
           lastName: 1,
@@ -104,11 +144,13 @@ export const getUsersActions = async (
           isCommissionedUser: 1,
           secondaryCredits: 1,
           secondaryLeadCost: 1,
-          clientStatus: 1
-        }
+          clientStatus: 1,
+          onBoardingPercentage: 1,
+          userLeadDetail: 1,
+          businessDetail: 1
+        },
       },
       ...commonPaginationPipeline(page, perPage, defaultPerPage, skip),
-      
     ]);
     let data = {
       data: users[0]?.data ?? [],
