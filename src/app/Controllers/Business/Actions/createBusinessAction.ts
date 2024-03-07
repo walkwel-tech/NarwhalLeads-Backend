@@ -1,5 +1,5 @@
 import { validate } from "class-validator";
-import mongoose from "mongoose";
+import mongoose, { Types } from "mongoose";
 import { AccessToken } from "../../../Models/AccessToken";
 import { AccessTokenInterface } from "../../../../types/AccessTokenInterface";
 import { BuisnessIndustriesInterface } from "../../../../types/BuisnessIndustriesInterface";
@@ -31,7 +31,24 @@ import { User } from "../../../Models/User";
 import { UserService } from "../../../Models/UserService";
 import { FreeCreditsLink } from "../../../Models/freeCreditsLink";
 import { createBuyerQuestions } from "../../BuyerDetails/Actions/createBuyerDetailsAction";
+import { leadCenterWebhook } from "../../../../utils/webhookUrls/leadCenterWebhook";
+import { POST } from "../../../../utils/constantFiles/HttpMethods";
+import { EVENT_TITLE } from "../../../../utils/constantFiles/events";
+import { cmsUpdateWebhook } from "../../../../utils/webhookUrls/cmsUpdateWebhook";
+import { BuyerQuestion } from "../../../../types/BuyerDetailsInterface";
+import { daysOfWeek } from "../../../../utils/constantFiles/daysOfWeek";
 const ObjectId = mongoose.Types.ObjectId;
+
+type WebhookData = {
+  buyerId:string;
+  businessData: BusinessDetailsInterface;
+  buyerQuestions: BuyerQuestion[];
+};
+
+interface BusinessOpeningHours {
+  openTime: string;
+  closeTime: string;
+}    
 
 export const create = async (req: Request, res: Response): Promise<any> => {
   const input = req.body;
@@ -47,12 +64,14 @@ export const create = async (req: Request, res: Response): Promise<any> => {
     (Business.address1 = input.address1),
     (Business.businessCity = input.businessCity),
     (Business.businessPostCode = input.businessPostCode);
-  Business.buyerQuestions = input.buyerQuestions;
+    Business.buyerQuestions = input.buyerQuestions;
 
   Business.businessMobilePrefixCode = input.businessMobilePrefixCode;
   Business.businessOpeningHours = JSON.parse(input?.businessOpeningHours);
   const errors = await validate(Business);
-  const filteredErrors = errors.filter(error => error.property !== 'buyerQuestions');
+  const filteredErrors = errors.filter(
+    (error) => error.property !== "buyerQuestions"
+  );
   const isBusinessNameExist = await BusinessDetails.find({
     businessName: input.businessName,
     isDeleted: false,
@@ -75,10 +94,12 @@ export const create = async (req: Request, res: Response): Promise<any> => {
   let object = onBoarding || [];
   let array: any = [];
   if (filteredErrors.length) {
-    const errorsInfo: ValidationErrorResponse[] = filteredErrors.map((error) => ({
-      property: error.property,
-      constraints: error.constraints,
-    }));
+    const errorsInfo: ValidationErrorResponse[] = filteredErrors.map(
+      (error) => ({
+        property: error.property,
+        constraints: error.constraints,
+      })
+    );
     errorsInfo.forEach((error) => {
       array.push(error.property);
     });
@@ -91,8 +112,7 @@ export const create = async (req: Request, res: Response): Promise<any> => {
       object = object.map((obj: any) =>
         obj.key === existLead.key ? existLead : obj
       );
-    } 
-    else {
+    } else {
       const mock = {
         key: ONBOARDING_KEYS.BUSINESS_DETAILS,
         pendingFields: array,
@@ -142,9 +162,9 @@ export const create = async (req: Request, res: Response): Promise<any> => {
     }
     const userData = await BusinessDetails.create(dataToSave);
     const buyerQuestions = await createBuyerQuestions(
-      Business.buyerQuestions, input.userId
+      Business.buyerQuestions,
+      input.userId
     );
-
     const industry: BuisnessIndustriesInterface =
       (await BuisnessIndustries.findOne({
         industry: input?.businessIndustry,
@@ -181,6 +201,47 @@ export const create = async (req: Request, res: Response): Promise<any> => {
 
       await updateUserSendgridJobIds(user.id, jobId);
     }
+
+
+    const webhookData: WebhookData = {
+      buyerId: user.buyerId,
+      businessData: userData,
+      buyerQuestions: Business?.buyerQuestions,
+    };
+
+    const businessOpeningHours: BusinessOpeningHours[] =
+    webhookData.businessData?.businessOpeningHours ?? [];
+
+    const openingHours = businessOpeningHours.map(
+      ({ openTime, closeTime }) => `${openTime}-${closeTime}`
+    );
+
+  
+
+    const formattedOpeningHours = daysOfWeek.reduce((acc: any, day, index) => {
+      acc[`openingHours${day}`] = openingHours[index] ?? "closed";
+      return acc;
+    }, {});
+
+    const formattedBody = {
+      buyerId: webhookData.buyerId ?? " ",
+      industry: webhookData.businessData?.businessIndustry ?? "",
+      postcodes: webhookData.businessData?.businessPostCode ?? "",
+      buyerName: webhookData.businessData?.businessName ?? "",
+      buyerPhone: webhookData.businessData?.businessSalesNumber ?? "",
+      businessDescription: webhookData.businessData?.businessDescription ?? "",
+      ...formattedOpeningHours,
+      industryQuestions: webhookData.buyerQuestions.map(
+        (question: BuyerQuestion) => ({
+          title: question.title,
+          answer: question.answer ?? "",
+        })
+      ),
+    };
+
+
+    cmsUpdateWebhook("data/buyer", POST, formattedBody);
+
     const additionalColumns = additionalColumnsForLeads(
       industry?.columns.length
     );
@@ -295,7 +356,12 @@ export const create = async (req: Request, res: Response): Promise<any> => {
       delete input.criteria;
     }
     const service = await UserService.create(input);
-    await User.findByIdAndUpdate(user.id, { userServiceId: service.id });
+    const updatedUser = await User.findByIdAndUpdate(user.id, { userServiceId: service.id }, {new: true});
+    leadCenterWebhook("clients/data-sync/",POST,{...userData.toObject(), ...updatedUser?.toObject()}, {
+      eventTitle: EVENT_TITLE.USER_UPDATE_LEAD,
+      id: updatedUser?._id as Types.ObjectId,
+    })
+    
     res.json({
       data: userData,
       service,
@@ -335,7 +401,6 @@ export const create = async (req: Request, res: Response): Promise<any> => {
         });
     }
   } catch (error) {
-    console.log(error, ">>>>>>>>>>> error");
     return res
       .status(500)
       .json({ error: { message: "Something went wrong.", error } });

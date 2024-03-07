@@ -6,6 +6,7 @@ interface ICmsUpdateBody {
   [key: string]: any;
 }
 
+
 type HttpMethod = typeof POST | typeof PUT | typeof PATCH | typeof GET;
 
 export const cmsUpdateWebhook = async (
@@ -14,6 +15,9 @@ export const cmsUpdateWebhook = async (
   body: ICmsUpdateBody
 ) => {
   try {
+    
+
+
     let config = {
       method: Method,
       url: `${process.env.CMS_WEBHOOK_BASE_URL}${end_point}`,
@@ -21,7 +25,7 @@ export const cmsUpdateWebhook = async (
         "Content-Type": "application/json",
         Authorization: `Bearer ${process.env.CMS_UPDATE_BUYER_WEBHOOK_KEY}`,
       },
-      data: body,
+      data :body
     };
 
     const res = await axios(config);

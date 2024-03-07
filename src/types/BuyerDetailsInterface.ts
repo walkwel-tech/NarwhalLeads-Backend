@@ -3,7 +3,7 @@ import { Document } from "mongoose";
 interface BuyerQuestion {
   title: string;
   questionSlug: string;
-  answer: string;
+  answer?: string | null;
 }
 
 interface BuyerDetailsInterface extends Document {

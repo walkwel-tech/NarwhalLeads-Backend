@@ -88,6 +88,8 @@ import { createContact } from "../../utils/sendgrid/createContactSendgrid";
 import { updateUserSendgridJobIds } from "../../utils/sendgrid/updateSendgridJobIds";
 import { SENDGRID_STATUS_PERCENTAGE } from "../../utils/constantFiles/sendgridStatusPercentage";
 import logger from "../../utils/winstonLogger/logger";
+import { leadCenterWebhook } from "../../utils/webhookUrls/leadCenterWebhook";
+import { POST } from "../../utils/constantFiles/HttpMethods";
 
 const ObjectId = mongoose.Types.ObjectId;
 
@@ -2528,6 +2530,7 @@ export class UsersControllers {
           title: credits <= 0 ? transactionTitle.MANUAL_DEDUCTION : transactionTitle.MANUAL_ADJUSTMENT ,
           paymentType: transactionTitle.MANUAL_ADJUSTMENT,
         };
+
         // if (user?.credits < credits) {
         amount = credits;
         (params.fixedAmount = amount)
@@ -2542,6 +2545,15 @@ export class UsersControllers {
         dataToSave.creditsLeft = user.credits + credits; //@hotfix can have many test cases(Copied logic from develop branch)
         addCreditsToBuyer(params).then(async (res) => {
           const transaction = await Transaction.create(dataToSave);
+          leadCenterWebhook(
+            "v2/sd-transactions/data-sync/",
+            POST,
+            transaction,
+            {
+              eventTitle: EVENT_TITLE.TRANSACTION_DATA_SYNC,
+              id: user.id,
+            }
+          );
           const paramPdf: generatePDFParams = {
             ContactID: user?.xeroContactId,
 

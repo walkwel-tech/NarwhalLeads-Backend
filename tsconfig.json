@@ -2,10 +2,10 @@
     "compilerOptions": {
       "target": "ES2019",
       "lib": ["ES2020", "DOM"],
-      // "baseUrl": "./src",
-      // "paths": {
-      //   "@spotdif/*": ["*"] // Define aliases for module paths
-      // },
+      "baseUrl": "./src",
+      "paths": {
+        "@spotdif/*": ["*"] // Define aliases for module paths
+      },
       "module": "commonjs",
       "allowSyntheticDefaultImports": true,
       "esModuleInterop": true,
