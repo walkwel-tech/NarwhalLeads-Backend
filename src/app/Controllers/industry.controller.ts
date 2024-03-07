@@ -16,10 +16,17 @@ const LIMIT = 10;
 const ObjectId = mongoose.Types.ObjectId;
 import { countryCurrency } from "../../utils/constantFiles/currencyConstants";
 import { FreeCreditsLink } from "../Models/freeCreditsLink";
+import { cmsUpdateWebhook } from "../../utils/webhookUrls/cmsUpdateWebhook";
+import { BuyerQuestion } from "../../types/BuyerDetailsInterface";
 import { leadCenterWebhook } from "../../utils/webhookUrls/leadCenterWebhook";
 import { DELETE, POST } from "../../utils/constantFiles/HttpMethods";
 import { EVENT_TITLE } from "../../utils/constantFiles/events";
 
+
+type WebhookData = {
+  buyerQuestions: BuyerQuestion[];
+  industry: string;
+};
 export class IndustryController {
   static create = async (req: Request, res: Response) => {
     const input = req.body;
@@ -50,6 +57,18 @@ export class IndustryController {
       return res.status(400).json({ error: { message: "Invalid currency" } });
     }
 
+    if (Industry.buyerQuestions) {
+      const webhookData = {
+        industry: Industry.industry,
+        ...Industry.buyerQuestions.reduce((acc:any, question, index) => {
+          acc[`question${index + 1}`] = question.title;
+          return acc;
+        }, {})
+      };
+    
+      await cmsUpdateWebhook("industry", POST, webhookData);
+    }
+    
     let dataToSave: Partial<BuisnessIndustriesInterface> = {
       industry: input.industry.trim(),
       leadCost: input.leadCost,
@@ -160,6 +179,15 @@ export class IndustryController {
         eventTitle: EVENT_TITLE.INDUSTRY_LEAD_SYNC,
         id: (req.user as UserInterface)?._id,
       });
+      if (input.buyerQuestions) {
+        const webhookData: WebhookData  = {
+          buyerQuestions: updatedData.buyerQuestions,
+          industry: updatedData.industry
+        };
+       await cmsUpdateWebhook("industry", POST, webhookData);
+      }
+
+
 
       if (input.leadCost) {
         const usersToUpdate = await User.find({

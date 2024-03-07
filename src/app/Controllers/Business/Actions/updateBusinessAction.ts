@@ -29,9 +29,21 @@ import { UserService } from "../../../Models/UserService";
 import { Request, Response } from "express";
 import { BuyerDetails } from "../../../Models/BuyerDetails";
 import { leadCenterWebhook } from "../../../../utils/webhookUrls/leadCenterWebhook";
+import { cmsUpdateWebhook } from "../../../../utils/webhookUrls/cmsUpdateWebhook";
 import { POST } from "../../../../utils/constantFiles/HttpMethods";
+import { BuyerQuestion } from "../../../../types/BuyerDetailsInterface";
+import { daysOfWeek } from "../../../../utils/constantFiles/daysOfWeek";
 const ObjectId = mongoose.Types.ObjectId;
 
+interface BusinessOpeningHours {
+  openTime: string;
+  closeTime: string;
+}  
+type WebhookData = {
+  buyerId?:string;
+  businessData: BusinessDetailsInterface;
+  buyerQuestions: BuyerQuestion[];
+};
 export const updateBusinessDetails = async (
   req: Request,
   res: Response
@@ -303,6 +315,40 @@ export const updateBusinessDetails = async (
 
       const fields = findUpdatedFields(userForActivity, userAfterMod);
       const userr = await User.findOne({ businessDetailsId: req.params.id });
+      const webhookData: WebhookData = {
+        buyerId: userr?.buyerId,
+        businessData: data,
+        buyerQuestions: input?.buyerQuestions,
+      };
+
+      const businessOpeningHours: BusinessOpeningHours[] =
+      webhookData.businessData?.businessOpeningHours ?? [];
+  
+      const openingHours = businessOpeningHours.map(
+        ({ openTime, closeTime }) => `${openTime}-${closeTime}`
+      );
+  
+      const formattedOpeningHours = daysOfWeek.reduce((acc: any, day, index) => {
+        acc[`openingHours${day}`] = openingHours[index] ?? "closed";
+        return acc;
+      }, {});
+  
+      const formattedBody = {
+        buyerId: webhookData.buyerId ?? " ",
+        industry: webhookData.businessData?.businessIndustry ?? "",
+        postcodes: webhookData.businessData?.businessPostCode ?? "",
+        buyerName: webhookData.businessData?.businessName ?? "",
+        buyerPhone: webhookData.businessData?.businessSalesNumber ?? "",
+        businessDescription: webhookData.businessData?.businessDescription ?? "",
+        ...formattedOpeningHours,
+        industryQuestions: webhookData.buyerQuestions.map(
+          (question: BuyerQuestion) => ({
+            title: question.title,
+            answer: question.answer ?? "",
+          })
+        ),
+      };
+      await cmsUpdateWebhook("data/buyer", POST, formattedBody);
       const isEmpty = Object.keys(fields.updatedFields).length === 0;
       let user: Partial<UserInterface> = req.user ?? ({} as UserInterface);
 
@@ -369,7 +415,6 @@ export const updateBusinessDetails = async (
       });
     }
   } catch (error) {
-    console.log(error, ">>>> error");
     return res
       .status(500)
       .json({ error: { message: "Something went wrong.", error } });
