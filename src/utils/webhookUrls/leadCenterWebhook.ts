@@ -2,7 +2,7 @@ import axios from "axios";
 import logger from "../winstonLogger/logger";
 import { DELETE, GET, PATCH, POST, PUT } from "../constantFiles/HttpMethods";
 import { LeadCenterCredential } from "../../app/Models/LeadCenterCredential";
-import { checkAccess } from "../../app/Middlewares/serverAccess";
+// import { checkAccess } from "../../app/Middlewares/serverAccess";
 import { getLeadCenterToken } from "../Functions/getLeadCenterToken";
 interface ICmsUpdateBody {
   [key: string]: any;
