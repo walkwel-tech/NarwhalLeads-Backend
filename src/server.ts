@@ -110,7 +110,7 @@ export class Server {
     this.app.use("/api/v1/invitedUsers", Auth, invitedUserRoutes);
     this.app.use("/api/v1/termsAndConditions", TermsAndConditionsRoutes);
     this.app.use("/api/v1/freeCredits", Auth, freeCreditsLinkRoutes);
-    this.app.use("/api/v1/businessIndustry",Auth,  BusinessIndustriesRoutes);
+    this.app.use("/api/v1/businessIndustry",  BusinessIndustriesRoutes);
     this.app.use("/api/v1/service", serviceRoutes);
     this.app.use("/api/v1/non-billable-users", Auth, nonBillablesUsers);
     this.app.use("/api/v1/guest", Auth, guestRoutes);
