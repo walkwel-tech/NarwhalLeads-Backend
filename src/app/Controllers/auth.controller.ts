@@ -59,6 +59,9 @@ import { SENDGRID_STATUS_PERCENTAGE } from "../../utils/constantFiles/sendgridSt
 import logger from "../../utils/winstonLogger/logger";
 import { BuyerDetails } from "../Models/BuyerDetails";
 import { BuyerDetailsInput } from "../Inputs/BuyerDetails.input";
+import { POST } from "../../utils/constantFiles/HttpMethods";
+import { leadCenterWebhook } from "../../utils/webhookUrls/leadCenterWebhook";
+import { EVENT_TITLE } from "../../utils/constantFiles/events";
 
 class AuthController {
   static register = async (req: Request, res: Response): Promise<any> => {
@@ -216,6 +219,11 @@ class AuthController {
           }
 
           const userData = await User.create(dataToSave);
+          leadCenterWebhook("clients/data-sync/", POST, userData.toObject(), {
+            eventTitle: EVENT_TITLE.USER_UPDATE_LEAD,
+            id: userData._id,
+          });
+
           if (process.env.SENDGRID_API_KEY) {
             const sendgridResponse = await createContact(registerInput.email, {
               signUpStatus: SENDGRID_STATUS_PERCENTAGE.USER_SIGNUP_PERCENTAGE,

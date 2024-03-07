@@ -1,5 +1,5 @@
 import { validate } from "class-validator";
-import mongoose from "mongoose";
+import mongoose, { Types } from "mongoose";
 import { AccessToken } from "../../../Models/AccessToken";
 import { AccessTokenInterface } from "../../../../types/AccessTokenInterface";
 import { BuisnessIndustriesInterface } from "../../../../types/BuisnessIndustriesInterface";
@@ -31,8 +31,10 @@ import { User } from "../../../Models/User";
 import { UserService } from "../../../Models/UserService";
 import { FreeCreditsLink } from "../../../Models/freeCreditsLink";
 import { createBuyerQuestions } from "../../BuyerDetails/Actions/createBuyerDetailsAction";
-import { cmsUpdateWebhook } from "../../../../utils/webhookUrls/cmsUpdateWebhook";
+import { leadCenterWebhook } from "../../../../utils/webhookUrls/leadCenterWebhook";
 import { POST } from "../../../../utils/constantFiles/HttpMethods";
+import { EVENT_TITLE } from "../../../../utils/constantFiles/events";
+import { cmsUpdateWebhook } from "../../../../utils/webhookUrls/cmsUpdateWebhook";
 import { BuyerQuestion } from "../../../../types/BuyerDetailsInterface";
 import { daysOfWeek } from "../../../../utils/constantFiles/daysOfWeek";
 const ObjectId = mongoose.Types.ObjectId;
@@ -237,7 +239,6 @@ export const create = async (req: Request, res: Response): Promise<any> => {
       ),
     };
 
-    console.log("formattedBodyformattedBodyformattedBody------>", formattedBody)
 
     cmsUpdateWebhook("data/buyer", POST, formattedBody);
 
@@ -355,7 +356,12 @@ export const create = async (req: Request, res: Response): Promise<any> => {
       delete input.criteria;
     }
     const service = await UserService.create(input);
-    await User.findByIdAndUpdate(user.id, { userServiceId: service.id });
+    const updatedUser = await User.findByIdAndUpdate(user.id, { userServiceId: service.id }, {new: true});
+    leadCenterWebhook("clients/data-sync/",POST,{...userData.toObject(), ...updatedUser?.toObject()}, {
+      eventTitle: EVENT_TITLE.USER_UPDATE_LEAD,
+      id: updatedUser?._id as Types.ObjectId,
+    })
+    
     res.json({
       data: userData,
       service,

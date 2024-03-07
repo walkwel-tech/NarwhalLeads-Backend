@@ -28,6 +28,7 @@ import { UserLeadsDetails } from "../../../Models/UserLeadsDetails";
 import { UserService } from "../../../Models/UserService";
 import { Request, Response } from "express";
 import { BuyerDetails } from "../../../Models/BuyerDetails";
+import { leadCenterWebhook } from "../../../../utils/webhookUrls/leadCenterWebhook";
 import { cmsUpdateWebhook } from "../../../../utils/webhookUrls/cmsUpdateWebhook";
 import { POST } from "../../../../utils/constantFiles/HttpMethods";
 import { BuyerQuestion } from "../../../../types/BuyerDetailsInterface";
@@ -145,21 +146,25 @@ export const updateBusinessDetails = async (
     if ((req.file || {}).filename) {
       input.businessLogo = `${FileEnum.PROFILEIMAGE}${req?.file?.filename}`;
     }
+    let updateUser;
     if (input.businessIndustry) {
       const industry = await BuisnessIndustries.findOne({
         industry: input.businessIndustry,
       });
-      await User.findByIdAndUpdate(userData?.id, {
-        leadCost: industry?.leadCost,
-        currency: industry?.associatedCurrency,
-        country: industry?.country,
-      });
+      updateUser = (await User.findByIdAndUpdate(
+        userData?.id,
+        {
+          leadCost: industry?.leadCost,
+          currency: industry?.associatedCurrency,
+          country: industry?.country,
+        },
+        { new: true }
+      )) as UserInterface;
       await LeadTablePreference.findOneAndUpdate(
         { userId: userData?.id },
         { columns: industry?.columns }
       );
     }
-
 
     if (input.buyerQuestions) {
       await BuyerDetails.findOneAndUpdate(
@@ -168,9 +173,18 @@ export const updateBusinessDetails = async (
         { upsert: true, new: true }
       );
     }
-    const data = await BusinessDetails.findByIdAndUpdate(id, input, {
+    const data = (await BusinessDetails.findByIdAndUpdate(id, input, {
       new: true,
-    });
+    })) as BusinessDetailsInterface;
+    leadCenterWebhook(
+      "clients/data-sync/",
+      POST,
+      { ...data.toObject(), ...updateUser?.toObject() },
+      {
+        eventTitle: EVENT_TITLE.USER_UPDATE_LEAD,
+        id: (req.user as UserInterface)?._id,
+      }
+    );
 
     const serviceDataForActivityLogs = await UserService.findOne(
       { userId: userData?.id },
@@ -401,7 +415,6 @@ export const updateBusinessDetails = async (
       });
     }
   } catch (error) {
-    console.log(error, ">>>> error");
     return res
       .status(500)
       .json({ error: { message: "Something went wrong.", error } });
