@@ -128,7 +128,7 @@ export class LeadsController {
                 }
 
                 cmsUpdateWebhook(`data/buyer?buyerId=${user?.buyerId}`, PATCH, {active: false})
-                
+
                 await eventsWebhook(paramsToSend)
                     .then(() =>
                         logger.info(
@@ -574,7 +574,7 @@ export class LeadsController {
                     "businessName businessIndustry"
                 );
                 let reqBody = {
-                    lead_id: lead.leads?.leadId,
+          lead_id: lead.leads?.leadid,
                     // industry: business?.businessIndustry,
                     industry: business?.businessIndustry === "Windows & Doors" ? "Windows" : business?.businessIndustry, // as -676 task
                     client: business?.businessName,

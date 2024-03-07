@@ -9,6 +9,8 @@ const dataSyncRoutes: Router = Router();
 
 dataSyncRoutes.get("/industries", CheckAccessKey, DataSyncController.getIndustries);
 dataSyncRoutes.get("/users", CheckAccessKey, DataSyncController.getUsers);
+dataSyncRoutes.get("/transactions", CheckAccessKey, DataSyncController.getTransactions);
+dataSyncRoutes.get("/leads", CheckAccessKey, DataSyncController.getLeads);
 dataSyncRoutes.post("/token", Auth, checkPermissions([{ module: MODULE.SYSTEM_SYNC, permission: PERMISSIONS.READ }]), DataSyncController.createToken);
 
 export default dataSyncRoutes;

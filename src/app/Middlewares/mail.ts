@@ -54,9 +54,9 @@ export function sendEmailForLeads(send_to: any, message: any) {
     ],
   };
 
-  // if (process.env.APP_ENV !== APP_ENV.PRODUCTION) {
-  //   msg.to = process.env.SENDGRID_TO_EMAIL || "";
-  // }
+  if (process.env.APP_ENV !== APP_ENV.PRODUCTION) {
+    msg.to = process.env.SENDGRID_TO_EMAIL || "";
+  }
   sgMail
     .send(msg)
     .then(() => {

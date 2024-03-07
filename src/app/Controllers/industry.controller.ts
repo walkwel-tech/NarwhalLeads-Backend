@@ -18,7 +18,8 @@ import { countryCurrency } from "../../utils/constantFiles/currencyConstants";
 import { FreeCreditsLink } from "../Models/freeCreditsLink";
 import { cmsUpdateWebhook } from "../../utils/webhookUrls/cmsUpdateWebhook";
 import { BuyerQuestion } from "../../types/BuyerDetailsInterface";
-import { POST } from "../../utils/constantFiles/HttpMethods";
+import { leadCenterWebhook } from "../../utils/webhookUrls/leadCenterWebhook";
+import { DELETE, POST } from "../../utils/constantFiles/HttpMethods";
 
 
 type WebhookData = {
@@ -34,7 +35,7 @@ export class IndustryController {
     Industry.currencyCode = input.currencyCode;
     Industry.avgConversionRate = input.avgConversionRate;
     Industry.minimumTopupLeads = input.minimumTopupLeads;
-    Industry.buyerQuestions = input.buyerQuestions
+    Industry.buyerQuestions = input.buyerQuestions;
 
     const errors = await validate(Industry);
 
@@ -89,7 +90,9 @@ export class IndustryController {
           .status(400)
           .json({ error: { message: "Business Industry should be unique." } });
       }
+
       const details = await BuisnessIndustries.create(dataToSave);
+      leadCenterWebhook("industries/data-sync/", POST, details);
 
       return res.json({ data: details });
     } catch (error) {
@@ -175,6 +178,10 @@ export class IndustryController {
         };
        await cmsUpdateWebhook("industry", POST, webhookData);
       }
+
+      leadCenterWebhook("industries/data-sync/", POST, updatedData);
+
+
       if (input.leadCost) {
         const usersToUpdate = await User.find({
           businessIndustryId: updatedData?.id,
@@ -209,7 +216,7 @@ export class IndustryController {
           { leadCost: input.leadCost }
         );
       }
-
+      
       return res.json({ data: updatedData });
     } catch (error) {
       return res
@@ -372,7 +379,9 @@ export class IndustryController {
           deletedAt: new Date(),
         });
         const data = await BuisnessIndustries.findById(req.params.id);
+        leadCenterWebhook(`industries/data-delete-sync/?id=${req.params.id}`, DELETE, {} );
 
+      
         return res.json({ data: data });
       }
     } catch (error) {

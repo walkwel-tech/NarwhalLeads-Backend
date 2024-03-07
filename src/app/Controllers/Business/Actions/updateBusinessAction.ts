@@ -30,7 +30,7 @@ import { Request, Response } from "express";
 import { BuyerDetails } from "../../../Models/BuyerDetails";
 import { cmsUpdateWebhook } from "../../../../utils/webhookUrls/cmsUpdateWebhook";
 import { POST } from "../../../../utils/constantFiles/HttpMethods";
-import { BuyerQuestion } from "@spotdif/types/BuyerDetailsInterface";
+import { BuyerQuestion } from "../../../../types/BuyerDetailsInterface";
 import { daysOfWeek } from "../../../../utils/constantFiles/daysOfWeek";
 const ObjectId = mongoose.Types.ObjectId;
 
