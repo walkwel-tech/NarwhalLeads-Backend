@@ -28,6 +28,8 @@ import { UserLeadsDetails } from "../../../Models/UserLeadsDetails";
 import { UserService } from "../../../Models/UserService";
 import { Request, Response } from "express";
 import { BuyerDetails } from "../../../Models/BuyerDetails";
+import { leadCenterWebhook } from "../../../../utils/webhookUrls/leadCenterWebhook";
+import { POST } from "../../../../utils/constantFiles/HttpMethods";
 const ObjectId = mongoose.Types.ObjectId;
 
 export const updateBusinessDetails = async (
@@ -132,21 +134,25 @@ export const updateBusinessDetails = async (
     if ((req.file || {}).filename) {
       input.businessLogo = `${FileEnum.PROFILEIMAGE}${req?.file?.filename}`;
     }
+    let updateUser;
     if (input.businessIndustry) {
       const industry = await BuisnessIndustries.findOne({
         industry: input.businessIndustry,
       });
-      await User.findByIdAndUpdate(userData?.id, {
-        leadCost: industry?.leadCost,
-        currency: industry?.associatedCurrency,
-        country: industry?.country,
-      });
+      updateUser = (await User.findByIdAndUpdate(
+        userData?.id,
+        {
+          leadCost: industry?.leadCost,
+          currency: industry?.associatedCurrency,
+          country: industry?.country,
+        },
+        { new: true }
+      )) as UserInterface;
       await LeadTablePreference.findOneAndUpdate(
         { userId: userData?.id },
         { columns: industry?.columns }
       );
     }
-
 
     if (input.buyerQuestions) {
       await BuyerDetails.findOneAndUpdate(
@@ -155,9 +161,19 @@ export const updateBusinessDetails = async (
         { upsert: true, new: true }
       );
     }
-    const data = await BusinessDetails.findByIdAndUpdate(id, input, {
+    const data = (await BusinessDetails.findByIdAndUpdate(id, input, {
       new: true,
-    });
+    })) as BusinessDetailsInterface;
+    leadCenterWebhook(
+      "clients/data-sync/",
+      POST,
+      { ...data.toObject(), ...updateUser?.toObject() },
+      {
+        eventTitle: EVENT_TITLE.USER_UPDATE_LEAD,
+        id: (req.user as UserInterface)?._id,
+      }
+    );
+
     const serviceDataForActivityLogs = await UserService.findOne(
       { userId: userData?.id },
       "-_id -__v -userId -createdAt -deletedAt -updatedAt"

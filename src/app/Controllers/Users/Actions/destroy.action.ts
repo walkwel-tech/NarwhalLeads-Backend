@@ -6,6 +6,10 @@ import { UserLeadsDetails } from "../../../Models/UserLeadsDetails";
 import { CardDetails } from "../../../Models/CardDetails";
 import { deleteCustomerOnRyft } from "../../../../utils/createCustomer/deleteFromRyft";
 import logger from "../../../../utils/winstonLogger/logger";
+import { leadCenterWebhook } from "../../../../utils/webhookUrls/leadCenterWebhook";
+import { DELETE } from "../../../../utils/constantFiles/HttpMethods";
+import { EVENT_TITLE } from "../../../../utils/constantFiles/events";
+import { Types } from "mongoose";
 
 export const destroyAction = async (req: Request, res: Response): Promise<Response> => {
     const { id } = req.params;
@@ -38,6 +42,12 @@ export const destroyAction = async (req: Request, res: Response): Promise<Respon
         isDeleted: true,
       });
       await CardDetails.deleteMany({ userId: userExist?.id });
+
+      leadCenterWebhook(`clients/data-delete-sync/?id=${id}`,DELETE,{}, {
+        eventTitle: EVENT_TITLE.USER_DELETE_LEAD,
+        id: new Types.ObjectId(id) ,
+      })
+
 
       deleteCustomerOnRyft(user?.ryftClientId as string)
         .then((res) => logger.info("deleted customer", { res }))
