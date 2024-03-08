@@ -18,7 +18,7 @@ export const updatePromoLinkContent = async (
       if (validationErrors.length > 0) {
         return res.status(400).json({ errors: validationErrors });
       }
-  
+  console.log("/////////////////////////??", input);
       const updatedDocument = await FreeCreditsLinkContent.findByIdAndUpdate(
         id,
         input,

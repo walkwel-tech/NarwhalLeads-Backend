@@ -2,7 +2,6 @@ import { Document, Types } from "mongoose";
 
 import { RolesEnum } from "./RolesEnum";
 import { BusinessDetailsInterface } from "./BusinessInterface";
-
 export interface UserInterface extends Document {
   createdAt: any;
   _id: Types.ObjectId;
@@ -78,4 +77,9 @@ export interface UserInterface extends Document {
   retriedTransactionCount: number;
   hasEverTopped?: boolean,
   clientStatus?: string
+  buyerQuestions? : Array<{
+    title: string;
+    questionSlug: string;
+    answer: string;
+  }>;
 }

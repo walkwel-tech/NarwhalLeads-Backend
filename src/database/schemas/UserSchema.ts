@@ -33,7 +33,7 @@ const UserSchema = new Schema(
     },
     clientStatus: {
       type: String,
-      default: userStatus.PENDING
+      default: userStatus.PENDING,
     },
     role: {
       type: String,
@@ -43,7 +43,7 @@ const UserSchema = new Schema(
     isAccountAdmin: {
       type: Boolean,
       required: true,
-      default:false,
+      default: false,
     },
     leadCost: {
       type: Number,
@@ -245,7 +245,7 @@ const UserSchema = new Schema(
     },
     retriedTransactionCount: {
       type: Number,
-      default: 0
+      default: 0,
     },
     secondaryCredits: {
       type: Number,
@@ -264,7 +264,7 @@ const UserSchema = new Schema(
     },
     hasEverTopped: {
       type: Boolean,
-      default: false
+      default: false,
     },
     avgConversionRate: {
       type: Number,
@@ -273,9 +273,13 @@ const UserSchema = new Schema(
       type: Number,
     },
     sendgridJobIds: {
-        type: [String],
-        default: [],
-      },
+      type: [String],
+      default: [],
+    },
+
+    buyerQuestions: {
+      type: [],
+    },
   },
   { timestamps: true }
 );

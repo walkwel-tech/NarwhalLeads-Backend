@@ -1,6 +1,7 @@
 import { Schema } from "mongoose";
 import { json } from "../../utils/constantFiles/businessIndustryJson";
 import { defaultImagesForType } from "../../app/Controllers/SupplierBadges";
+import { v4 as uuidv4 } from 'uuid';
 
 const BuisnessIndustriesSchema = new Schema(
   {
@@ -63,6 +64,22 @@ const BuisnessIndustriesSchema = new Schema(
     minimumTopupLeads: {
       type: Number,
     },
+    buyerQuestions: [
+      {
+        title: {
+          type: String,
+          required: true,
+        },
+        questionSlug: {
+          type: String,
+          default: uuidv4,
+        },
+        answer : {
+          type: String,
+          default: "",
+        }
+      }
+    ]
   },
   { timestamps: true }
 );

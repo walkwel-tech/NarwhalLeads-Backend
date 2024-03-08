@@ -1,12 +1,13 @@
 import { Response } from "express";
 import { User } from "../../../Models/User";
-import { UserInterface } from "../../../../types/UserInterface";
+// import { UserInterface } from "@spotdif/types/UserInterface";
 import { Transaction } from "../../../Models/Transaction";
 import { transactionTitle } from "../../../../utils/Enums/transaction.title.enum";
 import { PAYMENT_STATUS } from "../../../../utils/Enums/payment.status";
 import { leadsStatusEnums } from "../../../../utils/Enums/leads.status.enum";
 import { Leads } from "../../../Models/Leads";
 import { convertData } from "./convertData";
+import {UserInterface} from "../../../../types/UserInterface";
 
 export const accountManagerStatsAction = async (req: any, res: Response) => {
     try {
@@ -253,7 +254,7 @@ export const accountManagerStatsAction = async (req: any, res: Response) => {
   function convertDataForDaysInMonth(data: any, labels: any, year: any) {
     // Initialize an array of 12 elements with all zeros
     const dataArr = Array(31).fill(0);
-  
+
     // Loop through each object in the data array and update the corresponding element in dataArr
     data.forEach((obj: any) => {
       const index = obj.dayOfMonth - 1;
@@ -268,7 +269,7 @@ export const accountManagerStatsAction = async (req: any, res: Response) => {
         years.push(i.year);
       }
     });
-  
+
     // Create an object with labels and data properties
     return { labels, data: dataArr, years: years };
   }

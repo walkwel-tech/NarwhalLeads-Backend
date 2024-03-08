@@ -16,6 +16,74 @@ const sgMail = require("@sendgrid/mail");
 sgMail.setApiKey(process.env.SENDGRID_API_KEY);
 sgMail.setSubstitutionWrappers("{{", "}}");
 
+export function sendEmailForLeads(send_to: any, message: any) {
+  const msg = {
+    to: send_to, // Change to your recipient
+
+    from: {
+      name: process.env.VERIFIED_SENDER_ON_SENDGRID_FROM_NAME,
+      email: process.env.VERIFIED_SENDER_ON_SENDGRID,
+    },
+    // Change to your verified sender
+    trackingSettings: {
+      clickTracking: {
+        enable: false,
+        enableText: false,
+      },
+      openTracking: {
+        enable: false,
+      },
+    },
+
+    // html: "<strong>and easy to do anywhere, even with Node.js</strong>",
+    // templateId: "d-3175762a4b534d82968a264a356a921b",
+    templateId: TEMPLATES_ID.ADMIN_LEADS,
+    dynamic_template_data: {
+      "first-name": message.firstName,
+      "report-name": "Lead Export",
+      "date-time": (new Date()).toUTCString(),
+      headline: `${message.count} Leads Processed`,
+    },
+    attachments: [
+      {
+        content: message.file,
+        filename: "Leads.xls", // Name of the attachment
+        type: "application/vnd.ms-excel", // MIME type of the attachment for XLS format
+        disposition: "attachment", // Display attachment as an attachment rather than inline
+      },
+    ],
+  };
+
+  if (process.env.APP_ENV !== APP_ENV.PRODUCTION) {
+    msg.to = process.env.SENDGRID_TO_EMAIL || "";
+  }
+  sgMail
+    .send(msg)
+    .then(() => {
+      logger.info("Email sent");
+      const params = {
+        email: send_to,
+        title: TEMPLATES_TITLE.ADMIN_LEADS,
+        templateId: TEMPLATES_ID.ADMIN_LEADS,
+        status: NOTIFICATION_STATUS.SUCCESS,
+      };
+      saveNotifications(params);
+    })
+    .catch((error: any) => {
+      logger.error("Error in sending mail:", error);
+      const params = {
+        email: send_to,
+        title: TEMPLATES_TITLE.FORGET_PASSWORD,
+        templateId: TEMPLATES_ID.FORGET_PASSWORD,
+        status: NOTIFICATION_STATUS.FAIL,
+      };
+      saveNotifications(params);
+    });
+  // } else {
+  //   console.log("Emails access only on production");
+  // }
+}
+
 export function sendEmailForgetPassword(send_to: any, message: any) {
   const msg = {
     to: send_to, // Change to your recipient
@@ -112,7 +180,7 @@ export function sendEmailForRegistration(send_to: any, message: any) {
       saveNotifications(params);
     })
     .catch((error: any) => {
-      logger.error('Error:', error);
+      logger.error("Error:", error);
       const params = {
         email: send_to,
         title: TEMPLATES_TITLE.REGISTRATION,
@@ -194,7 +262,7 @@ export async function sendEmailForNewRegistration(
       currencyCode: message?.currencyCode,
       mobilePrefixCode: message?.mobilePrefixCode,
       dailyCap: message?.dailyCap,
-      weeklyCap: message?.weeklyLeads
+      weeklyCap: message?.weeklyLeads,
     },
   };
   // if (checkAccess()) {
@@ -217,7 +285,7 @@ export async function sendEmailForNewRegistration(
       // });
     })
     .catch((error: any) => {
-      logger.error('Error:', error);
+      logger.error("Error:", error);
       //TODO:
       const params = {
         email: send_to,
@@ -276,7 +344,7 @@ export function sendEmailToInvitedUser(send_to: string, message: any) {
       saveNotifications(params);
     })
     .catch((error: any) => {
-      logger.error('Error:', error);
+      logger.error("Error:", error);
       const params = {
         email: send_to,
         title: TEMPLATES_TITLE.INVITED_USER,
@@ -341,7 +409,7 @@ export function sendEmailForNewLead(send_to: string, message: any) {
       // });
     })
     .catch((error: any) => {
-      logger.error('Error:', error);
+      logger.error("Error:", error);
       const params = {
         email: send_to,
         title: TEMPLATES_TITLE.NEW_LEAD,
@@ -398,7 +466,7 @@ export function sendEmaiForTotalLead(send_to: string, message: any) {
       saveNotifications(params);
     })
     .catch((error: any) => {
-      logger.error('Error:', error);
+      logger.error("Error:", error);
       const params = {
         email: send_to,
         title: TEMPLATES_TITLE.TOTAL_LEADS,
@@ -454,7 +522,7 @@ export function sendEmailForLeadStatusReject(send_to: string, message: any) {
       saveNotifications(params);
     })
     .catch((error: any) => {
-      logger.error('Error:', error);
+      logger.error("Error:", error);
       const params = {
         email: send_to,
         title: TEMPLATES_TITLE.LEAD_STATUS_REJECT,
@@ -510,7 +578,7 @@ export function sendEmailForLeadStatusAccept(send_to: string, message: any) {
       saveNotifications(params);
     })
     .catch((error: any) => {
-      logger.error('Error:', error);
+      logger.error("Error:", error);
       const params = {
         email: send_to,
         title: TEMPLATES_TITLE.LEAD_STATUS_ACCEPT,
@@ -595,8 +663,7 @@ export function sendEmailForUpdatedDetails(message: any) {
       businessLogo: message?.logo,
       currencyCode: message?.currencyCode,
       mobilePrefixCode: message?.mobilePrefixCode,
-      dailyCap: message?.dailyCap
-
+      dailyCap: message?.dailyCap,
     },
   };
   if (checkAccess()) {
@@ -616,7 +683,7 @@ export function sendEmailForUpdatedDetails(message: any) {
         saveNotifications(params);
       })
       .catch((error: any) => {
-        logger.error('Error:', error);
+        logger.error("Error:", error);
         const params = {
           email: process.env.ADMIN_EMAIL,
           title: TEMPLATES_TITLE.USER_UPDATE_DETAILS,
@@ -679,7 +746,7 @@ export function sendEmailForPaymentSuccess(send_to: any, message: any) {
       saveNotifications(params);
     })
     .catch((error: any) => {
-      logger.error('Error:', error);
+      logger.error("Error:", error);
       const params = {
         email: send_to,
         title: TEMPLATES_TITLE.PAYMENT_SUCCESS,
@@ -742,7 +809,7 @@ export function sendEmailForPaymentFailure(send_to: any, message: any) {
       saveNotifications(params);
     })
     .catch((error: any) => {
-      logger.error('Error:', error);
+      logger.error("Error:", error);
       const params = {
         email: send_to,
         title: TEMPLATES_TITLE.PAYMENT_FAIL,
@@ -792,7 +859,8 @@ export function sendEmailForFullySignupToAdmin(message: any) {
       businessDescription: message?.businessDescription,
       businessLogo: `${process.env.APP_URL}${message?.businessLogo}`,
       address1: message?.address1,
-      businessSalesNumber: '+'+  message?.mobilePrefixCode+ " " +message?.businessSalesNumber,
+      businessSalesNumber:
+        "+" + message?.mobilePrefixCode + " " + message?.businessSalesNumber,
       businessAddress: message?.businessAddress,
       businessCity: message?.businessCity,
       businessPostCode: message?.businessPostCode,
@@ -803,13 +871,15 @@ export function sendEmailForFullySignupToAdmin(message: any) {
       avgInstallTime: message?.avgInstallTime,
       trustpilotReviews: message?.trustpilotReviews,
       criteria: message?.criteria,
-      leadCost: countryCurrency.find(({value}) => value === message?.currency)?.label + " "  +message?.leadCost,
+      leadCost:
+        countryCurrency.find(({ value }) => value === message?.currency)
+          ?.label +
+        " " +
+        message?.leadCost,
       area: message?.area,
       computedLead: +message?.daily + +message?.computedCap,
       weeklyCap: message?.weeklyCap,
-      postCodeType: message?.type
-
-
+      postCodeType: message?.type,
     },
   };
   // if (checkAccess()) {
@@ -829,7 +899,7 @@ export function sendEmailForFullySignupToAdmin(message: any) {
       saveNotifications(params);
     })
     .catch((error: any) => {
-      logger.error('Error:', error);
+      logger.error("Error:", error);
       const params = {
         email: process.env.ADMIN_EMAIL,
         title: TEMPLATES_TITLE.PAYMENT_SUCCESS_TO_ADMIN,
@@ -886,7 +956,7 @@ export function sendEmailToInvitedAdmin(send_to: string, message: any) {
       saveNotifications(params);
     })
     .catch((error: any) => {
-      logger.error('Error:', error);
+      logger.error("Error:", error);
       const params = {
         email: send_to,
         title: TEMPLATES_TITLE.INVITED_ADMIN,
@@ -946,7 +1016,7 @@ export function sendEmailToInvitedAccountManager(
       saveNotifications(params);
     })
     .catch((error: any) => {
-      logger.error('Error:', error);
+      logger.error("Error:", error);
       const params = {
         email: send_to,
         title: TEMPLATES_TITLE.INVITED_ACCOUNT_MANAGER,
@@ -1003,7 +1073,7 @@ export function sendEmailForBelow5LeadsPending(send_to: string, message: any) {
       saveNotifications(params);
     })
     .catch((error: any) => {
-      logger.error('Error:', error);
+      logger.error("Error:", error);
       const params = {
         email: send_to,
         title: TEMPLATES_TITLE.BELOW_5_LEADS_PENDING,
@@ -1060,7 +1130,7 @@ export function sendEmailForOutOfFunds(send_to: string, message: any) {
       saveNotifications(params);
     })
     .catch((error: any) => {
-      logger.error('Error:', error);
+      logger.error("Error:", error);
       const params = {
         email: send_to,
         title: TEMPLATES_TITLE.OUT_OF_FUNDS,
@@ -1119,7 +1189,7 @@ export function sendEmailToRemindUser25PercentSignup(
         // });
       })
       .catch((error: any) => {
-        logger.error('Error:', error);
+        logger.error("Error:", error);
         const params = {
           email: send_to,
           title: TEMPLATES_TITLE.USER_25_PERCENT_SIGNUP,

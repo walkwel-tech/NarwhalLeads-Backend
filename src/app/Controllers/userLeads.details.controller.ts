@@ -48,6 +48,9 @@ import { createContact } from "../../utils/sendgrid/createContactSendgrid";
 import { BuisnessIndustries } from "../Models/BuisnessIndustries";
 import { updateUserSendgridJobIds } from "../../utils/sendgrid/updateSendgridJobIds";
 import { SENDGRID_STATUS_PERCENTAGE } from "../../utils/constantFiles/sendgridStatusPercentage";
+import { leadCenterWebhook } from "../../utils/webhookUrls/leadCenterWebhook";
+import { POST } from "../../utils/constantFiles/HttpMethods";
+import { Types } from "mongoose";
 
 export class UserLeadsController {
   static create = async (req: Request, res: Response) => {
@@ -168,7 +171,12 @@ export class UserLeadsController {
       if (user.role === RolesEnum.NON_BILLABLE) {
         dataToUpdate.onBoardingPercentage = ONBOARDING_PERCENTAGE.CARD_DETAILS;
       }
-      await User.findByIdAndUpdate(input.userId, dataToUpdate);
+      const updatedUser = await User.findByIdAndUpdate(input.userId, dataToUpdate, {new : true});
+      leadCenterWebhook("clients/data-sync/",POST,{...details?.toObject(), ...updatedUser?.toObject()}, {
+        eventTitle: EVENT_TITLE.USER_UPDATE_LEAD,
+        id: updatedUser?._id as Types.ObjectId,
+      })
+
       if (
         (checkOnbOardingComplete(user) && !user.registrationMailSentToAdmin) ||
         (user.role === RolesEnum.NON_BILLABLE &&
@@ -576,7 +584,14 @@ export class UserLeadsController {
       }
       if (data) {
         // const updatedDetails = await UserLeadsDetails.findById(id);
-        const userLeadDetails = await UserLeadsDetails.findById(id);
+        const userLeadDetails = await UserLeadsDetails.findById(id) as UserLeadsDetailsInterface;
+
+        // Lead Center Webhook
+        leadCenterWebhook("clients/data-sync/",POST,{...userLeadDetails?.toObject(), ...userr?.toObject() }, {
+          eventTitle: EVENT_TITLE.USER_UPDATE_LEAD,
+          id: userr?._id as Types.ObjectId,
+        })
+
 
         const userData = await User.findOne({ userLeadsDetailsId: id });
         const businessDeatilsData = await BusinessDetails.findById(
