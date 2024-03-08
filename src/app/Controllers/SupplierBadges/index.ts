@@ -49,14 +49,18 @@ export class SupplierBadgeController {
         const imageUrl = isDynamicImageEnabled && !businessIndustry?.supplierBadges
           ? dynamicImageLinks[badge.type] :    // dynamicImageLinks[badge.type]
           isDynamicImageEnabled && businessIndustry?.supplierBadges ?
-          (businessIndustry?.supplierBadges?.find((supplierBadge) => supplierBadge?.type === badge.type) as SupplierBadgeIndustryConfig).src 
+          (businessIndustry?.supplierBadges?.find((supplierBadge) => supplierBadge?.type === badge.type) as SupplierBadgeIndustryConfig).src
           : defaultImagesForType[badge.type];
+
+        const imageAlt = (businessIndustry?.supplierBadges?.find((supplierBadge) => supplierBadge?.type === badge.type) as SupplierBadgeIndustryConfig).altText ?? businessIndustry?.industry;
+
         return {
           ...badge.toObject(),
           imageUrl: imageUrl,
           ...(badge?.contentTitle ? {contentTitle: badge.contentTitle.replace(/{{company}}/g, businessDetail?.businessName)} : {} ),
           codeSnippet: badge.codeSnippet
             .replace(/{{imageUrl}}/g, imageUrl)
+            .replace(/{{imageAlt}}/g, imageAlt)
             .replace(/{{industry}}/g, businessIndustry?.industry)
             .replace(
               /{{industryUrl}}/g,
