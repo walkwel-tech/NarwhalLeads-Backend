@@ -48,7 +48,7 @@ type WebhookData = {
 interface BusinessOpeningHours {
   openTime: string;
   closeTime: string;
-}    
+}
 
 export const create = async (req: Request, res: Response): Promise<any> => {
   const input = req.body;
@@ -216,7 +216,7 @@ export const create = async (req: Request, res: Response): Promise<any> => {
       ({ openTime, closeTime }) => `${openTime}-${closeTime}`
     );
 
-  
+
 
     const formattedOpeningHours = daysOfWeek.reduce((acc: any, day, index) => {
       acc[`openingHours${day}`] = openingHours[index] ?? "closed";
@@ -231,7 +231,7 @@ export const create = async (req: Request, res: Response): Promise<any> => {
       buyerPhone: webhookData.businessData?.businessSalesNumber ?? "",
       businessDescription: webhookData.businessData?.businessDescription ?? "",
       ...formattedOpeningHours,
-      industryQuestions: webhookData.buyerQuestions.map(
+      industryQuestions: webhookData.buyerQuestions?.map(
         (question: BuyerQuestion) => ({
           title: question.title,
           answer: question.answer ?? "",
@@ -361,7 +361,7 @@ export const create = async (req: Request, res: Response): Promise<any> => {
       eventTitle: EVENT_TITLE.USER_UPDATE_LEAD,
       id: updatedUser?._id as Types.ObjectId,
     })
-    
+
     res.json({
       data: userData,
       service,

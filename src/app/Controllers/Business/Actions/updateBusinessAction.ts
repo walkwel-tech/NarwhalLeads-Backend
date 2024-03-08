@@ -38,7 +38,7 @@ const ObjectId = mongoose.Types.ObjectId;
 interface BusinessOpeningHours {
   openTime: string;
   closeTime: string;
-}  
+}
 type WebhookData = {
   buyerId?:string;
   businessData: BusinessDetailsInterface;
@@ -323,16 +323,16 @@ export const updateBusinessDetails = async (
 
       const businessOpeningHours: BusinessOpeningHours[] =
       webhookData.businessData?.businessOpeningHours ?? [];
-  
+
       const openingHours = businessOpeningHours.map(
         ({ openTime, closeTime }) => `${openTime}-${closeTime}`
       );
-  
+
       const formattedOpeningHours = daysOfWeek.reduce((acc: any, day, index) => {
         acc[`openingHours${day}`] = openingHours[index] ?? "closed";
         return acc;
       }, {});
-  
+
       const formattedBody = {
         buyerId: webhookData.buyerId ?? " ",
         industry: webhookData.businessData?.businessIndustry ?? "",
@@ -341,7 +341,7 @@ export const updateBusinessDetails = async (
         buyerPhone: webhookData.businessData?.businessSalesNumber ?? "",
         businessDescription: webhookData.businessData?.businessDescription ?? "",
         ...formattedOpeningHours,
-        industryQuestions: webhookData.buyerQuestions.map(
+        industryQuestions: webhookData.buyerQuestions?.map(
           (question: BuyerQuestion) => ({
             title: question.title,
             answer: question.answer ?? "",
