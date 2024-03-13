@@ -1,0 +1,41 @@
+sequenceDiagram
+    participant A as Admin
+    participant U as User
+    participant S as SpotDif
+    participant X as Xero
+    participant P as Stripe
+    participant L as LeadByte
+
+    rect rgb(100, 100, 80)
+        U -->> S: Sign Up
+        U -->> S: Onboarding
+        U -->> P: Card Details
+        P -->> S: Customer ID
+        S -->> X: Contact Create
+        X -->> S: Contact ID
+        S -->> L: Buyer Create
+        L -->> S: Buyer ID
+    end
+
+    rect rgb(50, 60, 50)
+        U -->> P: Payment
+        P -->> S: Payment ID
+        S -->> S: Wallet Update
+        S -->> X: Invoice Generate
+    end
+
+    rect rgb(0, 50, 50)
+        A -->> S: Manual Adjustment - With Invoice
+        S -->> X: Invoice Generate
+        S -->> S: Wallet Update
+        S -->> L: Credit Update
+    end
+
+    rect rgb(50, 50, 0)
+        A -->> S: Manual Adjustment - Without Invoice
+        S -->> S: Wallet Update
+        S -->> L: Credit Update
+        A -->> S: Manual Deduction - Without Invoice
+        S -->> S: Wallet Update
+        S -->> L: Credit Update
+    end
