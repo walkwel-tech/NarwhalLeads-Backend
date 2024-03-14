@@ -17,10 +17,10 @@ export const cronBuyerStatus = async () => {
             ? "*/30 * * * *"
             : "25 7 * * *";
 
-    cron.schedule(cronTiming, checkBuyers);
+    cron.schedule(cronTiming, checkBuyersStatusAndSync);
 };
 
-export const checkBuyers = async () => {
+export const checkBuyersStatusAndSync = async () => {
     logger.info("buyer sync initiated!");
     const allBuyers = await User.find({
         buyerId: {$exists: true},
@@ -41,11 +41,12 @@ export const checkBuyers = async () => {
             return acc;
         }, {});
 
-        logger.debug("buyer sync sending data to cms", buyersToStatus);
-
-        return await cmsUpdateWebhook("data/buyerSync", POST, {
+        const cmsResponse =  await cmsUpdateWebhook("data/buyerSync", POST, {
             data: buyersToStatus
         });
+
+        logger.debug("buyer sync sending data to cms", buyersToStatus.length, cmsResponse);
+        return cmsResponse;
     }));
 
     logger.info("buyer sync completed!");

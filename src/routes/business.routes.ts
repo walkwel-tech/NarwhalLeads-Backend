@@ -1,6 +1,6 @@
 import {Router} from "express";
 import multer from "multer";
-import {checkBuyers} from "../app/AutoUpdateTasks/buyerActivations";
+import {checkBuyersStatusAndSync} from "app/AutoUpdateTasks/buyerCreditAndActivation";
 import {BusinessDetailsController} from "../app/Controllers/Business";
 
 import {Auth, OnlyAdmins} from "../app/Middlewares";
@@ -34,7 +34,7 @@ const upload = multer({
 businessDetails.get('/buyer-sync',
     OnlyAdmins,
     (req, res) => {
-        checkBuyers();
+        checkBuyersStatusAndSync();
 
         res.status(200).json({message: "Buyer Sync Started"});
     }
