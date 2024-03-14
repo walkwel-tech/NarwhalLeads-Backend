@@ -38,7 +38,7 @@ export const checkBuyers = async () => {
             return acc;
         }, {});
 
-        return await cmsUpdateWebhook("/buyer/activations", POST, {
+        return await cmsUpdateWebhook("/buyerSync", POST, {
             data: buyersToStatus
         });
     }));
