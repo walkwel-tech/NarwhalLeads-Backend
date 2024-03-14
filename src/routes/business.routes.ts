@@ -1,6 +1,6 @@
 import {Router} from "express";
 import multer from "multer";
-import {checkBuyersStatusAndSync} from "app/AutoUpdateTasks/buyerCreditAndActivation";
+import {checkBuyersStatusAndSync} from "../app/AutoUpdateTasks/buyerCreditAndActivation";
 import {BusinessDetailsController} from "../app/Controllers/Business";
 
 import {Auth, OnlyAdmins} from "../app/Middlewares";
