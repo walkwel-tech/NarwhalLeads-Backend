@@ -20,6 +20,7 @@ import { cmsUpdateWebhook } from "../../utils/webhookUrls/cmsUpdateWebhook";
 import { BuyerQuestion } from "../../types/BuyerDetailsInterface";
 import { leadCenterWebhook } from "../../utils/webhookUrls/leadCenterWebhook";
 import { DELETE, POST } from "../../utils/constantFiles/HttpMethods";
+import { EVENT_TITLE } from "../../utils/constantFiles/events";
 
 
 type WebhookData = {
@@ -92,7 +93,10 @@ export class IndustryController {
       }
 
       const details = await BuisnessIndustries.create(dataToSave);
-      leadCenterWebhook("industries/data-sync/", POST, details);
+      leadCenterWebhook("industries/data-sync/", POST, details, {
+        eventTitle: EVENT_TITLE.INDUSTRY_LEAD_SYNC,
+        id: (req.user as UserInterface)?._id,
+      });
 
       return res.json({ data: details });
     } catch (error) {
@@ -177,12 +181,15 @@ export class IndustryController {
             acc[`question${index + 1}`] = question?.title;
             return acc;
           }, {})
-        };
-       await cmsUpdateWebhook("industry", POST, webhookData);
-      
+        }
 
-      leadCenterWebhook("industries/data-sync/", POST, updatedData);
+        await cmsUpdateWebhook("industry", POST, webhookData);
 
+      leadCenterWebhook("industries/data-sync/", POST, updatedData, {
+        eventTitle: EVENT_TITLE.INDUSTRY_LEAD_SYNC,
+        id: (req.user as UserInterface)?._id,
+      });
+ 
 
       if (input.leadCost) {
         const usersToUpdate = await User.find({
@@ -196,7 +203,7 @@ export class IndustryController {
         });
 
         const updatePromoUsersWithDiscount = async (
-          user:UserInterface
+          user: UserInterface
         ): Promise<any> => {
           const promolink = await FreeCreditsLink.findById(user.promoLinkId);
           if (promolink) {
@@ -218,7 +225,7 @@ export class IndustryController {
           { leadCost: input.leadCost }
         );
       }
-      
+
       return res.json({ data: updatedData });
     } catch (error) {
       return res
@@ -381,9 +388,15 @@ export class IndustryController {
           deletedAt: new Date(),
         });
         const data = await BuisnessIndustries.findById(req.params.id);
-        leadCenterWebhook(`industries/data-delete-sync/?id=${req.params.id}`, DELETE, {} );
+        leadCenterWebhook(
+          `industries/data-delete-sync/?id=${req.params.id}`,
+          DELETE,
+          {}, {
+            eventTitle: EVENT_TITLE.INDUSTRY_LEAD_CENTER_DELETE,
+            id: (req.user as UserInterface)?._id ,
+          }
+        );
 
-      
         return res.json({ data: data });
       }
     } catch (error) {

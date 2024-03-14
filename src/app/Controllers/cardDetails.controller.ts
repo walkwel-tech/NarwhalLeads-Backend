@@ -113,6 +113,8 @@ import { BuisnessIndustries } from "../Models/BuisnessIndustries";
 import { updateUserSendgridJobIds } from "../../utils/sendgrid/updateSendgridJobIds";
 import { SENDGRID_STATUS_PERCENTAGE } from "../../utils/constantFiles/sendgridStatusPercentage";
 import logger from "../../utils/winstonLogger/logger";
+import { leadCenterWebhook } from "../../utils/webhookUrls/leadCenterWebhook";
+import { POST } from "../../utils/constantFiles/HttpMethods";
 
 const ObjectId = mongoose.Types.ObjectId;
 
@@ -1193,6 +1195,7 @@ export class CardDetailsControllers {
           }
           await Transaction.create(dataToSaveInTransaction);
         } else if (type == STRIPE_PAYMENT_STATUS.SUCCESS) {
+
           const cardDetails = await CardDetails.findByIdAndUpdate(
             card?._id,
             {
@@ -1292,6 +1295,17 @@ export class CardDetailsControllers {
               const transaction = await Transaction.create(
                 commonDataSaveInTransaction
               );
+              
+              leadCenterWebhook(
+                "v2/sd-transactions/data-sync/",
+                POST,
+                transaction,
+                {
+                  eventTitle: EVENT_TITLE.TRANSACTION_DATA_SYNC,
+                  id: userId?._id,
+                }
+              );
+
               await User.findByIdAndUpdate(userId._id, {
                 pendingTransaction: "",
                 retriedTransactionCount: 0,
@@ -1447,6 +1461,7 @@ export class CardDetailsControllers {
       } else if (type === STRIPE_PAYMENT_STATUS.FAILED) {
         dataToShow.status = STRIPE_PAYMENT_STATUS.FAILED;
       }
+
       return res.status(200).json({ data: dataToShow });
     } catch (err) {
       return res
@@ -1690,7 +1705,7 @@ export class CardDetailsControllers {
             amount: 0,
           });
 
-          await User.findByIdAndUpdate(
+          const updatedUser = await User.findByIdAndUpdate(
             user?._id,
             {
               onBoarding: [
@@ -1773,6 +1788,17 @@ export class CardDetailsControllers {
                 );
               });
           }
+
+        leadCenterWebhook(
+          "clients/data-sync/",
+          POST,
+          { ...card?.toObject(), ...updatedUser?.toObject() },
+          {
+            eventTitle: EVENT_TITLE.USER_UPDATE_LEAD,
+            id: updatedUser?._id as Types.ObjectId,
+          }
+        );
+          
 
           res.status(302).redirect(process.env.TEMP_RETURN_URL || "");
         }

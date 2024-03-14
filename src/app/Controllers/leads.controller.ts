@@ -54,7 +54,8 @@ import {Transaction} from "../Models/Transaction";
 import {User} from "../Models/User";
 import { createLeadsCSVAdmin } from "./Leads/actions/createLeadsCSVAdmins";
 import { cmsUpdateWebhook } from "../../utils/webhookUrls/cmsUpdateWebhook";
-import { PATCH } from "../../utils/constantFiles/HttpMethods";
+import { PATCH, POST } from "../../utils/constantFiles/HttpMethods";
+import { leadCenterWebhook } from "../../utils/webhookUrls/leadCenterWebhook";
 
 
 const ObjectId = mongoose.Types.ObjectId;
@@ -244,6 +245,15 @@ export class LeadsController {
                 industryId: user.businessIndustryId,
                 rowIndex: leads?.rowIndex + 1 || 0,
             });
+            leadCenterWebhook(
+                "v2/sd-lead-allocation/data-sync/",
+                POST,
+                leadsSave,
+                {
+                  eventTitle: EVENT_TITLE.LEAD_DATA_SYNC,
+                  id: user?._id,
+                }
+              );
             if (!user.isSecondaryUsage && user.isCreditsAndBillingEnabled) {
                 leadcpl = user.leadCost;
                 leftCredits = credits - user?.leadCost;
@@ -540,8 +550,9 @@ export class LeadsController {
                 );
                 return res.json({data: leadsUpdate});
             }
+            let updatedLead ;
             if (input.status) {
-                await Leads.findByIdAndUpdate(
+                updatedLead = await Leads.findByIdAndUpdate(
                     leadId,
                     {webhookHits: false, webhookHitsCounts: 0},
                     {new: true}
@@ -552,6 +563,15 @@ export class LeadsController {
                     currentUser.role === RolesEnum.SUPER_ADMIN) &&
                 input.status == leadsStatusEnums.REPORT_ACCEPTED
             ) {
+                leadCenterWebhook(
+                    "v2/sd-lead-allocation/data-sync/",
+                    POST,
+                    updatedLead?.toObject() as LeadsInterface,
+                    {
+                      eventTitle: EVENT_TITLE.LEAD_DATA_SYNC_UPDATE,
+                      id: (req?.user as UserInterface)?._id,
+                    }
+                  );
                 const user = await User.findOne({buyerId: lead?.bid});
                 const card = await CardDetails.findOne({
                     userId: user?.id,

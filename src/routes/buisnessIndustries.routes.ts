@@ -7,10 +7,10 @@ const industry: Router = Router();
 industry.get("/currency", Auth, IndustryController.getCurrency);
 industry.post(
   "/:id",
-  Auth,
-  checkPermissions([
-    { module: MODULE.BUSINESS_INDUSTRIES, permission: PERMISSIONS.UPDATE },
-  ]),
+  // Auth,
+  // checkPermissions([
+  //   { module: MODULE.BUSINESS_INDUSTRIES, permission: PERMISSIONS.UPDATE },
+  // ]),
   IndustryController.update
 );
 industry.patch(

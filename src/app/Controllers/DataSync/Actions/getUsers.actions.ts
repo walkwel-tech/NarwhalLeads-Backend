@@ -27,7 +27,7 @@ export const getUsersActions = async (
       ? (createdBtw as string)?.split(",")[1]
       : ("" as string);
     queryValidator.buyerId = req.query.buyerId as string;
-    queryValidator.isDeleted = Boolean(req.query.isDeleted);
+    queryValidator.isDeleted = (req.query.isDeleted as String) === "true" ? true : false;
 
     const validationErrors = await validate(queryValidator);
     if (validationErrors.length > 0) {
@@ -47,7 +47,7 @@ export const getUsersActions = async (
     const users = await User.aggregate([
       {
         $match: {
-          onBoardingPercentage: onBoarding, 
+          onBoardingPercentage: onBoarding,
           role: { $in: [RolesEnum.USER, RolesEnum.NON_BILLABLE] },
           ...(isDeleted
             ? {

@@ -81,7 +81,6 @@ export const generatePDF = (param: generatePDFParams): Promise<AxiosResponse<Xer
         Quantity: quantity,
         UnitAmount: unitAmount,
         AccountCode: accountCode,
-
         DiscountRate: DISCOUNT,
         LeadDepartment: industry?.businessDetailsId?.businessIndustry,
       };
@@ -98,7 +97,7 @@ export const generatePDF = (param: generatePDFParams): Promise<AxiosResponse<Xer
     }
 
     const token = await AccessToken.findOne();
-    var config = {
+    const config = {
       method: "post",
       url: process.env.GENERATE_PDF_URL,
       headers: {
