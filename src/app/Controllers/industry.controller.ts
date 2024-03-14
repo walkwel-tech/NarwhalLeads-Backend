@@ -26,15 +26,16 @@ const ObjectId = mongoose.Types.ObjectId;
 export class IndustryController {
     static create = async (req: Request, res: Response) => {
         const input = req.body;
-        const Industry = new IndustryInput();
-        Industry.industry = input.industry;
-        Industry.leadCost = input.leadCost;
-        Industry.currencyCode = input.currencyCode;
-        Industry.avgConversionRate = input.avgConversionRate;
-        Industry.minimumTopupLeads = input.minimumTopupLeads;
-        Industry.buyerQuestions = input.buyerQuestions;
+        const industryInput = new IndustryInput();
+        industryInput.industry = input.industry;
+        industryInput.industryUrl = input.industryUrl;
+        industryInput.leadCost = input.leadCost;
+        industryInput.currencyCode = input.currencyCode;
+        industryInput.avgConversionRate = input.avgConversionRate;
+        industryInput.minimumTopupLeads = input.minimumTopupLeads;
+        industryInput.buyerQuestions = input.buyerQuestions;
 
-        const errors = await validate(Industry);
+        const errors = await validate(industryInput);
 
         if (errors.length) {
             const errorsInfo: ValidationErrorResponse[] = errors.map((error) => ({
@@ -53,10 +54,10 @@ export class IndustryController {
             return res.status(400).json({error: {message: "Invalid currency"}});
         }
 
-        if (Industry.buyerQuestions) {
+        if (industryInput.buyerQuestions) {
             const webhookData = {
-                industry: Industry.industry,
-                ...Industry.buyerQuestions.reduce((acc: any, question, index) => {
+                industry: industryInput.industry,
+                ...industryInput.buyerQuestions.reduce((acc: any, question, index) => {
                     acc[`question${index + 1}`] = question.title;
                     return acc;
                 }, {})
@@ -67,14 +68,15 @@ export class IndustryController {
 
         let dataToSave: Partial<BuisnessIndustriesInterface> = {
             industry: input.industry.trim(),
+            industryUrl: input.industryUrl.trim().toLowerCase(),
             leadCost: input.leadCost,
             avgConversionRate: input.avgConversionRate,
             columns: order,
             json: json,
             country: currency.country,
-            associatedCurrency: Industry.currencyCode,
-            minimumTopupLeads: Industry.minimumTopupLeads,
-            buyerQuestions: Industry.buyerQuestions,
+            associatedCurrency: industryInput.currencyCode,
+            minimumTopupLeads: industryInput.minimumTopupLeads,
+            buyerQuestions: industryInput.buyerQuestions,
         };
 
         try {

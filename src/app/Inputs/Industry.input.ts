@@ -1,28 +1,33 @@
-import { IsNotEmpty, IsNumber, IsOptional, IsString } from "class-validator";
+import {IsNotEmpty, IsNumber, IsOptional, IsString} from "class-validator";
 
 export class IndustryInput {
-  @IsNotEmpty()
-  @IsString({ message: "industry is required." })
-  industry: string;
+    @IsNotEmpty()
+    @IsString({message: "Industry is required."})
+    industry: string;
 
-  @IsString({ message: "leadCost is required." })
-  @IsNotEmpty()
-  leadCost: string;
-  currencyCode: string;
+    @IsNotEmpty()
+    @IsString({message: "Industry Url is required."})
+    industryUrl: string;
 
-  @IsNotEmpty()
-  @IsNumber()
-  avgConversionRate: number;
+    @IsString({message: "Lead Cost is required."})
+    @IsNotEmpty()
+    leadCost: string;
+    currencyCode: string;
 
-  @IsNumber()
-  @IsOptional()
-  minimumTopupLeads: number;
+    @IsNotEmpty()
+    @IsNumber()
+    avgConversionRate: number;
 
-  buyerQuestions: BuyerQuestionInput[];
+    @IsNumber()
+    @IsOptional()
+    minimumTopupLeads: number;
+
+    buyerQuestions: BuyerQuestionInput[];
 }
-export class BuyerQuestionInput {
-  @IsString()
-  title: string;
 
-  questionSlug: string;
+export class BuyerQuestionInput {
+    @IsString()
+    title: string;
+
+    questionSlug: string;
 }

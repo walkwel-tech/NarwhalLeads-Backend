@@ -9,6 +9,8 @@ interface BuyerQuestion {
 
 export interface BuisnessIndustriesInterface extends Document {
   industry: string;
+  industryUrl: string;
+
   leadCost: number;
   columns: columnsObjects[];
   isActive: boolean;
