@@ -1,3 +1,4 @@
+import {cronBuyerStatus} from "./buyerActivations";
 import { updateReportStatus } from "./ReportingStatusUpdate/updateReportStatus";
 import { activityLogs } from "./activityLogs";
 import {autoChargePayment, weeklyPayment} from "./autoCharge";
@@ -15,4 +16,5 @@ export const autoUpdateTasks = () => {
   activityLogs();
   db_dump();
   userSignupReminder();
+  cronBuyerStatus();
 };
