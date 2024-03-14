@@ -1,7 +1,6 @@
 import axios from "axios";
 // import { PaymentInput } from "../../app/Inputs/Payment.input";
 import {User} from "../../app/Models/User";
-import {RolesEnum} from "../../types/RolesEnum";
 import {UserInterface} from "../../types/UserInterface";
 import {PATCH} from "../constantFiles/HttpMethods";
 import {cmsUpdateWebhook} from "../webhookUrls/cmsUpdateWebhook";
@@ -29,7 +28,7 @@ export const addCreditsToBuyer = (params: any) => {
                 logger.info("Credits added to buyer", config, response.data);
                 const buyerIdUser: UserInterface = await User.findOne({
                     buyerId: params.buyerId,
-                    role: RolesEnum.USER,
+                    // role: RolesEnum.USER, // If user had Buyer ID then they should be allowed to get updated credits.
                 }) ?? {} as UserInterface;
                 let updatedCredits: number;
                 if (params?.freeCredits) {
