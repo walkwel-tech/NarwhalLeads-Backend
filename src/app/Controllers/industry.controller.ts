@@ -1,32 +1,29 @@
-import { Request, Response } from "express";
-import { order } from "../../utils/constantFiles/businessIndustry.orderList";
-import { BuisnessIndustries } from "../Models/BuisnessIndustries";
-import { User } from "../Models/User";
-import { RolesEnum } from "../../types/RolesEnum";
-import { IndustryInput } from "../Inputs/Industry.input";
-import { validate } from "class-validator";
-import { ValidationErrorResponse } from "../../types/ValidationErrorResponse";
-import { LeadTablePreference } from "../Models/LeadTablePreference";
-import { BuisnessIndustriesInterface } from "../../types/BuisnessIndustriesInterface";
-// import { columnsObjects } from "../../types/columnsInterface";
-import { json } from "../../utils/constantFiles/businessIndustryJson";
-import { UserInterface } from "../../types/UserInterface";
+import {validate} from "class-validator";
+import {Request, Response} from "express";
 import mongoose from "mongoose";
+import {BuisnessIndustriesInterface} from "../../types/BuisnessIndustriesInterface";
+import {BuyerQuestion} from "../../types/BuyerDetailsInterface";
+import {RolesEnum} from "../../types/RolesEnum";
+import {UserInterface} from "../../types/UserInterface";
+import {ValidationErrorResponse} from "../../types/ValidationErrorResponse";
+import {order} from "../../utils/constantFiles/businessIndustry.orderList";
+// import { columnsObjects } from "../../types/columnsInterface";
+import {json} from "../../utils/constantFiles/businessIndustryJson";
+import {countryCurrency} from "../../utils/constantFiles/currencyConstants";
+import {EVENT_TITLE} from "../../utils/constantFiles/events";
+import {DELETE, POST} from "../../utils/constantFiles/HttpMethods";
+import {cmsUpdateWebhook} from "../../utils/webhookUrls/cmsUpdateWebhook";
+import {leadCenterWebhook} from "../../utils/webhookUrls/leadCenterWebhook";
+import {IndustryInput} from "../Inputs/Industry.input";
+import {BuisnessIndustries} from "../Models/BuisnessIndustries";
+import {FreeCreditsLink} from "../Models/freeCreditsLink";
+import {LeadTablePreference} from "../Models/LeadTablePreference";
+import {User} from "../Models/User";
+
 const LIMIT = 10;
 const ObjectId = mongoose.Types.ObjectId;
-import { countryCurrency } from "../../utils/constantFiles/currencyConstants";
-import { FreeCreditsLink } from "../Models/freeCreditsLink";
-import { cmsUpdateWebhook } from "../../utils/webhookUrls/cmsUpdateWebhook";
-import { BuyerQuestion } from "../../types/BuyerDetailsInterface";
-import { leadCenterWebhook } from "../../utils/webhookUrls/leadCenterWebhook";
-import { DELETE, POST } from "../../utils/constantFiles/HttpMethods";
-import { EVENT_TITLE } from "../../utils/constantFiles/events";
 
 
-type WebhookData = {
-  buyerQuestions: BuyerQuestion[];
-  industry: string;
-};
 export class IndustryController {
   static create = async (req: Request, res: Response) => {
     const input = req.body;
@@ -65,10 +62,10 @@ export class IndustryController {
           return acc;
         }, {})
       };
-    
+
       await cmsUpdateWebhook("industry", POST, webhookData);
     }
-    
+
     let dataToSave: Partial<BuisnessIndustriesInterface> = {
       industry: input.industry.trim(),
       leadCost: input.leadCost,
@@ -189,7 +186,7 @@ export class IndustryController {
         eventTitle: EVENT_TITLE.INDUSTRY_LEAD_SYNC,
         id: (req.user as UserInterface)?._id,
       });
- 
+
 
       if (input.leadCost) {
         const usersToUpdate = await User.find({
