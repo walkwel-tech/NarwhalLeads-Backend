@@ -177,7 +177,7 @@ export class IndustryController {
 
         const webhookData = {
           industry: updatedData?.industry,
-          ...updatedData?.buyerQuestions.reduce((acc:any, question, index) => {
+          ...updatedData?.buyerQuestions?.reduce((acc:any, question, index) => {
             acc[`question${index + 1}`] = question?.title;
             return acc;
           }, {})
