@@ -43,7 +43,7 @@ export const checkBuyers = async () => {
 
         logger.debug("buyer sync sending data to cms", buyersToStatus);
 
-        return await cmsUpdateWebhook("/buyerSync", POST, {
+        return await cmsUpdateWebhook("data/buyerSync", POST, {
             data: buyersToStatus
         });
     }));
