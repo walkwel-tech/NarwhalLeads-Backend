@@ -1,4 +1,5 @@
 import * as cron from "node-cron";
+import logger from "utils/winstonLogger/logger";
 import {UserInterface} from "../../types/UserInterface";
 import {POST} from "../../utils/constantFiles/HttpMethods";
 
@@ -20,6 +21,7 @@ export const cronBuyerStatus = async () => {
 };
 
 export const checkBuyers = async () => {
+    logger.info("buyer sync initiated!");
     const allBuyers = await User.find({
         buyerId: {$exists: true},
         isDeleted: false,
@@ -28,9 +30,10 @@ export const checkBuyers = async () => {
         credits: 1,
     });
 
+    logger.info(`buyer sync has found ${allBuyers.length} buyers`);
+
     // Chunk all buyers to 1000
     let chunkedBuyers = chunkArray(allBuyers, 1000);
-
 
     await Promise.all(chunkedBuyers.map(async (buyers: UserInterface[]) => {
         const buyersToStatus = buyers.reduce((acc: any, buyer: UserInterface) => {
@@ -38,10 +41,14 @@ export const checkBuyers = async () => {
             return acc;
         }, {});
 
+        logger.debug("buyer sync sending data to cms", buyersToStatus);
+
         return await cmsUpdateWebhook("/buyerSync", POST, {
             data: buyersToStatus
         });
     }));
+
+    logger.info("buyer sync completed!");
 }
 
 const chunkArray = (original: any[], chunkSize: number) => {
