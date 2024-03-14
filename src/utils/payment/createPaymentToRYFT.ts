@@ -260,6 +260,7 @@ export const createSessionInitial = (params: any) => {
       .then(async (response) => {
         await Transaction.create({
           userId: user?.id,
+          leadCost: user?.leadCost,
           cardId: card?.id,
           amount: params?.fixedAmount * 100 || 0,
           status: TRANSACTION_STATUS.SUCCESS,
@@ -272,6 +273,7 @@ export const createSessionInitial = (params: any) => {
       .catch(async (err) => {
         await Transaction.create({
           userId: user?.id,
+          leadCost: user?.leadCost,
           cardId: card?.id,
           amount: params?.fixedAmount * 100 || 0,
           status: TRANSACTION_STATUS.FAIL,
@@ -354,6 +356,7 @@ export const createSessionUnScheduledPayment = async (params: any) => {
       .then(async (response) => {
         await Transaction.create({
           userId: user?.id,
+          leadCost: user?.leadCost,
           cardId: card?.id,
           amount: params?.fixedAmount * 100 || 0,
           status: TRANSACTION_STATUS.SUCCESS,
@@ -366,6 +369,7 @@ export const createSessionUnScheduledPayment = async (params: any) => {
       .catch(async (err) => {
         await Transaction.create({
           userId: user?.id,
+          leadCost: user?.leadCost,
           cardId: card?.id,
           amount: params?.fixedAmount * 100 || 0,
           status: TRANSACTION_STATUS.FAIL,

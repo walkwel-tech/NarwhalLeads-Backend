@@ -21,7 +21,7 @@ import { EVENT_TITLE } from "../../../../utils/constantFiles/events";
 import { calculateVariance } from "../../../../utils/Functions/calculateVariance";
 import { POSTCODE_TYPE } from "../../../../utils/Enums/postcode.enum";
 import { flattenPostalCodes } from "../../../../utils/Functions/flattenPostcodes";
- 
+
 export const userCreditsManualAdjustmentAction = async (req: any, res: Response) => {
     try {
       const input = req.body;
@@ -56,6 +56,7 @@ export const userCreditsManualAdjustmentAction = async (req: any, res: Response)
         };
         let dataToSave: Partial<TransactionInterface> = {
           userId: user.id,
+          leadCost: user?.leadCost,
           amount: Math.abs(credits),
           status: PAYMENT_STATUS.CAPTURED,
           title: credits <= 0 ? transactionTitle.MANUAL_DEDUCTION : transactionTitle.MANUAL_ADJUSTMENT ,

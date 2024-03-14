@@ -1257,6 +1257,7 @@ export class UsersControllers {
 
         let dataToSave: Partial<TransactionInterface> = {
           userId: checkUser.id,
+          leadCost: checkUser?.leadCost,
           amount: secondaryLeadsAnticipating,
           status: PAYMENT_STATUS.CAPTURED,
           title: transactionTitle.SECONDARY_CREDITS_MANUAL_ADJUSTMENT,
@@ -1756,6 +1757,7 @@ export class UsersControllers {
             }
             const dataToSave: any = {
               userId: checkUser?.id,
+              leadCost: checkUser?.leadCost,
               cardId: cardExist?.id,
               amount: input.credits,
               title: transactionTitle.CREDITS_ADDED,
@@ -1843,6 +1845,7 @@ export class UsersControllers {
             // sendEmailForFailedAutocharge(i.email, subject, text);
             const dataToSave: any = {
               userId: checkUser?.id,
+              leadCost: checkUser?.leadCost,
               cardId: cardExist?.id,
               amount: input.credits,
               title: transactionTitle.CREDITS_ADDED,
@@ -2525,6 +2528,7 @@ export class UsersControllers {
         };
         let dataToSave: Partial<TransactionInterface> = {
           userId: user.id,
+          leadCost: user.leadCost,
           amount: Math.abs(credits),
           status: PAYMENT_STATUS.CAPTURED,
           title: credits <= 0 ? transactionTitle.MANUAL_DEDUCTION : transactionTitle.MANUAL_ADJUSTMENT ,

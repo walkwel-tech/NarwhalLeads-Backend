@@ -5,6 +5,7 @@ export interface TransactionInterface extends Document {
   userId: Types.ObjectId;
   cardId: Types.ObjectId;
   amount: number;
+  leadCost: string;
   status: string;
   title: string;
   isDebited: boolean;

@@ -362,6 +362,7 @@ export class LeadsController {
             if (user.isCreditsAndBillingEnabled) {
                 let dataToSave: any = {
                     userId: user.id,
+                    leadCost: user?.leadCost,
                     isDebited: true,
                     title: transactionTitle.NEW_LEAD,
                     amount: leadcpl,
@@ -647,6 +648,7 @@ export class LeadsController {
                     .then(async () => {
                         const dataToSave: any = {
                             userId: user?.id,
+                            leadCost: user?.leadCost,
                             cardId: card?.id,
                             amount: lead?.leadsCost,
                             title: transactionTitle.LEAD_REJECTION_APPROVED,
@@ -673,6 +675,7 @@ export class LeadsController {
                         );
                         const dataToSave: any = {
                             userId: user?.id,
+                            leadCost: user?.leadCost,
                             cardId: card?.id,
                             amount: lead?.leadsCost,
                             title: transactionTitle.LEAD_REJECTION_APPROVED,

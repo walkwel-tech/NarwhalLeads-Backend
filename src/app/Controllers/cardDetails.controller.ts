@@ -850,6 +850,7 @@ export class CardDetailsControllers {
           sendEmailForPaymentFailure(userId?.email, message);
           let dataToSaveInTransaction: Partial<TransactionInterface> = {
             userId: userId?.id,
+            leadCost: userId?.leadCost,
             amount: input?.data?.amount / 100,
             status: PAYMENT_STATUS.DECLINE,
             title: transactionTitle.PAYMNET_FAILED,
@@ -884,7 +885,7 @@ export class CardDetailsControllers {
             fixedAmount: originalAmount,
           };
 
-          //TODO: THIS WILL BE ONLY ON 1 TRANSATION
+          //TODO: THIS WILL BE ONLY ON 1 TRANSACTION
           if (
             promoLink &&
             !userId.promoCodeUsed &&
@@ -921,6 +922,7 @@ export class CardDetailsControllers {
               let dataToSaveInTransaction: Partial<TransactionInterface> = {
                 userId: userId?.id,
                 amount: originalAmount,
+                leadCost: userId?.leadCost,
                 status: PAYMENT_STATUS.CAPTURED,
                 title: transactionTitle.CREDITS_ADDED,
                 isCredited: true,
@@ -959,6 +961,7 @@ export class CardDetailsControllers {
               );
               const save: Partial<TransactionInterface> = {
                 userId: userId?.id,
+                leadCost: userId?.leadCost,
                 amount: input?.data?.amount / 100 - originalAmount,
                 status: PAYMENT_STATUS.CAPTURED,
                 title: transactionTitle.INVOICES_VAT,
@@ -1065,6 +1068,7 @@ export class CardDetailsControllers {
                   (await User.findById(userId?.id)) ?? ({} as UserInterface);
                 const dataToSaveInTxn = {
                   userId: userId?.id,
+                  leadCost: userId?.leadCost,
                   amount: params.freeCredits,
                   status: PAYMENT_STATUS.CAPTURED,
                   title: transactionTitle.FREE_CREDITS,
@@ -1178,6 +1182,7 @@ export class CardDetailsControllers {
           sendEmailForPaymentFailure(userId?.email, message);
           let dataToSaveInTransaction: Partial<TransactionInterface> = {
             userId: userId?.id,
+            leadCost: userId?.leadCost,
             amount: originalAmount,
             status: PAYMENT_STATUS.DECLINE,
             title: transactionTitle.PAYMNET_FAILED,
@@ -1220,6 +1225,7 @@ export class CardDetailsControllers {
           );
           let commonDataSaveInTransaction = {
             userId: userId?.id,
+            leadCost: userId?.leadCost,
             amount: originalAmount,
             status: "",
             title: "",
@@ -1295,7 +1301,7 @@ export class CardDetailsControllers {
               const transaction = await Transaction.create(
                 commonDataSaveInTransaction
               );
-              
+
               leadCenterWebhook(
                 "v2/sd-transactions/data-sync/",
                 POST,
@@ -1539,6 +1545,7 @@ export class CardDetailsControllers {
             cardData = card;
             await Transaction.create({
               userId: user?.id,
+              leadCost: user?.leadCost,
               cardId: card?.id,
               amount: 0,
               status: TRANSACTION_STATUS.SUCCESS,
@@ -1595,6 +1602,7 @@ export class CardDetailsControllers {
         if (shouldReturnJson) {
           await Transaction.create({
             userId: userData?.id,
+            leadCost: userData?.leadCost,
             cardId: cardData?.id,
             amount: 0,
             status: TRANSACTION_STATUS.FAIL,
@@ -1699,6 +1707,7 @@ export class CardDetailsControllers {
 
           await Transaction.create({
             userId: user?._id,
+            leadCost: user?.leadCost,
             title: transactionTitle.CARD_ADDED,
             cardId: card._id,
             status: PAYMENT_STATUS.CAPTURED,
@@ -1763,6 +1772,7 @@ export class CardDetailsControllers {
 
             let transactionData = {
               userId: user?.id,
+              leadCost: user?.leadCost,
               status: "",
               title: "",
               cardId: cards?._id,
@@ -1798,7 +1808,7 @@ export class CardDetailsControllers {
             id: updatedUser?._id as Types.ObjectId,
           }
         );
-          
+
 
           res.status(302).redirect(process.env.TEMP_RETURN_URL || "");
         }

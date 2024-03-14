@@ -59,6 +59,7 @@ export const createPaymentOnStripe = async (
         });
         await Transaction.create({
           userId: user?.id,
+          leadCost: user?.leadCost,
           cardId: card?.id,
           amount: response.data.amount / 100,
           paymentSessionId: response.data.id,
@@ -79,6 +80,7 @@ export const createPaymentOnStripe = async (
         });
         await Transaction.create({
           userId: user?.id,
+          leadCost: user?.leadCost,
           cardId: card?.id,
           amount: params.amount,
           paymentSessionId: "",

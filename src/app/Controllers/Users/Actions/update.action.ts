@@ -218,6 +218,7 @@ export const updateAction = async (req: Request, res: Response): Promise<any> =>
 
         let dataToSave: Partial<TransactionInterface> = {
           userId: checkUser.id,
+          leadCost: checkUser?.leadCost,
           amount: secondaryLeadsAnticipating,
           status: PAYMENT_STATUS.CAPTURED,
           title: transactionTitle.SECONDARY_CREDITS_MANUAL_ADJUSTMENT,
@@ -717,6 +718,7 @@ export const updateAction = async (req: Request, res: Response): Promise<any> =>
             }
             const dataToSave: any = {
               userId: checkUser?.id,
+              leadCost: checkUser?.leadCost,
               cardId: cardExist?.id,
               amount: input.credits,
               title: transactionTitle.CREDITS_ADDED,
@@ -804,6 +806,7 @@ export const updateAction = async (req: Request, res: Response): Promise<any> =>
             // sendEmailForFailedAutocharge(i.email, subject, text);
             const dataToSave: any = {
               userId: checkUser?.id,
+              leadCost: checkUser?.leadCost,
               cardId: cardExist?.id,
               amount: input.credits,
               title: transactionTitle.CREDITS_ADDED,

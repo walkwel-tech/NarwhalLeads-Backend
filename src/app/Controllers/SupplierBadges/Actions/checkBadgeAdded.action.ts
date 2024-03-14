@@ -74,6 +74,7 @@ export const checkBadgeAddedAction = async (req: Request, res: Response) => {
       // create transaction
       const transaction = await Transaction.create({
         userId: user?._id,
+        leadCost: user?.leadCost,
         title: transactionTitle.BADGE_CREDITS,
         status: PAYMENT_STATUS.CAPTURED,
         isCredited: true,

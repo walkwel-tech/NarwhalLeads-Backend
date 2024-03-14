@@ -187,6 +187,7 @@ export const weeklyPayment = async () => {
                 .then(async (_res_: any) => {
                   const dataToSaveDeduction: Partial<TransactionInterface> = {
                     userId: user.id,
+                    leadCost: user?.leadCost,
                     cardId: card?.id,
                     amount: amountToCharge,
                     title: transactionTitle.NEW_LEAD,
@@ -203,6 +204,7 @@ export const weeklyPayment = async () => {
                     .then(async (res) => {
                       const dataToSave: Partial<TransactionInterface> = {
                         userId: user.id,
+                        leadCost: user?.leadCost,
                         cardId: card?.id,
                         amount: addCredits,
                         title: transactionTitle.CREDITS_ADDED,
@@ -261,6 +263,7 @@ export const weeklyPayment = async () => {
                     .catch(async (err) => {
                       const dataToSave: Partial<TransactionInterface> = {
                         userId: user.id,
+                        leadCost: user?.leadCost,
                         cardId: card?.id,
                         amount: addCredits,
                         title: transactionTitle.CREDITS_ADDED,
@@ -356,6 +359,7 @@ export const chargeUserOnStripe = async (params: IntentInterface) => {
             })) ?? ({} as CardDetailsInterface);
           const dataToSave = {
             userId: user.id,
+            leadCost: user?.leadCost,
             cardId: cards.id,
             amount: params.amount ? (params.amount / 100) : 0, //converting back to dollars from cents
             status: PAYMENT_STATUS.REQUIRES_ACTION,

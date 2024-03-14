@@ -47,6 +47,7 @@ export const paymentIntent = async (params: {
       });
       await Transaction.create({
         userId: user?.id,
+        leadCost: user?.leadCost,
         amount: 0,
         status: TRANSACTION_STATUS.SUCCESS,
         paymentSessionId: data.id,
@@ -64,6 +65,7 @@ export const paymentIntent = async (params: {
   } catch (err) {
     await Transaction.create({
       userId: user?.id,
+      leadCost: user?.leadCost,
       amount: 0,
       status: TRANSACTION_STATUS.SUCCESS,
       paymentSessionId: "",
