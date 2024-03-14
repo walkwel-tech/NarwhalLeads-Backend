@@ -1,7 +1,7 @@
 import { Request, Response } from "express";
 import { genSaltSync } from "bcryptjs";
 import { AuthKey } from "../../../Models/AuthKey";
-import { UserInterface } from "@spotdif/types/UserInterface";
+import { UserInterface } from "../../../../types/UserInterface";
 
 export const generateDataSyncTokenAction = async (
   req: Request,

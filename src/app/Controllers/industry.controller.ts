@@ -171,13 +171,15 @@ export class IndustryController {
       }
       updatedData?.columns.sort((a: any, b: any) => a.index - b.index);
 
-      if (input.buyerQuestions) {
-        const webhookData: WebhookData  = {
-          buyerQuestions: updatedData.buyerQuestions,
-          industry: updatedData.industry
+        const webhookData = {
+          industry: updatedData?.industry,
+          ...updatedData?.buyerQuestions.reduce((acc:any, question, index) => {
+            acc[`question${index + 1}`] = question?.title;
+            return acc;
+          }, {})
         };
        await cmsUpdateWebhook("industry", POST, webhookData);
-      }
+      
 
       leadCenterWebhook("industries/data-sync/", POST, updatedData);
 
