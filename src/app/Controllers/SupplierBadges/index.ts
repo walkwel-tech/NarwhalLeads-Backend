@@ -64,7 +64,9 @@ export class SupplierBadgeController {
             .replace(/{{industry}}/g, businessIndustry?.industry)
             .replace(
               /{{industryUrl}}/g,
-              `${process.env.APP_HOME}${businessIndustry?.industry}`
+              businessIndustry?.industryUrl
+                ? businessIndustry?.industryUrl
+                : `${process.env.APP_HOME}${businessIndustry?.industry}`
             )
             .replace(/{{company}}/g, businessDetail?.businessName),
         };
