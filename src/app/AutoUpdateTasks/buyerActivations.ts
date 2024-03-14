@@ -1,5 +1,5 @@
 import * as cron from "node-cron";
-import logger from "utils/winstonLogger/logger";
+import logger from "../../utils/winstonLogger/logger";
 import {UserInterface} from "../../types/UserInterface";
 import {POST} from "../../utils/constantFiles/HttpMethods";
 
