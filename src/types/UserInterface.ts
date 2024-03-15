@@ -79,7 +79,8 @@ export interface UserInterface extends Document {
   clientStatus?: string
   buyerQuestions? : Array<{
     title: string;
+    columnName: string;
     questionSlug: string;
-    answer: string;
+    answer?: string;
   }>;
 }

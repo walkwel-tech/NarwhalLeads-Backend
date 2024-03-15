@@ -2,12 +2,13 @@ import { Document } from "mongoose";
 
 interface BuyerQuestion {
   title: string;
+  columnName: string;
   questionSlug: string;
-  answer?: string | null;
+  answer?: string;
 }
 
 interface BuyerDetailsInterface extends Document {
-  clientId: string; 
+  clientId: string;
   businessIndustryId: string;
   buyerQuestions: BuyerQuestion[];
 }

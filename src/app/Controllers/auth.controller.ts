@@ -58,7 +58,6 @@ import { updateUserSendgridJobIds } from "../../utils/sendgrid/updateSendgridJob
 import { SENDGRID_STATUS_PERCENTAGE } from "../../utils/constantFiles/sendgridStatusPercentage";
 import logger from "../../utils/winstonLogger/logger";
 import { BuyerDetails } from "../Models/BuyerDetails";
-import { BuyerDetailsInput } from "../Inputs/BuyerDetails.input";
 import { POST } from "../../utils/constantFiles/HttpMethods";
 import { leadCenterWebhook } from "../../utils/webhookUrls/leadCenterWebhook";
 import { EVENT_TITLE } from "../../utils/constantFiles/events";
@@ -822,9 +821,9 @@ class AuthController {
       }
       if (exists) {
 
-        const buyerQuestions: BuyerDetailsInput[] = await BuyerDetails.find({
+        const buyerQuestions = await BuyerDetails.find({
           clientId: user.id,
-        });
+        }).lean();
         if (buyerQuestions && buyerQuestions.length > 0) {
           exists.buyerQuestions = [];
           for (const buyerDetail of buyerQuestions) {
@@ -846,6 +845,7 @@ class AuthController {
                 );
                 if (matchedQuestion) {
                   question.title = matchedQuestion.title;
+                  question.columnName = matchedQuestion.columnName;
                 }
               }
             }

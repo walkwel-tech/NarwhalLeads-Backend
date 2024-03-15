@@ -147,10 +147,12 @@ export const updateBusinessDetails = async (
       input.businessLogo = `${FileEnum.PROFILEIMAGE}${req?.file?.filename}`;
     }
     let updateUser;
+    let centralIndustryId = null;
     if (input.businessIndustry) {
       const industry = await BuisnessIndustries.findOne({
         industry: input.businessIndustry,
       });
+      centralIndustryId = industry?.centralIndustryId;
       updateUser = (await User.findByIdAndUpdate(
         userData?.id,
         {
@@ -262,6 +264,7 @@ export const updateBusinessDetails = async (
         phone: updatedDetails?.businessSalesNumber,
         email: userData?.email,
         industry: updatedDetails?.businessIndustry,
+        centralIndustryId: centralIndustryId,
         address: updatedDetails?.address1 + " " + updatedDetails?.address2,
         city: updatedDetails?.businessCity,
         country: updatedDetails?.businessCountry,
@@ -334,6 +337,7 @@ export const updateBusinessDetails = async (
       const formattedBody = {
         buyerId: webhookData.buyerId ?? " ",
         industry: webhookData.businessData?.businessIndustry ?? "",
+        centralIndustryId: centralIndustryId ?? "",
         postcodes: webhookData.businessData?.businessPostCode ?? "",
         buyerName: webhookData.businessData?.businessName ?? "",
         buyerPhone: webhookData.businessData?.businessSalesNumber ?? "",
@@ -342,6 +346,7 @@ export const updateBusinessDetails = async (
         industryQuestions: webhookData.buyerQuestions?.map(
           (question: BuyerQuestion) => ({
             title: question.title,
+            columnName: question.columnName,
             answer: question.answer ?? "",
           })
         ),

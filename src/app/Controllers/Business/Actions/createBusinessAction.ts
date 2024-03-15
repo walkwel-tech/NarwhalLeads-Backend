@@ -226,6 +226,7 @@ export const create = async (req: Request, res: Response): Promise<any> => {
     const formattedBody = {
       buyerId: webhookData.buyerId ?? " ",
       industry: webhookData.businessData?.businessIndustry ?? "",
+      centralIndustryId: industry?.centralIndustryId ?? "",
       postcodes: webhookData.businessData?.businessPostCode ?? "",
       buyerName: webhookData.businessData?.businessName ?? "",
       buyerPhone: webhookData.businessData?.businessSalesNumber ?? "",
@@ -234,6 +235,7 @@ export const create = async (req: Request, res: Response): Promise<any> => {
       industryQuestions: webhookData.buyerQuestions?.map(
         (question: BuyerQuestion) => ({
           title: question.title,
+          columnName: question.columnName,
           answer: question.answer ?? "",
         })
       ),

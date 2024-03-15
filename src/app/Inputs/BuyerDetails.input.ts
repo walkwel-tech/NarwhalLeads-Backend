@@ -10,6 +10,9 @@ export class BuyerQuestionInput {
   @IsString()
   title: string;
 
+  @IsString({ message: "Column Name should be a valid string." })
+  columnName: string;
+
   @IsString({ message: "Question Slug should be valid." })
   questionSlug: string;
 
