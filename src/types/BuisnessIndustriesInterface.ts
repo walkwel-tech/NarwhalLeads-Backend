@@ -3,6 +3,7 @@ import {SupplierBadgeIndustryConfig} from "../types/SupplierBadgeIndustryConfig"
 import {columnsObjects} from "../types/columnsInterface";
 interface BuyerQuestion {
   title: string;
+  columnName: string;
   questionSlug: string;
   answer?: string | null
 }

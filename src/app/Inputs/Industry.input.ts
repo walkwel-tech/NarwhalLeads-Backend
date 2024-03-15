@@ -33,5 +33,8 @@ export class BuyerQuestionInput {
     @IsString()
     title: string;
 
+    @IsString()
+    columnName: string;
+
     questionSlug: string;
 }

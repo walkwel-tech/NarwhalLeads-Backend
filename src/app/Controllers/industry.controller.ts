@@ -60,7 +60,7 @@ export class IndustryController {
                 industry: industryInput.industry,
                 centralIndustryId: industryInput.centralIndustryId,
                 ...industryInput.buyerQuestions.reduce((acc: any, question, index) => {
-                    acc[`question${index + 1}`] = question.title;
+                    acc[`question${index + 1}`] = question.columnName;
                     return acc;
                 }, {})
             };
@@ -179,7 +179,7 @@ export class IndustryController {
             const webhookData = {
                 industry: updatedData?.industry,
                 ...updatedData?.buyerQuestions?.reduce((acc: any, question, index) => {
-                    acc[`question${index + 1}`] = question?.title;
+                    acc[`question${index + 1}`] = question?.columnName;
                     return acc;
                 }, {})
             }
