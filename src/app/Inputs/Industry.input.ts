@@ -9,6 +9,10 @@ export class IndustryInput {
     @IsString({message: "Industry Url is required."})
     industryUrl: string;
 
+    @IsOptional()
+    @IsString({message: "Central Industry ID is for Sync."})
+    centralIndustryId: string;
+
     @IsString({message: "Lead Cost is required."})
     @IsNotEmpty()
     leadCost: string;

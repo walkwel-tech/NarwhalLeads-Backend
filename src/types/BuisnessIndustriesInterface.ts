@@ -10,6 +10,7 @@ interface BuyerQuestion {
 export interface BuisnessIndustriesInterface extends Document {
   industry: string;
   industryUrl: string;
+  centralIndustryId: string;
 
   leadCost: number;
   columns: columnsObjects[];

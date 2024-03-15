@@ -29,6 +29,7 @@ export class IndustryController {
         const industryInput = new IndustryInput();
         industryInput.industry = input.industry;
         industryInput.industryUrl = input.industryUrl;
+        industryInput.centralIndustryId = input.centralIndustryId;
         industryInput.leadCost = input.leadCost;
         industryInput.currencyCode = input.currencyCode;
         industryInput.avgConversionRate = input.avgConversionRate;
@@ -57,6 +58,7 @@ export class IndustryController {
         if (industryInput.buyerQuestions) {
             const webhookData = {
                 industry: industryInput.industry,
+                centralIndustryId: industryInput.centralIndustryId,
                 ...industryInput.buyerQuestions.reduce((acc: any, question, index) => {
                     acc[`question${index + 1}`] = question.title;
                     return acc;
@@ -69,6 +71,7 @@ export class IndustryController {
         let dataToSave: Partial<BuisnessIndustriesInterface> = {
             industry: input.industry.trim(),
             industryUrl: input.industryUrl.trim().toLowerCase(),
+            centralIndustryId: input.centralIndustryId,
             leadCost: input.leadCost,
             avgConversionRate: input.avgConversionRate,
             columns: order,

@@ -11,6 +11,9 @@ const BuisnessIndustriesSchema = new Schema(
         industryUrl: {
             type: String,
         },
+        centralIndustryId: {
+            type: String,
+        },
         avgConversionRate: {
             type: Number,
         },
