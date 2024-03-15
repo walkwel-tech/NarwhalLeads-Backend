@@ -828,11 +828,14 @@ class AuthController {
         if (buyerQuestions && buyerQuestions.length > 0) {
           exists.buyerQuestions = [];
           for (const buyerDetail of buyerQuestions) {
-            exists.buyerQuestions.push(...buyerDetail.buyerQuestions);
+            if (buyerDetail.buyerQuestions && typeof buyerDetail.buyerQuestions === "object") {
+              exists.buyerQuestions.push(...buyerDetail.buyerQuestions);
+            }
           }
 
           if (exists.buyerQuestions.length > 0) {
             for (const question of exists.buyerQuestions) {
+              // Optimize this to instead have Industry fetched the first time and then use it from memory.
               const businessIndustry = await BuisnessIndustries.findOne({
                 "buyerQuestions.questionSlug": question.questionSlug,
               });
@@ -847,7 +850,6 @@ class AuthController {
               }
             }
           }
-
         }
         return res.json({ data: exists });
       }

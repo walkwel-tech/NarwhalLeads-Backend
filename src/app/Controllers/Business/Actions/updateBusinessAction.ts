@@ -166,13 +166,11 @@ export const updateBusinessDetails = async (
       );
     }
 
-    if (input.buyerQuestions) {
-      await BuyerDetails.findOneAndUpdate(
-        { clientId: userData?.id },
-        { buyerQuestions: input.buyerQuestions },
-        { upsert: true, new: true }
-      );
-    }
+    await BuyerDetails.findOneAndUpdate(
+      { clientId: userData?.id },
+      { buyerQuestions: input.buyerQuestions === 'null' ? null : input.buyerQuestions },
+      { upsert: true, new: true }
+    );
     const data = (await BusinessDetails.findByIdAndUpdate(id, input, {
       new: true,
     })) as BusinessDetailsInterface;
@@ -318,7 +316,7 @@ export const updateBusinessDetails = async (
       const webhookData: WebhookData = {
         buyerId: userr?.buyerId,
         businessData: data,
-        buyerQuestions: input?.buyerQuestions,
+        buyerQuestions: input?.buyerQuestions === 'null' ? [] : input?.buyerQuestions,
       };
 
       const businessOpeningHours: BusinessOpeningHours[] =
