@@ -30,22 +30,23 @@ export const checkBuyersStatusAndSync = async () => {
         credits: 1,
     });
 
-    logger.info(`buyer sync has found ${allBuyers.length} buyers`);
-
     // Chunk all buyers to 1000
-    let chunkedBuyers = chunkArray(allBuyers, 1000);
+    const chunkedBuyers = chunkArray(allBuyers, 1000);
+    logger.info(`buyer sync has found ${allBuyers.length} buyers and chunked them ${chunkedBuyers.length}`);
 
-    await Promise.all(chunkedBuyers.map(async (buyers: UserInterface[]) => {
+    await Promise.all(chunkedBuyers.map(async (buyers: UserInterface[], index: number) => {
         const buyersToStatus = buyers.reduce((acc: any, buyer: UserInterface) => {
             acc[buyer.buyerId] = (buyer.credits > 0);
             return acc;
         }, {});
 
+        logger.debug(`buyer sync #${index} sending data to cms`, buyersToStatus.length, buyersToStatus);
+
         const cmsResponse =  await cmsUpdateWebhook("data/buyerSync", POST, {
             data: buyersToStatus
         });
 
-        logger.debug("buyer sync sending data to cms", buyersToStatus.length, cmsResponse);
+        logger.debug(`buyer sync #${index} sending data to cms`, buyersToStatus.length, cmsResponse);
         return cmsResponse;
     }));
 
