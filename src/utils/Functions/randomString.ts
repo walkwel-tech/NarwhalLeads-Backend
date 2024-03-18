@@ -1,4 +1,4 @@
-export function randomString(length: number, isSpecial: boolean) {
+export function randomString(length: number, isSpecial: boolean = false) {
   const normalCharacters =
     "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
 
