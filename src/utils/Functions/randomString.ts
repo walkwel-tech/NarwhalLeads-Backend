@@ -1,10 +1,17 @@
-export function randomString(length: number) {
-  let alphabet =
-    "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+export function randomString(length: number, isSpecial: boolean) {
+  const normalCharacters =
+    "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
 
-  let result = "";
-  for (let i = 0; i < length; ++i) {
-    result += alphabet[Math.floor(alphabet.length * Math.random())];
+  const specialCharacters = "@#&?/*";
+  var characterList = normalCharacters;
+  var result = "";
+  if (isSpecial) {
+    characterList += specialCharacters;
   }
-  return result;
+  while (length > 0) {
+    var index = Math.floor(Math.random() * characterList.length);
+    result += characterList[index];
+    length--;
+  }
+  return result + "$";
 }

@@ -1,66 +1,56 @@
-import { genSaltSync, hashSync } from "bcryptjs";
-import { validate } from "class-validator";
-import { Request, Response } from "express";
+import {genSaltSync, hashSync} from "bcryptjs";
+import {validate} from "class-validator";
+import {Request, Response} from "express";
+import * as fs from "fs";
+import {Types} from "mongoose";
 import passport from "passport";
 
-import { ValidationErrorResponse } from "../../types/ValidationErrorResponse";
-import { RegisterInput } from "../Inputs/Register.input";
-import { User } from "../Models/User";
+import {BuisnessIndustriesInterface} from "../../types/BuisnessIndustriesInterface";
+import {freeCreditsLinkInterface} from "../../types/FreeCreditsLinkInterface";
+import {RolesEnum} from "../../types/RolesEnum";
+import {UserInterface} from "../../types/UserInterface";
 
-import { UserInterface } from "../../types/UserInterface";
-
-import { RolesEnum } from "../../types/RolesEnum";
-import { paymentMethodEnum } from "../../utils/Enums/payment.method.enum";
-import {
-  ONBOARDING_KEYS,
-  ONBOARDING_PERCENTAGE,
-} from "../../utils/constantFiles/OnBoarding.keys";
-import { createCustomerOnRyft } from "../../utils/createCustomer/createOnRyft";
-import { generateAuthToken } from "../../utils/jwt";
-import { LoginInput } from "../Inputs/Login.input";
-import { CheckUserInput } from "../Inputs/checkUser.input";
-import { forgetPasswordInput } from "../Inputs/forgetPasswordInput";
-import {
-  sendEmailForRegistration,
-  sendEmailForgetPassword,
-} from "../Middlewares/mail";
-import { ForgetPassword } from "../Models/ForgetPassword";
-import { FreeCreditsLink } from "../Models/freeCreditsLink";
-import { PROMO_LINK } from "../../utils/Enums/promoLink.enum";
-import { ClientTablePreference } from "../Models/ClientTablePrefrence";
-import { clientTablePreference } from "../../utils/constantFiles/clientTablePreferenceAdmin";
-import { LeadTablePreference } from "../Models/LeadTablePreference";
-import { order } from "../../utils/constantFiles/businessIndustry.orderList";
-import * as fs from "fs";
-import { freeCreditsLinkInterface } from "../../types/FreeCreditsLinkInterface";
-import {
-  BUSINESS_DETAILS,
-  CARD_DETAILS,
-  LEAD_DETAILS,
-} from "../../utils/constantFiles/signupFields";
-import { CreateCustomerInput } from "../Inputs/createCustomerOnRyft&Lead.inputs";
-import { BusinessDetails } from "../Models/BusinessDetails";
-import { createCustomersOnRyftAndLeadByte } from "../../utils/createCustomer";
-import { Permissions } from "../Models/Permission";
-import { CARD } from "../../utils/Enums/cardType.enum";
-import { createCustomerOnStripe } from "../../utils/createCustomer/createOnStripe";
-import { Types } from "mongoose";
-import { getAccountManagerForRoundManager } from "../../utils/Functions/getAccountManagerForRoundManager";
-import { DEFAULT } from "../../utils/constantFiles/user.default.values";
-import { reCaptchaValidation } from "../../utils/Functions/reCaptcha";
-import { UpdatePasswordInput } from "../Inputs/ClientPassword.input";
-import { Transaction } from "../Models/Transaction";
-import { PAYMENT_STATUS } from "../../utils/Enums/payment.status";
-import { BuisnessIndustries } from "../Models/BuisnessIndustries";
-import { BuisnessIndustriesInterface } from "../../types/BuisnessIndustriesInterface";
-import { createContact } from "../../utils/sendgrid/createContactSendgrid";
-import { updateUserSendgridJobIds } from "../../utils/sendgrid/updateSendgridJobIds";
-import { SENDGRID_STATUS_PERCENTAGE } from "../../utils/constantFiles/sendgridStatusPercentage";
+import {ValidationErrorResponse} from "../../types/ValidationErrorResponse";
+import {order} from "../../utils/constantFiles/businessIndustry.orderList";
+import {clientTablePreference} from "../../utils/constantFiles/clientTablePreferenceAdmin";
+import {EVENT_TITLE} from "../../utils/constantFiles/events";
+import {POST} from "../../utils/constantFiles/HttpMethods";
+import {ONBOARDING_KEYS, ONBOARDING_PERCENTAGE,} from "../../utils/constantFiles/OnBoarding.keys";
+import {SENDGRID_STATUS_PERCENTAGE} from "../../utils/constantFiles/sendgridStatusPercentage";
+import {BUSINESS_DETAILS, CARD_DETAILS, LEAD_DETAILS,} from "../../utils/constantFiles/signupFields";
+import {DEFAULT} from "../../utils/constantFiles/user.default.values";
+import {createCustomersOnRyftAndLeadByte} from "../../utils/createCustomer";
+import {createCustomerOnRyft} from "../../utils/createCustomer/createOnRyft";
+import {createCustomerOnStripe} from "../../utils/createCustomer/createOnStripe";
+import {CARD} from "../../utils/Enums/cardType.enum";
+import {paymentMethodEnum} from "../../utils/Enums/payment.method.enum";
+import {PAYMENT_STATUS} from "../../utils/Enums/payment.status";
+import {PROMO_LINK} from "../../utils/Enums/promoLink.enum";
+import {getAccountManagerForRoundManager} from "../../utils/Functions/getAccountManagerForRoundManager";
+import {randomString} from "../../utils/Functions/randomString";
+import {reCaptchaValidation} from "../../utils/Functions/reCaptcha";
+import {generateAuthToken} from "../../utils/jwt";
+import {createContact} from "../../utils/sendgrid/createContactSendgrid";
+import {updateUserSendgridJobIds} from "../../utils/sendgrid/updateSendgridJobIds";
+import {leadCenterWebhook} from "../../utils/webhookUrls/leadCenterWebhook";
 import logger from "../../utils/winstonLogger/logger";
-import { BuyerDetails } from "../Models/BuyerDetails";
-import { POST } from "../../utils/constantFiles/HttpMethods";
-import { leadCenterWebhook } from "../../utils/webhookUrls/leadCenterWebhook";
-import { EVENT_TITLE } from "../../utils/constantFiles/events";
+import {CheckUserInput} from "../Inputs/checkUser.input";
+import {UpdatePasswordInput} from "../Inputs/ClientPassword.input";
+import {CreateCustomerInput} from "../Inputs/createCustomerOnRyft&Lead.inputs";
+import {forgetPasswordInput} from "../Inputs/forgetPasswordInput";
+import {LoginInput} from "../Inputs/Login.input";
+import {RegisterInput} from "../Inputs/Register.input";
+import {sendEmailForgetPassword, sendEmailForRegistration,} from "../Middlewares/mail";
+import {BuisnessIndustries} from "../Models/BuisnessIndustries";
+import {BusinessDetails} from "../Models/BusinessDetails";
+import {BuyerDetails} from "../Models/BuyerDetails";
+import {ClientTablePreference} from "../Models/ClientTablePrefrence";
+import {ForgetPassword} from "../Models/ForgetPassword";
+import {FreeCreditsLink} from "../Models/freeCreditsLink";
+import {LeadTablePreference} from "../Models/LeadTablePreference";
+import {Permissions} from "../Models/Permission";
+import {Transaction} from "../Models/Transaction";
+import {User} from "../Models/User";
 
 class AuthController {
   static register = async (req: Request, res: Response): Promise<any> => {
@@ -84,14 +74,14 @@ class AuthController {
 
       return res
         .status(400)
-        .json({ error: { message: "VALIDATIONS_ERROR", info: errorsInfo } });
+        .json({error: {message: "VALIDATIONS_ERROR", info: errorsInfo}});
     }
     try {
       const reCaptcha = await reCaptchaValidation(input.recaptcha);
       if (!input.recaptcha || !reCaptcha) {
         return res
           .status(400)
-          .json({ data: { message: "reCaptcha validation failed" } });
+          .json({data: {message: "reCaptcha validation failed"}});
       } else {
         const user = await User.findOne({
           email: input.email,
@@ -112,7 +102,7 @@ class AuthController {
           const salt = genSaltSync(10);
           const hashPassword = hashSync(input.password, salt);
           const showUsers: UserInterface =
-            (await User.findOne().sort({ rowIndex: -1 }).limit(1)) ??
+            (await User.findOne().sort({rowIndex: -1}).limit(1)) ??
             ({} as UserInterface);
           let checkCode;
           let codeExists;
@@ -124,12 +114,12 @@ class AuthController {
             if (checkCode?.isDisabled) {
               return res
                 .status(400)
-                .json({ data: { message: "Link Expired!" } });
+                .json({data: {message: "Link Expired!"}});
             }
             if (!checkCode) {
               return res
                 .status(400)
-                .json({ data: { message: "Link Invalid!" } });
+                .json({data: {message: "Link Invalid!"}});
             }
             if (
               checkCode.maxUseCounts &&
@@ -137,7 +127,7 @@ class AuthController {
             ) {
               return res
                 .status(400)
-                .json({ data: { message: "Link has reached maximum limit!" } });
+                .json({data: {message: "Link has reached maximum limit!"}});
             } else {
               codeExists = true;
             }
@@ -251,17 +241,17 @@ class AuthController {
 
           passport.authenticate(
             "local",
-            { session: false },
+            {session: false},
             (err: any, user: UserInterface, message: Object): any => {
               if (!user) {
                 if (err) {
-                  return res.status(400).json({ error: err });
+                  return res.status(400).json({error: err});
                 }
-                return res.status(401).json({ error: message });
+                return res.status(401).json({error: message});
               } else if (!user.isActive) {
                 return res
                   .status(409)
-                  .json({ data: "User not active.Please contact admin." });
+                  .json({data: "User not active.Please contact admin."});
               } else if (!user.isVerified) {
                 return res.status(401).json({
                   data: "User not verified.Please verify your account",
@@ -269,7 +259,7 @@ class AuthController {
               } else if (user.isDeleted) {
                 return res
                   .status(401)
-                  .json({ data: "User is deleted.Please contact admin" });
+                  .json({data: "User is deleted.Please contact admin"});
               }
               const authToken = generateAuthToken(user);
               const params: Record<string, string | Types.ObjectId> = {
@@ -324,14 +314,14 @@ class AuthController {
           )(req, res);
         } else {
           return res.status(400).json({
-            data: { message: "User already exists with same email." },
+            data: {message: "User already exists with same email."},
           });
         }
       }
     } catch (error) {
       return res
         .status(500)
-        .json({ error: { message: "Something went wrong." } });
+        .json({error: {message: "Something went wrong."}});
     }
   };
 
@@ -344,14 +334,14 @@ class AuthController {
         .populate("invitedById");
 
       if (exists) {
-        return res.json({ data: exists });
+        return res.json({data: exists});
       }
 
-      return res.json({ data: "User not exists" });
+      return res.json({data: "User not exists"});
     } catch (error) {
       return res
         .status(500)
-        .json({ error: { message: "Something went wrong." } });
+        .json({error: {message: "Something went wrong."}});
     }
   };
 
@@ -369,26 +359,26 @@ class AuthController {
       }));
 
       return res.status(400).json({
-        error: { message: "VALIDATIONS_ERROR", info: { errorsInfo } },
+        error: {message: "VALIDATIONS_ERROR", info: {errorsInfo}},
       });
     }
 
     return passport.authenticate(
       "local",
-      { session: false },
+      {session: false},
       async (err: any, user: UserInterface, message: Object) => {
         if (!user) {
           if (err) {
-            return res.status(400).json({ error: err });
+            return res.status(400).json({error: err});
           }
-          return res.status(401).json({ error: message });
+          return res.status(401).json({error: message});
         } else if (!user.isActive && user.role === RolesEnum.USER) {
           return res.status(409).json({
-            error: { message: "User not active.Please contact admin." },
+            error: {message: "User not active.Please contact admin."},
           });
         } else if (!user.isActive && user.role === RolesEnum.ADMIN) {
           return res.status(409).json({
-            error: { message: "Admin not active.Please contact super admin." },
+            error: {message: "Admin not active.Please contact super admin."},
           });
         } else if (!user.isActive && user.role === RolesEnum.ACCOUNT_MANAGER) {
           return res.status(409).json({
@@ -404,15 +394,15 @@ class AuthController {
           });
         } else if (user.isDeleted && user.role === RolesEnum.USER) {
           return res.status(401).json({
-            error: { message: "User is deleted.Please contact admin" },
+            error: {message: "User is deleted.Please contact admin"},
           });
         } else if (user.isDeleted && user.role === RolesEnum.ADMIN) {
           return res.status(401).json({
-            error: { message: "Admin is deleted.Please contact super admin" },
+            error: {message: "Admin is deleted.Please contact super admin"},
           });
         } else if (user.isDeleted && user.role === RolesEnum.ACCOUNT_MANAGER) {
           return res.status(401).json({
-            error: { message: "Admin is deleted.Please contact super admin" },
+            error: {message: "Admin is deleted.Please contact super admin"},
           });
         }
         const token = generateAuthToken(user);
@@ -445,24 +435,24 @@ class AuthController {
       }));
 
       return res.status(400).json({
-        error: { message: "VALIDATIONS_ERROR", info: { errorsInfo } },
+        error: {message: "VALIDATIONS_ERROR", info: {errorsInfo}},
       });
     }
     return passport.authenticate(
       "local",
-      { session: false },
+      {session: false},
       async (err: any, user: UserInterface, message: Object) => {
         // const cardExist=await CardDetails.find({userId:user._id})
         if (user.role == RolesEnum.USER) {
           return res.status(400).json({
-            error: { message: "kindly go to user login page to login." },
+            error: {message: "kindly go to user login page to login."},
           });
         }
         if (!user) {
           if (err) {
-            return res.status(400).json({ error: err });
+            return res.status(400).json({error: err});
           }
-          return res.status(401).json({ error: message });
+          return res.status(401).json({error: message});
         }
         const token = generateAuthToken(user);
         return res.json({
@@ -494,21 +484,21 @@ class AuthController {
       }));
 
       return res.status(400).json({
-        error: { message: "VALIDATIONS_ERROR", info: { errorsInfo } },
+        error: {message: "VALIDATIONS_ERROR", info: {errorsInfo}},
       });
     }
     const user = await User.findOne({
       $or: [
-        { email: input.email },
-        { completesalesPhoneNumber: input.salesPhoneNumber },
+        {email: input.email},
+        {completesalesPhoneNumber: input.salesPhoneNumber},
       ],
     });
     if (user) {
-      return res.json({ data: { message: "User exist." } });
+      return res.json({data: {message: "User exist."}});
     } else {
       return res
         .status(400)
-        .json({ data: { message: "User does not exist." } });
+        .json({data: {message: "User does not exist."}});
     }
   };
 
@@ -520,7 +510,7 @@ class AuthController {
       if (!checkUser) {
         return res
           .status(401)
-          .json({ data: { message: "User doesn't exist." } });
+          .json({data: {message: "User doesn't exist."}});
       }
       const activeUser: UserInterface =
         (await User.findByIdAndUpdate(
@@ -545,11 +535,11 @@ class AuthController {
         businessDetailsId: activeUser.businessDetailsId,
         userLeadsDetailsId: activeUser.userLeadsDetailsId,
       };
-      return res.json({ data: dataToShow });
+      return res.json({data: dataToShow});
     } catch (error) {
       return res
         .status(500)
-        .json({ error: { message: "Something went wrong." } });
+        .json({error: {message: "Something went wrong."}});
     }
   };
 
@@ -560,7 +550,7 @@ class AuthController {
       if (!checkUser) {
         return res
           .status(401)
-          .json({ data: { message: "User doesn't exist." } });
+          .json({data: {message: "User doesn't exist."}});
       }
       const inActiveUser = await User.findByIdAndUpdate(
         id,
@@ -583,11 +573,11 @@ class AuthController {
         businessDetailsId: inActiveUser?.businessDetailsId,
         userLeadsDetailsId: inActiveUser?.userLeadsDetailsId,
       };
-      return res.json({ data: dataToShow });
+      return res.json({data: dataToShow});
     } catch (error) {
       return res
         .status(500)
-        .json({ error: { message: "Something went wrong." } });
+        .json({error: {message: "Something went wrong."}});
     }
   };
 
@@ -595,7 +585,7 @@ class AuthController {
     const input = req.body;
     const userInput = new forgetPasswordInput();
     userInput.email = input.email;
-    const user = await User.findOne({ email: input.email });
+    const user = await User.findOne({email: input.email});
 
     if (user) {
       const salt = genSaltSync(10);
@@ -605,20 +595,20 @@ class AuthController {
         name: user.firstName,
         password: text,
       };
-      logger.info("forget password", { text });
+      logger.info("forget password", {text});
       sendEmailForgetPassword(input.email, message);
       await ForgetPassword.create({
         userId: user.id,
         email: input.email,
         password: hashPassword,
       });
-      await User.findOneAndUpdate({ _id: user }, { password: hashPassword });
+      await User.findOneAndUpdate({_id: user}, {password: hashPassword});
 
-      return res.json({ data: { message: "Email sent please verify!" } });
+      return res.json({data: {message: "Email sent please verify!"}});
     } else {
       return res
         .status(400)
-        .json({ data: { message: "User does not exist." } });
+        .json({data: {message: "User does not exist."}});
     }
   };
 
@@ -635,27 +625,27 @@ class AuthController {
 
       if (validationErrors.length > 0) {
         return res.status(400).json({
-          error: { message: "Invalid body", validationErrors },
+          error: {message: "Invalid body", validationErrors},
         });
       }
 
-      const { id, password } = updatePassword;
+      const {id, password} = updatePassword;
 
       const user = await User.findById(id);
       if (!user) {
         return res
           .status(400)
-          .json({ data: { message: "User does not exist." } });
+          .json({data: {message: "User does not exist."}});
       }
       const salt = genSaltSync(10);
       const hashPassword = hashSync(password, salt);
-      await User.findByIdAndUpdate(id, { password: hashPassword });
+      await User.findByIdAndUpdate(id, {password: hashPassword});
 
-      return res.json({ data: { message: "Password updated successfully." } });
+      return res.json({data: {message: "Password updated successfully."}});
     } catch (err) {
       return res
         .status(400)
-        .json({ data: { message: "User does not exist." } });
+        .json({data: {message: "User does not exist."}});
     }
   };
 
@@ -709,7 +699,7 @@ class AuthController {
                   }
                 });
               });
-              return res.json({ data: data });
+              return res.json({data: data});
             }
           );
         }
@@ -717,7 +707,7 @@ class AuthController {
     } catch (err) {
       return res
         .status(500)
-        .json({ error: { message: "Something went wrong." } });
+        .json({error: {message: "Something went wrong."}});
     }
   };
 
@@ -776,7 +766,7 @@ class AuthController {
                   }
                 });
               });
-              return res.json({ data: data });
+              return res.json({data: data});
             }
           );
         }
@@ -784,7 +774,7 @@ class AuthController {
     } catch (err) {
       return res
         .status(500)
-        .json({ error: { message: "Something went wrong." } });
+        .json({error: {message: "Something went wrong."}});
     }
   };
 
@@ -813,7 +803,7 @@ class AuthController {
         userId: user.id,
         isCredited: true,
         status: PAYMENT_STATUS.CAPTURED,
-        amount: { $gt: 0 },
+        amount: {$gt: 0},
       });
       exists.hasEverTopped = false;
       if (transaction) {
@@ -851,13 +841,13 @@ class AuthController {
             }
           }
         }
-        return res.json({ data: exists });
+        return res.json({data: exists});
       }
-      return res.json({ data: "User not exists" });
+      return res.json({data: "User not exists"});
     } catch (error) {
       return res
         .status(500)
-        .json({ error: { message: "Something went wrong." } });
+        .json({error: {message: "Something went wrong."}});
     }
   };
 
@@ -868,18 +858,18 @@ class AuthController {
         id,
         "isRyftCustomer isLeadbyteCustomer isXeroCustomer -_id isStripeCustomer"
       );
-      return res.json({ data: user });
+      return res.json({data: user});
     } catch (error) {
       return res
         .status(500)
-        .json({ error: { message: "Something went wrong." } });
+        .json({error: {message: "Something went wrong."}});
     }
   };
 
   static adminRegister = async (req: Request, res: Response): Promise<any> => {
     const input = req.body;
     const showUsers: UserInterface =
-      (await User.findOne().sort({ rowIndex: -1 }).limit(1)) ??
+      (await User.findOne().sort({rowIndex: -1}).limit(1)) ??
       ({} as UserInterface);
     try {
       const salt = genSaltSync(10);
@@ -910,11 +900,11 @@ class AuthController {
         userId: user.id,
         columns: order,
       });
-      return res.json({ message: "Admin registers successfully", data: user });
+      return res.json({message: "Admin registers successfully", data: user});
     } catch (error) {
       return res
         .status(500)
-        .json({ error: { message: "Something went wrong." } });
+        .json({error: {message: "Something went wrong."}});
     }
   };
 
@@ -933,21 +923,21 @@ class AuthController {
       if (!input.email) {
         return res
           .status(400)
-          .json({ error: { message: "email is required" } });
+          .json({error: {message: "email is required"}});
       }
       await createCustomerOnRyft(params);
 
       const data = await User.findById(input.userId);
-      return res.json({ data: data });
+      return res.json({data: data});
     } catch (error) {
       if (error.errors) {
         return res
           .status(400)
-          .json({ error: { message: "Email already exist" } });
+          .json({error: {message: "Email already exist"}});
       } else {
         return res
           .status(500)
-          .json({ error: { message: "Something went wrong.", error } });
+          .json({error: {message: "Something went wrong.", error}});
       }
     }
   };
@@ -961,7 +951,7 @@ class AuthController {
       if (!input.email) {
         return res
           .status(400)
-          .json({ error: { message: "email is required" } });
+          .json({error: {message: "email is required"}});
       }
       const user: UserInterface | null = await User.findOne(input.email);
       if (user) {
@@ -984,22 +974,22 @@ class AuthController {
         };
         createCustomersOnRyftAndLeadByte(params)
           .then(() => {
-            logger.info("Customer created!!!!", { params });
+            logger.info("Customer created!!!!", {params});
           })
           .catch((err) => {
             logger.error("error while creating customer", err);
           })
           .finally(async () => {
             const data = await User.findById(user.id);
-            return res.json({ data: data });
+            return res.json({data: data});
           });
       } else {
-        return res.status(400).json({ error: { message: "User Not Found" } });
+        return res.status(400).json({error: {message: "User Not Found"}});
       }
     } catch (error) {
       return res
         .status(500)
-        .json({ error: { message: "Something went wrong.", error } });
+        .json({error: {message: "Something went wrong.", error}});
     }
   };
 
@@ -1013,7 +1003,7 @@ class AuthController {
       let user = await User.findById(id);
 
       if (!user) {
-        return res.send(400).json({ message: "username doesn't exist" });
+        return res.send(400).json({message: "username doesn't exist"});
       }
 
       const token = generateAuthToken(user);
@@ -1026,7 +1016,7 @@ class AuthController {
     } catch (err) {
       return res
         .status(500)
-        .json({ error: { message: "Something went wrong." } });
+        .json({error: {message: "Something went wrong."}});
     }
   };
 
@@ -1035,39 +1025,21 @@ class AuthController {
 
     try {
       const exists = await FreeCreditsLink.findOne(
-        { code: code, isDeleted: false },
+        {code: code, isDeleted: false},
         "code businessIndustryId"
       ).populate("businessIndustryId", "industry");
 
       if (exists) {
-        return res.json({ data: exists });
+        return res.json({data: exists});
       }
 
-      return res.json({ data: "Code not exists" });
+      return res.json({data: "Code not exists"});
     } catch (error) {
       return res
         .status(500)
-        .json({ error: { message: "Something went wrong." } });
+        .json({error: {message: "Something went wrong."}});
     }
   };
 }
 
-export { AuthController };
-
-function randomString(length: number, isSpecial: boolean) {
-  const normalCharacters =
-    "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
-
-  const specialCharacters = "@#&?/*";
-  var characterList = normalCharacters;
-  var result = "";
-  if (isSpecial) {
-    characterList += specialCharacters;
-  }
-  while (length > 0) {
-    var index = Math.floor(Math.random() * characterList.length);
-    result += characterList[index];
-    length--;
-  }
-  return result + "$";
-}
+export {AuthController};
