@@ -234,7 +234,8 @@ export const create = async (req: Request, res: Response): Promise<any> => {
       ...formattedOpeningHours,
       industryQuestions: webhookData.buyerQuestions?.map(
         (question: BuyerQuestion) => ({
-          columnName: question.title,
+          title: question.columnName,
+          questionSlug: question.questionSlug,
           answer: question.answer ?? "",
         })
       ),
@@ -328,8 +329,6 @@ export const create = async (req: Request, res: Response): Promise<any> => {
             );
           });
       });
-
-
     if (input.accreditations) {
       input.accreditations = JSON.parse(input.accreditations);
     }
@@ -380,7 +379,9 @@ export const create = async (req: Request, res: Response): Promise<any> => {
       street1: input?.businessAddress,
       street2: input?.businessAddress,
       towncity: input?.businessCity,
+      // county:Name of county,
       postcode: input?.businessPostCode,
+      // country_name: input.businessCountry,
       phone: input?.businessSalesNumber,
       businessId: userData?.id,
       country_name: "",

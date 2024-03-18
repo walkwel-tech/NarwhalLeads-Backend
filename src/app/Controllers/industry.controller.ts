@@ -180,7 +180,10 @@ export class IndustryController {
                 industry: updatedData?.industry,
                 centralIndustryId: updatedData?.centralIndustryId,
                 ...updatedData?.buyerQuestions?.reduce((acc: any, question, index) => {
-                    acc[`question${index + 1}`] = question?.columnName;
+                    acc[`question${index + 1}`] = {
+                      columnName: question?.columnName,
+                      questionSlug: question?.questionSlug,
+                    };
                     return acc;
                 }, {})
             }
