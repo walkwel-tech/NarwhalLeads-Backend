@@ -31,7 +31,7 @@ export const checkBuyersStatusAndSync = async () => {
     });
 
     // Chunk all buyers to 1000
-    const chunkedBuyers = chunkArray(allBuyers, 1000);
+    const chunkedBuyers = chunkArray(allBuyers, 100);
     logger.info(`buyer sync has found ${allBuyers.length} buyers and chunked them ${chunkedBuyers.length}`);
 
     await Promise.all(chunkedBuyers.map(async (buyers: UserInterface[], index: number) => {
