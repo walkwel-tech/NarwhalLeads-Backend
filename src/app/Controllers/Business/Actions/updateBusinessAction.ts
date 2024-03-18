@@ -346,7 +346,6 @@ export const updateBusinessDetails = async (
         industryQuestions: webhookData.buyerQuestions?.map(
           (question: BuyerQuestion) => ({
             title: question.columnName,
-            questionSlug: question.questionSlug,
             answer: question.answer ?? "",
           })
         ),

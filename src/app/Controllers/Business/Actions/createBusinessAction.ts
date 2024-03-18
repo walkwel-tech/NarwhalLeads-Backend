@@ -235,7 +235,6 @@ export const create = async (req: Request, res: Response): Promise<any> => {
       industryQuestions: webhookData.buyerQuestions?.map(
         (question: BuyerQuestion) => ({
           title: question.columnName,
-          questionSlug: question.questionSlug,
           answer: question.answer ?? "",
         })
       ),
