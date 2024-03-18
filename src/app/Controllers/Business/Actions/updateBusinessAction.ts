@@ -337,6 +337,7 @@ export const updateBusinessDetails = async (
       const formattedBody = {
         buyerId: webhookData.buyerId ?? " ",
         industry: webhookData.businessData?.businessIndustry ?? "",
+        websiteLink: webhookData.businessData?.businessUrl ?? "",
         centralIndustryId: centralIndustryId ?? "",
         postcodes: webhookData.businessData?.businessPostCode ?? "",
         buyerName: webhookData.businessData?.businessName ?? "",

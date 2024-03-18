@@ -384,6 +384,20 @@ export const updateAction = async (req: Request, res: Response): Promise<any> =>
           { new: true }
         );
       }
+      if (input.businessUrl) {
+        if (!checkUser.businessDetailsId) {
+          return res
+            .status(404)
+            .json({ error: { message: "business details not found" } });
+        }
+
+        await BusinessDetails.findByIdAndUpdate(
+          checkUser?.businessDetailsId,
+          { businessUrl: input.businessUrl },
+
+          { new: true }
+        );
+      }
       if (
         input.businessSalesNumber &&
         checkUser?.onBoardingPercentage === ONBOARDING_PERCENTAGE.CARD_DETAILS
@@ -940,6 +954,7 @@ export const updateAction = async (req: Request, res: Response): Promise<any> =>
           if (
             input.businessIndustry ||
             input.businessName ||
+            input.businessUrl ||
             input.businessLogo ||
             input.address1 ||
             input.address2 ||

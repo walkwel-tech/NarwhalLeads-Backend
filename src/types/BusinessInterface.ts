@@ -3,6 +3,7 @@ import { Document, Types } from "mongoose";
 export interface BusinessDetailsInterface extends Document {
   _id: Types.ObjectId;
   businessIndustry: string,
+  businessUrl: string,
   businessDescription:string,
   businessName: string,
   businessLogo: string,
@@ -13,8 +14,8 @@ export interface BusinessDetailsInterface extends Document {
   businessAddress: string,
   businessCity: string,
   businessCountry: string,
-  businessPostCode: string, 
-  businessOpeningHours: [],  
+  businessPostCode: string,
+  businessOpeningHours: [],
   buyerQuestions? : Array<{
     title: string;
     questionSlug: string;
@@ -33,5 +34,3 @@ export function isBusinessObject (b: unknown): b is BusinessDetailsInterface {
 export function isBusinessObjectAndIncludesBusinessHours (b: unknown): b is BusinessDetailsInterface {
   return typeof b !== 'string' && Object.keys(b as Object).includes('businessOpeningHours');
 }
-
-

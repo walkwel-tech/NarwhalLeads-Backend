@@ -57,18 +57,19 @@ export const create = async (req: Request, res: Response): Promise<any> => {
     return res.status(400).json({ error: { message: "User Id is required" } });
   }
 
-  const Business = new BusinessDetailsInput();
-  (Business.businessIndustry = input.businessIndustry),
-    (Business.businessName = input.businessName),
-    (Business.businessSalesNumber = input.businessSalesNumber),
-    (Business.address1 = input.address1),
-    (Business.businessCity = input.businessCity),
-    (Business.businessPostCode = input.businessPostCode);
-    Business.buyerQuestions = input.buyerQuestions;
+  const businessDetailsInput = new BusinessDetailsInput();
+  (businessDetailsInput.businessIndustry = input.businessIndustry),
+    (businessDetailsInput.businessName = input.businessName),
+    (businessDetailsInput.businessSalesNumber = input.businessSalesNumber),
+    (businessDetailsInput.address1 = input.address1),
+    (businessDetailsInput.businessCity = input.businessCity),
+    (businessDetailsInput.businessUrl = input.businessUrl),
+    (businessDetailsInput.businessPostCode = input.businessPostCode);
+    businessDetailsInput.buyerQuestions = input.buyerQuestions;
 
-  Business.businessMobilePrefixCode = input.businessMobilePrefixCode;
-  Business.businessOpeningHours = JSON.parse(input?.businessOpeningHours);
-  const errors = await validate(Business);
+  businessDetailsInput.businessMobilePrefixCode = input.businessMobilePrefixCode;
+  businessDetailsInput.businessOpeningHours = JSON.parse(input?.businessOpeningHours);
+  const errors = await validate(businessDetailsInput);
   const filteredErrors = errors.filter(
     (error) => error.property !== "buyerQuestions"
   );
@@ -144,17 +145,18 @@ export const create = async (req: Request, res: Response): Promise<any> => {
   // input.businessOpeningHours=JSON.parse(input.businessOpeningHours)
   try {
     let dataToSave: Partial<BusinessDetailsInterface> = {
-      businessIndustry: Business?.businessIndustry,
-      businessName: Business?.businessName,
+      businessIndustry: businessDetailsInput?.businessIndustry,
+      businessName: businessDetailsInput?.businessName,
+      businessUrl: businessDetailsInput?.businessUrl,
       businessDescription: input?.businessDescription,
       // businessLogo: `${FileEnum.PROFILEIMAGE}${req?.file.filename}`,
-      businessSalesNumber: Business?.businessSalesNumber,
-      businessAddress: Business?.address1 + " " + input?.address2,
-      address1: Business?.address1,
+      businessSalesNumber: businessDetailsInput?.businessSalesNumber,
+      businessAddress: businessDetailsInput?.address1 + " " + input?.address2,
+      address1: businessDetailsInput?.address1,
       address2: input?.address2,
-      businessCity: Business?.businessCity,
-      businessPostCode: Business?.businessPostCode,
-      businessMobilePrefixCode: Business?.businessMobilePrefixCode,
+      businessCity: businessDetailsInput?.businessCity,
+      businessPostCode: businessDetailsInput?.businessPostCode,
+      businessMobilePrefixCode: businessDetailsInput?.businessMobilePrefixCode,
       businessOpeningHours: JSON.parse(input?.businessOpeningHours),
     };
     if (req?.file) {
@@ -162,7 +164,7 @@ export const create = async (req: Request, res: Response): Promise<any> => {
     }
     const userData = await BusinessDetails.create(dataToSave);
     const buyerQuestions = await createBuyerQuestions(
-      Business.buyerQuestions,
+      businessDetailsInput.buyerQuestions,
       input.userId
     );
     const industry: BuisnessIndustriesInterface =
@@ -195,7 +197,7 @@ export const create = async (req: Request, res: Response): Promise<any> => {
       const sendgridResponse = await createContact(userEmail, {
         signUpStatus:
           SENDGRID_STATUS_PERCENTAGE.BUSINESS_DETAILS_PERCENTAGE || "",
-        businessIndustry: Business?.businessIndustry,
+        businessIndustry: businessDetailsInput?.businessIndustry,
       });
       const jobId = sendgridResponse?.body?.job_id;
 
@@ -206,7 +208,7 @@ export const create = async (req: Request, res: Response): Promise<any> => {
     const webhookData: WebhookData = {
       buyerId: user.buyerId,
       businessData: userData,
-      buyerQuestions: Business?.buyerQuestions,
+      buyerQuestions: businessDetailsInput?.buyerQuestions,
     };
 
     const businessOpeningHours: BusinessOpeningHours[] =
@@ -226,6 +228,7 @@ export const create = async (req: Request, res: Response): Promise<any> => {
     const formattedBody = {
       buyerId: webhookData.buyerId ?? " ",
       industry: webhookData.businessData?.businessIndustry ?? "",
+      websiteLink: webhookData.businessData?.businessUrl ?? "",
       centralIndustryId: industry?.centralIndustryId ?? "",
       postcodes: webhookData.businessData?.businessPostCode ?? "",
       buyerName: webhookData.businessData?.businessName ?? "",
@@ -328,6 +331,7 @@ export const create = async (req: Request, res: Response): Promise<any> => {
             );
           });
       });
+
     if (input.accreditations) {
       input.accreditations = JSON.parse(input.accreditations);
     }
@@ -385,10 +389,10 @@ export const create = async (req: Request, res: Response): Promise<any> => {
       businessId: userData?.id,
       country_name: "",
     };
-    const paramsObj = Object.values(params).some(
+    const leadbyteValidation = Object.values(params).some(
       (value: any) => value === undefined
     );
-    if (!paramsObj) {
+    if (!leadbyteValidation) {
       createCustomersOnRyftAndLeadByte(params)
         .then(() => {
           console.log("Customer created!!!!", new Date(), "Today's Date");

@@ -14,6 +14,10 @@ const BusinessDetailsSchema = new Schema(
       type: String,
       required: false,
     },
+    businessUrl: {
+      type: String,
+      required: false,
+    },
     businessLogo: {
       type: String,
       required: false,

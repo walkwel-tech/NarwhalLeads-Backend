@@ -75,6 +75,7 @@ const userData = async (userId: String, cardId: String) => {
     industry: user?.businessDetailsId?.businessIndustry,
     businessDescription: user?.businessDetailsId?.businessDescription,
     businessName: user?.businessDetailsId?.businessName,
+    websiteLink: user?.businessDetailsId?.businessUrl,
     address1: user?.businessDetailsId?.address1,
     address2: user?.businessDetailsId?.address2,
     businessSalesNumber: user?.businessDetailsId?.businessSalesNumber,
