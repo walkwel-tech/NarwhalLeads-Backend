@@ -1,4 +1,4 @@
-import {  IsArray, IsNotEmpty, IsString } from "class-validator";
+import {IsArray, IsNotEmpty, IsOptional, IsString} from "class-validator";
 
 export class BusinessDetailsInput {
 
@@ -50,6 +50,7 @@ export class BusinessDetailsInput {
 
 
   @IsArray({ message: "Buyer Questions must be an array." })
+  @IsOptional()
   buyerQuestions: BuyerQuestionInput[];
 
 

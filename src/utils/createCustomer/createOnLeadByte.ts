@@ -1,18 +1,20 @@
 import axios from "axios";
-import { CreateCustomerInput } from "../../app/Inputs/createCustomerOnRyft&Lead.inputs";
-import { User } from "../../app/Models/User";
-import { checkAccess } from "../../app/Middlewares/serverAccess";
 import FormData from "form-data";
-import { LOGS_STATUS } from "../Enums/logs.status.enum";
-import { PORTAL } from "../Enums/portal.enum";
-import { saveLogs } from "../Functions/saveLogs";
-import { REGISTRATION_IDS } from "../constantFiles/errorConstants";
+import * as process from "process";
+import {APP_ENV} from "../Enums/serverModes.enum";
+import {CreateCustomerInput} from "../../app/Inputs/createCustomerOnRyft&Lead.inputs";
+import {checkAccess} from "../../app/Middlewares/serverAccess";
+import {User} from "../../app/Models/User";
+import {REGISTRATION_IDS} from "../constantFiles/errorConstants";
+import {LOGS_STATUS} from "../Enums/logs.status.enum";
+import {PORTAL} from "../Enums/portal.enum";
+import {saveLogs} from "../Functions/saveLogs";
 import logger from "../winstonLogger/logger";
 // let FormData = require("form-data");
 
 const POST = "post";
 export const createCustomerOnLeadByte = (params: CreateCustomerInput) => {
-  return new Promise((resolve, reject) => {
+  return new Promise(async (resolve, reject) => {
     let data = new FormData();
     data.append("street1", params.street1);
     data.append("street2", params?.street2);
@@ -61,6 +63,18 @@ export const createCustomerOnLeadByte = (params: CreateCustomerInput) => {
           await saveLogs(logsData);
           reject(err.response?.data);
         });
+    } else {
+      if (
+        (process.env.APP_ENV == APP_ENV.STAGING)
+        || (process.env.APP_ENV == APP_ENV.DEVELOPMENT)
+      ) {
+        await User.findByIdAndUpdate(params.userId, {
+          isLeadbyteCustomer: true,
+          buyerId: 'debugging',
+        });
+
+        resolve({data: {bid: 'debugging'}});
+      }
     }
   });
 };

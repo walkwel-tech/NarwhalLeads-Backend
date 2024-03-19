@@ -1,5 +1,6 @@
 import { validate } from "class-validator";
 import mongoose, { Types } from "mongoose";
+import logger from "../../../../utils/winstonLogger/logger";
 import { AccessToken } from "../../../Models/AccessToken";
 import { AccessTokenInterface } from "../../../../types/AccessTokenInterface";
 import { BuisnessIndustriesInterface } from "../../../../types/BuisnessIndustriesInterface";
@@ -65,7 +66,7 @@ export const create = async (req: Request, res: Response): Promise<any> => {
     (businessDetailsInput.businessCity = input.businessCity),
     (businessDetailsInput.businessUrl = input.businessUrl),
     (businessDetailsInput.businessPostCode = input.businessPostCode);
-    businessDetailsInput.buyerQuestions = input.buyerQuestions;
+    businessDetailsInput.buyerQuestions = Array.isArray(input.buyerQuestions) ? input.buyerQuestions : [];
 
   businessDetailsInput.businessMobilePrefixCode = input.businessMobilePrefixCode;
   businessDetailsInput.businessOpeningHours = JSON.parse(input?.businessOpeningHours);
@@ -162,7 +163,7 @@ export const create = async (req: Request, res: Response): Promise<any> => {
     if (req?.file) {
       dataToSave.businessLogo = `${FileEnum.PROFILEIMAGE}${req?.file.filename}`;
     }
-    const userData = await BusinessDetails.create(dataToSave);
+    const userBusinessDetails = await BusinessDetails.create(dataToSave);
     const buyerQuestions = await createBuyerQuestions(
       businessDetailsInput.buyerQuestions,
       input.userId
@@ -182,7 +183,7 @@ export const create = async (req: Request, res: Response): Promise<any> => {
       updatedLeadCost -= discountedAmount;
     }
     await User.findByIdAndUpdate(input.userId, {
-      businessDetailsId: new ObjectId(userData._id),
+      businessDetailsId: new ObjectId(userBusinessDetails._id),
       leadCost: updatedLeadCost,
       businessIndustryId: industry?.id,
       currency: industry.associatedCurrency,
@@ -207,7 +208,7 @@ export const create = async (req: Request, res: Response): Promise<any> => {
 
     const webhookData: WebhookData = {
       buyerId: user.buyerId,
-      businessData: userData,
+      businessData: userBusinessDetails,
       buyerQuestions: businessDetailsInput?.buyerQuestions,
     };
 
@@ -224,36 +225,6 @@ export const create = async (req: Request, res: Response): Promise<any> => {
       acc[`openingHours${day}`] = openingHours[index] ?? "closed";
       return acc;
     }, {});
-
-    const formattedBody = {
-      buyerId: webhookData.buyerId ?? " ",
-      industry: webhookData.businessData?.businessIndustry ?? "",
-      websiteLink: webhookData.businessData?.businessUrl ?? "",
-      centralIndustryId: industry?.centralIndustryId ?? "",
-      postcodes: webhookData.businessData?.businessPostCode ?? "",
-      buyerName: webhookData.businessData?.businessName ?? "",
-      buyerPhone: webhookData.businessData?.businessSalesNumber ?? "",
-      businessDescription: webhookData.businessData?.businessDescription ?? "",
-      ...formattedOpeningHours,
-      industryQuestions: webhookData.buyerQuestions?.map(
-        (question: BuyerQuestion) => ({
-          title: question.columnName,
-          answer: question.answer ?? "",
-        })
-      ),
-    };
-
-    if (isBusinessObject(user?.businessDetailsId) && user?.businessDetailsId?.businessLogo) {
-      formattedBody.businessLogo = `${process.env.APP_URL}${user?.businessDetailsId?.businessLogo}`;
-    }
-
-    cmsUpdateWebhook("data/buyer", POST, formattedBody)
-      .then((res) => {
-        console.log(`CMS Buyer ${formattedBody.buyerId} updated successfully`, res);
-      })
-      .catch((err) => {
-        console.log(`CMS Buyer ${formattedBody.buyerId} update failed`, err);
-      });
 
     const additionalColumns = additionalColumnsForLeads(
       industry?.columns.length
@@ -283,63 +254,55 @@ export const create = async (req: Request, res: Response): Promise<any> => {
       postalCode: input.businessPostCode,
       businessName: input.businessName,
     };
-    const token: AccessTokenInterface =
-      (await AccessToken.findOne()) ?? ({} as AccessTokenInterface);
-    createContactOnXero(paramsToCreateContact, token?.access_token)
-      .then(async (res: any) => {
-        await User.findOneAndUpdate(
-          { email: user.email },
-          {
-            xeroContactId: res.data.Contacts[0].ContactID,
-            isXeroCustomer: true,
-          },
-          { new: true }
-        );
-        console.log("success in creating contact", new Date(), "Today's Date");
-      })
-      .catch((err) => {
-        refreshToken()
-          .then(async (res: any) => {
-            console.log(
-              "Token updated while creating customer!!!",
-              new Date(),
-              "Today's Date"
-            );
-            createContactOnXero(paramsToCreateContact, res.data.access_token)
-              .then(async (res: any) => {
-                await User.findOneAndUpdate(
-                  { email: user.email },
-                  {
-                    // $set: {
-                    xeroContactId: res.data.Contacts[0].ContactID,
-                    isXeroCustomer: true,
-                    // },
-                  },
-                  { new: true }
-                );
-                console.log(
-                  "success in creating contact",
-                  new Date(),
-                  "Today's Date"
-                );
-              })
-              .catch((error) => {
-                console.log(
-                  "error in creating customer after token updation.",
-                  new Date(),
-                  "Today's Date"
-                );
-              });
-          })
-          .catch((err) => {
-            console.log(
-              "error in creating contact on xero",
-              err.response.data,
-              new Date(),
-              "Today's Date"
-            );
-          });
-      });
+    try {
+      const token: AccessTokenInterface =
+        (await AccessToken.findOne()) ?? ({} as AccessTokenInterface);
+      createContactOnXero(paramsToCreateContact, token?.access_token)
+        .then(async (res: any) => {
+          await User.findOneAndUpdate(
+            { email: user.email },
+            {
+              xeroContactId: res.data.Contacts[0].ContactID,
+              isXeroCustomer: true,
+            },
+            { new: true }
+          );
+          logger.info(`XERO Contact Creation: Success ${user._id} ${res.data.Contacts[0].ContactID}`);
+        })
+        .catch((err) => {
+          refreshToken()
+            .then(async (res: any) => {
+              console.log(
+                "Token updated while creating customer!!!",
+                new Date(),
+                "Today's Date"
+              );
+              createContactOnXero(paramsToCreateContact, res.data.access_token)
+                .then(async (res: any) => {
+                  await User.findOneAndUpdate(
+                    { email: user.email },
+                    {
+                      // $set: {
+                      xeroContactId: res.data.Contacts[0].ContactID,
+                      isXeroCustomer: true,
+                      // },
+                    },
+                    { new: true }
+                  );
+                  logger.info(`XERO Contact Creation: Success ${user._id} ${res.data.Contacts[0].ContactID}`);
+                })
+                .catch((error) => {
+                  logger.error(`XERO Contact Creation: Failed ${user._id}`, JSON.stringify(error.response.data));
+                });
+            })
+            .catch((err) => {
+              logger.error(`XERO Contact Creation: Token Refresh Failed ${user._id}`, JSON.stringify(err.response.data));
+            });
+        });
+    } catch (error) {
+      logger.error(`XERO Contact Creation: Failed Fatal ${user._id}`, JSON.stringify(error.response.data));
+    }
+
 
     if (input.accreditations) {
       input.accreditations = JSON.parse(input.accreditations);
@@ -371,17 +334,19 @@ export const create = async (req: Request, res: Response): Promise<any> => {
     }
     const service = await UserService.create(input);
     const updatedUser = await User.findByIdAndUpdate(user.id, { userServiceId: service.id }, {new: true});
-    leadCenterWebhook("clients/data-sync/",POST,{...userData.toObject(), ...updatedUser?.toObject()}, {
+    leadCenterWebhook("clients/data-sync/",POST,{...userBusinessDetails.toObject(), ...updatedUser?.toObject()}, {
       eventTitle: EVENT_TITLE.USER_UPDATE_LEAD,
       id: updatedUser?._id as Types.ObjectId,
     })
 
     res.json({
-      data: userData,
+      data: userBusinessDetails,
       service,
       leadCost: user?.leadCost,
       buyerQuestions,
     });
+
+
     const params: CreateCustomerInput = {
       email: user?.email,
       firstName: user?.firstName,
@@ -395,15 +360,15 @@ export const create = async (req: Request, res: Response): Promise<any> => {
       postcode: input?.businessPostCode,
       // country_name: input.businessCountry,
       phone: input?.businessSalesNumber,
-      businessId: userData?.id,
+      businessId: userBusinessDetails?.id,
       country_name: "",
     };
     const leadbyteValidation = Object.values(params).some(
       (value: any) => value === undefined
     );
     if (!leadbyteValidation) {
-      createCustomersOnRyftAndLeadByte(params)
-        .then(() => {
+      await createCustomersOnRyftAndLeadByte(params)
+        .then(async (...responses) => {
           console.log("Customer created!!!!", new Date(), "Today's Date");
         })
         .catch((err) => {
@@ -414,6 +379,44 @@ export const create = async (req: Request, res: Response): Promise<any> => {
           );
         });
     }
+
+    try {
+
+      const userPostProcess: UserInterface = await User.findById(input.userId).lean(true);
+
+      const cmsWebhookBody = {
+        buyerId: userPostProcess.buyerId ?? " ",
+        industry: webhookData.businessData?.businessIndustry ?? "",
+        websiteLink: webhookData.businessData?.businessUrl ?? "",
+        centralIndustryId: industry?.centralIndustryId ?? "",
+        postcodes: webhookData.businessData?.businessPostCode ?? "",
+        buyerName: webhookData.businessData?.businessName ?? "",
+        buyerPhone: webhookData.businessData?.businessSalesNumber ?? "",
+        businessDescription: webhookData.businessData?.businessDescription ?? "",
+        ...formattedOpeningHours,
+        industryQuestions: webhookData.buyerQuestions?.map(
+          (question: BuyerQuestion) => ({
+            title: question.columnName,
+            answer: question.answer ?? "",
+          })
+        ),
+      };
+
+      if (isBusinessObject(user?.businessDetailsId) && user?.businessDetailsId?.businessLogo) {
+        cmsWebhookBody.businessLogo = `${process.env.APP_URL}${user?.businessDetailsId?.businessLogo}`;
+      }
+
+      cmsUpdateWebhook("data/buyer", POST, cmsWebhookBody)
+        .then((res) => {
+          logger.info(`CMS Buyer ${cmsWebhookBody.buyerId} updated successfully`, res);
+        })
+        .catch((err) => {
+          logger.error(`CMS Buyer ${cmsWebhookBody.buyerId} update failed`, err);
+        });
+    } catch (error) {
+      logger.error("CMS Buyer update failed", error);
+    }
+
   } catch (error) {
     return res
       .status(500)
