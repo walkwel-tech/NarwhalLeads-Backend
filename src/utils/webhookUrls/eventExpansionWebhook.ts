@@ -1,34 +1,10 @@
 import axios from "axios";
-import { checkAccess } from "../../app/Middlewares/serverAccess";
-import { EVENT_TITLE, EVENT_TYPE } from "../constantFiles/events";
-import { saveEventLogs } from "../Functions/saveLogs";
-import { Types } from "mongoose";
-import { County } from "../Functions/flattenPostcodes";
-import { PostCode } from "../../types/LeadDetailsInterface";
+import {checkAccess} from "../../app/Middlewares/serverAccess";
+import {EVENT_TITLE, EVENT_TYPE} from "../constantFiles/events";
+import {saveEventLogs} from "../Functions/saveLogs";
 import logger from "../winstonLogger/logger";
 
 const POST = "post";
-
-export interface PostcodeWebhookParams {
-  userId: Types.ObjectId;
-  buyerId?: string;
-  bid?: string;
-  businessName: string | undefined;
-  businessIndustry?: string;
-  eventCode: string;
-  topUpAmount?: string | number;
-  type?: string;
-  postCodeList?: County[] | PostCode[] | string[];
-  miles?: string;
-  postcode?: PostCode[];
-  remainingCredits?: string | number;
-  businessSalesNumber?: string;
-  leadSchedule?: string[];
-  dailyLeadCap?: string | number;
-  dailyCap?: string | number;
-  weeklyCap?: string | number;
-  computedCap?: string | number;
-}
 
 export const eventsWebhook = (data: any) => {
   return new Promise((resolve, reject) => {
@@ -42,21 +18,52 @@ export const eventsWebhook = (data: any) => {
     };
 
     if (checkAccess()) {
-      if (data.eventCode === EVENT_TITLE.ZERO_CREDITS) {
-        config.url = `${process.env.ZERO_CREDITS_URL_WEBHOOK}`;
-      } else if (data.eventCode === EVENT_TITLE.ADD_CREDITS) {
-        config.url = `${process.env.TOP_UP_URL_WEBHOOK}`;
-      } else if (data.eventCode === EVENT_TITLE.POST_CODE_UPDATE) {
-        config.url = `${process.env.POST_CODE_UPDATE_URL_WEBHOOK}`;
+
+      switch (data.eventCode) {
+        case EVENT_TITLE.ZERO_CREDITS:
+          config.url = `${process.env.ZERO_CREDITS_URL_WEBHOOK}`;
+          break;
+
+        case EVENT_TITLE.ADD_CREDITS:
+          config.url = `${process.env.TOP_UP_URL_WEBHOOK}`;
+          break;
+
+        case EVENT_TITLE.POST_CODE_UPDATE:
+          config.url = `${process.env.POST_CODE_UPDATE_URL_WEBHOOK}`;
+          break;
+
+        case EVENT_TITLE.RADIUS_UPDATE:
+          config.url = `${process.env.RADIUS_UPDATE_URL_WEBHOOK}`;
+          break;
+
+        case EVENT_TITLE.BUSINESS_PHONE_NUMBER:
+          config.url = `${process.env.BUSINESS_SALES_NUMBER_UPDATE_WEHOOK_URL}`;
+          break;
+
+        case EVENT_TITLE.DAILY_LEAD_CAP:
+          config.url = `${process.env.DAILY_LEAD_CAP_WEBHOOK_URL}`;
+          break;
+
+        case EVENT_TITLE.LEAD_SCHEDULE_UPDATE:
+          config.url = `${process.env.LEAD_SCHEDULE_UPDATE_WEBHOOK_URL}`;
+          break;
+
+        case EVENT_TITLE.USER_AUTO_CHARGE_UPDATE:
+          config.url = `${process.env.USER_AUTO_CHARGE_UPDATE_WEBHOOK_URL}`;
+          break;
+
+
+        default:
+          // Handle the case where none of the conditions are met
+          break;
+
       }
-      else if (data.eventCode === EVENT_TITLE.RADIUS_UPDATE) {
-        config.url = `${process.env.RADIUS_UPDATE_URL_WEBHOOK}`;
-      } else if (data.eventCode === EVENT_TITLE.BUSINESS_PHONE_NUMBER) {
-        config.url = `${process.env.BUSINESS_SALES_NUMBER_UPDATE_WEHOOK_URL}`;
-      } else if (data.eventCode === EVENT_TITLE.DAILY_LEAD_CAP) {
-        config.url = `${process.env.DAILY_LEAD_CAP_WEBHOOK_URL}`;
-      } else if (data.eventCode === EVENT_TITLE.LEAD_SCHEDULE_UPDATE) {
-        config.url = `${process.env.LEAD_SCHEDULE_UPDATE_WEBHOOK_URL}`;
+
+      if (!config.url) {
+        logger.info("No webhook URL found!!");
+        resolve("No webhook URL found!!");
+
+        return;
       }
 
       axios(config)

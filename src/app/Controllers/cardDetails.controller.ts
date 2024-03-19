@@ -1,5 +1,6 @@
 import { validate } from "class-validator";
 import { Request, Response } from "express";
+import {PostcodeWebhookParams} from "../../types/postcodeWebhookParams";
 import {XeroResponseInterface} from "../../types/XeroResponseInterface";
 import { ValidationErrorResponse } from "../../types/ValidationErrorResponse";
 import { transactionTitle } from "../../utils/Enums/transaction.title.enum";
@@ -85,7 +86,6 @@ import { getPaymentStatus } from "../../utils/payment/stripe/retrievePaymentStat
 import { AMOUNT } from "../../utils/constantFiles/stripeConstants";
 import { cmsUpdateBuyerWebhook } from "../../utils/webhookUrls/cmsUpdateBuyerWebhook";
 import {
-  PostcodeWebhookParams,
   eventsWebhook,
 } from "../../utils/webhookUrls/eventExpansionWebhook";
 

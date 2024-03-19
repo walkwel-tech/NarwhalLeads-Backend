@@ -1,5 +1,6 @@
 import { validate } from "class-validator";
 import { Request, Response } from "express";
+import {PostcodeWebhookParams} from "../../types/postcodeWebhookParams";
 import { RolesEnum } from "../../types/RolesEnum";
 import { ValidationErrorResponse } from "../../types/ValidationErrorResponse";
 import { leadsAlertsEnums } from "../../utils/Enums/leads.Alerts.enum";
@@ -33,7 +34,6 @@ import { cmsUpdateBuyerWebhook } from "../../utils/webhookUrls/cmsUpdateBuyerWeb
 import { CardDetails } from "../Models/CardDetails";
 import { EVENT_TITLE } from "../../utils/constantFiles/events";
 import {
-  PostcodeWebhookParams,
   eventsWebhook,
 } from "../../utils/webhookUrls/eventExpansionWebhook";
 import { UserInterface } from "../../types/UserInterface";

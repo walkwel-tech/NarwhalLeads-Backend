@@ -3,6 +3,7 @@ import * as https from "follow-redirects";
 import * as fs from "fs";
 import mongoose, {Types} from "mongoose";
 import path from "path";
+import {PostcodeWebhookParams} from "../../types/postcodeWebhookParams";
 import {WHITE_LIST_IP} from "../../local";
 import {columnsObjects} from "../../types/columnsInterface";
 import {DataObject} from "../../types/DataObject";
@@ -30,7 +31,7 @@ import {addCreditsToBuyer} from "../../utils/payment/addBuyerCredit";
 import {prepareDataWithColumnPreferences} from "../../utils/prepareDataWithColumnPreferences";
 import {DeleteFile} from "../../utils/removeFile";
 
-import {eventsWebhook, PostcodeWebhookParams,} from "../../utils/webhookUrls/eventExpansionWebhook";
+import {eventsWebhook} from "../../utils/webhookUrls/eventExpansionWebhook";
 import {leadReportAcceptedWebhook} from "../../utils/webhookUrls/leadReportedAcceptedWebhook";
 import {sendLeadDataToZap} from "../../utils/webhookUrls/sendDataZap";
 import logger from "../../utils/winstonLogger/logger";

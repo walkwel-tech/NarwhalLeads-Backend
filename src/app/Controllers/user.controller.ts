@@ -3,6 +3,7 @@ import { genSaltSync, hashSync } from "bcryptjs";
 import { validate } from "class-validator";
 import { Request, Response } from "express";
 import mongoose, { PipelineStage, Types } from "mongoose";
+import {PostcodeWebhookParams} from "../../types/postcodeWebhookParams";
 import {XeroResponseInterface} from "../../types/XeroResponseInterface";
 import {clientTablePreference} from "../../utils/constantFiles/clientTablePreferenceAdmin";
 import {MODULE, PERMISSIONS} from "../../utils/Enums/permissions.enum";
@@ -57,7 +58,6 @@ import {
 } from "../../types/BusinessInterface";
 import { UserLeadsDetailsInterface } from "../../types/LeadDetailsInterface";
 import {
-  PostcodeWebhookParams,
   eventsWebhook,
 } from "../../utils/webhookUrls/eventExpansionWebhook";
 import { EVENT_TITLE } from "../../utils/constantFiles/events";

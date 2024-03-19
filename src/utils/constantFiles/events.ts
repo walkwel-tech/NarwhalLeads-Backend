@@ -27,5 +27,5 @@ export const EVENT_TITLE = {
   BUSINESS_PHONE_NUMBER: "Business Phone Number",
   DAILY_LEAD_CAP: "Daily Lead Cap",
   LEAD_SCHEDULE_UPDATE: "Lead Schedule Update",
+  USER_AUTO_CHARGE_UPDATE: "User Auto Charge Update",
 };
-

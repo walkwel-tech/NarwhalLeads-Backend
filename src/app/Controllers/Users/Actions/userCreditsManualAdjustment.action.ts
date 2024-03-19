@@ -1,4 +1,5 @@
 import { Response} from "express"
+import {PostcodeWebhookParams} from "../../../../types/postcodeWebhookParams";
 import { User } from "../../../Models/User";
 import { UserInterface } from "../../../../types/UserInterface";
 import { TransactionInterface } from "../../../../types/TransactionInterface";
@@ -16,7 +17,7 @@ import { refreshToken } from "../../../../utils/XeroApiIntegration/createContact
 import { BusinessDetailsInterface, isBusinessObject } from "../../../../types/BusinessInterface";
 import { UserLeadsDetails } from "../../../Models/UserLeadsDetails";
 import { UserLeadsDetailsInterface } from "../../../../types/LeadDetailsInterface";
-import { PostcodeWebhookParams, eventsWebhook } from "../../../../utils/webhookUrls/eventExpansionWebhook";
+import { eventsWebhook } from "../../../../utils/webhookUrls/eventExpansionWebhook";
 import { EVENT_TITLE } from "../../../../utils/constantFiles/events";
 import { calculateVariance } from "../../../../utils/Functions/calculateVariance";
 import { POSTCODE_TYPE } from "../../../../utils/Enums/postcode.enum";
