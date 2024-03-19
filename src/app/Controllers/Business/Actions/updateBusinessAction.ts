@@ -1,5 +1,6 @@
 import mongoose from "mongoose";
-import { BusinessDetailsInterface } from "../../../../types/BusinessInterface";
+import logger from "../../../../utils/winstonLogger/logger";
+import {BusinessDetailsInterface, isBusinessObject} from "../../../../types/BusinessInterface";
 import { FileEnum } from "../../../../types/FileEnum";
 import { UserInterface } from "../../../../types/UserInterface";
 import { ACTION } from "../../../../utils/Enums/actionType.enum";
@@ -315,9 +316,10 @@ export const updateBusinessDetails = async (
       ).lean();
 
       const fields = findUpdatedFields(userForActivity, userAfterMod);
-      const userr = await User.findOne({ businessDetailsId: req.params.id });
+      const user = await User.findOne({ businessDetailsId: req.params.id })
+        .populate("businessDetailsId").lean(true);
       const webhookData: WebhookData = {
-        buyerId: userr?.buyerId,
+        buyerId: user?.buyerId,
         businessData: data,
         buyerQuestions: input?.buyerQuestions === 'null' ? [] : input?.buyerQuestions,
       };
@@ -351,16 +353,21 @@ export const updateBusinessDetails = async (
           })
         ),
       };
+
+      if (isBusinessObject(user?.businessDetailsId) && user?.businessDetailsId?.businessLogo) {
+        formattedBody.businessLogo = `${process.env.APP_URL}${user?.businessDetailsId?.businessLogo}`;
+      }
+
       await cmsUpdateWebhook("data/buyer", POST, formattedBody);
       const isEmpty = Object.keys(fields.updatedFields).length === 0;
-      let user: Partial<UserInterface> = req.user ?? ({} as UserInterface);
 
-      if (!isEmpty && userr?.isSignUpCompleteWithCredit) {
+      let requestUser: Partial<UserInterface> = req.user ?? ({} as UserInterface);
+      if (!isEmpty && user?.isSignUpCompleteWithCredit) {
         const activity = {
-          actionBy: user.role,
+          actionBy: requestUser.role,
           actionType: ACTION.UPDATING,
           targetModel: MODEL_ENUM.BUSINESS_DETAILS,
-          userEntity: userr?.id,
+          userEntity: user?.id,
           originalValues: fields.oldFields,
           modifiedValues: fields.updatedFields,
         };
@@ -385,12 +392,12 @@ export const updateBusinessDetails = async (
         let user: Partial<UserInterface> = req.user ?? ({} as UserInterface);
 
         const isEmpty = Object.keys(fields.updatedFields).length === 0;
-        if (!isEmpty && userr?.isSignUpCompleteWithCredit) {
+        if (!isEmpty && user?.isSignUpCompleteWithCredit) {
           const activity = {
             actionBy: user?.role,
             actionType: ACTION.UPDATING,
             targetModel: MODEL_ENUM.USER_SERVICE_DETAILS,
-            userEntity: userr?.id,
+            userEntity: user?.id,
             originalValues: fields.oldFields,
             modifiedValues: fields.updatedFields,
           };
@@ -398,11 +405,19 @@ export const updateBusinessDetails = async (
         }
       }
       const card = await CardDetails.findOne({
-        userId: userr?.id,
+        userId: user?.id,
         isDeleted: false,
         isDefault: true,
       });
-      cmsUpdateBuyerWebhook(userr?.id, card?.id);
+
+      // MAYBE: We don't need to resend buyer hook again.
+      cmsUpdateBuyerWebhook(user?.id, card?.id)
+        .then((res) => {
+          logger.info(`CMS Buyer ${user?.id} updated successfully`, res);
+        })
+        .catch((err) => {
+          logger.error(`CMS Buyer ${user?.id} update failed`, err.response);
+        });
 
       return res.json({
         data: {

@@ -46,6 +46,12 @@ export const addCreditsToBuyer = (params: any) => {
 
                     if (updatedUser?.credits && updatedUser?.leadCost && +updatedUser?.credits > +updatedUser?.leadCost) {
                         cmsUpdateWebhook(`data/buyer?buyerId=${updatedUser?.buyerId}`, PATCH, {active: true})
+                          .then((res) => {
+                            logger.info(`CMS Buyer ${updatedUser?.buyerId} activated successfully`, res);
+                          })
+                          .catch((err) => {
+                            logger.error(`CMS Buyer ${updatedUser?.buyerId} activated failed`, err.response);
+                          });
                     }
 
                     await User.updateMany(

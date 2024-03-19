@@ -42,12 +42,13 @@ export const checkBuyersStatusAndSync = async () => {
 
         logger.debug(`buyer sync #${index} sending data to cms`, buyersToStatus.length, buyersToStatus);
 
-        const cmsResponse =  await cmsUpdateWebhook("data/buyerSync", POST, {
+        return cmsUpdateWebhook("data/buyerSync", POST, {
             data: buyersToStatus
+        }).then((res) => {
+            logger.info(`buyer sync #${index} completed`, buyersToStatus.length, res);
+        }).catch((err) => {
+            logger.error(`buyer sync #${index} failed`, buyersToStatus.length, err);
         });
-
-        logger.debug(`buyer sync #${index} sending data to cms`, buyersToStatus.length, cmsResponse);
-        return cmsResponse;
     }));
 
     logger.info("buyer sync completed!");

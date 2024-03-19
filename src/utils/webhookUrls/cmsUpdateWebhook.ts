@@ -15,26 +15,28 @@ export const cmsUpdateWebhook = async (
     Method: HttpMethod,
     body: ICmsUpdateBody
 ) => {
-    try {
+    return new Promise(async (resolve, reject) => {
+      try {
         let hookURL = (process.env.CMS_WEBHOOK_DEBUG_URL)
-            ? process.env.CMS_WEBHOOK_DEBUG_URL
-            : `${process.env.CMS_WEBHOOK_BASE_URL}${end_point}`;
+          ? process.env.CMS_WEBHOOK_DEBUG_URL
+          : `${process.env.CMS_WEBHOOK_BASE_URL}${end_point}`;
         let config = {
-            method: Method,
-            url: hookURL,
-            headers: {
-                "Content-Type": "application/json",
-                Authorization: `Bearer ${process.env.CMS_UPDATE_BUYER_WEBHOOK_KEY}`,
-                "X-Intended-Route": end_point
-            },
-            data: body
+          method: Method,
+          url: hookURL,
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${process.env.CMS_UPDATE_BUYER_WEBHOOK_KEY}`,
+            "X-Intended-Route": end_point
+          },
+          data: body
         };
 
         const res = await axios(config);
         logger.info("CMS updated successfully", res.data);
-        return res.data;
-    } catch (err) {
+        resolve(res.data);
+      } catch (err) {
         logger.error("Error in updating cms ", err.response);
-        return err.response;
-    }
+        reject(err.response);
+      }
+    });
 };

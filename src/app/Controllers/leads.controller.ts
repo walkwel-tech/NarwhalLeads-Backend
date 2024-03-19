@@ -129,6 +129,12 @@ export class LeadsController {
                 }
 
                 cmsUpdateWebhook(`data/buyer?buyerId=${user?.buyerId}`, PATCH, {active: false})
+                  .then((res) => {
+                    logger.info(`CMS Buyer Deactivation was a success ${user?.buyerId}`, res);
+                  })
+                  .catch((err) => {
+                    logger.error(`CMS Buyer Deactivation was a failure ${user?.buyerId}`, err);
+                  });
 
                 await eventsWebhook(paramsToSend)
                     .then(() =>

@@ -5,6 +5,7 @@ import {BuisnessIndustriesInterface} from "../../types/BuisnessIndustriesInterfa
 import {RolesEnum} from "../../types/RolesEnum";
 import {UserInterface} from "../../types/UserInterface";
 import {ValidationErrorResponse} from "../../types/ValidationErrorResponse";
+import logger from "../../utils/winstonLogger/logger";
 import {order} from "../../utils/constantFiles/businessIndustry.orderList";
 // import { columnsObjects } from "../../types/columnsInterface";
 import {json} from "../../utils/constantFiles/businessIndustryJson";
@@ -65,7 +66,13 @@ export class IndustryController {
                 }, {})
             };
 
-            await cmsUpdateWebhook("industry", POST, webhookData);
+            cmsUpdateWebhook("industry", POST, webhookData)
+              .then((res) => {
+                logger.info(`CMS Industry ${industryInput.industry} updated successfully`, res);
+              })
+              .catch((err) => {
+              logger.error(`CMS Industry ${industryInput.industry} update failed`, err.response);
+            });
         }
 
         let dataToSave: Partial<BuisnessIndustriesInterface> = {
@@ -185,7 +192,13 @@ export class IndustryController {
                 }, {})
             }
 
-            await cmsUpdateWebhook("industry", POST, webhookData);
+            cmsUpdateWebhook("industry", POST, webhookData)
+              .then((res) => {
+                logger.info(`CMS Industry ${updatedData.industry} updated successfully`, res);
+              })
+              .catch((err) => {
+                logger.error(`CMS Industry ${updatedData.industry} update failed`, err.response);
+              });
 
             leadCenterWebhook("industries/data-sync/", POST, updatedData, {
                 eventTitle: EVENT_TITLE.INDUSTRY_LEAD_SYNC,

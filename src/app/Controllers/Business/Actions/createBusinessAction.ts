@@ -3,7 +3,7 @@ import mongoose, { Types } from "mongoose";
 import { AccessToken } from "../../../Models/AccessToken";
 import { AccessTokenInterface } from "../../../../types/AccessTokenInterface";
 import { BuisnessIndustriesInterface } from "../../../../types/BuisnessIndustriesInterface";
-import { BusinessDetailsInterface } from "../../../../types/BusinessInterface";
+import {BusinessDetailsInterface, isBusinessObject} from "../../../../types/BusinessInterface";
 import { FileEnum } from "../../../../types/FileEnum";
 import { UserInterface } from "../../../../types/UserInterface";
 import { ValidationErrorResponse } from "../../../../types/ValidationErrorResponse";
@@ -192,7 +192,7 @@ export const create = async (req: Request, res: Response): Promise<any> => {
       triggerAmount: DEFAULT.TRIGGER_AMOUT * industry?.leadCost,
     });
     const user: UserInterface =
-      (await User.findById(input.userId)) ?? ({} as UserInterface);
+      (await User.findById(input.userId).populate('businessDetailsId').lean(true)) ?? ({} as UserInterface);
     if (process.env.SENDGRID_API_KEY) {
       const sendgridResponse = await createContact(userEmail, {
         signUpStatus:
@@ -243,8 +243,17 @@ export const create = async (req: Request, res: Response): Promise<any> => {
       ),
     };
 
+    if (isBusinessObject(user?.businessDetailsId) && user?.businessDetailsId?.businessLogo) {
+      formattedBody.businessLogo = `${process.env.APP_URL}${user?.businessDetailsId?.businessLogo}`;
+    }
 
-    cmsUpdateWebhook("data/buyer", POST, formattedBody);
+    cmsUpdateWebhook("data/buyer", POST, formattedBody)
+      .then((res) => {
+        console.log(`CMS Buyer ${formattedBody.buyerId} updated successfully`, res);
+      })
+      .catch((err) => {
+        console.log(`CMS Buyer ${formattedBody.buyerId} update failed`, err);
+      });
 
     const additionalColumns = additionalColumnsForLeads(
       industry?.columns.length

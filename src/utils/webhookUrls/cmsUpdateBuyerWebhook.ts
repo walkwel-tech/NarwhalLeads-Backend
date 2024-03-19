@@ -1,39 +1,22 @@
-import axios from "axios";
-import { User } from "../../app/Models/User";
-import { CardDetails } from "../../app/Models/CardDetails";
-import logger from "../winstonLogger/logger";
+import {POST} from "../constantFiles/HttpMethods";
+import {cmsUpdateWebhook} from "./cmsUpdateWebhook";
+import {CardDetails} from "../../app/Models/CardDetails";
+import {User} from "../../app/Models/User";
 
-const POST = "post";
 export const cmsUpdateBuyerWebhook = async (userId: String, cardId: String) => {
-  const data = await userData(userId, cardId);
+  const data = await hydrateUserDetails(userId, cardId);
 
-  return new Promise((resolve, reject) => {
-    let config = {
-      method: POST,
-      url: process.env.CMS_UPDATE_BUYER_WEBHOOK_URL,
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${process.env.CMS_UPDATE_BUYER_WEBHOOK_KEY}`,
-      },
-      data: data,
-    };
-    axios(config)
-      .then(async (response) => {
-        logger.info(
-          "cms update buyer webhook hits successfully",
-          { response }
-        );
-      })
-      .catch((err) => {
-        logger.error(
-          "cms update buyer webhook hits error",
-          err
-        );
-      });
+  return new Promise(async (resolve, reject) => {
+    try {
+      await cmsUpdateWebhook("data/buyer", POST, data);
+      resolve(data);
+    } catch (err) {
+      reject(err);
+    }
   });
 };
 
-const userData = async (userId: String, cardId: String) => {
+const hydrateUserDetails = async (userId: String, cardId: String) => {
   const user: any = await User.findById(userId)
     .populate("businessDetailsId")
     .populate("userLeadsDetailsId")
@@ -100,28 +83,30 @@ const userData = async (userId: String, cardId: String) => {
     paymentSessionID: cards?.paymentSessionID,
     status: cards?.status,
     leadUrl: `${process.env.APP_URL}/api/v1/leads/${user?.buyerId}`,
-    openingHoursMonday: formatTime(
-      user?.businessDetailsId?.businessOpeningHours[0] || defaultValue
+
+    openingHoursMonday: formatScheduleTime(
+      user?.businessDetailsId?.businessOpeningHours[0] || defaultScheduleValue
     ),
-    openingHoursTuesday: formatTime(
-      user?.businessDetailsId?.businessOpeningHours[1] || defaultValue
+    openingHoursTuesday: formatScheduleTime(
+      user?.businessDetailsId?.businessOpeningHours[1] || defaultScheduleValue
     ),
-    openingHoursWednesday: formatTime(
-      user?.businessDetailsId?.businessOpeningHours[2] || defaultValue
+    openingHoursWednesday: formatScheduleTime(
+      user?.businessDetailsId?.businessOpeningHours[2] || defaultScheduleValue
     ),
-    openingHoursThursday: formatTime(
-      user?.businessDetailsId?.businessOpeningHours[3] || defaultValue
+    openingHoursThursday: formatScheduleTime(
+      user?.businessDetailsId?.businessOpeningHours[3] || defaultScheduleValue
     ),
-    openingHoursFriday: formatTime(
-      user?.businessDetailsId?.businessOpeningHours[4] || defaultValue
+    openingHoursFriday: formatScheduleTime(
+      user?.businessDetailsId?.businessOpeningHours[4] || defaultScheduleValue
     ),
-    openingHoursSaturday: formatTime(
-      user?.businessDetailsId?.businessOpeningHours[5] || defaultValue
+    openingHoursSaturday: formatScheduleTime(
+      user?.businessDetailsId?.businessOpeningHours[5] || defaultScheduleValue
     ),
-    openingHoursSunday: formatTime(
-      user?.businessDetailsId?.businessOpeningHours[6] || defaultValue
+    openingHoursSunday: formatScheduleTime(
+      user?.businessDetailsId?.businessOpeningHours[6] || defaultScheduleValue
     ),
   };
+
   if (user?.businessDetailsId?.businessLogo) {
     data.businessLogo = `${process.env.APP_URL}${user?.businessDetailsId?.businessLogo}`;
   }
@@ -129,18 +114,17 @@ const userData = async (userId: String, cardId: String) => {
   return data;
 };
 
-const defaultValue = {
+const defaultScheduleValue = {
   day: "",
   openTime: "00:00",
   closeTime: "00:00",
 };
 
-const formatTime = (data: any) => {
+const formatScheduleTime = (data: any) => {
   let dayOpen;
   let dayClose;
   data["openTime"].split(":")[0] >= 12 ? (dayOpen = "pm") : (dayOpen = "am");
   data["closeTime"].split(":")[0] >= 12 ? (dayClose = "pm") : (dayClose = "am");
 
-  const a = `${data["openTime"]}${dayOpen} - ${data["closeTime"]}${dayClose} `;
-  return a;
+  return `${data["openTime"]}${dayOpen} - ${data["closeTime"]}${dayClose} `;
 };
