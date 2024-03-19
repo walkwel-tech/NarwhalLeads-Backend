@@ -1,46 +1,44 @@
 import {AxiosResponse} from "axios";
-import moment from "moment-timezone";
-import { Types } from "mongoose";
-import * as cron from "node-cron";
-import { CardDetailsInterface } from "../../types/CardDetailsInterface";
-import { InvoiceInterface } from "../../types/InvoiceInterface";
-import { TransactionInterface } from "../../types/TransactionInterface";
-import { UserInterface } from "../../types/UserInterface";
-import { CURRENCY_SIGN } from "../../utils/constantFiles/email.templateIDs";
-import { VAT } from "../../utils/constantFiles/Invoices";
-import { AUTO_UPDATED_TASKS } from "../../utils/Enums/autoUpdatedTasks.enum";
-import { CARD } from "../../utils/Enums/cardType.enum";
-import { CURRENCY } from "../../utils/Enums/currency.enum";
-import { paymentMethodEnum } from "../../utils/Enums/payment.method.enum";
-import { PAYMENT_STATUS } from "../../utils/Enums/payment.status";
-import { PAYMENT_TYPE_ENUM } from "../../utils/Enums/paymentType.enum";
-import { transactionTitle } from "../../utils/Enums/transaction.title.enum";
-import { addCreditsToBuyer } from "../../utils/payment/addBuyerCredit";
-import { createSessionUnScheduledPayment } from "../../utils/payment/createPaymentToRYFT";
-import { createPaymentOnStripe } from "../../utils/payment/stripe/createPaymentToStripe";
-import { IntentInterface } from "../../utils/payment/stripe/paymentIntent";
-import { refreshToken } from "../../utils/XeroApiIntegration/createContact";
-import { XeroResponseInterface } from "../../types/XeroResponseInterface";
-
-import {
-  generatePDF,
-  generatePDFParams,
-} from "../../utils/XeroApiIntegration/generatePDF";
-import { getOriginalAmountForStripe } from "../Controllers/cardDetails.controller";
-import { sendEmailForRequireActionAutocharge } from "../Middlewares/mail";
-import { AdminSettings } from "../Models/AdminSettings";
-import { AutoUpdatedTasksLogs } from "../Models/AutoChargeLogs";
-import { BuisnessIndustries } from "../Models/BuisnessIndustries";
-import { BusinessDetails } from "../Models/BusinessDetails";
-import { CardDetails } from "../Models/CardDetails";
-import { Invoice } from "../Models/Invoice";
-import { Leads } from "../Models/Leads";
-import { Transaction } from "../Models/Transaction";
-import { User } from "../Models/User";
-import { UserLeadsDetails } from "../Models/UserLeadsDetails";
 import fs from "fs"
+import moment from "moment-timezone";
+import {Types} from "mongoose";
+import * as cron from "node-cron";
+import {CardDetailsInterface} from "../../types/CardDetailsInterface";
+import {InvoiceInterface} from "../../types/InvoiceInterface";
+import {TransactionInterface} from "../../types/TransactionInterface";
+import {UserInterface} from "../../types/UserInterface";
+import {XeroResponseInterface} from "../../types/XeroResponseInterface";
+import {CURRENCY_SIGN} from "../../utils/constantFiles/email.templateIDs";
+import {VAT} from "../../utils/constantFiles/Invoices";
+import {AUTO_UPDATED_TASKS} from "../../utils/Enums/autoUpdatedTasks.enum";
+import {CARD} from "../../utils/Enums/cardType.enum";
+import {CURRENCY} from "../../utils/Enums/currency.enum";
+import {paymentMethodEnum} from "../../utils/Enums/payment.method.enum";
+import {PAYMENT_STATUS} from "../../utils/Enums/payment.status";
+import {PAYMENT_TYPE_ENUM} from "../../utils/Enums/paymentType.enum";
 import {APP_ENV} from "../../utils/Enums/serverModes.enum";
+import {transactionTitle} from "../../utils/Enums/transaction.title.enum";
+import {addCreditsToBuyer} from "../../utils/payment/addBuyerCredit";
+import {createSessionUnScheduledPayment} from "../../utils/payment/createPaymentToRYFT";
+import {createPaymentOnStripe} from "../../utils/payment/stripe/createPaymentToStripe";
+import {IntentInterface} from "../../utils/payment/stripe/paymentIntent";
 import logger from "../../utils/winstonLogger/logger";
+import {refreshToken} from "../../utils/XeroApiIntegration/createContact";
+
+import {generatePDF, generatePDFParams,} from "../../utils/XeroApiIntegration/generatePDF";
+import {getOriginalAmountForStripe} from "../Controllers/cardDetails.controller";
+import {sendEmailForRequireActionAutocharge} from "../Middlewares/mail";
+import {AdminSettings} from "../Models/AdminSettings";
+import {AutoUpdatedTasksLogs} from "../Models/AutoChargeLogs";
+import {BuisnessIndustries} from "../Models/BuisnessIndustries";
+import {BusinessDetails} from "../Models/BusinessDetails";
+import {CardDetails} from "../Models/CardDetails";
+import {Invoice} from "../Models/Invoice";
+import {Leads} from "../Models/Leads";
+import {Transaction} from "../Models/Transaction";
+import {User} from "../Models/User";
+import {UserLeadsDetails} from "../Models/UserLeadsDetails";
+
 // import { paymentFailedWebhook } from "../../utils/webhookUrls/paymentFailedWebhook";
 
 interface paymentParams {
@@ -61,19 +59,23 @@ interface addCreditsParams {
 }
 
 export const autoChargePayment = async () => {
-
-  let cronExpression:string = "0 0 * * *";
-
-  if(process.env.APP_ENV == APP_ENV.STAGING){
-    cronExpression = "*/30 * * * *";
-  }
+  const cronExpression: string = (process.env.APP_ENV !== APP_ENV.STAGING)
+    ? "0 0/12 * * *" // Every 12 hours
+    : "*/30 * * * *"; // Every 30 minutes
 
   cron.schedule(cronExpression, async () => {
     logger.info("AutoCharge: CRON Start..");
     try {
       const usersToCharge = await getUsersWithAutoChargeEnabled();
 
-      fs.writeFile(`./logs/autocharge/autochargeuser-${new Date().getTime()}.json`, JSON.stringify(usersToCharge), (err) => {
+      fs.writeFile(
+        `./logs/autocharge/autochargeuser-${new Date().getTime()}.json`,
+        JSON.stringify(usersToCharge.map(u => ({
+          id: u.id,
+          buyerId: u.buyerId,
+          credits: u.credits,
+        }))),
+        (err) => {
         if (err) {
           logger.error("Error writing file:", err);
         } else {
@@ -109,12 +111,12 @@ export const autoChargePayment = async () => {
           });
         })
       ).then((res) => {
-          logger.info(`AutoCharge: CRON Ended Successfully charged ${res.length} users`);
-        }).catch((err) => {
-          logger.info(`AutoCharge: CRON Ended with Errors charged ${err.length} users`);
-        }).finally(() => {
-          logger.info("AutoCharge: CRON Ended finally");
-        });
+        logger.info(`AutoCharge: CRON Ended Successfully charged ${res.length} users`);
+      }).catch((err) => {
+        logger.info(`AutoCharge: CRON Ended with Errors charged ${err.length} users`);
+      }).finally(() => {
+        logger.info("AutoCharge: CRON Ended finally");
+      });
     } catch (error) {
       logger.error("Error in CRON job:", error);
     }
@@ -234,7 +236,7 @@ export const weeklyPayment = async () => {
                               invoiceId: res?.data.Invoices[0].InvoiceID,
                             };
                           await Invoice.create(dataToSaveInInvoice);
-                          logger.info("pdf generated", { res });
+                          logger.info("pdf generated", {res});
                         })
                         .catch((error) => {
                           refreshToken().then((res) => {
@@ -255,7 +257,7 @@ export const weeklyPayment = async () => {
                                   invoiceId: res.data.Invoices[0].InvoiceID,
                                 };
                               await Invoice.create(dataToSaveInInvoice);
-                              logger.info("pdf generated", { res });
+                              logger.info("pdf generated", {res});
                             });
                           });
                         });
@@ -300,23 +302,23 @@ export const getUsersWithAutoChargeEnabled = async (id?: Types.ObjectId) => {
       },
       $or: [
         {pendingTransaction: ""},
-        {pendingTransaction: { $exists: false }},
+        {pendingTransaction: {$exists: false}},
 
       ],
       paymentMethod: paymentMethodEnum.AUTOCHARGE_METHOD,
       isDeleted: false,
       isAutoChargeEnabled: true,
-      buyerId: { $exists: true },
+      buyerId: {$exists: true},
       isCreditsAndBillingEnabled: true,
       // implemented in future
       // retriedTransactionCount: { $lte: 1 },
-          };
+    };
   } else {
     dataToFind = {
       _id: id,
       isDeleted: false,
-      pendingTransaction: { $ne: null },
-      retriedTransactionCount: { $lte: 1 },
+      pendingTransaction: {$ne: null},
+      retriedTransactionCount: {$lte: 1},
     };
   }
 
@@ -344,8 +346,6 @@ export const chargeUserOnStripe = async (params: IntentInterface) => {
         });
 
         if (_res.status === PAYMENT_STATUS.REQUIRES_ACTION) {
-
-
 
 
           const user: UserInterface =
@@ -475,8 +475,8 @@ export const handleFailedChargeOnStripe = async (
         })) ?? ({} as CardDetailsInterface);
 
       const amountToPay = (user.currency === CURRENCY.POUND || user.currency === CURRENCY.DOLLER)
-          ? user?.autoChargeAmount
-          : user?.autoChargeAmount + (user.autoChargeAmount * VAT) / 100;
+        ? user?.autoChargeAmount
+        : user?.autoChargeAmount + (user.autoChargeAmount * VAT) / 100;
 
       const params = {
         amount: amountToPay * 100,
@@ -509,8 +509,8 @@ export const topUpUserForPaymentMethod = async (
   }
 
   const amountToPay = (user.currency === CURRENCY.POUND || user.currency === CURRENCY.DOLLER)
-      ? (user.autoChargeAmount + ((user.autoChargeAmount * VAT) / 100))
-      : user.autoChargeAmount;
+    ? (user.autoChargeAmount + ((user.autoChargeAmount * VAT) / 100))
+    : user.autoChargeAmount;
 
   let params = {
     amount: amountToPay * 100,
