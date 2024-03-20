@@ -1,3 +1,4 @@
+import {FreeCreditsLink} from "../../../Models/freeCreditsLink";
 import mongoose from "mongoose";
 import logger from "../../../../utils/winstonLogger/logger";
 import {BusinessDetailsInterface, isBusinessObject} from "../../../../types/BusinessInterface";
@@ -104,7 +105,10 @@ export const updateBusinessDetails = async (
         .status(404)
         .json({ error: { message: "details does not exists." } });
     }
+
+    // TODO: know why we have different user and userData Variables.
     let userData = await User.findOne({ businessDetailsId: id });
+    const promoLink = await FreeCreditsLink.findById(userData?.promoLinkId);
 
     if (input.businessOpeningHours) {
       input.businessOpeningHours = JSON.parse(input.businessOpeningHours);
@@ -147,17 +151,25 @@ export const updateBusinessDetails = async (
     if ((req.file || {}).filename) {
       input.businessLogo = `${FileEnum.PROFILEIMAGE}${req?.file?.filename}`;
     }
-    let updateUser;
     let centralIndustryId = null;
     if (input.businessIndustry) {
       const industry = await BuisnessIndustries.findOne({
         industry: input.businessIndustry,
       });
+
+      let updatedLeadCost = industry!.leadCost;
+
+      if (promoLink && promoLink.discount && promoLink.discount !== 0) {
+        const discount: number = promoLink.discount;
+        const discountedAmount = (discount / 100) * (industry!.leadCost ?? 0);
+        updatedLeadCost -= discountedAmount;
+      }
+
       centralIndustryId = industry?.centralIndustryId;
-      updateUser = (await User.findByIdAndUpdate(
+      userData = (await User.findByIdAndUpdate(
         userData?.id,
         {
-          leadCost: industry?.leadCost,
+          leadCost: updatedLeadCost,
           currency: industry?.associatedCurrency,
           country: industry?.country,
         },
@@ -180,7 +192,7 @@ export const updateBusinessDetails = async (
     leadCenterWebhook(
       "clients/data-sync/",
       POST,
-      { ...data.toObject(), ...updateUser?.toObject() },
+      { ...data.toObject(), ...userData?.toObject() },
       {
         eventTitle: EVENT_TITLE.USER_UPDATE_LEAD,
         id: (req.user as UserInterface)?._id,
