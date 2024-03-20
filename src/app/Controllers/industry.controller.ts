@@ -11,7 +11,7 @@ import {order} from "../../utils/constantFiles/businessIndustry.orderList";
 import {json} from "../../utils/constantFiles/businessIndustryJson";
 import {countryCurrency} from "../../utils/constantFiles/currencyConstants";
 import {EVENT_TITLE} from "../../utils/constantFiles/events";
-import {DELETE, POST} from "../../utils/constantFiles/HttpMethods";
+import {DELETE, PATCH, POST} from "../../utils/constantFiles/HttpMethods";
 import {cmsUpdateWebhook} from "../../utils/webhookUrls/cmsUpdateWebhook";
 import {leadCenterWebhook} from "../../utils/webhookUrls/leadCenterWebhook";
 import {IndustryInput} from "../Inputs/Industry.input";
@@ -66,7 +66,7 @@ export class IndustryController {
                 }, {})
             };
 
-            cmsUpdateWebhook("industry", POST, webhookData)
+            cmsUpdateWebhook("industry", PATCH, webhookData)
               .then((res) => {
                 logger.info(`CMS Industry ${industryInput.industry} updated successfully`, res);
               })
@@ -192,7 +192,7 @@ export class IndustryController {
                 }, {})
             }
 
-            cmsUpdateWebhook("industry", POST, webhookData)
+            cmsUpdateWebhook("industry", PATCH, webhookData)
               .then((res) => {
                 logger.info(`CMS Industry ${updatedData.industry} updated successfully`, res);
               })
