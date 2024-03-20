@@ -46,7 +46,7 @@ export const createContactOnXero = (
       },
       data: JSON.stringify(data),
     };
-    let user = await User.findOne(paramsToCreateContact.email);
+    const user = await User.findOne({email: paramsToCreateContact.email});
     axios(config)
       .then(async (data) => {
         const params = {
