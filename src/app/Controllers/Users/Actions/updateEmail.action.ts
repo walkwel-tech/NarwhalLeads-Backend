@@ -32,7 +32,7 @@ export const updateEmailAction = async (req: Request, res: Response): Promise<an
 
     if (emailExist) {
       return res.status(400).json({
-        error: { message: "Invalid email" },
+        error: { message: "email  already exist" },
       });
     }
 
